@@ -1,6 +1,6 @@
 # Gizlilik Politikası — 3-2-1: Bitir İşi
 
-**Son güncelleme:** 12 Eylül 2026
+**Son güncelleme:** 25 Eylül 2026
 
 Bu politika, **3-2-1: Bitir İşi** mobil uygulamasının hangi verileri topladığını,
 neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada

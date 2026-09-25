@@ -25,12 +25,23 @@
   strong { color: #fff; }
   footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #28394B;
            color: #8CA0B3; font-size: 13px; }
+  /* 25 Eylül 2026 — markdown tablosu HTML'e hiç çevrilmemiş, sayfada bir sıra
+     dikey çizgi olarak görünüyordu. Gerçek tabloya çevrildi. */
+  .tablo-kap { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #28394B;
+           vertical-align: top; }
+  th { color: #7CFF5C; font-size: 13px; letter-spacing: .04em;
+       text-transform: uppercase; background: #16222E; }
+  tbody tr:last-child td { border-bottom: 0; }
 </style>
 </head>
 <body>
 <main>
 <h1>Gizlilik Politikası — 3-2-1: Bitir İşi</h1>
-<p><strong>Son güncelleme:</strong> 12 Eylül 2026 Bu politika, <strong>3-2-1: Bitir İşi</strong> mobil uygulamasının hangi verileri topladığını, neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada anlatılanları kabul etmiş olursun. Veri sorumlusu: Kerem Zengin — iletişim: <strong>KontStudioApps@gmail.com</strong></p>
+<p><strong>Son güncelleme:</strong> 25 Eylül 2026</p>
+<p>Bu politika, <strong>3-2-1: Bitir İşi</strong> mobil uygulamasının hangi verileri topladığını, neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada anlatılanları kabul etmiş olursun.</p>
+<p>Veri sorumlusu: Kerem Zengin — iletişim: <strong>KontStudioApps@gmail.com</strong></p>
 <hr>
 <h2>Kısaca</h2>
 <p>Uygulama hesap açmadan da tamamen oynanabilir. Hesap açmak isteğe bağlıdır ve yalnızca ilerlemeni cihazlar arasında taşımak içindir. Reklam göstermiyoruz, verilerini reklam amaçlı kimseye satmıyoruz. Ama tam olarak dürüst olmak gerekirse: <strong>çevrimdışı modlarda bile</strong> uygulama sunucumuza küçük bir kayıt gönderiyor ve **sesli cevap özelliğini kullanırsan ses kaydın yazıya çevrilmek üzere yurt dışındaki bir servise gidiyor.** Ayrıntılar aşağıda.</p>
@@ -49,7 +60,26 @@
 <p>Konum bilgisi, rehber, çağrı kayıtları, SMS, diğer uygulamaların listesi, reklam kimliği ve benzeri hiçbir veriye erişmiyoruz. Üçüncü taraf reklam veya analiz izleyicisi kullanmıyoruz.</p>
 <hr>
 <h2>Verilerin paylaşıldığı taraflar</h2>
-<p>| Kime | Ne | Neden | |---|---|---| | Supabase (AB) | Cihaz kimliği, hesap bilgileri, oyun ilerlemesi, ses kaydı (geçici) | Sunucu ve veritabanı altyapısı | | OpenAI (ABD) | Ses kaydı | Sesi yazıya çevirmek | Bunun dışında hiç kimseyle veri paylaşmıyoruz, satmıyoruz, kiralamıyoruz.</p>
+<div class="tablo-kap">
+<table>
+<thead>
+<tr><th>Kime</th><th>Ne</th><th>Neden</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td>Supabase (AB)</td>
+  <td>Cihaz kimliği, hesap bilgileri, oyun ilerlemesi, ses kaydı (geçici)</td>
+  <td>Sunucu ve veritabanı altyapısı</td>
+</tr>
+<tr>
+  <td>OpenAI (ABD)</td>
+  <td>Ses kaydı</td>
+  <td>Sesi yazıya çevirmek</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Bunun dışında hiç kimseyle veri paylaşmıyoruz, satmıyoruz, kiralamıyoruz.</p>
 <hr>
 <h2>Saklama süresi ve verilerini silme</h2>
 <p>Hesap açmadıysan: cihaz kimliğine bağlı kayıtlar oyun istatistiği olarak saklanır ve seni tanımlamaz. Hesap açtıysan: <strong>Profilim → Hesabım → &quot;Hesabımı kalıcı olarak sil&quot;</strong> ile hesabını, profilini, profil fotoğrafını ve bulut yedeğini kalıcı olarak silebilirsin. İşlem geri alınamaz ve anında uygulanır. Uygulamayı silmeden hesabını silmek istersen ya da uygulamaya erişimin yoksa, yukarıdaki e-posta adresine yazman yeterli — talebini 30 gün içinde sonuçlandırırız.</p>
