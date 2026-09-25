@@ -1,0 +1,43 @@
+# EAS Build'e YÜKLENMEYECEK dosyalar.
+# 25 Eylül 2026 — ilk build'de proje arşivi 797 MB çıktı, yüklemesi 5 dakika
+# sürdü. Sebep: bu dosya yoktu, her şey (node_modules, yerel WebP kopyaları,
+# CSV raporları) sunucuya gitti. Derleme için gereken şey sadece kaynak kod,
+# assets ve lib/*.json. Bu dosyayla arşiv ~20 MB'a düşüyor.
+#
+# ÖNEMLİ: .easignore varsa EAS .gitignore'a BAKMAZ, sadece buraya bakar.
+# O yüzden node_modules gibi bariz şeyler de burada tekrar yazılı.
+
+# Bağımlılıklar — EAS sunucuda kendisi kuruyor
+node_modules/
+
+# Git ve Expo önbellekleri
+.git/
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Yerel fotoğraf/logo çalışma kopyaları (Supabase'de ve assets/'te zaten var)
+foto_webp/
+custom-photos/
+
+# Python araçları — derlemede kullanılmıyor
+scripts/
+__pycache__/
+*.pyc
+
+# Supabase edge function kaynakları — ayrıca deploy ediliyor
+supabase/
+
+# Mağaza ve doküman malzemesi
+docs/
+store/
+NEREDEYIZ.md
+README.md
+PRIVACY_POLICY.md
+
+# Rapor ve kontrol dosyaları
+*.csv
+*.html
+*_ilerleme.json
+*_raporu.json

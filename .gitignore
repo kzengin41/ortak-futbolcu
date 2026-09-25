@@ -1,0 +1,40 @@
+# 25 Eylül 2026 — depo .gitignore'suz kuruldu, node_modules ve yerel fotoğraf
+# kopyaları da commit'lendi (~800 MB). Bu dosya onu tekrarlamıyor.
+
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.log
+npm-debug.*
+yarn-error.*
+
+# Derleme çıktıları
+*.apk
+*.aab
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Gizli anahtarlar — ASLA commit'lenmemeli
+.env
+.env.local
+.env.*.local
+
+# Yerel çalışma kopyaları
+foto_webp/
+custom-photos/
+__pycache__/
+*.pyc
+
+# İlerleme ve rapor dosyaları
+*_ilerleme.json
+foto_kucultme_raporu.csv
+
+# İşletim sistemi
+.DS_Store
+Thumbs.db

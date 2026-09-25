@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gizlilik Politikası — 3-2-1: Bitir İşi</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0B1620; color: #F3F7FA;
+    font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 32px 20px 80px;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 8px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; color: #7CFF5C; }
+  h3 { font-size: 16px; margin: 28px 0 8px; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  hr { border: 0; border-top: 1px solid #28394B; margin: 36px 0; }
+  code { background: #16222E; border: 1px solid #28394B; border-radius: 6px;
+         padding: 1px 6px; font-size: 14px; }
+  strong { color: #fff; }
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #28394B;
+           color: #8CA0B3; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Gizlilik Politikası — 3-2-1: Bitir İşi</h1>
+<p><strong>Son güncelleme:</strong> 12 Eylül 2026 Bu politika, <strong>3-2-1: Bitir İşi</strong> mobil uygulamasının hangi verileri topladığını, neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada anlatılanları kabul etmiş olursun. Veri sorumlusu: Kerem Zengin — iletişim: <strong>KontStudioApps@gmail.com</strong></p>
+<hr>
+<h2>Kısaca</h2>
+<p>Uygulama hesap açmadan da tamamen oynanabilir. Hesap açmak isteğe bağlıdır ve yalnızca ilerlemeni cihazlar arasında taşımak içindir. Reklam göstermiyoruz, verilerini reklam amaçlı kimseye satmıyoruz. Ama tam olarak dürüst olmak gerekirse: <strong>çevrimdışı modlarda bile</strong> uygulama sunucumuza küçük bir kayıt gönderiyor ve **sesli cevap özelliğini kullanırsan ses kaydın yazıya çevrilmek üzere yurt dışındaki bir servise gidiyor.** Ayrıntılar aşağıda.</p>
+<hr>
+<h2>Topladığımız veriler</h2>
+<h3>1. Cihaz kimliği (hesapsız da toplanır)</h3>
+<p>Uygulama ilk açılışta cihazına rastgele bir kimlik üretir. Bu kimlik senin adın, telefon numaran veya reklam kimliğinle ilgisi olmayan, yalnızca bu uygulamaya özel bir numaradır. Ne için kullanılıyor: hangi oyun modlarının ne sıklıkta oynandığını görmek (oyunu geliştirebilmek için), online odalarda iki oyuncuyu birbirinden ayırmak, ve bir hatayı bildirdiğinde bildirimi kaynağıyla eşleştirmek. Bir mod açtığında — o mod internetsiz oynanıyor olsa bile — bu kimlik ve mod adı sunucumuza yazılır.</p>
+<h3>2. Sesli cevaplar</h3>
+<p>Sesli cevap özelliğini kullandığında kaydettiğin kısa ses dosyası: 1. sunucumuza (Supabase, Avrupa Birliği) yüklenir, 2. oradan yazıya çevrilmek üzere <strong>OpenAI Whisper</strong> servisine (Amerika Birleşik    Devletleri) iletilir, 3. dönen metin cevabını değerlendirmek için kullanılır. Ses kaydı bu işlem dışında saklanmaz ve başka hiçbir amaçla kullanılmaz. Mikrofon izni yalnızca sen mikrofon butonuna bastığında kullanılır; uygulama arka planda dinleme yapmaz. <strong>Sesli cevabı hiç kullanmazsan hiçbir ses kaydı alınmaz veya gönderilmez.</strong> Klavyeyle cevap vermek her modda mümkündür.</p>
+<h3>3. Hesap bilgileri (yalnızca hesap açarsan)</h3>
+<p>Hesap açarsan şunları saklarız: e-posta adresin, seçtiğin görünen ad, seçtiğin avatar rengi veya yüklediğin profil fotoğrafı, ve oyun ilerlemen (deneyim puanı, seviye, açtığın futbolcular, istatistikler). Şifren bize hiç ulaşmaz; kimlik doğrulamayı Supabase Auth yapar ve şifreler orada şifrelenmiş olarak tutulur. Profil fotoğrafı yüklersen bu fotoğraf, adresini bilenlerin erişebileceği bir depolama alanına konur. Buraya özel veya hassas bir fotoğraf yüklememeni öneririz.</p>
+<h3>4. Hata bildirimleri</h3>
+<p>Oyun içindeki &quot;Bildir&quot; düğmesiyle bir hata bildirirsen yazdığın metin ve cihaz kimliğin bize ulaşır.</p>
+<hr>
+<h2>Toplamadığımız veriler</h2>
+<p>Konum bilgisi, rehber, çağrı kayıtları, SMS, diğer uygulamaların listesi, reklam kimliği ve benzeri hiçbir veriye erişmiyoruz. Üçüncü taraf reklam veya analiz izleyicisi kullanmıyoruz.</p>
+<hr>
+<h2>Verilerin paylaşıldığı taraflar</h2>
+<p>| Kime | Ne | Neden | |---|---|---| | Supabase (AB) | Cihaz kimliği, hesap bilgileri, oyun ilerlemesi, ses kaydı (geçici) | Sunucu ve veritabanı altyapısı | | OpenAI (ABD) | Ses kaydı | Sesi yazıya çevirmek | Bunun dışında hiç kimseyle veri paylaşmıyoruz, satmıyoruz, kiralamıyoruz.</p>
+<hr>
+<h2>Saklama süresi ve verilerini silme</h2>
+<p>Hesap açmadıysan: cihaz kimliğine bağlı kayıtlar oyun istatistiği olarak saklanır ve seni tanımlamaz. Hesap açtıysan: <strong>Profilim → Hesabım → &quot;Hesabımı kalıcı olarak sil&quot;</strong> ile hesabını, profilini, profil fotoğrafını ve bulut yedeğini kalıcı olarak silebilirsin. İşlem geri alınamaz ve anında uygulanır. Uygulamayı silmeden hesabını silmek istersen ya da uygulamaya erişimin yoksa, yukarıdaki e-posta adresine yazman yeterli — talebini 30 gün içinde sonuçlandırırız.</p>
+<hr>
+<h2>Çocukların gizliliği</h2>
+<p>Uygulama 13 yaş altı çocuklara yönelik değildir ve bilerek 13 yaşından küçük kişilerden veri toplamayız. Çocuğunuzun bize veri gönderdiğini düşünüyorsanız yukarıdaki adresten bize ulaşın, kaydı silelim.</p>
+<hr>
+<h2>Üçüncü taraf içerik</h2>
+<p>Uygulamadaki futbolcu fotoğrafları ve kariyer bilgileri açık kaynaklardan derlenmiştir; kaynak listesi uygulama içinde **Profilim → Nasıl Oynanır → Kaynaklar** bölümünde yer alır. Uygulama hiçbir kulüp, lig, federasyon veya oyuncuyla resmi bağlantılı değildir.</p>
+<hr>
+<h2>Değişiklikler</h2>
+<p>Bu politika değişirse bu sayfadaki &quot;Son güncelleme&quot; tarihi güncellenir. Önemli bir değişiklik olursa uygulama içinde ayrıca bilgilendiririz.</p>
+<h2>İletişim</h2>
+<p>Soruların için: <strong>KontStudioApps@gmail.com</strong></p>
+<footer>3-2-1: Bitir İşi · com.kerem.ortakfutbolcu</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Ortak Futbolcu",
+    "slug": "ortak-futbolcu",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B1613",
+    "ios": { "supportsTablet": false },
+    "android": { "package": "com.kerem.ortakfutbolcu" }
+  }
+}

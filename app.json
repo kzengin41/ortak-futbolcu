@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "3-2-1: Bitir İşi",
+    "slug": "ortak-futbolcu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B1613",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kerem.ortakfutbolcu",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Oyuncu isimlerini sesli olarak tahmin edebilmeniz için mikrofona ihtiyacımız var.",
+        "NSPhotoLibraryUsageDescription": "Profil fotoğrafı seçebilmen için galerine erişmemiz gerekiyor. Fotoğraf sadece senin profilinde kullanılır.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.kerem.ortakfutbolcu",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B1613"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B1613",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220
+        }
+      ],
+      "expo-audio",
+      "expo-image",
+      "expo-notifications",
+      "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Profil fotoğrafı seçebilmen için galerine erişmemiz gerekiyor."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2f3d3e94-c554-4e05-9cda-fe6f752c1b08"
+      }
+    }
+  }
+}
