@@ -181,6 +181,49 @@ def normalize(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+# 26 Eylül 2026 — "Başakşehir" + "İstanbul Başakşehir" iki ayrı takım gibi
+# görünüyordu: bu script kadroyu çekerken kulübü kendi listesindeki yazımla
+# ekliyordu, oyuncunun kariyerinde ise başka yazım vardı. Artık her yazımdan
+# önce lib/clubAliases.js'teki KANONİK ada çevriliyor ve aynı kulüp iki kez
+# eklenmiyor.
+def _takma_ad_haritasi():
+    yol = os.path.join(KOK, "lib", "clubAliases.js")
+    harita = {}
+    try:
+        with open(yol, "r", encoding="utf-8") as f:
+            metin = f.read()
+        bas = metin.index("CLUB_ALIAS_GROUPS = {")
+        son = metin.index("\n};", bas)
+        for satir in metin[bas:son].splitlines()[1:]:
+            satir = satir.strip().rstrip(",")
+            if not satir or satir.startswith("//") or ":" not in satir:
+                continue
+            kanonik, varyantlar = json.loads("{" + satir + "}").popitem()
+            for v in varyantlar:
+                harita[v] = kanonik
+    except Exception as hata:
+        print("UYARI: clubAliases.js okunamadı (%s) — kulüp adları birleştirilmeyecek" % hata)
+    return harita
+
+
+TAKMA_AD = None
+
+
+def kanonik(kulup):
+    global TAKMA_AD
+    if TAKMA_AD is None:
+        TAKMA_AD = _takma_ad_haritasi()
+    return TAKMA_AD.get(kulup, kulup)
+
+
+def kulupleri_tekille(liste):
+    """Kanonik ada çevirir; aynı kulüp iki kez geçiyorsa SONUNCUSU kalır
+    (son kulüp = güncel kulüp bilgisi korunur)."""
+    yeni = [kanonik(k) for k in liste]
+    son = {k: i for i, k in enumerate(yeni)}
+    return [k for i, k in enumerate(yeni) if son[k] == i]
+
+
 def json_oku(yol, varsayilan):
     if not os.path.exists(yol):
         return varsayilan
@@ -409,6 +452,7 @@ def oyuncu_kariyeri(oturum, isim, bilinen_kulupler=None, bekleme=1.0):
                 if aday in bilinen_kulupler:
                     secim = aday
                     break
+        secim = kanonik(secim)
         if secim not in sirali:
             sirali.append(secim)
     if not sirali:
@@ -444,7 +488,7 @@ def main():
                     help="Veri setinde HİÇ olmayan kadro oyuncularını Wikipedia'dan kariyeriyle birlikte EKLE")
     a = ap.parse_args()
 
-    kulupler = json_oku(KULUP_LISTESI, [])
+    kulupler = list(dict.fromkeys(kanonik(k) for k in json_oku(KULUP_LISTESI, [])))
     if a.sadece:
         istenen = {k.strip() for k in a.sadece.split(",") if k.strip()}
         kulupler = [k for k in kulupler if k in istenen] or list(istenen)
@@ -527,7 +571,7 @@ def main():
                 yeni_oyuncular.append([isim, kulup, " | ".join(kl)])
                 yeni_kayit += 1
                 continue
-            if kulup not in p["clubs"]:
+            if kulup not in {kanonik(c) for c in p["clubs"]}:
                 p["clubs"].append(kulup)
                 # Kadroda olduğuna göre bu sezon aktif:
                 if years.get(p["name"], 0) < BU_YIL:
@@ -541,6 +585,8 @@ def main():
         # Uzun süren çalışmalarda (özellikle --yeni-ekle ile) yarıda kesilirse
         # emek boşa gitmesin diye her 10 kulüpte bir ara kayıt.
         if not a.deneme and i % 10 == 0:
+            for _p in players:
+                _p["clubs"] = kulupleri_tekille(_p.get("clubs") or [])
             json_yaz(PLAYERS_YOLU, players)
             json_yaz(YEARS_YOLU, years)
             json_yaz(BIRTH_YOLU, birth)
@@ -569,6 +615,8 @@ def main():
         print("\n--deneme modu: hiçbir dosya değiştirilmedi.")
         return
 
+    for _p in players:
+        _p["clubs"] = kulupleri_tekille(_p.get("clubs") or [])
     json_yaz(PLAYERS_YOLU, players)
     json_yaz(YEARS_YOLU, years)
     json_yaz(BIRTH_YOLU, birth)

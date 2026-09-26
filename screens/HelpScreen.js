@@ -14,7 +14,9 @@ import { COLORS, MODE_COLORS, SPACING, RADIUS, TYPE, SHADOW } from "../lib/theme
 // Kaldırıldı — aşağıdaki LayoutAnimation.configureNext çağrısı çalışmaya
 // devam ediyor.
 
-// İçerik, HomeScreen'deki gerçek 6 mod + online + ansiklopedi ile birebir eşleşir.
+// İçerik, Oyna ekranındaki TÜM modlar + online + ansiklopedi ile birebir eşleşir.
+// (26 Eylül 2026: 5 Kulüp, Futbolcu XOX ve Günün Bulmacası eklendi — eskiden
+//  bu üçü menüde vardı ama burada anlatılmıyordu.)
 // Her kartın rengi o modun HomeScreen'deki rengiyle aynı (MODE_COLORS) — kullanıcı
 // menüde gördüğü rengi burada da görünce "aynı oyun" olduğunu hemen anlar.
 const SECTIONS = [
@@ -101,6 +103,48 @@ const SECTIONS = [
     points: [
       "Oyun dışı bir keşif ekranı — dilediğin futbolcuyu arayıp kulüp geçmişini görebilirsin.",
       "Puan ya da süre yok; sadece bilgi almak için kullanılır.",
+    ],
+  },
+  // 26 Eylül 2026 — DENETİM BULGUSU: bu üç mod ana menüde duruyordu ama
+  // "Nasıl Oynanır?" ekranında HİÇ anlatılmıyordu. Yeni kullanıcı 5 Kulüp,
+  // XOX ve Günün Bulmacası'nın kuralını hiçbir yerden öğrenemiyordu.
+  {
+    key: "fiveClubs",
+    icon: "list",
+    title: "5 Kulüp",
+    summary: "Bir futbolcunun oynadığı beş kulübü say",
+    points: [
+      "Ekranda bir futbolcu belirir. Amacın, kariyerinde forma giydiği kulüplerden beşini saymak.",
+      "Her doğru kulüp puan kazandırır; aynı kulübü iki kez söylemek puan getirmez.",
+      "İki kişilik oynanışta rakibin söylediği kulübü tekrar söylemek de puan kazandırmaz — sırayla farklı kulüpler bulmanız gerekir.",
+      "Bir kulübü kim bulduysa kulübün köşesinde \"1\" ya da \"2\" rozeti çıkar; ikiniz de bulduysanız iki rozet birlikte görünür.",
+    ],
+  },
+  {
+    key: "xox",
+    icon: "grid",
+    title: "Futbolcu XOX",
+    summary: "3x3 ızgarada kareyi ortak futbolcuyla al",
+    points: [
+      "Izgaranın üç satırında ve üç sütununda birer kulüp vardır. Bir kareyi almak için, o karenin kesiştiği İKİ kulüpte de oynamış bir futbolcu söylersin.",
+      "Doğru cevap kareyi senin adına işaretler; bilemezsen sıra rakibe geçer.",
+      "Aynı futbolcuyu birden fazla karede kullanabilirsin — kısıtlama yoktur.",
+      "Üçlü sırayı (yatay, dikey ya da çapraz) tamamlayan kazanır.",
+      "Beş zorluk seviyesi var: kolay seviyelerde tanıdık kulüpler ve bol cevaplı kareler gelir, zor seviyelerde kareler 3-4 cevaba kadar düşer.",
+      "CPU'ya karşı ya da aynı telefonda arkadaşına karşı oynayabilirsin.",
+    ],
+  },
+  {
+    key: "dailyPuzzle",
+    icon: "calendar",
+    title: "Günün Bulmacası",
+    summary: "Her gün tek bir soru, herkese aynı",
+    points: [
+      "Her gün iki kulüp belirir ve ikisinde de oynamış bir futbolcuyu bulman istenir.",
+      "Soru o gün uygulamayı açan HERKESTE aynıdır — arkadaşlarınla karşılaştırabilirsin.",
+      "Sınırlı deneme hakkın var. Gün içinde çıkıp tekrar girsen bile ilerlemen kaybolmaz.",
+      "Gece yarısı yeni bir soru gelir; geçmiş günlerin sorusuna dönülemez.",
+      "Sonucu paylaşırken cevap sızdırılmaz — sadece kaç denemede bulduğun görünür.",
     ],
   },
 ];

@@ -15,7 +15,7 @@ import {
   generateCountryTeamRound, computeCountryTeamPool, findMatchedPlayer, suggestPlayers, buildSuggestIndex,
   ANSWER_SECONDS, getCpuProfile, ROUND_TIME_OPTIONS,
   playersForCountryClub, findMatchedTeam, findMatchedCountry, buildCountrySuggestIndex, suggestCountries,
-  generateCountryTeamRoundFromCountry, generateCountryTeamRoundFromClub, buildClubSuggestIndex, suggestClubs } from "../lib/gameEngine";
+  generateCountryTeamRoundFromCountry, generateCountryTeamRoundFromClub, buildClubSuggestIndex, suggestClubs, sesIpuclari } from "../lib/gameEngine";
 import COUNTRIES from "../lib/countries.json";
 import { countryTr } from "../lib/countryNamesTr";
 import { playerWeight, recognitionScore } from "../lib/clubWeights";
@@ -108,14 +108,21 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
   const countPlayer2 = useAudioPlayer(count2Source);
   const countPlayer1 = useAudioPlayer(count1Source);
 
-  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput();
+  // 26 Eylül 2026: Whisper ipuçları artık turun doğru cevapları DEĞİL, turdaki
+  // kulüplerin tanınmış oyuncuları (karışık) — bkz. gameEngine sesIpuclari.
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(
+    () => sesIpuclari(PLAYERS, [round?.club])
+  );
   const [voiceError, setVoiceError] = useState(null);
   // 25 Eylul 2026 (Kerem: "sesli soyledigimde anladigini ekrana getirsin,
   // onaylayayim... kullanmak istemeyenler icin bu ayar kapatilabilsin")
   // Sesli cevap artik dogrudan gonderilmiyor; VoiceConfirm ile onaylatiliyor.
   // Onay bekleyen istek varken sayac DURUYOR (asagidaki isProcessing kosullari).
   const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
-  const sesOnayiAcik = settings?.voiceConfirm !== false;
+  // 26 Eylül 2026 — DÜZELTME: bu ekran ayarları `settings: appSettings`
+  // diye yeniden adlandırarak alıyor; burada `settings` yazmak
+  // ReferenceError ile ekranı çökertiyordu (Ortak Kulüp açılmıyordu).
+  const sesOnayiAcik = appSettings?.voiceConfirm !== false;
   function sesOnayla(ad) {
     const istek = sesOnayIstegi;
     setSesOnayIstegi(null);
@@ -136,15 +143,17 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
     setVoiceError(null);
     if (isRecording) {
       try {
-        const nameHints = round?.validAnswers?.map((p) => p.name) || [];
-        const text = await stopRecording(nameHints);
+        const text = await stopRecording();
         if (text) {
-          const matched = findMatchedPlayer(text, round.validAnswers);
-          const displayName = matched ? matched.name : text;
           const gonder = (a) => { setAnswerInput(a); setHeardText(a); submitAnswer(a); };
           const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
-          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: displayName, tanindi: !!matched, gonder, yaz });
-          else gonder(displayName);
+          // 26 Eylül 2026 (Kerem: "bu isim listede bulunamadı diyor... kopya veriyorsa
+          // kaldırmamız lazım") — onay ekranı artık SADECE duyulanı gösteriyor.
+          // Eskiden duyulan, turun doğru cevaplarıyla eşleştirilip eşleşen tam
+          // ad yazılıyor ya da "listede bulunamadı" uyarısı çıkıyordu; ikisi de
+          // cevabın doğru olup olmadığını göndermeden önce ele veriyordu.
+          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
+          else { const matched = findMatchedPlayer(text, round.validAnswers); gonder(matched ? matched.name : text); }
         } else {
           setVoiceError("Sesi anlayamadım, tekrar dener misin?");
         }
@@ -318,12 +327,13 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
     setVoiceError(null);
     if (isRecording) {
       try {
-        const hints = target === "country" ? Object.keys(COUNTRIES) : Object.keys(CLUB_INFO);
-        const text = await stopRecording(hints);
+        // 26 Eylül 2026: eskiden 24 bin kulüp adının ALFABETİK ilk 30'u
+        // ("'t Gooi", "(wartime)"...) ipucu gidiyordu — işe yaramaz gürültü.
+        const text = await stopRecording([]);
         if (text) {
           const gonder = (a) => { if (target === "country") handleCountrySubmit(a); else handleClubSubmit(a); };
           const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
-          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, tanindi: true, gonder, yaz });
+          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
           else gonder(text);
         } else {
           setVoiceError("Sesi anlayamadım, tekrar dener misin?");
@@ -484,7 +494,10 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
   }
 
   function endRound(winner, text, player) {
-    if (player) unlockPlayer(player.name); // Ansiklopedi: oyun içinde ismi geçen herkes açılmaya aday
+    // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
+    // Eskiden `winner` hiç kontrol edilmiyordu: CPU doğru bildiğinde de
+    // (endRound("cpu", ..., pick)) futbolcu kullanıcının koleksiyonuna ekleniyordu.
+    if (player && winner === "p1") unlockPlayer(player.name);
     setResultText(text);
     setLastWinner(winner);
     setWinningPlayer(player || null);
@@ -668,6 +681,9 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
           <Text style={styles.title}>Bir Ülke Seç</Text>
           <Text style={[styles.answersText, { marginBottom: 12 }]}>Rakip senin seçtiğin ülkeye uygun bir kulüp bulacak</Text>
           <TextInput
+            autoCorrect={false}
+            autoCapitalize="words"
+            spellCheck={false}
             autoFocus
             value={countryInput}
             onChangeText={setCountryInput}
@@ -711,6 +727,9 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
           <Text style={styles.title}>Bir Kulüp Seç</Text>
           <Text style={[styles.answersText, { marginBottom: 12 }]}>Rakip senin seçtiğin kulübe uygun bir ülke bulacak</Text>
           <TextInput
+            autoCorrect={false}
+            autoCapitalize="words"
+            spellCheck={false}
             autoFocus
             value={clubInput}
             onChangeText={setClubInput}
@@ -868,6 +887,9 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
             <>
               <Text style={styles.answeringText}>{answerTimeLeft} sn içinde yaz</Text>
               <TextInput
+                autoCorrect={false}
+                autoCapitalize="words"
+                spellCheck={false}
                 autoFocus
                 value={answerInput}
                 onChangeText={setAnswerInput}

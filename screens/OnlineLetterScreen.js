@@ -118,7 +118,9 @@ export default function OnlineLetterScreen({ room, onExit }) {
     if (!durum.turKazanani) return;
     const kazandimMi = durum.turKazanani === benKimim;
     if (kazandimMi) playCorrect(); else playWrong();
-    if (durum.sonCevap?.ad) unlockPlayer(durum.sonCevap.ad);
+    // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
+    // sonCevap.kimden cevabı kimin verdiğini tutuyor — sadece benimse aç.
+    if (durum.sonCevap?.ad && durum.sonCevap.kimden === benKimim) unlockPlayer(durum.sonCevap.ad);
     recordRound("onlineLetter", kazandimMi);
   }, [faz, durum?.turNo, durum?.turKazanani, benKimim, playCorrect, playWrong, durum?.sonCevap]);
 

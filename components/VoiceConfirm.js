@@ -20,23 +20,23 @@ import { COLORS, SPACING, TYPE } from "../lib/theme";
 // Onay penceresi açıkken sayaç DURUYOR (bkz. ekranlardaki
 // "isProcessing || sesOnayIstegi" koşulu) — yoksa okuma süresi cezaya
 // dönüşürdü ve klavye kullananlara göre haksızlık olurdu.
+//
+// 26 Eylül 2026 (Kerem: "'bu isim listede bulunamadı, istiyorsan düzelt'
+// diyor. eğer bu oyuncuya kopya veriyorsa kaldırmamız lazım") — EVET kopya
+// veriyordu: duyulan isim turun DOĞRU cevaplarıyla karşılaştırılıyordu, doğruysa
+// başlık "BUNU MU DEDİN?" + tam ad, yanlışsa "ŞUNU DUYDUM" + kırmızı uyarı
+// çıkıyordu. Yani oyuncu göndermeden önce cevabının doğru olup olmadığını
+// görüyordu. Artık her durumda aynı başlık ve SADECE duyulan metin var;
+// doğru/yanlış kararı yalnızca "Gönder"den sonra veriliyor.
 export default function VoiceConfirm({ istek, onOnayla, onTekrar, onYaz, onIptal }) {
   if (!istek) return null;
-  const { duyulan, ad, tanindi } = istek;
-  const hamFarkli = duyulan && ad && duyulan.trim().toLowerCase() !== ad.trim().toLowerCase();
+  const ad = istek.ad || istek.duyulan || "";
 
   return (
     <View style={styles.kap}>
-      <Text style={styles.ustYazi}>{tanindi ? "BUNU MU DEDİN?" : "ŞUNU DUYDUM"}</Text>
+      <Text style={styles.ustYazi}>BUNU MU DEDİN?</Text>
 
       <Text style={styles.ad} numberOfLines={2}>{ad}</Text>
-      {hamFarkli ? <Text style={styles.ham}>ses kaydı: "{duyulan}"</Text> : null}
-
-      {!tanindi ? (
-        <Text style={styles.uyari}>
-          Bu isim listede bulunamadı. Yine de göndermek istersen Gönder'e bas, ya da düzelt.
-        </Text>
-      ) : null}
 
       <View style={styles.satir}>
         <SoundPressable style={[styles.btn, styles.btnOnay]} onPress={() => onOnayla(ad)}>
@@ -75,14 +75,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "900",
     textAlign: "center",
-    marginBottom: 2,
-  },
-  ham: { ...TYPE.caption, textAlign: "center", marginBottom: 4 },
-  uyari: {
-    ...TYPE.bodyMuted,
-    color: COLORS.danger,
-    textAlign: "center",
-    marginTop: 4,
     marginBottom: 2,
   },
   satir: { flexDirection: "row", gap: SPACING.sm, marginTop: SPACING.sm },

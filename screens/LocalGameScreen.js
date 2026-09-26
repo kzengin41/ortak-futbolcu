@@ -7,7 +7,7 @@ import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
 import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
 import { useAppSettings } from "../lib/SettingsContext";
-import { generateRound, computeRoundPool, findMatchedPlayer, suggestPlayers, buildSuggestIndex, ANSWER_SECONDS, ROUND_TIME_OPTIONS } from "../lib/gameEngine";
+import { generateRound, computeRoundPool, findMatchedPlayer, suggestPlayers, buildSuggestIndex, ANSWER_SECONDS, ROUND_TIME_OPTIONS, sesIpuclari } from "../lib/gameEngine";
 import { playerWeight, recognitionScore } from "../lib/clubWeights";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -80,14 +80,21 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
   const countPlayer2 = useAudioPlayer(count2Source);
   const countPlayer1 = useAudioPlayer(count1Source);
 
-  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput();
+  // 26 Eylül 2026: Whisper ipuçları artık turun doğru cevapları DEĞİL, turdaki
+  // kulüplerin tanınmış oyuncuları (karışık) — bkz. gameEngine sesIpuclari.
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(
+    () => sesIpuclari(PLAYERS, [round?.teamA, round?.teamB])
+  );
   const [voiceError, setVoiceError] = useState(null);
   // 25 Eylul 2026 (Kerem: "sesli soyledigimde anladigini ekrana getirsin,
   // onaylayayim... kullanmak istemeyenler icin bu ayar kapatilabilsin")
   // Sesli cevap artik dogrudan gonderilmiyor; VoiceConfirm ile onaylatiliyor.
   // Onay bekleyen istek varken sayac DURUYOR (asagidaki isProcessing kosullari).
   const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
-  const sesOnayiAcik = settings?.voiceConfirm !== false;
+  // 26 Eylül 2026 — DÜZELTME: bu ekran ayarları `settings: appSettings`
+  // diye yeniden adlandırarak alıyor; burada `settings` yazmak
+  // ReferenceError ile ekranı çökertiyordu (Ortak Kulüp açılmıyordu).
+  const sesOnayiAcik = appSettings?.voiceConfirm !== false;
   function sesOnayla(ad) {
     const istek = sesOnayIstegi;
     setSesOnayIstegi(null);
@@ -108,15 +115,17 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     setVoiceError(null);
     if (isRecording) {
       try {
-        const nameHints = round?.validAnswers?.map((p) => p.name) || [];
-        const text = await stopRecording(nameHints);
+        const text = await stopRecording();
         if (text) {
-          const matched = findMatchedPlayer(text, round.validAnswers);
-          const displayName = matched ? matched.name : text;
           const gonder = (a) => { setAnswerInput(a); setHeardText(a); submitAnswer(a); };
           const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
-          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: displayName, tanindi: !!matched, gonder, yaz });
-          else gonder(displayName);
+          // 26 Eylül 2026 (Kerem: "bu isim listede bulunamadı diyor... kopya veriyorsa
+          // kaldırmamız lazım") — onay ekranı artık SADECE duyulanı gösteriyor.
+          // Eskiden duyulan, turun doğru cevaplarıyla eşleştirilip eşleşen tam
+          // ad yazılıyor ya da "listede bulunamadı" uyarısı çıkıyordu; ikisi de
+          // cevabın doğru olup olmadığını göndermeden önce ele veriyordu.
+          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
+          else { const matched = findMatchedPlayer(text, round.validAnswers); gonder(matched ? matched.name : text); }
         } else {
           setVoiceError("Sesi anlayamadım, tekrar dener misin?");
         }
@@ -474,6 +483,9 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
         ) : (
           <>
             <TextInput
+              autoCorrect={false}
+              autoCapitalize="words"
+              spellCheck={false}
               autoFocus
               value={answerInput}
               onChangeText={setAnswerInput}
@@ -659,6 +671,9 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           ) : (
             <>
               <TextInput
+                autoCorrect={false}
+                autoCapitalize="words"
+                spellCheck={false}
                 autoFocus
                 value={answerInput}
                 onChangeText={setAnswerInput}

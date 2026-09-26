@@ -41,3 +41,8 @@ PRIVACY_POLICY.md
 *.html
 *_ilerleme.json
 *_raporu.json
+
+# 25 Eylül 2026 — projenin içinde duran ESKİ bir kopya (Nisan 2026). Kendi
+# package.json/app.json/supabase klasörü var; derlemede işi yok ve iki proje
+# kökü bir arada durduğunda autolinking/Metro yanlış kökü seçebiliyor.
+ortak-futbolcu-expo/

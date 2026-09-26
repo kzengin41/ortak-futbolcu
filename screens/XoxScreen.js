@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -10,10 +10,12 @@ import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PoolEmpty from "../components/PoolEmpty";
+import TimerBar from "../components/TimerBar";
+import { recognitionScore } from "../lib/clubWeights";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
-import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
+import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
@@ -33,11 +35,34 @@ import {
 // O sırasının kimin tarafından oynandığı — kural kodu ikisinde de aynı.
 // ============================================================================
 
-const VURGU = MODE_COLORS.hotSeat;
+// 26 Eylül 2026 — ana menüdeki XOX kartı artık kendi rengini (xox) kullanıyor;
+// ekranın içi de aynı renkte olsun ki kart ile ekran tutarlı görünsün.
+const VURGU = MODE_COLORS.xox;
+
+// 26 Eylül 2026 (Kerem: "cevap başına süre sınırı koyalım. oyun başında
+// seçilsin: 20-30-45-60 sn ve özel giriş, minimum 15 sn") — süre HAMLE
+// başına: sıra sana geçtiği an başlıyor (kare seçme + cevap yazma dahil),
+// dolunca sıra rakibe geçiyor. CPU'nun kendi düşünme süresi var, sayaç
+// sadece insan oyuncuları bağlar.
+// ad -> oyuncu nesnesi (maç sonu listesini tanınırlığa göre sıralamak için), ilk ihtiyaçta bir kez.
+let _adHaritasi = null;
+function adIleOyuncu(ad) {
+  if (!_adHaritasi) {
+    _adHaritasi = new Map();
+    for (const p of PLAYERS) if (!_adHaritasi.has(p.name)) _adHaritasi.set(p.name, p);
+  }
+  return _adHaritasi.get(ad) || null;
+}
+
+const SURE_SECENEKLERI = [20, 30, 45, 60];
+const VARSAYILAN_SURE = 30;
+const ASGARI_SURE = 15;
+const AZAMI_SURE = 300;
 
 export default function XoxScreen({ onExit, onExitSilent }) {
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
+  const playCpuCorrect = useCpuCorrectSound();
 
   const [rakipTipi, setRakipTipi] = useState("cpu");   // "cpu" | "iki"
   const [zorluk, setZorluk] = useState(VARSAYILAN_ZORLUK);
@@ -48,6 +73,24 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const [geriBildirim, setGeriBildirim] = useState(null);
   const [cpuDusunuyor, setCpuDusunuyor] = useState(false);
   const [uretilemedi, setUretilemedi] = useState(false);
+  const [sureSecimi, setSureSecimi] = useState(VARSAYILAN_SURE); // sayı ya da "ozel"
+  const [ozelSureMetni, setOzelSureMetni] = useState("");
+  const [kalanSure, setKalanSure] = useState(null);
+  const [cevaplarAcik, setCevaplarAcik] = useState(true);
+  const { width: ekranGenislik } = useWindowDimensions();
+
+  // Özel süre: boş/geçersizse varsayılan, 15'ten küçükse 15, 300'den büyükse 300.
+  const ozelSayi = parseInt(ozelSureMetni, 10);
+  const ozelGecersiz = sureSecimi === "ozel" && (!Number.isFinite(ozelSayi) || ozelSayi < ASGARI_SURE);
+  const cevapSuresi = sureSecimi === "ozel"
+    ? Math.min(AZAMI_SURE, Math.max(ASGARI_SURE, Number.isFinite(ozelSayi) ? ozelSayi : VARSAYILAN_SURE))
+    : sureSecimi;
+
+  // 26 Eylül 2026 (Kerem: "logolar ideal boyutta değil") — logo eskiden sabit
+  // 26 px'ti; 4 sütunluk ızgarada kare ~80 px olduğu için çok küçük kalıyordu.
+  // Artık başlık karesinin genişliğinden hesaplanıyor (~%55), altına ad sığıyor.
+  const baslikKare = (ekranGenislik - SPACING.lg * 2 - 4 * 3) / 4;
+  const logoBoyut = Math.round(Math.max(28, Math.min(58, baslikKare * 0.55)));
 
   const baglam = useMemo(() => ({ veriSeti: PLAYERS }), []);
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
@@ -111,6 +154,52 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     return () => { if (zamanlayiciRef.current) clearTimeout(zamanlayiciRef.current); };
   }, [durum, cpuyaKarsi, zorluk, baglam]);
 
+  // --- Hamle süresi ----------------------------------------------------------
+  const insanSirasi = !!durum && !durum.bitti && (!cpuyaKarsi || durum.sira === X);
+  // Her yeni hamlede (hamleNo değişince) ya da yeni oyunda sayaç baştan başlar.
+  useEffect(() => {
+    if (!basladi || !insanSirasi) { setKalanSure(null); return; }
+    setKalanSure(cevapSuresi);
+  }, [basladi, insanSirasi, durum?.hamleNo, durum?.izgara, cevapSuresi]);
+
+  useEffect(() => {
+    if (kalanSure === null) return;
+    if (kalanSure <= 0) {
+      setKalanSure(null);
+      setGirdi("");
+      setDurum((d) => (d && !d.bitti ? aksiyonuIsle(d, { tip: "sureDoldu" }, baglam) || d : d));
+      return;
+    }
+    const t = setTimeout(() => setKalanSure((s) => (s === null ? null : s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [kalanSure, baglam]);
+
+  // --- Maç sonu: her karenin doğru cevapları ----------------------------------
+  // 26 Eylül 2026 (Kerem: "maç sonunda doğru cevapları görebileceğimiz bir alan")
+  const macSonuCevaplari = useMemo(() => {
+    if (!durum?.bitti) return null;
+    const liste = [];
+    for (let i = 0; i < 9; i++) {
+      const r = Math.floor(i / 3), c = i % 3;
+      // Karelerin cevap adları oyun başında zaten hesaplandı (durum.hucreAdlari);
+      // 46 bin oyuncuyu yeniden taramamak için onları kullanıyoruz.
+      const adlar = durum.hucreAdlari ? durum.hucreAdlari[i] : hucreCevaplari(PLAYERS, durum.izgara, r, c).map((p) => p.name);
+      const oyuncular = adlar
+        .map((ad) => adIleOyuncu(ad))
+        .filter(Boolean)
+        .sort((a, b) => recognitionScore(b) - recognitionScore(a));
+      liste.push({
+        anahtar: `${r}-${c}`,
+        satir: durum.izgara.satirlar[r],
+        sutun: durum.izgara.sutunlar[c],
+        sahip: durum.tahta[i],
+        verilen: durum.hucreSahipleri[`${r}-${c}`]?.ad || null,
+        adlar: oyuncular.map((p) => p.name),
+      });
+    }
+    return liste;
+  }, [durum?.bitti, durum?.izgara, durum?.tahta, durum?.hucreSahipleri]);
+
   // --- Hamle sonrası ses + geri bildirim -----------------------------------
   const islenenHamleRef = useRef(null);
   useEffect(() => {
@@ -120,8 +209,11 @@ export default function XoxScreen({ onExit, onExitSilent }) {
 
     const cpuHamlesi = cpuyaKarsi && h.kimden === O;
     if (h.tip === "dogru") {
-      playCorrect();
-      unlockPlayer(h.ad);
+      if (cpuHamlesi) playCpuCorrect(); else playCorrect();
+      // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
+      // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
+      // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
+      if (!cpuHamlesi) unlockPlayer(h.ad);
       setGeriBildirim({ correct: true, message: cpuHamlesi ? `CPU: ${h.ad}` : h.ad });
     } else if (h.tip === "yanlis") {
       playWrong();
@@ -131,8 +223,14 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       });
     } else if (h.tip === "pas") {
       setGeriBildirim({ correct: false, message: cpuHamlesi ? "CPU pas geçti" : "Pas geçtin" });
+    } else if (h.tip === "sure") {
+      playWrong();
+      setGeriBildirim({
+        correct: false,
+        message: cpuyaKarsi ? "Süre doldu, sıra CPU'da" : `Süre doldu, sıra ${h.kimden === X ? "2." : "1."} oyuncuda`,
+      });
     }
-  }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong]);
+  }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong, playCpuCorrect]);
 
   // --- Maç sonu: istatistik + XP (bir kez) ---------------------------------
   const macIslendiRef = useRef(false);
@@ -183,7 +281,11 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={styles.kap}>
         <BackButton onPress={onExitSilent || onExit} />
-        <ScrollView contentContainerStyle={{ paddingBottom: SPACING.xxl }}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: SPACING.xxl }}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           <Text style={styles.ustBaslik}>FUTBOLCU XOX</Text>
           <Text style={styles.aciklama}>
             Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o
@@ -251,6 +353,43 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               : "Zorluk ızgaradaki kulüpleri ve karelerin ne kadar kolay doldurulacağını belirler."}
           </Text>
 
+          <Text style={styles.blokBaslik}>CEVAP SÜRESİ (HAMLE BAŞINA)</Text>
+          <View style={styles.sureSatir}>
+            {[...SURE_SECENEKLERI, "ozel"].map((s) => {
+              const aktif = sureSecimi === s;
+              return (
+                <SoundPressable
+                  key={String(s)}
+                  style={[styles.sureCip, aktif && styles.secimKartAktif]}
+                  onPress={() => setSureSecimi(s)}
+                >
+                  <Text style={[styles.sureCipText, aktif && styles.secimTextAktif]}>
+                    {s === "ozel" ? "Özel" : `${s} sn`}
+                  </Text>
+                </SoundPressable>
+              );
+            })}
+          </View>
+          {sureSecimi === "ozel" && (
+            <View style={styles.ozelSureSatir}>
+              <TextInput
+                style={styles.ozelSureGirdi}
+                value={ozelSureMetni}
+                onChangeText={(t) => setOzelSureMetni(t.replace(/[^0-9]/g, "").slice(0, 3))}
+                keyboardType="number-pad"
+                placeholder="örn. 25"
+                placeholderTextColor={COLORS.textFaint}
+                maxLength={3}
+              />
+              <Text style={styles.ozelSureBirim}>saniye</Text>
+            </View>
+          )}
+          <Text style={[styles.zorlukNot, ozelGecersiz && { color: COLORS.danger }]}>
+            {ozelGecersiz
+              ? `En az ${ASGARI_SURE} saniye olmalı — ${cevapSuresi} sn ile başlayacak.`
+              : `Sıra sana geçtiğinde ${cevapSuresi} saniyen var. Süre dolarsa sıra rakibe geçer.`}
+          </Text>
+
           <SoundPressable style={styles.anaBtn} onPress={yeniOyun} disabled={hazirlaniyor}>
             {hazirlaniyor ? (
               <ActivityIndicator color={COLORS.accentDark} />
@@ -300,6 +439,15 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               <Text style={[styles.isaretRozetText, durum.sira === O && { color: COLORS.accentDark }]}>O</Text>
             </View>
           </View>
+
+          {kalanSure !== null && (
+            <View style={styles.sureKutu}>
+              <TimerBar current={kalanSure} total={cevapSuresi} />
+              <Text style={[styles.sureYazi, kalanSure <= 5 && { color: COLORS.danger }]}>
+                {kalanSure} sn
+              </Text>
+            </View>
+          )}
 
           {/* --- CEVAP ALANI ---
               13 Eylül 2026 (Kerem: "cevap verme kısmı aşırı aşağıda kalıyor.
@@ -370,7 +518,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               <View style={styles.kose} />
               {durum.izgara.sutunlar.map((k) => (
                 <View key={k} style={styles.baslikHucre}>
-                  <TeamBadge name={k} size={26} />
+                  <TeamBadge name={k} size={logoBoyut} />
                   <Text style={styles.baslikText} numberOfLines={2}>{k}</Text>
                 </View>
               ))}
@@ -379,7 +527,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             {durum.izgara.satirlar.map((satirKulup, r) => (
               <View key={satirKulup} style={styles.izgaraSatir}>
                 <View style={styles.baslikHucre}>
-                  <TeamBadge name={satirKulup} size={26} />
+                  <TeamBadge name={satirKulup} size={logoBoyut} />
                   <Text style={styles.baslikText} numberOfLines={2}>{satirKulup}</Text>
                 </View>
                 {durum.izgara.sutunlar.map((_, c) => {
@@ -438,6 +586,32 @@ export default function XoxScreen({ onExit, onExitSilent }) {
                   <Text style={styles.ikincilBtnText}>Ayarlar</Text>
                 </SoundPressable>
               </View>
+            </View>
+          )}
+
+          {macSonuCevaplari && (
+            <View style={styles.cevaplarKutu}>
+              <SoundPressable style={styles.cevaplarBaslikSatir} onPress={() => setCevaplarAcik((a) => !a)}>
+                <Text style={styles.cevaplarBaslik}>DOĞRU CEVAPLAR</Text>
+                <Ionicons name={cevaplarAcik ? "chevron-up" : "chevron-down"} size={16} color={COLORS.textMuted} />
+              </SoundPressable>
+              {cevaplarAcik && macSonuCevaplari.map((k) => (
+                <View key={k.anahtar} style={styles.cevapKart}>
+                  <View style={styles.cevapKartUst}>
+                    <Text style={styles.cevapKartBaslik} numberOfLines={2}>{k.satir} × {k.sutun}</Text>
+                    {k.sahip ? (
+                      <Text style={[styles.cevapKartSahip, k.sahip === O && { color: COLORS.cta }]}>
+                        {k.sahip === X ? "X" : "O"}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {k.verilen ? <Text style={styles.cevapVerilen}>Verilen: {k.verilen}</Text> : null}
+                  <Text style={styles.cevapListe}>
+                    {k.adlar.slice(0, 8).join(" · ")}
+                    {k.adlar.length > 8 ? `  (+${k.adlar.length - 8} daha)` : ""}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -512,7 +686,7 @@ const styles = StyleSheet.create({
     flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center",
     gap: 2, paddingHorizontal: 2,
   },
-  baslikText: { ...TYPE.caption, fontSize: 9, textAlign: "center", color: COLORS.textMuted },
+  baslikText: { ...TYPE.caption, fontSize: 10, lineHeight: 12, textAlign: "center", color: COLORS.textMuted },
   hucre: {
     flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center",
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
@@ -533,6 +707,38 @@ const styles = StyleSheet.create({
   sonucBaslik: { ...TYPE.h2, textAlign: "center" },
   sonucAlt: { ...TYPE.caption, marginTop: SPACING.xs },
   sonucBtnSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.lg, marginTop: SPACING.md },
+
+  sureSatir: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginBottom: SPACING.sm },
+  sureCip: {
+    flexGrow: 1, minWidth: 56, alignItems: "center",
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
+    borderRadius: RADIUS.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.sm,
+  },
+  sureCipText: { ...TYPE.caption, color: COLORS.text, fontWeight: "800" },
+  ozelSureSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: SPACING.sm },
+  ozelSureGirdi: {
+    width: 90, backgroundColor: COLORS.card, borderColor: COLORS.accent, borderWidth: 2,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    color: COLORS.text, fontSize: 16, fontWeight: "800", textAlign: "center",
+  },
+  ozelSureBirim: { ...TYPE.bodyMuted },
+  sureKutu: { marginTop: -SPACING.sm, marginBottom: SPACING.sm },
+  sureYazi: { ...TYPE.caption, textAlign: "center", marginTop: -6, fontWeight: "800", color: COLORS.text },
+
+  cevaplarKutu: {
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg,
+  },
+  cevaplarBaslikSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: SPACING.xs },
+  cevaplarBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 11 },
+  cevapKart: {
+    borderTopColor: COLORS.cardBorder, borderTopWidth: 1, paddingVertical: SPACING.sm,
+  },
+  cevapKartUst: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  cevapKartBaslik: { ...TYPE.h3, fontSize: 13, flex: 1 },
+  cevapKartSahip: { ...TYPE.h3, fontSize: 14, color: COLORS.accent },
+  cevapVerilen: { ...TYPE.caption, color: COLORS.accent, marginTop: 2, fontWeight: "800" },
+  cevapListe: { ...TYPE.caption, color: COLORS.text, marginTop: 2, lineHeight: 17 },
 
   kullanilanKutu: {
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,

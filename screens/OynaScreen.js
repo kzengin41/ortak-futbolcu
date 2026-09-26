@@ -97,7 +97,9 @@ const MODES = [
     title: "Futbolcu XOX",
     desc: "3x3 ızgara, kareyi almak için ortak futbolcuyu söyle",
     icon: "grid",
-    colorKey: "hotSeat",
+    // 26 Eylül 2026 — eskiden "hotSeat" idi; "Tek Telefon 2 Kişi" ile aynı
+    // renkteydi ve iki kart ayırt edilemiyordu (bkz. lib/theme.js notu).
+    colorKey: "xox",
     id: "xox",
   },
 ];

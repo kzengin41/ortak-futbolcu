@@ -38,3 +38,6 @@ foto_kucultme_raporu.csv
 # İşletim sistemi
 .DS_Store
 Thumbs.db
+
+# Projenin içindeki eski kopya — depoya girmesin
+ortak-futbolcu-expo/

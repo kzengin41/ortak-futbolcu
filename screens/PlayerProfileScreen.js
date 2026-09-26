@@ -143,6 +143,9 @@ export default function PlayerProfileScreen() {
         </View>
 
         <TextInput
+          autoCorrect={false}
+          autoCapitalize="words"
+          spellCheck={false}
           style={styles.searchInput}
           placeholder="Futbolcu ara..."
           placeholderTextColor={COLORS.textMuted}

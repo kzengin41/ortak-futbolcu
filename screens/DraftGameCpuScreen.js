@@ -7,7 +7,7 @@ import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
 import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
 import { useAppSettings } from "../lib/SettingsContext";
-import { generateDraftRound, findMatchedTeam, findMatchedPlayer, suggestPlayers, buildSuggestIndex, buildClubSuggestIndex, suggestClubs, ANSWER_SECONDS, getCpuProfile, ROUND_TIME_OPTIONS } from "../lib/gameEngine";
+import { generateDraftRound, findMatchedTeam, findMatchedPlayer, suggestPlayers, buildSuggestIndex, buildClubSuggestIndex, suggestClubs, ANSWER_SECONDS, getCpuProfile, ROUND_TIME_OPTIONS, sesIpuclari } from "../lib/gameEngine";
 import { playerWeight, recognitionScore } from "../lib/clubWeights";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -88,14 +88,21 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
   const countPlayer2 = useAudioPlayer(count2Source);
   const countPlayer1 = useAudioPlayer(count1Source);
 
-  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput();
+  // 26 Eylül 2026: Whisper ipuçları artık turun doğru cevapları DEĞİL, turdaki
+  // kulüplerin tanınmış oyuncuları (karışık) — bkz. gameEngine sesIpuclari.
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(
+    () => sesIpuclari(PLAYERS, [round?.teamA, round?.teamB])
+  );
   const [voiceError, setVoiceError] = useState(null);
   // 25 Eylul 2026 (Kerem: "sesli soyledigimde anladigini ekrana getirsin,
   // onaylayayim... kullanmak istemeyenler icin bu ayar kapatilabilsin")
   // Sesli cevap artik dogrudan gonderilmiyor; VoiceConfirm ile onaylatiliyor.
   // Onay bekleyen istek varken sayac DURUYOR (asagidaki isProcessing kosullari).
   const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
-  const sesOnayiAcik = settings?.voiceConfirm !== false;
+  // 26 Eylül 2026 — DÜZELTME: bu ekran ayarları `settings: appSettings`
+  // diye yeniden adlandırarak alıyor; burada `settings` yazmak
+  // ReferenceError ile ekranı çökertiyordu (Ortak Kulüp açılmıyordu).
+  const sesOnayiAcik = appSettings?.voiceConfirm !== false;
   function sesOnayla(ad) {
     const istek = sesOnayIstegi;
     setSesOnayIstegi(null);
@@ -117,20 +124,18 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
     setVoiceError(null);
     if (isRecording) {
       try {
-        const nameHints = round?.validAnswers?.map((p) => p.name) || [];
-        const text = await stopRecording(nameHints);
+        const text = await stopRecording();
         if (text) {
           const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
           if (activePhase === "drafting_player") {
             const gonder = (a) => { setAnswerInput(a); handleDraftSubmit(a); };
-            if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, tanindi: true, gonder, yaz });
+            if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
             else gonder(text);
           } else {
-            const matched = findMatchedPlayer(text, round?.validAnswers || []);
-            const displayName = matched ? matched.name : text;
             const gonder = (a) => { setAnswerInput(a); setHeardText(a); submitAnswer(a); };
-            if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: displayName, tanindi: !!matched, gonder, yaz });
-            else gonder(displayName);
+            // 26 Eylül 2026: onay ekranı sadece duyulanı gösterir (doğru/yanlış ele vermesin).
+            if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
+            else { const matched = findMatchedPlayer(text, round?.validAnswers || []); gonder(matched ? matched.name : text); }
           }
         } else {
           setVoiceError("Sesi anlayamadım, tekrar dener misin?");
@@ -377,7 +382,10 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
   }
 
   function endRound(winner, text, player) {
-    if (player) unlockPlayer(player.name); // Ansiklopedi: oyun içinde ismi geçen herkes açılmaya aday
+    // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
+    // Eskiden `winner` hiç kontrol edilmiyordu: CPU doğru bildiğinde de
+    // (endRound("cpu", ..., pick)) futbolcu kullanıcının koleksiyonuna ekleniyordu.
+    if (player && winner === "p1") unlockPlayer(player.name);
     setResultText(text);
     setLastWinner(winner);
     setWinningPlayer(player || null);
@@ -611,6 +619,9 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
           ) : (
             <>
               <TextInput
+                autoCorrect={false}
+                autoCapitalize="words"
+                spellCheck={false}
                 autoFocus
                 value={answerInput}
                 onChangeText={setAnswerInput}
@@ -716,6 +727,9 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
             <>
               <Text style={styles.answeringText}>{answerTimeLeft} sn içinde yaz</Text>
               <TextInput
+                autoCorrect={false}
+                autoCapitalize="words"
+                spellCheck={false}
                 autoFocus
                 value={answerInput}
                 onChangeText={setAnswerInput}

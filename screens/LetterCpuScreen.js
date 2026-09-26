@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
-import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
+import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
 import { useVoiceInput } from "../lib/useVoiceInput";
 import CountdownOverlay from "../components/CountdownOverlay";
 import AnswerFeedback from "../components/AnswerFeedback";
@@ -77,6 +77,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   const [voiceError, setVoiceError] = useState(null);
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
+  const playCpuCorrect = useCpuCorrectSound();
   
   // Fitil (Timer)
   const [timeLeft, setTimeLeft] = useState(15);
@@ -380,7 +381,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       awardPoint(who, `${who === "p1" ? "Doğru Bildin!" : "Rakip Bildi!"}`);
     } else {
       // Zincir modunda sıra diğerine geçer
-      playCorrect();
+      if (who === "cpu") playCpuCorrect(); else playCorrect();
       setChainHistory(prev => [...prev, playerObj]);
       
       const newLetter = normalizeLast(playerObj.name);
@@ -634,6 +635,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
           {phase === "racing" && !feedback && (
             <View style={styles.inputArea}>
               <TextInput
+                autoCorrect={false}
+                autoCapitalize="words"
+                spellCheck={false}
                 style={styles.input}
                 placeholder="Örn: Abdülkerim Bardakcı"
                 placeholderTextColor="#8CA0B3"

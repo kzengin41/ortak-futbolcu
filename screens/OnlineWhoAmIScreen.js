@@ -129,7 +129,10 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     if (durum.turKazanani === 0) return;
     const kazandimMi = durum.turKazanani === benKimim;
     if (kazandimMi) playCorrect(); else playWrong();
-    if (durum.gizliOyuncu?.name) unlockPlayer(durum.gizliOyuncu.name);
+    // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
+    // Eskiden tur kimde biterse bitsin gizli futbolcu açılıyordu — rakip
+    // bilse bile. Artık sadece BU cihazdaki oyuncu bildiyse.
+    if (kazandimMi && durum.gizliOyuncu?.name) unlockPlayer(durum.gizliOyuncu.name);
     recordRound("onlineWhoAmI", kazandimMi);
   }, [faz, durum?.turNo, durum?.turKazanani, benKimim, playCorrect, playWrong, durum?.gizliOyuncu?.name]);
 

@@ -9,10 +9,11 @@ import { useAppSettings } from "../lib/SettingsContext";
 import { LEAGUE_PRESETS } from "../lib/leaguePresets";
 import {
   bildirimDesteginVarMi, hatirlatmaKuruluMu, hatirlatmayiKur, hatirlatmayiKaldir,
-  HATIRLATMA_SAATI,
+  HATIRLATMA_SAATI, expoGodaMiyiz,
 } from "../lib/notifications";
 
-import { COLORS } from "../lib/theme";
+import { COLORS, PALETLER, OZEL_VURGULAR, OZEL_IKINCILLER } from "../lib/theme";
+import { uygulamayiYenile } from "../lib/temaYenile";
 const ITEMS = [
   { key: "background", label: "Arka Plan Sesi", desc: "Durmadan çalan tribün uğultusu" },
   { key: "correctWrong", label: "Doğru / Yanlış Sesi", desc: "Cevap verince çalan tepki sesi" },
@@ -22,6 +23,27 @@ const ITEMS = [
 
 export default function SettingsScreen({ onBack }) {
   const { settings, setSetting } = useAppSettings();
+
+  // 26 Eylül 2026 — tema seçilince uygulamayı kendisi yeniden yüklüyor,
+  // kullanıcıdan "kapat aç" beklemiyoruz. Yazma BİTMEDEN yeniden yüklemek
+  // seçimi kaybettireceği için `await setSetting(...)` şart (bkz.
+  // lib/SettingsContext.js ve lib/temaYenile.js).
+  const [temaYenileniyor, setTemaYenileniyor] = useState(false);
+
+  async function temaSec(id) {
+    if (temaYenileniyor) return;
+    setTemaYenileniyor(true);
+    try {
+      await setSetting("themeId", id);
+      const oldu = await uygulamayiYenile();
+      // oldu === false: expo-updates yok (ya da Expo Go) — ayar kaydedildi,
+      // bir sonraki açılışta görünecek. Aşağıdaki not bunu söylüyor.
+      if (!oldu) setTemaYenileniyor(false);
+      // oldu === true ise uygulama zaten yeniden yükleniyor, state'i bırakıyoruz.
+    } catch (e) {
+      setTemaYenileniyor(false);
+    }
+  }
 
   // 12 Eylül 2026 — akşam hatırlatması. Durumu ayarlardan değil İŞLETİM
   // SİSTEMİNDEN okuyoruz: kullanıcı bildirimleri sistem ayarlarından kapatmış
@@ -82,7 +104,9 @@ export default function SettingsScreen({ onBack }) {
         <Text style={styles.sectionDesc}>
           {bildirimVar
             ? `Günün bulmacasını ve görevlerini kaçırmamak için akşam ${HATIRLATMA_SAATI}:00'de tek bir hatırlatma.`
-            : "Bildirim modülü bu sürümde kurulu değil."}
+            : expoGodaMiyiz()
+              ? "Bildirimler Expo Go'da denenemiyor. Uygulamanın derlenmiş sürümünde (APK) çalışır."
+              : "Bildirim modülü bu sürümde kurulu değil."}
         </Text>
         {bildirimVar && (
           <View style={[styles.row, { marginBottom: 26 }]}>
@@ -99,6 +123,107 @@ export default function SettingsScreen({ onBack }) {
             />
           </View>
         )}
+
+        <Text style={styles.sectionTitle}>Tema</Text>
+        <Text style={styles.sectionDesc}>
+          Tema seçtiğinde uygulama kendini bir saniyede yeniler ve yeni renklerle
+          açılır. Oyun ilerlemen, istatistiklerin ve ayarların korunur.
+        </Text>
+
+        <View style={styles.temaIzgara}>
+          {PALETLER.map((p) => {
+            const secili = (settings.themeId || "cim") === p.id;
+            return (
+              <SoundPressable
+                key={p.id}
+                onPress={() => temaSec(p.id)}
+                style={[styles.temaKart, secili && styles.temaKartAktif]}
+              >
+                {/* Örnek renkler paletin KENDİ değerlerinden geliyor, aktif
+                    temadan değil — böylece her kart gerçek rengini gösteriyor. */}
+                <View style={styles.temaSeritler}>
+                  {/* 26 Eylül 2026 — eşit üç şerit ÖNİZLEMENİN KENDİSİNİ bayrak
+                      gibi gösteriyordu (GS = Belçika, FB = Ukrayna). Artık ilk
+                      renk (zemin) geniş, vurgular dar: bayrak değil, gerçek
+                      arayüzdeki oran — geniş bir yüzey üstünde iki vurgu. */}
+                  {p.onizleme.map((renk, i) => (
+                    <View key={i} style={[styles.temaSerit, { backgroundColor: renk, flex: i === 0 ? 3 : 1 }]} />
+                  ))}
+                </View>
+                <Text style={[styles.temaAd, secili && styles.temaAdAktif]} numberOfLines={1}>{p.ad}</Text>
+                <Text style={styles.temaAciklama} numberOfLines={2}>{p.aciklama}</Text>
+                {secili ? (
+                  <View style={styles.temaTik}>
+                    <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} />
+                  </View>
+                ) : null}
+              </SoundPressable>
+            );
+          })}
+        </View>
+
+        {(settings.themeId === "ozel") && (
+          <View style={styles.ozelKap}>
+            <Text style={styles.rowLabel}>Ana vurgu rengi</Text>
+            <Text style={styles.rowDesc}>Butonlar, aktif durumlar, ikonlar</Text>
+            <View style={styles.renkIzgara}>
+              {OZEL_VURGULAR.map((r) => (
+                <SoundPressable
+                  key={r.renk}
+                  onPress={() => {
+                    setSetting("customAccent", r.renk);
+                    setSetting("customAccentDark", r.koyu);
+                  }}
+                  style={[
+                    styles.renkKutu,
+                    { backgroundColor: r.renk },
+                    settings.customAccent === r.renk && styles.renkKutuAktif,
+                  ]}
+                >
+                  {settings.customAccent === r.renk ? (
+                    <Ionicons name="checkmark" size={16} color={r.koyu} />
+                  ) : null}
+                </SoundPressable>
+              ))}
+            </View>
+
+            <Text style={[styles.rowLabel, { marginTop: 16 }]}>İkincil renk</Text>
+            <Text style={styles.rowDesc}>Öne çıkan butonlar, kupa/ödül vurguları</Text>
+            <View style={styles.renkIzgara}>
+              {OZEL_IKINCILLER.map((r) => (
+                <SoundPressable
+                  key={r.renk}
+                  onPress={() => {
+                    setSetting("customCta", r.renk);
+                    setSetting("customCtaDark", r.koyu);
+                  }}
+                  style={[
+                    styles.renkKutu,
+                    { backgroundColor: r.renk },
+                    settings.customCta === r.renk && styles.renkKutuAktif,
+                  ]}
+                >
+                  {settings.customCta === r.renk ? (
+                    <Ionicons name="checkmark" size={16} color={r.koyu} />
+                  ) : null}
+                </SoundPressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        <View style={styles.temaNot}>
+          <Ionicons
+            name={temaYenileniyor ? "sync-outline" : "information-circle-outline"}
+            size={16}
+            color={temaYenileniyor ? COLORS.accent : COLORS.textMuted}
+          />
+          <Text style={styles.temaNotYazi}>
+            {temaYenileniyor
+              ? "Tema uygulanıyor…"
+              : "Tema seçince uygulama kendini yeniler. Yenilenmezse kapatıp açtığında geçerli olur."}
+          </Text>
+        </View>
 
         <Text style={styles.sectionTitle}>Sesli Cevap</Text>
         <Text style={styles.sectionDesc}>
@@ -182,4 +307,30 @@ const styles = StyleSheet.create({
   rowLabel: { color: COLORS.text, fontWeight: "800", fontSize: 14 },
   rowPercent: { color: COLORS.accent, fontWeight: "800", fontSize: 14 },
   rowDesc: { color: COLORS.textMuted, fontSize: 12, marginTop: 3 },
+
+  // --- tema secici ---
+  temaIzgara: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  temaKart: {
+    width: "48%", backgroundColor: COLORS.card, borderWidth: 1,
+    borderColor: COLORS.cardBorder, borderRadius: 12, padding: 10,
+  },
+  temaKartAktif: { borderColor: COLORS.accent, borderWidth: 2 },
+  temaSeritler: { flexDirection: "row", height: 26, borderRadius: 6, overflow: "hidden", marginBottom: 8 },
+  temaSerit: { flex: 1 },
+  temaAd: { color: COLORS.text, fontWeight: "800", fontSize: 13 },
+  temaAdAktif: { color: COLORS.accent },
+  temaAciklama: { color: COLORS.textMuted, fontSize: 11, marginTop: 2, lineHeight: 15 },
+  temaTik: { position: "absolute", top: 6, right: 6 },
+  ozelKap: {
+    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder,
+    borderRadius: 12, padding: 12, marginBottom: 12,
+  },
+  renkIzgara: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  renkKutu: {
+    width: 38, height: 38, borderRadius: 19, alignItems: "center",
+    justifyContent: "center", borderWidth: 2, borderColor: "transparent",
+  },
+  renkKutuAktif: { borderColor: COLORS.text },
+  temaNot: { flexDirection: "row", gap: 6, alignItems: "center", marginBottom: 26 },
+  temaNotYazi: { color: COLORS.textMuted, fontSize: 12, flex: 1 },
 });

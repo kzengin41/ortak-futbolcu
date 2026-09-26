@@ -20,7 +20,7 @@ import {
 } from "../lib/gameEngine";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
-import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
+import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
 import { useVoiceInput } from "../lib/useVoiceInput";
 import VoiceConfirm from "../components/VoiceConfirm";
 import { useAppSettings } from "../lib/SettingsContext";
@@ -86,6 +86,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
+  const playCpuCorrect = useCpuCorrectSound();
   const countPlayer3 = useAudioPlayer(count3Source);
   const countPlayer2 = useAudioPlayer(count2Source);
   const countPlayer1 = useAudioPlayer(count1Source);
@@ -261,12 +262,15 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
       try {
         const text = await stopRecording([]);
         if (text) {
-          const matched = findMatchedPlayer(text, PLAYERS);
-          const displayName = matched ? matched.name : text;
           const gonder = (a) => { setAnswerInput(a); setHeardText(a); submitAnswer(a); };
           const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
-          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: displayName, tanindi: !!matched, gonder, yaz });
-          else gonder(displayName);
+          // 26 Eylül 2026 (Kerem: "bu isim listede bulunamadı diyor... kopya veriyorsa
+          // kaldırmamız lazım") — onay ekranı artık SADECE duyulanı gösteriyor.
+          // Eskiden duyulan, turun doğru cevaplarıyla eşleştirilip eşleşen tam
+          // ad yazılıyor ya da "listede bulunamadı" uyarısı çıkıyordu; ikisi de
+          // cevabın doğru olup olmadığını göndermeden önce ele veriyordu.
+          if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
+          else { const matched = findMatchedPlayer(text, PLAYERS); gonder(matched ? matched.name : text); }
         } else {
           setVoiceError("Sesi anlayamadım, tekrar dener misin?");
         }
@@ -292,9 +296,15 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     if (who === "p1") setScoreP1((s) => s + gained);
     else setScoreP2((s) => s + gained);
     if (gained > 0) {
-      if (player) unlockPlayer(player.name);
-      recordRound(vsCpu ? "fiveClubsCpu" : "fiveClubs", true);
-      playCorrect();
+      // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
+      // CPU'ya karşı oyunda CPU "p2" olarak oynuyor. Eskiden CPU'nun bulduğu
+      // futbolcu koleksiyona ekleniyor VE CPU'nun başarısı kullanıcının
+      // istatistiğine GALİBİYET olarak yazılıyordu. İkisi de düzeltildi.
+      // (Aynı telefonda iki kişi oynarken ikisi de gerçek insan, ikisi de sayılır.)
+      const cpuHamlesi = vsCpu && who === "p2";
+      if (player && !cpuHamlesi) unlockPlayer(player.name);
+      if (!cpuHamlesi) recordRound(vsCpu ? "fiveClubsCpu" : "fiveClubs", true);
+      if (cpuHamlesi) playCpuCorrect(); else playCorrect();
       setFeedback({ correct: true, player });
     } else {
       recordRound(vsCpu ? "fiveClubsCpu" : "fiveClubs", false);
@@ -553,6 +563,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         ) : (
           <>
             <TextInput
+              autoCorrect={false}
+              autoCapitalize="words"
+              spellCheck={false}
               autoFocus
               value={answerInput}
               onChangeText={setAnswerInput}

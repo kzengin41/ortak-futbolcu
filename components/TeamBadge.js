@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { Image } from "expo-image";
-import { canonicalClub } from "../lib/clubAliases";
+import { kulupGrubu } from "../lib/clubAliases";
 import { clubLogo } from "../lib/clubLogos";
 
 // Gerçek kulüp amblemleri telifli/markalı görsellerdir, lisanssız kullanmak
@@ -262,8 +262,10 @@ export default function TeamBadge({ name, size = 56 }) {
     );
   }
 
-  const kanonik = canonicalClub(name);
-  const known = KNOWN_COLORS[name] || KNOWN_COLORS[kanonik];
+  // 26 Eylül 2026: kulüp varyantları birleşti — renk, grubun HERHANGİ bir
+  // yazımına kayıtlıysa bulunur ("MKE Ankaragücü" rengi "Ankaragücü"ne de gelir).
+  let known = KNOWN_COLORS[name];
+  if (!known) for (const ad of kulupGrubu(name)) { known = KNOWN_COLORS[ad]; if (known) break; }
   const bg = known ? known[0] : colorForName(name);
   const fg = known ? known[1] : "#FFFFFF";
 

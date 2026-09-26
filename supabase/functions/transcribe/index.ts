@@ -36,8 +36,9 @@ Deno.serve(async (req) => {
     // İstemci bu turdaki geçerli oyuncu isimlerini gönderirse Whisper'a
     // bağlam ipucu olarak veriyoruz. Whisper'ın prompt'u önceki konuşma metni
     // gibi davrandığından, listede geçen isimler öncelikli olarak tanınıyor.
-    // Bu "hile" değil — kullanıcı yanlış bir isim söylerse findMatchedPlayer
-    // istemci tarafında yine de eşleştirmeyecek.
+    // 26 Eylül 2026: istemci artık SADECE doğru cevapları değil, turdaki
+    // kulüplerin tanınmış oyuncularını karışık gönderiyor (bkz. gameEngine
+    // sesIpuclari) — ipucu listesi cevabı ele vermesin diye.
     const namesHint = incomingForm.get("names"); // "Ronaldo, Messi, Olaitan Ojo, ..."
     const prompt = namesHint
       ? `Futbolcu isimleri: ${namesHint}.`
@@ -82,6 +83,10 @@ Deno.serve(async (req) => {
     openaiForm.append("language", "tr");
     openaiForm.append("prompt", prompt);
 
+    // 26 Eylül 2026: OpenAI'nin ne kadar sürdüğünü istemciye bildiriyoruz
+    // (geliştirme modunda terminalde "[ses] ... sunucu-openai Xms" yazar) —
+    // yavaşlık yüklemede mi Whisper'da mı, bunu ayırt etmek için.
+    const openaiBasla = Date.now();
     const openaiRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -97,7 +102,7 @@ Deno.serve(async (req) => {
     }
 
     const data = await openaiRes.json();
-    return new Response(JSON.stringify({ text: data.text || "" }), {
+    return new Response(JSON.stringify({ text: data.text || "", sure: Date.now() - openaiBasla }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

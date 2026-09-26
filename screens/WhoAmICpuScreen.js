@@ -320,7 +320,7 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
       if (!text) { setVoiceError("Sesi anlayamadim, tekrar dener misin?"); return; }
       const gonder = (a) => checkAnswer(a);
       const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
-      if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, tanindi: true, gonder, yaz });
+      if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
       else gonder(text);
     } catch (e) {
       setVoiceError(e.message || "Ses tanima basarisiz oldu");
@@ -570,6 +570,9 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
             {inputMode === "keyboard" ? (
               <>
                 <TextInput
+                  autoCorrect={false}
+                  autoCapitalize="words"
+                  spellCheck={false}
                   style={styles.input}
                   placeholder="Futbolcunun Adı..."
                   placeholderTextColor={COLORS.textMuted}
