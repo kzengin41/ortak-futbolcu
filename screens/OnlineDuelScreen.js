@@ -18,22 +18,25 @@ export default function OnlineDuelScreen({ room, onExit }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data: clubs } = await supabase.from("clubs").select("id, name");
-      if (mounted && clubs) {
-        const map = {};
-        clubs.forEach((c) => (map[c.id] = c.name));
-        setClubsMap(map);
-      }
       const { data: r } = await supabase.from("rooms").select("*").eq("id", room.id).single();
       if (mounted) setRoomRow(r);
-      const { data: rd } = await supabase
+      const { data: turlar } = await supabase
         .from("rounds")
         .select("*")
         .eq("room_id", room.id)
         .order("round_number", { ascending: false })
-        .limit(1)
-        .single();
-      if (mounted) setRoundRow(rd);
+        .limit(1);
+      const rd = turlar && turlar[0];
+      if (mounted && rd) setRoundRow(rd);
+      // 27 Eylül 2026: henüz tur yoksa ilk turu odayı kuran (1) üretir; 2 numara
+      // realtime ile gelen turu bekler. (Eskiden sadece kodla katılan üretiyordu.)
+      if (mounted && !rd && myPlayer === 1) {
+        await supabase.rpc("generate_round", {
+          p_room_id: room.id,
+          p_round_number: 1,
+          p_allowed_club_ids: r?.allowed_club_ids ?? null,
+        });
+      }
     })();
 
     channelRef.current = supabase
@@ -55,6 +58,24 @@ export default function OnlineDuelScreen({ room, onExit }) {
       channelRef.current?.unsubscribe();
     };
   }, [room.id]);
+
+  // Kulüp adları: eskiden bütün "clubs" tablosu çekiliyordu ama Supabase en
+  // fazla 1000 satır döndürdüğü için çoğu kulüp "..." görünüyordu. Artık
+  // sadece bu turun iki kulübü soruluyor.
+  useEffect(() => {
+    const ids = [roundRow?.club_a_id, roundRow?.club_b_id].filter((x) => x != null && !clubsMap[x]);
+    if (!ids.length) return;
+    let iptal = false;
+    supabase.from("clubs").select("id, name").in("id", ids).then(({ data }) => {
+      if (iptal || !data) return;
+      setClubsMap((m) => {
+        const yeni = { ...m };
+        data.forEach((c) => (yeni[c.id] = c.name));
+        return yeni;
+      });
+    });
+    return () => { iptal = true; };
+  }, [roundRow?.club_a_id, roundRow?.club_b_id]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);

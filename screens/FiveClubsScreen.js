@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { MODE_COLORS } from "../lib/theme";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -407,64 +409,51 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   }
 
   if (!started) {
+    // 27 Eylül 2026 — ortak kurulum ekranı (bkz. components/ModKurulum.js).
+    // Bu modun zorluğu kulüp HAVUZU (Normal / Zor / Çok Zor) olduğu için
+    // kendi 3 kademesi kullanılıyor; görünüm diğer modlarla aynı.
     return (
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingVertical: 24, paddingBottom: 60 }}>
-        <Text style={styles.title}>5 Kulüp</Text>
-        <Text style={styles.subtitle}>
-          {vsCpu
-            ? "Ekranda 5 büyük kulüp çıkar. Sen ve CPU sırayla birer futbolcu söylersiniz; söylediğiniz futbolcu bu kulüplerin kaçında oynadıysa o kadar puan kazanırsınız (en az 2 kulüpte oynamış olmalı). 3 tur oynanır, her turda kulüpler değişir — en çok puan toplayan kazanır!"
-            : "Ekranda 5 büyük kulüp çıkar. Sırayla ikiniz de bir futbolcu söylersiniz; söylediğiniz futbolcu bu kulüplerin kaçında oynadıysa o kadar puan kazanırsınız (en az 2 kulüpte oynamış olmalı). 3 tur oynanır, her turda kulüpler değişir — en çok puan toplayan kazanır!"}
-        </Text>
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Zorluk</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-          {Object.entries(FIVE_CLUB_DIFFICULTIES).map(([key, d]) => (
-            <Pressable
-              key={key}
-              onPress={() => setDifficulty(key)}
-              style={[styles.diffBtn, { flex: 1 }, difficulty === key && styles.diffBtnActive]}
-            >
-              <Text style={[styles.diffBtnText, difficulty === key && styles.diffBtnTextActive]}>{d.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Tur Süresi</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-          {FIVE_CLUB_TIME_OPTIONS.map((s) => (
-            <Pressable
-              key={s}
-              onPress={() => setRoundSeconds(s)}
-              style={[styles.diffBtn, { flex: 1 }, roundSeconds === s && styles.diffBtnActive]}
-            >
-              <Text style={[styles.diffBtnText, roundSeconds === s && styles.diffBtnTextActive]}>{s} sn</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Cevap Yöntemi</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-          <SoundPressable
-            onPress={() => setInputMode("keyboard")}
-            style={[styles.diffBtn, { flex: 1 }, inputMode === "keyboard" && styles.diffBtnActive]}
-          >
-            <Text style={[styles.diffBtnText, inputMode === "keyboard" && styles.diffBtnTextActive]}>⌨️ Klavye</Text>
-          </SoundPressable>
-          <SoundPressable
-            onPress={() => setInputMode("voice")}
-            style={[styles.diffBtn, { flex: 1 }, inputMode === "voice" && styles.diffBtnActive]}
-          >
-            <Text style={[styles.diffBtnText, inputMode === "voice" && styles.diffBtnTextActive]}>Mikrofon</Text>
-          </SoundPressable>
-        </View>
-
-        <SoundPressable style={styles.primaryBtn} onPress={() => setStarted(true)}>
-          <Text style={styles.primaryBtnText}>Başla</Text>
-        </SoundPressable>
-        <SoundPressable onPress={onExit} style={{ marginTop: 16, marginBottom: 24 }}>
-          <Text style={styles.backLink}>Menüye dön</Text>
-        </SoundPressable>
-      </ScrollView>
+      <ModKurulum
+        baslik={vsCpu ? "5 Kulüp — CPU'ya Karşı" : "5 Kulüp — 2 Kişi"}
+        aciklama={vsCpu
+          ? "Ekranda 5 büyük kulüp çıkar. Sen ve CPU sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."
+          : "Ekranda 5 büyük kulüp çıkar. Sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."}
+        vurgu={MODE_COLORS.fiveClubs}
+        onGeri={onExitSilent || onExit}
+        onBasla={() => setStarted(true)}
+      >
+        <KurulumBolum baslik="ZORLUK">
+          <ZorlukSecici
+            seviyeler={[
+              { id: "normal", etiket: "Normal", aciklama: "Sadece en büyük kulüpler" + (vsCpu ? " · CPU sık pas geçer" : "") },
+              { id: "zor", etiket: "Zor", aciklama: "Şampiyonlar Ligi klasikleri de girer" + (vsCpu ? " · CPU daha isabetli" : "") },
+              { id: "cokZor", etiket: "Çok Zor", aciklama: "54 kulüplük tam havuz" + (vsCpu ? " · CPU en iyi cevabı arar" : "") },
+            ]}
+            secili={difficulty}
+            onSec={setDifficulty}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP SÜRESİ">
+          <SureSecici
+            secenekler={FIVE_CLUB_TIME_OPTIONS}
+            deger={roundSeconds}
+            onDegis={setRoundSeconds}
+            asgari={15}
+            azami={180}
+            aciklama="Her oyuncunun kendi cevabı için süresi."
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+          <SecimCipleri
+            secenekler={[
+              { deger: "keyboard", etiket: "Klavye", ikon: "keypad" },
+              { deger: "voice", etiket: "Mikrofon", ikon: "mic" },
+            ]}
+            secili={inputMode}
+            onSec={setInputMode}
+          />
+        </KurulumBolum>
+      </ModKurulum>
     );
   }
 

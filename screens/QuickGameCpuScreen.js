@@ -1,4 +1,6 @@
 ﻿import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi, zorlukMotoru, VARSAYILAN_ZORLUK_ID } from "../components/ModKurulum";
+import { MODE_COLORS } from "../lib/theme";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -27,8 +29,9 @@ const count1Source = require("../assets/sounds/count-1.mp3");
 
 const CHOICE_SECONDS = 6;
 
-export default function QuickGameCpuScreen({ onExit }) {
-  const [difficulty, setDifficulty] = useState(5);
+export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
+  const [zorlukId, setZorlukId] = useState(VARSAYILAN_ZORLUK_ID);
+  const difficulty = zorlukMotoru(zorlukId); // 1-10 motor ölçeği (tur havuzu + CPU)
   const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
   const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
   const appliedDefaultPresetRef = useRef(false);
@@ -44,6 +47,7 @@ export default function QuickGameCpuScreen({ onExit }) {
   const [usedPairs, setUsedPairs] = useState(new Set());
   const [round, setRound] = useState(null);
   const [phase, setPhase] = useState("countdown"); // countdown | choosing | feedback
+  const [secimSuresi, setSecimSuresi] = useState(CHOICE_SECONDS);
   const [choiceTimeLeft, setChoiceTimeLeft] = useState(CHOICE_SECONDS);
   const [selected, setSelected] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -89,9 +93,9 @@ export default function QuickGameCpuScreen({ onExit }) {
     setPhase("countdown");
     setSelected(null);
     setFeedback(null);
-    setChoiceTimeLeft(CHOICE_SECONDS);
+    setChoiceTimeLeft(secimSuresi);
     setRoundCount((c) => c + 1);
-  }, [pool, allowedClubs]);
+  }, [pool, allowedClubs, secimSuresi]);
 
   useEffect(() => {
     if (started) startNewRound();
@@ -133,39 +137,33 @@ export default function QuickGameCpuScreen({ onExit }) {
   }
 
   if (!started) {
+    // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı
+    // olmalı. her moddaki mimari dizayn aynı olmalı.") — kurulum ekranı artık
+    // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingVertical: 24, paddingBottom: 60 }}>
-        <BackButton text="Menüye Dön" onPress={onExit} />
-        <Text style={styles.title}>Hızlı Oyun</Text>
-        <Text style={styles.subtitle}>
-          3-2-1 sonrası 4 seçenek çıkar. Doğru +1, yanlış -1. Cevap verince hemen sıradaki tur başlar.
-        </Text>
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Zorluk Seviyesi: {difficulty} / 10</Text>
-        <Text style={{ color: "#8CA0B3", textAlign: "center", fontSize: 12, marginBottom: 12, marginTop: 4 }}>
-          {difficulty <= 3 ? "Sadece efsaneler ve mega yıldızlar" : difficulty >= 8 ? "Çok zor (Obskür oyuncular da çıkar)" : "Orta seviye (Büyük lig oyuncuları)"}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 10 }}>
-                <SoundPressable
-                  onPress={() => setDifficulty(Math.max(1, difficulty - 1))}
-                  style={{ backgroundColor: "#28394B", paddingHorizontal: 18, paddingVertical: 6, borderRadius: 10 }}>
-                  <Text style={{ color: "#F3F7FA", fontSize: 22, fontWeight: "bold" }}>−</Text>
-                </SoundPressable>
-                <View style={{ flex: 1, height: 6, backgroundColor: "#28394B", borderRadius: 3, overflow: "hidden" }}>
-                  <View style={{ width: `${((difficulty - 1) / (10 - 1)) * 100}%`, height: "100%", backgroundColor: "#7CFF5C", borderRadius: 3 }} />
-                </View>
-                <SoundPressable
-                  onPress={() => setDifficulty(Math.min(10, difficulty + 1))}
-                  style={{ backgroundColor: "#28394B", paddingHorizontal: 18, paddingVertical: 6, borderRadius: 10 }}>
-                  <Text style={{ color: "#F3F7FA", fontSize: 22, fontWeight: "bold" }}>+</Text>
-                </SoundPressable>
-              </View>
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Lig / Kapsam</Text>
-        <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.leagueSelectBtn}>
-          <Text style={styles.leagueSelectText}>{presetLabel}</Text>
-          <Text style={styles.leagueSelectChevron}>Değiştir ›</Text>
-        </SoundPressable>
+      <ModKurulum
+        baslik="Hızlı Antrenman"
+        aciklama="3-2-1 sonrası 4 seçenek çıkar. Doğru +1, yanlış -1. Cevap verince hemen sıradaki tur başlar."
+        vurgu={MODE_COLORS.training}
+        onGeri={onExitSilent || onExit}
+        onBasla={() => setStarted(true)}
+      >
+        <KurulumBolum baslik="ZORLUK">
+          <ZorlukSecici secili={zorlukId} onSec={setZorlukId} />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP SÜRESİ">
+          <SureSecici
+            secenekler={[4, 6, 8, 10]}
+            deger={secimSuresi}
+            onDegis={setSecimSuresi}
+            asgari={3}
+            azami={30}
+            aciklama="Seçenekler göründükten sonra karar vermek için süre."
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="LİG / KAPSAM">
+          <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
+        </KurulumBolum>
         <LeagueSelectModal
           visible={leagueModalOpen}
           currentPreset={presetSelection.clubs ? null : presetSelection.id}
@@ -175,11 +173,7 @@ export default function QuickGameCpuScreen({ onExit }) {
           }}
           onClose={() => setLeagueModalOpen(false)}
         />
-
-        <SoundPressable style={styles.primaryBtn} onPress={() => setStarted(true)}>
-          <Text style={styles.primaryBtnText}>Başla</Text>
-        </SoundPressable>
-      </ScrollView>
+      </ModKurulum>
     );
   }
 
@@ -270,7 +264,7 @@ export default function QuickGameCpuScreen({ onExit }) {
 
       {phase === "choosing" && (
         <View style={{ marginTop: 14 }}>
-          <TimerBar current={choiceTimeLeft} total={CHOICE_SECONDS} />
+          <TimerBar current={choiceTimeLeft} total={secimSuresi} />
         </View>
       )}
 

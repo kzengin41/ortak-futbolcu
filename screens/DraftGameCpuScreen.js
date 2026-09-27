@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi, zorlukMotoru, VARSAYILAN_ZORLUK_ID } from "../components/ModKurulum";
+import { MODE_COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -19,7 +21,7 @@ import ReportModal from "../components/ReportModal";
 import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
-import PlayerPhoto, { prefetchPlayerPhoto } from "../components/PlayerPhoto";
+import PlayerPhoto, { oncedenYukle } from "../components/PlayerPhoto";
 import LeagueSelectModal from "../components/LeagueSelectModal";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
@@ -45,7 +47,8 @@ const WIN_LIMIT_OPTIONS = [
 ];
 
 export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
-  const [difficulty, setDifficulty] = useState(5);
+  const [zorlukId, setZorlukId] = useState(VARSAYILAN_ZORLUK_ID);
+  const difficulty = zorlukMotoru(zorlukId); // 1-10 motor ölçeği (tur havuzu + CPU)
   const [roundSeconds, setRoundSeconds] = useState(ROUND_TIME_OPTIONS[1]);
   const [targetScore, setTargetScore] = useState(5);
   const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
@@ -194,7 +197,7 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
             setRound(newRound);
             setPhase("racing");
             setAnswerTimeLeft(ANSWER_SECONDS);
-            if (newRound.validAnswers) newRound.validAnswers.forEach(p => prefetchPlayerPhoto(p.name));
+            if (newRound.validAnswers) oncedenYukle(newRound.validAnswers);
           } else {
             setResultText("Bu takımla eşleşecek uygun takım yok!");
             setPhase("drafting_player");
@@ -422,57 +425,50 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
   }
 
   if (!started) {
+    // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı
+    // olmalı. her moddaki mimari dizayn aynı olmalı.") — kurulum ekranı artık
+    // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingVertical: 24, paddingBottom: 60 }}>
-        <Text style={styles.title}>Zorluk Seviyesi: {difficulty} / 10</Text>
-        <Text style={{ color: "#8CA0B3", textAlign: "center", fontSize: 12, marginBottom: 12, marginTop: 4 }}>
-          {difficulty <= 3 ? "Sadece efsaneler ve mega yıldızlar" : difficulty >= 8 ? "Çok zor (Obskür oyuncular da çıkar)" : "Orta seviye (Büyük lig oyuncuları)"}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 10 }}>
-                <SoundPressable
-                  onPress={() => setDifficulty(Math.max(1, difficulty - 1))}
-                  style={{ backgroundColor: "#28394B", paddingHorizontal: 18, paddingVertical: 6, borderRadius: 10 }}>
-                  <Text style={{ color: "#F3F7FA", fontSize: 22, fontWeight: "bold" }}>−</Text>
-                </SoundPressable>
-                <View style={{ flex: 1, height: 6, backgroundColor: "#28394B", borderRadius: 3, overflow: "hidden" }}>
-                  <View style={{ width: `${((difficulty - 1) / (10 - 1)) * 100}%`, height: "100%", backgroundColor: "#7CFF5C", borderRadius: 3 }} />
-                </View>
-                <SoundPressable
-                  onPress={() => setDifficulty(Math.min(10, difficulty + 1))}
-                  style={{ backgroundColor: "#28394B", paddingHorizontal: 18, paddingVertical: 6, borderRadius: 10 }}>
-                  <Text style={{ color: "#F3F7FA", fontSize: 22, fontWeight: "bold" }}>+</Text>
-                </SoundPressable>
-              </View>
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Tur Süresi</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-          {ROUND_TIME_OPTIONS.map((s) => (
-            <Pressable
-              key={s}
-              onPress={() => setRoundSeconds(s)}
-              style={[styles.diffBtn, { flex: 1 }, roundSeconds === s && styles.diffBtnActive]}
-            >
-              <Text style={[styles.diffBtnText, roundSeconds === s && styles.diffBtnTextActive]}>{s} sn</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Galibiyet Sınırı</Text>
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          {WIN_LIMIT_OPTIONS.map((opt) => (
-            <Pressable
-              key={opt.label}
-              onPress={() => setTargetScore(opt.value)}
-              style={[styles.diffBtn, { flexBasis: "22%", flexGrow: 1 }, targetScore === opt.value && styles.diffBtnActive]}
-            >
-              <Text style={[styles.diffBtnText, targetScore === opt.value && styles.diffBtnTextActive]}>{opt.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Lig / Kapsam</Text>
-        <Pressable onPress={() => setLeagueModalOpen(true)} style={styles.leagueSelectBtn}>
-          <Text style={styles.leagueSelectText}>{presetLabel}</Text>
-          <Text style={styles.leagueSelectChevron}>Değiştir ›</Text>
-        </Pressable>
+      <ModKurulum
+        baslik="Takımı Sen Seç"
+        aciklama="Bir kulüp seçersin, CPU ikinci kulübü verir. İkisinde de oynamış futbolcuyu bul."
+        vurgu={MODE_COLORS.teamTeam}
+        onGeri={onExitSilent || onExit}
+        onBasla={() => { setStarted(true); startNewRound(); }}
+      >
+        <KurulumBolum baslik="ZORLUK">
+          <ZorlukSecici secili={zorlukId} onSec={setZorlukId} />
+        </KurulumBolum>
+        <KurulumBolum baslik="TUR SÜRESİ">
+          <SureSecici
+            secenekler={[8, 10, 15, 20]}
+            deger={roundSeconds}
+            onDegis={setRoundSeconds}
+            asgari={5}
+            azami={60}
+            aciklama="Takımlar göründükten sonra zile basmak için süre. Zile basınca cevap için ayrıca 12 sn var."
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="GALİBİYET SINIRI">
+          <SecimCipleri
+            secenekler={WIN_LIMIT_OPTIONS.map((o) => ({ deger: o.value, etiket: o.label }))}
+            secili={targetScore}
+            onSec={setTargetScore}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+          <SecimCipleri
+            secenekler={[
+              { deger: "keyboard", etiket: "Klavye", ikon: "keypad" },
+              { deger: "voice", etiket: "Mikrofon", ikon: "mic" },
+            ]}
+            secili={inputMode}
+            onSec={setInputMode}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="LİG / KAPSAM">
+          <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
+        </KurulumBolum>
         <LeagueSelectModal
           visible={leagueModalOpen}
           currentPreset={presetSelection.clubs ? null : presetSelection.id}
@@ -482,28 +478,7 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
           }}
           onClose={() => setLeagueModalOpen(false)}
         />
-
-        <Text style={[styles.title, { fontSize: 16, marginTop: 24 }]}>Cevap Yöntemi</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-          <SoundPressable
-            onPress={() => setInputMode("keyboard")}
-            style={[styles.diffBtn, { flex: 1 }, inputMode === "keyboard" && styles.diffBtnActive]}
-          >
-            <Text style={[styles.diffBtnText, inputMode === "keyboard" && styles.diffBtnTextActive]}>⌨️ Klavye</Text>
-          </SoundPressable>
-          <SoundPressable
-            onPress={() => setInputMode("voice")}
-            style={[styles.diffBtn, { flex: 1 }, inputMode === "voice" && styles.diffBtnActive]}
-          >
-            <Text style={[styles.diffBtnText, inputMode === "voice" && styles.diffBtnTextActive]}>Mikrofon</Text>
-          </SoundPressable>
-        </View>
-
-        <SoundPressable style={styles.primaryBtn} onPress={() => { setStarted(true); startNewRound(); }}>
-          <Text style={styles.primaryBtnText}>Başla</Text>
-        </SoundPressable>
-        <BackButton text="Menüye Dön" onPress={onExit} style={{ alignSelf: "center", marginVertical: 16 }} />
-      </ScrollView>
+      </ModKurulum>
     );
   }
 

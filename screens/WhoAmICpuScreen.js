@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Animated, Image, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
@@ -10,7 +10,8 @@ import { useVoiceInput } from "../lib/useVoiceInput";
 import VoiceConfirm from "../components/VoiceConfirm";
 import { useAppSettings } from "../lib/SettingsContext";
 import AnswerFeedback from "../components/AnswerFeedback";
-import PlayerPhoto from "../components/PlayerPhoto";
+import PlayerPhoto, { prefetchPlayerPhoto } from "../components/PlayerPhoto";
+import { Image as HizliResim } from "expo-image";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import { calculatePlayerPopularity } from "../lib/clubWeights";
@@ -23,10 +24,15 @@ import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 
 import PoolEmpty from "../components/PoolEmpty";
+import TimerBar from "../components/TimerBar";
+import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import { countryTr } from "../lib/countryNamesTr";
 import { positionTr } from "../lib/positionNamesTr";
 let PLAYER_HINTS = {};
 try { PLAYER_HINTS = require("../lib/playerHints.json"); } catch (e) {}
+
+// 27 Eylül 2026: kurulumdaki zorluk = başlangıç seviyesi.
+const BASLANGIC_SEVIYESI = { 1: 1, 2: 4, 3: 9, 4: 16, 5: 21 };
 
 // Zorluk Eğrisi (Difficulty curve mapping)
 // Seviyeye göre oyuncu popülerlik sıralamasındaki havuzu belirler
@@ -122,7 +128,14 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
     if (istek && istek.yaz) istek.yaz(ad);
   }
   const [feedback, setFeedback] = useState(null);
-  const [phase, setPhase] = useState("playing"); // playing, roundEnd, gameOver
+  // 27 Eylül 2026: "setup" eklendi — eskiden mod açılır açılmaz oyun başlıyordu,
+  // zorluk ve süre seçilemiyordu (Kerem: "her mod için zorluk ayarı olmalı.
+  // süre ayarı olmalı").
+  const [phase, setPhase] = useState("setup"); // setup, playing, roundEnd, gameOver
+  const [zorlukId, setZorlukId] = useState(1);
+  const [soruSuresi, setSoruSuresi] = useState(null); // saniye | null (süresiz)
+  const [kalanSure, setKalanSure] = useState(null);
+  const baslangicSeviyesi = BASLANGIC_SEVIYESI[zorlukId] || 1;
 
   const scrollRef = useRef(null);
   // Silüet ipucu satın alındıysa ama resim yine de yüklenemezse kullanıcıya
@@ -163,10 +176,12 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
       .sort((a, b) => calculatePlayerPopularity(b) - calculatePlayerPopularity(a));
   }, [guvenilirFotoVar]);
 
-  const startNewRound = useCallback(() => {
+  // seviye parametresi: setLevel ile aynı anda çağrıldığında eski (bayat)
+  // seviyeyi kullanmasın diye yeni seviye doğrudan veriliyor.
+  const startNewRound = useCallback((seviye) => {
     setPhotoBroken(false);   // yeni tur, yeni fotoğraf
     let nextPlayer = null;
-    const [minIdx, maxIdx] = getPoolRangeForLevel(level);
+    const [minIdx, maxIdx] = getPoolRangeForLevel(typeof seviye === "number" ? seviye : level);
     
     // Attempt to pick a valid player — sortedPlayers zaten sadece fotoğrafı
     // olan (bkz. yukarıdaki useMemo) ve 2+ kulüpte oynamış oyuncuları içeriyor.
@@ -195,6 +210,9 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
     }
     
     setPlayer(nextPlayer);
+    // 27 Eylül 2026: fotoğraf ipucu satın alınınca beklememek için tur
+    // başında arkada indiriliyor.
+    prefetchPlayerPhoto(nextPlayer.name);
     setUsedNames(prev => { const n = new Set(prev); n.add(nextPlayer.name); return n; });
     
     setRoundScore(10000);
@@ -202,11 +220,38 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
     setAnswerInput("");
     setPhase("playing");
     setFeedback(null);
-  }, [level, usedNames, sortedPlayers]);
+    setKalanSure(soruSuresi);
+  }, [level, usedNames, sortedPlayers, soruSuresi]);
 
+  function oyunuBaslat() {
+    setLevel(baslangicSeviyesi);
+    setTotalScore(0);
+    setLives(3);
+    setCombo(0);
+    setJokers({ skip: true, lastClub: true });
+    setUsedNames(new Set());
+    startNewRound(baslangicSeviyesi);
+  }
+
+  // Soru süresi (seçildiyse). Ses işlenirken / onay penceresi açıkken durur.
   useEffect(() => {
-    startNewRound();
-  }, []);
+    if (phase !== "playing" || kalanSure === null) return;
+    if (isProcessing || sesOnayIstegi) return;
+    if (kalanSure <= 0) {
+      setKalanSure(null);
+      const kalanCan = lives - 1;
+      setLives(kalanCan);
+      setCombo(0);
+      recordRound("whoAmICpu", false);
+      playWrong();
+      setPhase(kalanCan <= 0 ? "gameOver" : "roundEnd");
+      if (kalanCan <= 0) addXP(XP_MAC_MAGLUBIYETI);
+      setFeedback({ type: "wrong", text: "Süre doldu — bir can gitti" });
+      return;
+    }
+    const t = setTimeout(() => setKalanSure((k) => (k === null ? null : k - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [phase, kalanSure, isProcessing, sesOnayIstegi]);
 
   // -- MARKET ACTIONS --
   const buyClue = (type, cost) => {
@@ -230,7 +275,7 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
     setJokers(prev => ({ ...prev, skip: false }));
     setLevel(prev => prev + 1);
     setCombo(0);
-    startNewRound();
+    startNewRound(level + 1);
   };
 
   const useJokerLastClub = () => {
@@ -334,13 +379,50 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
 
   // 12 Eylül 2026: burası tamamen boş bir ekran döndürüyordu — ne yazı, ne
   // buton, ne geri dönüş. Kullanıcı için ayırt edilemez bir donma.
+  if (phase === "setup") {
+    return (
+      <ModKurulum
+        baslik="Kim Bu Futbolcu?"
+        aciklama="Gizli bir futbolcu var. Puanınla ipucu satın al, adını bul. 3 canın var; her doğru cevapta seviye atlarsın ve futbolcular zorlaşır."
+        vurgu={MODE_COLORS.whoAmI}
+        onGeri={onExitSilent || onExit}
+        onBasla={oyunuBaslat}
+      >
+        <KurulumBolum baslik="ZORLUK" not="Oyuna hangi seviyeden başlayacağını belirler. Her doğru cevapta seviye yine artar.">
+          <ZorlukSecici
+            seviyeler={[
+              { id: 1, etiket: "Çok Kolay", aciklama: "Seviye 1'den: dünya yıldızları" },
+              { id: 2, etiket: "Kolay", aciklama: "Seviye 4'ten: çok bilinen isimler" },
+              { id: 3, etiket: "Orta", aciklama: "Seviye 9'dan: bilinen oyuncular" },
+              { id: 4, etiket: "Zor", aciklama: "Seviye 16'dan: az bilinenler" },
+              { id: 5, etiket: "Çok Zor", aciklama: "Seviye 21'den: sadece meraklılar için" },
+            ]}
+            secili={zorlukId}
+            onSec={setZorlukId}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="SORU SÜRESİ">
+          <SureSecici
+            secenekler={[30, 60, 90]}
+            deger={soruSuresi}
+            onDegis={setSoruSuresi}
+            suresizVar
+            asgari={15}
+            azami={300}
+            aciklama="Süre dolarsa bir can gider."
+          />
+        </KurulumBolum>
+      </ModKurulum>
+    );
+  }
+
   if (!player) {
     return (
       <GameBackground style={styles.container}>
         <PoolEmpty
           baslik="Uygun futbolcu kalmadı"
           aciklama="Bu seviyede gösterilecek fotoğraflı futbolcu kalmadı. Baştan başlayabilir ya da menüye dönebilirsin."
-          onReset={() => { setUsedNames(new Set()); setLevel(1); }}
+          onReset={() => { setUsedNames(new Set()); setPhase("setup"); }}
           onExit={onExit}
         />
       </GameBackground>
@@ -380,6 +462,12 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
           <Text style={styles.scoreValue}>{totalScore}</Text>
         </View>
       </View>
+
+      {phase === "playing" && kalanSure !== null && soruSuresi ? (
+        <View style={{ marginTop: -8 }}>
+          <TimerBar current={kalanSure} total={soruSuresi} />
+        </View>
+      ) : null}
 
       {combo >= 3 && (
         <View style={styles.comboBar}>
@@ -475,9 +563,13 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
                     {photoBroken ? (
                       <Text style={styles.clueIconPrice}>Fotoğraf yüklenemedi</Text>
                     ) : (
-                      <Image
+                      <HizliResim
                         source={{ uri: photoUrl }}
                         style={styles.silhouetteThumb}
+                        tintColor={COLORS.cardBorder}
+                        cachePolicy="memory-disk"
+                        priority="high"
+                        transition={100}
                         onError={() => setPhotoBroken(true)}
                       />
                     )}
@@ -637,7 +729,7 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
           <PlayerPhoto name={player.name} size={120} />
           <Text style={styles.resultTitle}>{player.name}</Text>
           <Text style={styles.resultSubtitle}>{feedback.text}</Text>
-          <Pressable style={styles.primaryBtn} onPress={() => { setLevel(l => l+1); startNewRound(); }}>
+          <Pressable style={styles.primaryBtn} onPress={() => { setLevel(level + 1); startNewRound(level + 1); }}>
             <Text style={styles.primaryBtnText}>SONRAKİ SEVİYE</Text>
             <Ionicons name="arrow-forward" size={18} color={COLORS.accentDark} />
           </Pressable>
@@ -659,7 +751,7 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
             Ortak Futbolcu 'Kim Bu?' Modunda {level}. Seviyeye ulaştım! Skor: {totalScore}
           </Text>
 
-          <Pressable style={styles.primaryBtn} onPress={() => { setLevel(1); setTotalScore(0); setLives(3); setCombo(0); startNewRound(); }}>
+          <Pressable style={styles.primaryBtn} onPress={oyunuBaslat}>
             <Ionicons name="refresh" size={18} color={COLORS.accentDark} />
             <Text style={styles.primaryBtnText}>TEKRAR OYNA</Text>
           </Pressable>

@@ -6,7 +6,8 @@ import GameBackground from "../components/GameBackground";
 import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import LeagueSelectModal from "../components/LeagueSelectModal";
-import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubIdsForPreset } from "../lib/leaguePresets";
+import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
+import { CLUB_INFO } from "../lib/clubs";
 import { useAppSettings } from "../lib/SettingsContext";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 
@@ -127,13 +128,29 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
     const id = deviceIdRef.current || (await getDeviceId());
     const roomCode = randomCode();
 
+    // 27 Eylül 2026 — ESKİDEN bütün "clubs" tablosu çekilip telefonda
+    // süzülüyordu. Supabase bir istekte en fazla 1000 satır döndürdüğü için
+    // (26 bin kulüp var) seçilen ligin kulüplerinin çoğu listede hiç
+    // yoktu. Artık izinli kulüp ADLARI telefonda hesaplanıyor (tek modlarla
+    // aynı kaynak: CLUB_INFO + lig ön ayarı) ve sunucudan sadece onların
+    // kimlikleri isteniyor.
     let allowedClubIds = null;
-    if (presetSelection.clubs) {
-      const { data: clubRows } = await supabase.from("clubs").select("id, name");
-      allowedClubIds = clubRows.filter(c => presetSelection.clubs.includes(c.name)).map(c => c.id);
-    } else if (presetSelection.id !== "all") {
-      const { data: clubRows } = await supabase.from("clubs").select("id, name, country, league");
-      allowedClubIds = clubIdsForPreset(presetSelection.id, clubRows || []);
+    const izinliAdlar = presetSelection.clubs
+      ? [...presetSelection.clubs]
+      : presetSelection.id !== "all"
+      ? [...(clubsForPreset(presetSelection.id, CLUB_INFO) || [])]
+      : null;
+    if (izinliAdlar) {
+      allowedClubIds = [];
+      for (let i = 0; i < izinliAdlar.length; i += 150) {
+        const { data: satirlar, error: kulupHatasi } = await supabase
+          .from("clubs")
+          .select("id")
+          .in("name", izinliAdlar.slice(i, i + 150));
+        if (kulupHatasi) { setErrorMsg(kulupHatasi.message); setStatus("error"); return; }
+        for (const s of satirlar || []) allowedClubIds.push(s.id);
+      }
+      if (allowedClubIds.length < 2) allowedClubIds = null; // güvenlik ağı: filtre boş kaldıysa hepsi
     }
 
     const { data, error } = await supabase
@@ -197,12 +214,11 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
       return;
     }
 
-    await supabase.rpc("generate_round", {
-      p_room_id: room.id,
-      p_round_number: 1,
-      p_allowed_club_ids: room.allowed_club_ids ?? null,
-    });
-    onRoomReady({ id: room.id, code: room.code, playerNumber: 2, gameMode: room.game_mode });
+    // 27 Eylül 2026: ilk turu artık bu taraf ÜRETMİYOR — OnlineDuelScreen'de
+    // odayı kuran (1 numara) üretiyor. Eskiden sadece kodla katılınca üretiliyordu,
+    // "otomatik eşleş" ile girilince hiç tur üretilmiyor ve maç "Yükleniyor"da
+    // kalıyordu; ayrıca diğer modlarda (Kim Bu, Draft, Harf) gereksizdi.
+    onRoomReady({ id: room.id, code: room.code, playerNumber: 2, allowedClubs: room.allowed_club_ids, gameMode: room.game_mode });
   }
 
   function cancelWaiting() {

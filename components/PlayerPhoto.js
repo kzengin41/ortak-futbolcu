@@ -3,15 +3,52 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { resolvePlayerPhotoUrl } from "../lib/playerPhotos";
 import PlayerMiniProfile from "./PlayerMiniProfile";
+import { recognitionScore } from "../lib/clubWeights";
 
-// Tur başlarken bu fonksiyon çağrılarak fotoğraf arkaplanda indirilebilir.
+// 27 Eylül 2026 (Kerem: "resimlerin yüklenmesi zaman alıyor biraz") — ön
+// yükleme KUYRUĞU. Eskiden tur başında o turun BÜTÜN doğru cevaplarının
+// fotoğrafı aynı anda istenıyordu (30-100 istek birden). Telefonun bağlantısı
+// bunlarla tıkanınca, ekranda gerçekten gösterilecek fotoğraf da sıraya
+// giriyordu. Artık: aynı anda en fazla 3 indirme, aynı fotoğraf bir kez, ve
+// sadece gösterilme ihtimali en yüksek (en tanınmış) birkaç oyuncu.
+const indirilen = new Set();
+const kuyruk = [];
+let aktif = 0;
+const ES_ZAMANLI = 3;
+
+function siradakiniIndir() {
+  while (aktif < ES_ZAMANLI && kuyruk.length) {
+    const uri = kuyruk.shift();
+    aktif += 1;
+    Promise.resolve(Image.prefetch(uri, { cachePolicy: "memory-disk" }))
+      .catch(() => {})
+      .finally(() => { aktif -= 1; siradakiniIndir(); });
+  }
+}
+
+// Tek fotoğrafı ÖNE ALARAK indir (ekranda hemen gösterilecek olan).
 export function prefetchPlayerPhoto(name) {
   const uri = resolvePlayerPhotoUrl(name);
-  if (uri) {
-    // Disk önbelleğine de yazsın — tur başında indirilen fotoğraf, uygulama
-    // kapanıp açılsa bile tekrar inmesin.
-    Image.prefetch(uri, { cachePolicy: "memory-disk" });
+  if (!uri || indirilen.has(uri)) return;
+  indirilen.add(uri);
+  kuyruk.unshift(uri);
+  siradakiniIndir();
+}
+
+// Bir turun cevap listesinden en olası birkaçını sırayla indir.
+export function oncedenYukle(oyuncular, adet = 6) {
+  if (!Array.isArray(oyuncular) || !oyuncular.length) return;
+  const secilen = oyuncular
+    .slice()
+    .sort((a, b) => recognitionScore(b) - recognitionScore(a))
+    .slice(0, adet);
+  for (const p of secilen) {
+    const uri = resolvePlayerPhotoUrl(p && p.name);
+    if (!uri || indirilen.has(uri)) continue;
+    indirilen.add(uri);
+    kuyruk.push(uri);
   }
+  siradakiniIndir();
 }
 
 function initials(name) {
@@ -65,8 +102,9 @@ export default function PlayerPhoto({ name, size = 64, showProfileOnPress = true
       source={{ uri }}
       style={[styles.photo, { width: size, height: size, borderRadius: size / 2 }]}
       contentFit="cover"
-      transition={220}
+      transition={120}
       cachePolicy="memory-disk"
+      priority="high"
       onError={() => setFailed(true)}
     />
   ) : (

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions,
@@ -73,18 +74,11 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const [geriBildirim, setGeriBildirim] = useState(null);
   const [cpuDusunuyor, setCpuDusunuyor] = useState(false);
   const [uretilemedi, setUretilemedi] = useState(false);
-  const [sureSecimi, setSureSecimi] = useState(VARSAYILAN_SURE); // sayı ya da "ozel"
-  const [ozelSureMetni, setOzelSureMetni] = useState("");
+  const [cevapSuresi, setCevapSuresi] = useState(VARSAYILAN_SURE);
   const [kalanSure, setKalanSure] = useState(null);
   const [cevaplarAcik, setCevaplarAcik] = useState(true);
   const { width: ekranGenislik } = useWindowDimensions();
 
-  // Özel süre: boş/geçersizse varsayılan, 15'ten küçükse 15, 300'den büyükse 300.
-  const ozelSayi = parseInt(ozelSureMetni, 10);
-  const ozelGecersiz = sureSecimi === "ozel" && (!Number.isFinite(ozelSayi) || ozelSayi < ASGARI_SURE);
-  const cevapSuresi = sureSecimi === "ozel"
-    ? Math.min(AZAMI_SURE, Math.max(ASGARI_SURE, Number.isFinite(ozelSayi) ? ozelSayi : VARSAYILAN_SURE))
-    : sureSecimi;
 
   // 26 Eylül 2026 (Kerem: "logolar ideal boyutta değil") — logo eskiden sabit
   // 26 px'ti; 4 sütunluk ızgarada kare ~80 px olduğu için çok küçük kalıyordu.
@@ -214,18 +208,18 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
-      setGeriBildirim({ correct: true, message: cpuHamlesi ? `CPU: ${h.ad}` : h.ad });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: cpuHamlesi ? `CPU: ${h.ad}` : h.ad });
     } else if (h.tip === "yanlis") {
       playWrong();
-      setGeriBildirim({
+      setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
         message: cpuHamlesi ? `CPU bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
       });
     } else if (h.tip === "pas") {
-      setGeriBildirim({ correct: false, message: cpuHamlesi ? "CPU pas geçti" : "Pas geçtin" });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? "CPU pas geçti" : "Pas geçtin" });
     } else if (h.tip === "sure") {
       playWrong();
-      setGeriBildirim({
+      setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
         message: cpuyaKarsi ? "Süre doldu, sıra CPU'da" : `Süre doldu, sıra ${h.kimden === X ? "2." : "1."} oyuncuda`,
       });
@@ -257,7 +251,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     // Bu karede kullanılmamış geçerli cevap kalmadıysa dokunmak boşuna —
     // oyuncu bilmediği için değil, cevap KALMADIĞI için kaybediyor olurdu.
     if (kareTukendiMi(durum, satir, sutun, PLAYERS)) {
-      setGeriBildirim({ correct: false, message: "Bu karenin cevapları tükendi" });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: "Bu karenin cevapları tükendi" });
       return;
     }
     const yeni = aksiyonuIsle(durum, { tip: "hucreSec", satir, sutun }, baglam);
@@ -278,127 +272,49 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   }
 
   if (!basladi) {
+    // 27 Eylül 2026 — ortak kurulum ekranı (bkz. components/ModKurulum.js).
     return (
-      <GameBackground style={styles.kap}>
-        <BackButton onPress={onExitSilent || onExit} />
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: SPACING.xxl }}
-          keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets
+      <ModKurulum
+        baslik="Futbolcu XOX"
+        aciklama="Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan kazanır."
+        vurgu={VURGU}
+        onGeri={onExitSilent || onExit}
+        onBasla={yeniOyun}
+        baslaYukleniyor={hazirlaniyor}
+      >
+        <KurulumBolum baslik="RAKİP">
+          <SecimCipleri
+            secenekler={[
+              { deger: "cpu", etiket: "CPU'ya karşı", ikon: "hardware-chip" },
+              { deger: "iki", etiket: "2 Kişi (aynı telefon)", ikon: "people" },
+            ]}
+            secili={rakipTipi}
+            onSec={setRakipTipi}
+          />
+        </KurulumBolum>
+        <KurulumBolum
+          baslik="ZORLUK"
+          not={cpuyaKarsi
+            ? "Zorluk hem ızgaradaki kulüpleri hem CPU'nun ne kadar iyi oynadığını belirler."
+            : "Zorluk ızgaradaki kulüpleri ve karelerin ne kadar kolay doldurulacağını belirler."}
         >
-          <Text style={styles.ustBaslik}>FUTBOLCU XOX</Text>
-          <Text style={styles.aciklama}>
-            Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o
-            karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan
-            kazanır.
-          </Text>
-
-          <Text style={styles.blokBaslik}>RAKİP</Text>
-          <View style={styles.secimSatir}>
-            {[
-              { id: "cpu", label: "CPU'ya karşı", ikon: "hardware-chip" },
-              { id: "iki", label: "2 Kişi (aynı telefon)", ikon: "people" },
-            ].map((s) => {
-              const aktif = rakipTipi === s.id;
-              return (
-                <SoundPressable
-                  key={s.id}
-                  style={[styles.secimKart, aktif && styles.secimKartAktif]}
-                  onPress={() => setRakipTipi(s.id)}
-                >
-                  <Ionicons name={s.ikon} size={20} color={aktif ? COLORS.accentDark : COLORS.accent} />
-                  <Text style={[styles.secimText, aktif && styles.secimTextAktif]}>{s.label}</Text>
-                </SoundPressable>
-              );
-            })}
-          </View>
-
-          {/* Zorluk İKİ modda da seçilebiliyor: ızgaranın zorluğunu belirlediği
-              için 2 kişilik oyunda da anlamlı. */}
-          <Text style={styles.blokBaslik}>ZORLUK</Text>
-          <View style={styles.zorlukListe}>
-            {ZORLUKLAR.map((z) => {
-              const aktif = zorluk === z.id;
-              return (
-                <SoundPressable
-                  key={z.id}
-                  style={[styles.zorlukSatir, aktif && styles.zorlukSatirAktif]}
-                  onPress={() => setZorluk(z.id)}
-                >
-                  <View style={styles.zorlukNokta}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <View
-                        key={i}
-                        style={[
-                          styles.nokta,
-                          i < z.id && { backgroundColor: aktif ? COLORS.accentDark : COLORS.accent },
-                        ]}
-                      />
-                    ))}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.zorlukEtiket, aktif && styles.secimTextAktif]}>{z.etiket}</Text>
-                    <Text style={[styles.zorlukAciklama, aktif && { color: COLORS.accentDark }]}>
-                      {z.aciklama}
-                    </Text>
-                  </View>
-                  {aktif && <Ionicons name="checkmark-circle" size={18} color={COLORS.accentDark} />}
-                </SoundPressable>
-              );
-            })}
-          </View>
-          <Text style={styles.zorlukNot}>
-            {cpuyaKarsi
-              ? "Zorluk hem ızgaradaki kulüpleri hem CPU'nun ne kadar iyi oynadığını belirler."
-              : "Zorluk ızgaradaki kulüpleri ve karelerin ne kadar kolay doldurulacağını belirler."}
-          </Text>
-
-          <Text style={styles.blokBaslik}>CEVAP SÜRESİ (HAMLE BAŞINA)</Text>
-          <View style={styles.sureSatir}>
-            {[...SURE_SECENEKLERI, "ozel"].map((s) => {
-              const aktif = sureSecimi === s;
-              return (
-                <SoundPressable
-                  key={String(s)}
-                  style={[styles.sureCip, aktif && styles.secimKartAktif]}
-                  onPress={() => setSureSecimi(s)}
-                >
-                  <Text style={[styles.sureCipText, aktif && styles.secimTextAktif]}>
-                    {s === "ozel" ? "Özel" : `${s} sn`}
-                  </Text>
-                </SoundPressable>
-              );
-            })}
-          </View>
-          {sureSecimi === "ozel" && (
-            <View style={styles.ozelSureSatir}>
-              <TextInput
-                style={styles.ozelSureGirdi}
-                value={ozelSureMetni}
-                onChangeText={(t) => setOzelSureMetni(t.replace(/[^0-9]/g, "").slice(0, 3))}
-                keyboardType="number-pad"
-                placeholder="örn. 25"
-                placeholderTextColor={COLORS.textFaint}
-                maxLength={3}
-              />
-              <Text style={styles.ozelSureBirim}>saniye</Text>
-            </View>
-          )}
-          <Text style={[styles.zorlukNot, ozelGecersiz && { color: COLORS.danger }]}>
-            {ozelGecersiz
-              ? `En az ${ASGARI_SURE} saniye olmalı — ${cevapSuresi} sn ile başlayacak.`
-              : `Sıra sana geçtiğinde ${cevapSuresi} saniyen var. Süre dolarsa sıra rakibe geçer.`}
-          </Text>
-
-          <SoundPressable style={styles.anaBtn} onPress={yeniOyun} disabled={hazirlaniyor}>
-            {hazirlaniyor ? (
-              <ActivityIndicator color={COLORS.accentDark} />
-            ) : (
-              <Text style={styles.anaBtnText}>BAŞLA</Text>
-            )}
-          </SoundPressable>
-        </ScrollView>
-      </GameBackground>
+          <ZorlukSecici
+            seviyeler={ZORLUKLAR.map((z) => ({ id: z.id, etiket: z.etiket, aciklama: z.aciklama }))}
+            secili={zorluk}
+            onSec={setZorluk}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP SÜRESİ (HAMLE BAŞINA)">
+          <SureSecici
+            secenekler={SURE_SECENEKLERI}
+            deger={cevapSuresi}
+            onDegis={setCevapSuresi}
+            asgari={ASGARI_SURE}
+            azami={AZAMI_SURE}
+            aciklama="Sıra sana geçtiğinde süre başlar. Dolarsa sıra rakibe geçer."
+          />
+        </KurulumBolum>
+      </ModKurulum>
     );
   }
 
@@ -628,6 +544,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
         {geriBildirim && (
           <View style={styles.geriBildirimSarmal} pointerEvents="none">
             <AnswerFeedback
+              key={geriBildirim.anahtar}
               correct={geriBildirim.correct}
               message={geriBildirim.message}
               onDone={() => setGeriBildirim(null)}
@@ -773,7 +690,8 @@ const styles = StyleSheet.create({
   kucukLink: { ...TYPE.caption, textDecorationLine: "underline" },
   ipucu: { ...TYPE.caption, textAlign: "center", paddingBottom: SPACING.sm },
 
-  geriBildirimSarmal: { position: "absolute", left: 0, right: 0, top: "38%", alignItems: "center" },
+  // Tam ekran: karartma sadece ortadaki bir kutuyu değil bütün ekranı kaplasın.
+  geriBildirimSarmal: { ...StyleSheet.absoluteFillObject },
 
   anaBtn: {
     backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingVertical: SPACING.md,

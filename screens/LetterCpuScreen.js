@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, VARSAYILAN_ZORLUK_ID } from "../components/ModKurulum";
+import { MODE_COLORS } from "../lib/theme";
 import {   View, Text, TextInput, Pressable, StyleSheet, Animated, Easing , Modal , ScrollView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -15,6 +17,16 @@ import { calculatePlayerPopularity } from "../lib/clubWeights";
 import { addXP, XP_MAC_GALIBIYETI } from "../lib/profile";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
+
+// 27 Eylül 2026 — zorluk: CPU'nun ne kadar hızlı cevap verdiği (ms aralığı)
+// ve harf çiftinde hiç bulamama olasılığı.
+const CPU_ZORLUK = {
+  1: { cift: [11000, 17000], zincir: [6000, 9000], bulamama: 0.45 },
+  2: { cift: [8000, 13000], zincir: [4500, 7000], bulamama: 0.3 },
+  3: { cift: [5000, 9000], zincir: [3000, 5000], bulamama: 0.15 },
+  4: { cift: [3500, 6500], zincir: [2000, 3500], bulamama: 0.07 },
+  5: { cift: [2500, 4500], zincir: [1200, 2500], bulamama: 0 },
+};
 
 // Filtre (Kapsam) Seçenekleri
 const SCOPE_OPTIONS = [
@@ -48,6 +60,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   // Setup Options
   const [scope, setScope] = useState("all");
   const [subMode, setSubMode] = useState("classic");
+  // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı olmalı")
+  const [zorlukId, setZorlukId] = useState(VARSAYILAN_ZORLUK_ID);
+  const [harfSuresi, setHarfSuresi] = useState(15);
   
   // Game State
   const [scores, setScores] = useState({ p1: 0, cpu: 0 });
@@ -196,6 +211,13 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     return map;
   }, [filteredPlayers, subMode]);
 
+  // CPU'nun bu turdaki düşünme süresi — zorluğa göre, sürenin %85'ini aşmaz.
+  const cpuGecikmesi = (tur) => {
+    const [en, ek] = CPU_ZORLUK[zorlukId][tur];
+    const ms = en + Math.random() * (ek - en);
+    return Math.min(ms, harfSuresi * 1000 * 0.85);
+  };
+
   // --- GAME LOGIC ---
   const startGame = () => {
     setScores({ p1: 0, cpu: 0 });
@@ -210,21 +232,24 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     setAnswerInput("");
     setWinningPlayer(null);
     setFeedback(null);
-    setTimeLeft(15);
+    setTimeLeft(harfSuresi);
     fuseAnim.setValue(1);
     if (timerRef.current) clearInterval(timerRef.current);
     if (cpuTimerRef.current) clearTimeout(cpuTimerRef.current);
     if (harfGosterimRef.current) clearTimeout(harfGosterimRef.current);
   };
 
-  // Harfleri kısa süre gösterip sonra geri sayıma geçer.
-  const harfleriGosterSonraBasla = (kullanici, cpu) => {
-    setAtananHarfler({ kullanici, cpu });
+  // 27 Eylül 2026 (Kerem: "harfleri 3-2-1 saymadan önce gösteriyor, daha
+  // sayılmadan düşünme imkânım oluyor") — 12 Eylül'de eklenen 1,4 saniyelik
+  // "harfler atandı" ön gösterimi KALDIRILDI: harf seçilince doğrudan geri
+  // sayım başlıyor, harfler SADECE geri sayım bitip süre işlemeye başladığı an
+  // (faz "racing") büyük ve belirgin şekilde açılıyor. Geri sayım sırasında
+  // harf kutularında "?" duruyor. (Eski "çok kısa görünüyor" şikayeti de
+  // böylece çözülüyor: harfler artık tur boyunca ekranda.)
+  const harfleriGosterSonraBasla = () => {
+    setAtananHarfler(null);
     if (harfGosterimRef.current) clearTimeout(harfGosterimRef.current);
-    harfGosterimRef.current = setTimeout(() => {
-      setAtananHarfler(null);
-      setPhase("countdown");
-    }, 1400);
+    setPhase("countdown");
   };
 
   const handleSelectLetter = (letter) => {
@@ -282,13 +307,13 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   };
 
   const startTimer = () => {
-    let t = 15;
+    let t = harfSuresi;
     setTimeLeft(t);
     fuseAnim.setValue(1);
     
     Animated.timing(fuseAnim, {
       toValue: 0,
-      duration: 15000,
+      duration: harfSuresi * 1000,
       easing: Easing.linear,
       useNativeDriver: false
     }).start();
@@ -330,11 +355,11 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     startTimer();
     
     if (isPairMode) {
-      startCpuTimer(Math.random() * 5000 + 4000); // Klasik/İçinde Geçen'de CPU 4-9 sn arası yarışır
+      startCpuTimer(cpuGecikmesi("cift")); // zorluğa göre (bkz. CPU_ZORLUK)
     } else {
       // Zincir modunda, history boşsa sıra Player'da.
       if (chainHistory.length % 2 !== 0) {
-        startCpuTimer(Math.random() * 3000 + 2000);
+        startCpuTimer(cpuGecikmesi("zincir"));
       }
     }
   };
@@ -347,6 +372,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       if (isPairMode) {
         const pair = [userLetter, cpuLetter].sort().join('-');
         const pool = activeMap.get(pair) || [];
+        // Kolay seviyelerde CPU bazen bulamıyor (bekleyip pes ediyor).
+        if (Math.random() < CPU_ZORLUK[zorlukId].bulamama) return;
         if (pool.length > 0) {
           const guess = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
           processGuess(guess, "cpu");
@@ -392,7 +419,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       
       const isCpuNext = (chainHistory.length + 1) % 2 !== 0;
       if (isCpuNext) {
-        startCpuTimer(Math.random() * 3000 + 2000);
+        startCpuTimer(cpuGecikmesi("zincir"));
       }
     }
   };
@@ -492,6 +519,59 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
 
   // Harf Klavyesi
   const alphabet = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+
+  // 27 Eylül 2026 — ortak kurulum ekranı (bkz. components/ModKurulum.js).
+  if (phase === "setup") {
+    const secilenAlt = SUBMODES.find((m) => m.id === subMode);
+    return (
+      <ModKurulum
+        baslik="İlk Harften Bul"
+        aciklama="Harfler 3-2-1'den sonra açılır. Harflere uyan bir futbolcuyu CPU'dan önce söyle. 3 puana ulaşan kazanır."
+        vurgu={MODE_COLORS.letters}
+        onGeri={onExitSilent || onExit}
+        onBasla={startGame}
+        baslaDevreDisi={filteredPlayers.length === 0}
+      >
+        <KurulumBolum baslik="OYUN TÜRÜ" not={secilenAlt ? secilenAlt.desc : null}>
+          <SecimCipleri
+            secenekler={SUBMODES.map((m) => ({ deger: m.id, etiket: m.label }))}
+            secili={subMode}
+            onSec={setSubMode}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="ZORLUK" not="Zorluk CPU'nun ne kadar hızlı ve isabetli olduğunu belirler.">
+          <ZorlukSecici
+            seviyeler={[
+              { id: 1, etiket: "Çok Kolay", aciklama: "CPU çok yavaş, sık sık bulamaz" },
+              { id: 2, etiket: "Kolay", aciklama: "CPU yavaş" },
+              { id: 3, etiket: "Orta", aciklama: "Dengeli" },
+              { id: 4, etiket: "Zor", aciklama: "CPU hızlı" },
+              { id: 5, etiket: "Çok Zor", aciklama: "CPU çok hızlı, hep bulur" },
+            ]}
+            secili={zorlukId}
+            onSec={setZorlukId}
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="TUR SÜRESİ">
+          <SureSecici
+            secenekler={[10, 15, 20, 30]}
+            deger={harfSuresi}
+            onDegis={setHarfSuresi}
+            asgari={5}
+            azami={90}
+            aciklama="Harfler açıldıktan sonra cevap için süre."
+          />
+        </KurulumBolum>
+        <KurulumBolum baslik="KAPSAM" not={`Bu ayarlarla havuzda ${filteredPlayers.length} oyuncu var.`}>
+          <SecimCipleri
+            secenekler={SCOPE_OPTIONS.map((o) => ({ deger: o.id, etiket: o.label }))}
+            secili={scope}
+            onSec={setScope}
+          />
+        </KurulumBolum>
+      </ModKurulum>
+    );
+  }
 
   return (
     <GameBackground style={styles.container}>
@@ -596,18 +676,18 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
             <View style={styles.lettersCard}>
               <View style={styles.letterBox}>
                 <Text style={styles.letterLabel}>Senin Harfin</Text>
-                <Text style={styles.letterValue}>{userLetter}</Text>
+                <Text style={styles.letterValue}>{phase === "countdown" ? "?" : userLetter}</Text>
               </View>
               <Text style={styles.letterPlus}>+</Text>
               <View style={styles.letterBox}>
                 <Text style={styles.letterLabel}>CPU Harfi</Text>
-                <Text style={styles.letterValue}>{cpuLetter}</Text>
+                <Text style={styles.letterValue}>{phase === "countdown" ? "?" : cpuLetter}</Text>
               </View>
             </View>
           ) : (
             <View style={styles.chainCard}>
               <Text style={styles.chainLabel}>Aranan İlk Harf</Text>
-              <Text style={styles.chainValue}>{userLetter}</Text>
+              <Text style={styles.chainValue}>{phase === "countdown" ? "?" : userLetter}</Text>
               {chainHistory.length > 0 && (
                 <View style={styles.chainHistoryBox}>
                   {chainHistory.map((ch, i) => (

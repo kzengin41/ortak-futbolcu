@@ -22,6 +22,20 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
   const opacity = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
 
+  // 27 Eylül 2026 (Kerem: "XOX'te ortada gölge gibi bir dikdörtgen kalıyor
+  // bazen") — KÖK NEDEN: karartma zemini (rgba siyah) animasyonlu DEĞİLDİ;
+  // sadece içerik soluyordu. Animasyonun bitiş geri çağrısı (onDone) bazı
+  // durumlarda gelmeyince (Android'de native sürücülü animasyon, üst üste
+  // gelen iki geri bildirim) içerik kayboluyor ama karartma kutusu ekranda
+  // kalıyordu. İki önlem: (1) zemin de içerikle birlikte soluyor, (2) onDone
+  // animasyon gelmese bile süre dolunca ZORLA bir kez çağrılıyor.
+  const bittiRef = useRef(false);
+  const bitir = () => {
+    if (bittiRef.current) return;
+    bittiRef.current = true;
+    onDone && onDone();
+  };
+
   useEffect(() => {
     if (dogru) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -51,7 +65,15 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
     Animated.sequence([
       ...sequence,
       Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }),
-    ]).start(() => onDone && onDone());
+    ]).start(() => bitir());
+    const toplamSure = (dogru && player ? 1400 : 600) + 250 + 400 + 500;
+    const yedek = setTimeout(bitir, toplamSure);
+    return () => {
+      clearTimeout(yedek);
+      // Söküldüyse (yerine yeni geri bildirim geldiyse) geç gelen animasyon
+      // geri çağrısı YENİ geri bildirimi kapatmasın.
+      bittiRef.current = true;
+    };
   }, []);
 
   const color = dogru ? "#7CFF5C" : "#FF5D5D";
@@ -59,6 +81,7 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
 
   return (
     <View style={styles.overlay} pointerEvents="none">
+      <Animated.View style={[styles.zemin, { opacity }]} />
       <Animated.View style={[{ transform: [{ scale }, { translateX }], opacity }]}>
         {dogru && player ? (
           <LinearGradient colors={["#FFE000", "#FF8C00"]} style={styles.card}>
@@ -89,8 +112,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 999,
-    backgroundColor: "rgba(0,0,0,0.45)",
   },
+  zemin: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
   circle: { width: 140, height: 140, borderRadius: 70, alignItems: "center", justifyContent: "center", elevation: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.6, shadowRadius: 12 },
   mark: { fontSize: 76, fontWeight: "900" },
   mesaj: {
