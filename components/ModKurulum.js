@@ -25,21 +25,10 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 // Renkler temadan (COLORS) okunuyor, vurgu rengi modun kendi rengi.
 // ============================================================================
 
-// Standart 5 kademe. Her mod kendi motoruna çevirir (bkz. zorlukMotoru).
-export const STANDART_ZORLUKLAR = [
-  { id: 1, etiket: "Çok Kolay", aciklama: "Sadece efsaneler ve süper yıldızlar" },
-  { id: 2, etiket: "Kolay", aciklama: "Herkesin tanıdığı isimler" },
-  { id: 3, etiket: "Orta", aciklama: "Büyük liglerin bilinen oyuncuları" },
-  { id: 4, etiket: "Zor", aciklama: "Daha az bilinen oyuncular da çıkar" },
-  { id: 5, etiket: "Çok Zor", aciklama: "Obskür isimler, hızlı ve isabetli CPU" },
-];
-export const VARSAYILAN_ZORLUK_ID = 3;
-
-// 1-10 arası çalışan eski motorlar (tur havuzu + CPU hızı/isabeti) için.
-const MOTOR_KARSILIGI = { 1: 1, 2: 3, 3: 5, 4: 7, 5: 10 };
-export function zorlukMotoru(id) {
-  return MOTOR_KARSILIGI[id] || 5;
-}
+// 27 Eylül 2026 (2. sürüm) — Kerem: "her mod için 10 üstünden zorluk". Bütün
+// modlar artık 1-10 ölçeğini kullanıyor; her mod kendi motoruna çeviriyor
+// (bkz. lib/modAyarlari.js ve ekranlardaki eşlemeler).
+import { zorlukEtiketi } from "../lib/modAyarlari";
 
 // ---------------------------------------------------------------- iskelet
 export default function ModKurulum({
@@ -51,8 +40,10 @@ export default function ModKurulum({
   baslaEtiketi = "BAŞLA",
   baslaYukleniyor = false,
   baslaDevreDisi = false,
+  onVarsayilanKaydet,
   children,
 }) {
+  const [kaydedildi, setKaydedildi] = useState(false);
   const renk = vurgu?.main || COLORS.accent;
   return (
     <GameBackground style={styles.kap}>
@@ -80,6 +71,21 @@ export default function ModKurulum({
             <Text style={styles.baslaYazi}>{baslaEtiketi}</Text>
           )}
         </SoundPressable>
+        {onVarsayilanKaydet ? (
+          <SoundPressable
+            style={styles.varsayilanLink}
+            onPress={async () => {
+              await onVarsayilanKaydet();
+              setKaydedildi(true);
+              setTimeout(() => setKaydedildi(false), 2500);
+            }}
+          >
+            <Ionicons name={kaydedildi ? "checkmark-circle" : "bookmark-outline"} size={15} color={COLORS.textMuted} />
+            <Text style={styles.varsayilanYazi}>
+              {kaydedildi ? "Kaydedildi — bu mod artık böyle açılacak" : "Bu ayarları bu modun varsayılanı yap"}
+            </Text>
+          </SoundPressable>
+        ) : null}
       </ScrollView>
     </GameBackground>
   );
@@ -121,40 +127,80 @@ export function SecimCipleri({ secenekler, secili, onSec }) {
   );
 }
 
-// Zorluk listesi — her satırda kademe noktaları + ad + açıklama.
-export function ZorlukSecici({ seviyeler = STANDART_ZORLUKLAR, secili, onSec }) {
-  const toplam = seviyeler.length;
+// Birden fazla seçilebilen düğmeler (ör. Kim Bu'daki dönemler). En az `enAz`
+// tanesi seçili kalır — son seçiliyi kaldırmaya izin verilmez.
+export function CokluSecim({ secenekler, secililer, onDegis, enAz = 1 }) {
   return (
-    <View style={styles.zorlukListe}>
-      {seviyeler.map((z, sira) => {
-        const aktif = secili === z.id;
+    <View style={styles.cipSatir}>
+      {secenekler.map((s) => {
+        const aktif = secililer.includes(s.deger);
         return (
           <SoundPressable
-            key={String(z.id)}
-            style={[styles.zorlukSatir, aktif && styles.cipAktif]}
-            onPress={() => onSec(z.id)}
+            key={String(s.deger)}
+            style={[styles.cip, aktif && styles.cipAktif]}
+            onPress={() => {
+              if (aktif) {
+                if (secililer.length <= enAz) return;
+                onDegis(secililer.filter((x) => x !== s.deger));
+              } else {
+                onDegis([...secililer, s.deger]);
+              }
+            }}
           >
-            <View style={styles.noktalar}>
-              {Array.from({ length: toplam }).map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.nokta,
-                    i <= sira && { backgroundColor: aktif ? COLORS.accentDark : COLORS.accent },
-                  ]}
-                />
-              ))}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.zorlukEtiket, aktif && styles.cipYaziAktif]}>{z.etiket}</Text>
-              {z.aciklama ? (
-                <Text style={[styles.zorlukAciklama, aktif && { color: COLORS.accentDark }]}>{z.aciklama}</Text>
-              ) : null}
-            </View>
-            {aktif ? <Ionicons name="checkmark-circle" size={18} color={COLORS.accentDark} /> : null}
+            <Ionicons
+              name={aktif ? "checkbox" : "square-outline"}
+              size={16}
+              color={aktif ? COLORS.accentDark : COLORS.textMuted}
+            />
+            <Text style={[styles.cipYazi, aktif && styles.cipYaziAktif]} numberOfLines={2}>{s.etiket}</Text>
           </SoundPressable>
         );
       })}
+    </View>
+  );
+}
+
+// Zorluk: 1-10 arası, dokunulabilir 10 bölmeli çubuk + büyük etiket.
+// aciklama: (z) => string — modun o seviyede ne yaptığını anlatan kısa metin.
+export function ZorlukSecici({ deger, onDegis, aciklama }) {
+  const z = deger || 5;
+  return (
+    <View>
+      <View style={styles.zorlukUst}>
+        <Text style={styles.zorlukSayi}>{z}<Text style={styles.zorlukOnda}> / 10</Text></Text>
+        <Text style={styles.zorlukAd}>{zorlukEtiketi(z)}</Text>
+      </View>
+      <View style={styles.zorlukCubuk}>
+        <SoundPressable
+          style={styles.zorlukOk}
+          onPress={() => onDegis(Math.max(1, z - 1))}
+          accessibilityLabel="Zorluğu azalt"
+        >
+          <Ionicons name="remove" size={20} color={COLORS.text} />
+        </SoundPressable>
+        <View style={styles.zorlukBolmeler}>
+          {Array.from({ length: 10 }).map((_, i) => {
+            const dolu = i < z;
+            return (
+              <SoundPressable
+                key={i}
+                style={[styles.zorlukBolme, dolu && { backgroundColor: COLORS.accent, borderColor: COLORS.accent }]}
+                onPress={() => onDegis(i + 1)}
+                accessibilityLabel={`Zorluk ${i + 1}`}
+                hitSlop={{ top: 8, bottom: 8 }}
+              />
+            );
+          })}
+        </View>
+        <SoundPressable
+          style={styles.zorlukOk}
+          onPress={() => onDegis(Math.min(10, z + 1))}
+          accessibilityLabel="Zorluğu artır"
+        >
+          <Ionicons name="add" size={20} color={COLORS.text} />
+        </SoundPressable>
+      </View>
+      {aciklama ? <Text style={styles.not}>{typeof aciklama === "function" ? aciklama(z) : aciklama}</Text> : null}
     </View>
   );
 }
@@ -266,16 +312,22 @@ const styles = StyleSheet.create({
   cipYazi: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", textAlign: "center" },
   cipYaziAktif: { color: COLORS.accentDark },
 
-  zorlukListe: { gap: SPACING.sm },
-  zorlukSatir: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md, minHeight: 50,
+  zorlukUst: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: SPACING.sm },
+  zorlukSayi: { ...TYPE.h1, fontSize: 30 },
+  zorlukOnda: { ...TYPE.caption, fontSize: 14 },
+  zorlukAd: { ...TYPE.h3, color: COLORS.accent },
+  zorlukCubuk: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  zorlukOk: {
+    width: 44, height: 44, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center",
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
-    borderRadius: RADIUS.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
   },
-  noktalar: { flexDirection: "row", gap: 3 },
-  nokta: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.cardBorder },
-  zorlukEtiket: { ...TYPE.h3, fontSize: 14 },
-  zorlukAciklama: { ...TYPE.caption, fontSize: 11, marginTop: 1 },
+  zorlukBolmeler: { flex: 1, flexDirection: "row", gap: 4 },
+  zorlukBolme: {
+    flex: 1, height: 26, borderRadius: 6,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
+  },
+  varsayilanLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: SPACING.md, paddingVertical: SPACING.sm },
+  varsayilanYazi: { ...TYPE.caption, textDecorationLine: "underline" },
 
   ozelSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginTop: SPACING.sm },
   ozelGirdi: {

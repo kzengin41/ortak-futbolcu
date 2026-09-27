@@ -1,5 +1,6 @@
 ﻿import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi, zorlukMotoru, VARSAYILAN_ZORLUK_ID } from "../components/ModKurulum";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
+import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,8 +31,7 @@ const count1Source = require("../assets/sounds/count-1.mp3");
 const CHOICE_SECONDS = 6;
 
 export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
-  const [zorlukId, setZorlukId] = useState(VARSAYILAN_ZORLUK_ID);
-  const difficulty = zorlukMotoru(zorlukId); // 1-10 motor ölçeği (tur havuzu + CPU)
+  const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
   const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
   const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
   const appliedDefaultPresetRef = useRef(false);
@@ -136,6 +136,13 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
     setTimeout(() => startNewRound(), 1400);
   }
 
+  // 27 Eylül 2026 — merkezî mod ayarları (lib/modAyarlari.js): varsayılanlar
+  // Ayarlar'dan gelir, kurulumda değiştirilebilir, oyun içinde "?" ile görülür.
+  const modVarsayilanKaydet = useModVarsayilanlari("quickCpu", { zorluk: setDifficulty, sure: setSecimSuresi });
+  useEffect(() => {
+    oyunBilgisiniYaz("quickCpu", { satirlar: ayarSatirlari({ zorluk: difficulty, sure: secimSuresi, lig: presetLabel }) });
+  }, [difficulty, secimSuresi, presetLabel]);
+
   if (!started) {
     // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı
     // olmalı. her moddaki mimari dizayn aynı olmalı.") — kurulum ekranı artık
@@ -146,19 +153,20 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
         aciklama="3-2-1 sonrası 4 seçenek çıkar. Doğru +1, yanlış -1. Cevap verince hemen sıradaki tur başlar."
         vurgu={MODE_COLORS.training}
         onGeri={onExitSilent || onExit}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: secimSuresi })}
         onBasla={() => setStarted(true)}
       >
         <KurulumBolum baslik="ZORLUK">
-          <ZorlukSecici secili={zorlukId} onSec={setZorlukId} />
+          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Sadece efsaneler ve süper yıldızlar sorulur." : z <= 7 ? "Büyük liglerin bilinen oyuncuları sorulur." : "Az bilinen oyuncular da sorulur.")} />
         </KurulumBolum>
         <KurulumBolum baslik="CEVAP SÜRESİ">
           <SureSecici
-            secenekler={[4, 6, 8, 10]}
+            secenekler={MOD_TANIMLARI.quickCpu.sure.secenekler}
             deger={secimSuresi}
             onDegis={setSecimSuresi}
-            asgari={3}
-            azami={30}
-            aciklama="Seçenekler göründükten sonra karar vermek için süre."
+            asgari={MOD_TANIMLARI.quickCpu.sure.asgari}
+            azami={MOD_TANIMLARI.quickCpu.sure.azami}
+            aciklama={MOD_TANIMLARI.quickCpu.sure.aciklama}
           />
         </KurulumBolum>
         <KurulumBolum baslik="LİG / KAPSAM">

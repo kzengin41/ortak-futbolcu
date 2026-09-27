@@ -54,6 +54,29 @@ alter table public.rooms add column if not exists game_mode text not null defaul
 alter table public.rooms add column if not exists is_ranked boolean not null default false;
 alter table public.rooms add column if not exists created_at timestamptz not null default now();
 
+-- 27 Eylül (2. sürüm): Kolon tipini değiştirmeyi ENGELLEYEN şeyleri önce kaldır.
+-- Canlı veritabanında rooms/rounds üzerinde farklı adlarla elle eklenmiş
+-- izin kuralları (policy) ya da player1_id -> auth.users yabancı anahtarı
+-- varsa "cannot alter type of a column used in a policy definition" hatası
+-- çıkıyor ve SQL Editor BÜTÜN betiği geri alıyordu. Aşağıdaki izinlerin
+-- hepsi zaten bu dosyada yeniden kuruluyor.
+do $$
+declare
+  r record;
+begin
+  for r in select policyname, tablename from pg_policies
+           where schemaname = 'public' and tablename in ('rooms', 'rounds') loop
+    execute format('drop policy if exists %I on public.%I', r.policyname, r.tablename);
+  end loop;
+  for r in select c.conname
+           from pg_constraint c
+           join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey)
+           where c.conrelid = 'public.rooms'::regclass and c.contype = 'f'
+             and a.attname in ('player1_id', 'player2_id') loop
+    execute format('alter table public.rooms drop constraint if exists %I', r.conname);
+  end loop;
+end $$;
+
 -- Cihaz kimliği uuid değil ("dev-mf3k2...") -> kolonları metne çevir.
 do $$
 begin

@@ -5,6 +5,7 @@ import SoundPressable from "../components/SoundPressable";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import BackButton from "../components/BackButton";
+import ModVarsayilanlariPaneli from "../components/ModVarsayilanlariPaneli";
 import { useAppSettings } from "../lib/SettingsContext";
 import { LEAGUE_PRESETS } from "../lib/leaguePresets";
 import {
@@ -99,6 +100,12 @@ export default function SettingsScreen({ onBack }) {
             );
           })}
         </View>
+
+        <Text style={styles.sectionTitle}>Mod Varsayılanları</Text>
+        <Text style={styles.sectionDesc}>
+          Her modun zorluğu (10 üzerinden), süresi ve diğer ayarları. Mod açılınca bunlar hazır gelir; oynamadan önce istersen değiştirirsin.
+        </Text>
+        <ModVarsayilanlariPaneli />
 
         <Text style={styles.sectionTitle}>Hatırlatma</Text>
         <Text style={styles.sectionDesc}>

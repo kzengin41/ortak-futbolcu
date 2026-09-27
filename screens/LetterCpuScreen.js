@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, VARSAYILAN_ZORLUK_ID } from "../components/ModKurulum";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
+import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
 import {   View, Text, TextInput, Pressable, StyleSheet, Animated, Easing , Modal , ScrollView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
@@ -20,13 +21,16 @@ import { recordRound } from "../lib/stats";
 
 // 27 Eylül 2026 — zorluk: CPU'nun ne kadar hızlı cevap verdiği (ms aralığı)
 // ve harf çiftinde hiç bulamama olasılığı.
-const CPU_ZORLUK = {
-  1: { cift: [11000, 17000], zincir: [6000, 9000], bulamama: 0.45 },
-  2: { cift: [8000, 13000], zincir: [4500, 7000], bulamama: 0.3 },
-  3: { cift: [5000, 9000], zincir: [3000, 5000], bulamama: 0.15 },
-  4: { cift: [3500, 6500], zincir: [2000, 3500], bulamama: 0.07 },
-  5: { cift: [2500, 4500], zincir: [1200, 2500], bulamama: 0 },
-};
+// 1-10: 1 = çok yavaş ve sık bulamayan CPU, 10 = çok hızlı ve hep bulan.
+function cpuZorluk(z) {
+  const t = (Math.min(10, Math.max(1, z)) - 1) / 9;
+  const ara = (a, b) => a + (b - a) * t;
+  return {
+    cift: [ara(11000, 2200), ara(17000, 4200)],
+    zincir: [ara(6000, 1100), ara(9000, 2300)],
+    bulamama: ara(0.5, 0),
+  };
+}
 
 // Filtre (Kapsam) Seçenekleri
 const SCOPE_OPTIONS = [
@@ -61,7 +65,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   const [scope, setScope] = useState("all");
   const [subMode, setSubMode] = useState("classic");
   // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı olmalı")
-  const [zorlukId, setZorlukId] = useState(VARSAYILAN_ZORLUK_ID);
+  const [zorlukId, setZorlukId] = useState(5); // 1-10
   const [harfSuresi, setHarfSuresi] = useState(15);
   
   // Game State
@@ -211,9 +215,14 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     return map;
   }, [filteredPlayers, subMode]);
 
+  const modVarsayilanKaydet = useModVarsayilanlari("letterCpu", { zorluk: setZorlukId, sure: setHarfSuresi, yontem: setInputMode });
+  useEffect(() => {
+    oyunBilgisiniYaz("letterCpu", { satirlar: ayarSatirlari({ zorluk: zorlukId, sure: harfSuresi, yontem: inputMode, ekstra: [["Hedef", "3 puan"]] }) });
+  }, [zorlukId, harfSuresi, inputMode]);
+
   // CPU'nun bu turdaki düşünme süresi — zorluğa göre, sürenin %85'ini aşmaz.
   const cpuGecikmesi = (tur) => {
-    const [en, ek] = CPU_ZORLUK[zorlukId][tur];
+    const [en, ek] = cpuZorluk(zorlukId)[tur];
     const ms = en + Math.random() * (ek - en);
     return Math.min(ms, harfSuresi * 1000 * 0.85);
   };
@@ -373,7 +382,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         const pair = [userLetter, cpuLetter].sort().join('-');
         const pool = activeMap.get(pair) || [];
         // Kolay seviyelerde CPU bazen bulamıyor (bekleyip pes ediyor).
-        if (Math.random() < CPU_ZORLUK[zorlukId].bulamama) return;
+        if (Math.random() < cpuZorluk(zorlukId).bulamama) return;
         if (pool.length > 0) {
           const guess = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
           processGuess(guess, "cpu");
@@ -529,6 +538,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         aciklama="Harfler 3-2-1'den sonra açılır. Harflere uyan bir futbolcuyu CPU'dan önce söyle. 3 puana ulaşan kazanır."
         vurgu={MODE_COLORS.letters}
         onGeri={onExitSilent || onExit}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorlukId, sure: harfSuresi, yontem: inputMode })}
         onBasla={startGame}
         baslaDevreDisi={filteredPlayers.length === 0}
       >
@@ -539,28 +549,25 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
             onSec={setSubMode}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="ZORLUK" not="Zorluk CPU'nun ne kadar hızlı ve isabetli olduğunu belirler.">
+        <KurulumBolum baslik="ZORLUK">
           <ZorlukSecici
-            seviyeler={[
-              { id: 1, etiket: "Çok Kolay", aciklama: "CPU çok yavaş, sık sık bulamaz" },
-              { id: 2, etiket: "Kolay", aciklama: "CPU yavaş" },
-              { id: 3, etiket: "Orta", aciklama: "Dengeli" },
-              { id: 4, etiket: "Zor", aciklama: "CPU hızlı" },
-              { id: 5, etiket: "Çok Zor", aciklama: "CPU çok hızlı, hep bulur" },
-            ]}
-            secili={zorlukId}
-            onSec={setZorlukId}
+            deger={zorlukId}
+            onDegis={setZorlukId}
+            aciklama={(z) => (z <= 3 ? "CPU yavaş, sık sık bulamaz." : z <= 7 ? "CPU dengeli." : "CPU çok hızlı ve neredeyse hep bulur.")}
           />
         </KurulumBolum>
         <KurulumBolum baslik="TUR SÜRESİ">
           <SureSecici
-            secenekler={[10, 15, 20, 30]}
+            secenekler={MOD_TANIMLARI.letterCpu.sure.secenekler}
             deger={harfSuresi}
             onDegis={setHarfSuresi}
-            asgari={5}
-            azami={90}
-            aciklama="Harfler açıldıktan sonra cevap için süre."
+            asgari={MOD_TANIMLARI.letterCpu.sure.asgari}
+            azami={MOD_TANIMLARI.letterCpu.sure.azami}
+            aciklama={MOD_TANIMLARI.letterCpu.sure.aciklama}
           />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+          <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
         <KurulumBolum baslik="KAPSAM" not={`Bu ayarlarla havuzda ${filteredPlayers.length} oyuncu var.`}>
           <SecimCipleri

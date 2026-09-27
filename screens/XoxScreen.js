@@ -15,13 +15,17 @@ import TimerBar from "../components/TimerBar";
 import { recognitionScore } from "../lib/clubWeights";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
-import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
+import { buildSuggestIndex, suggestPlayers, sesIpuclari } from "../lib/gameEngine";
+import { useVoiceInput } from "../lib/useVoiceInput";
+import VoiceConfirm from "../components/VoiceConfirm";
+import { useAppSettings } from "../lib/SettingsContext";
+import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import {
-  izgaraUret, baslangicDurumu, aksiyonuIsle, hucreCevaplari, kareTukendiMi,
+  izgaraUret, zorlukAyari10, baslangicDurumu, aksiyonuIsle, hucreCevaplari, kareTukendiMi,
   cpuHucreSec, cpuCevapSec, sonucMetni, ZORLUKLAR, VARSAYILAN_ZORLUK, X, O,
 } from "../lib/gridGame";
 
@@ -66,7 +70,10 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const playCpuCorrect = useCpuCorrectSound();
 
   const [rakipTipi, setRakipTipi] = useState("cpu");   // "cpu" | "iki"
-  const [zorluk, setZorluk] = useState(VARSAYILAN_ZORLUK);
+  // 27 Eylül 2026: zorluk 1-10 (bkz. lib/modAyarlari.js, gridGame zorlukAyari10)
+  const [zorluk, setZorluk] = useState(4);
+  const xoxAyar = useMemo(() => zorlukAyari10(zorluk), [zorluk]);
+  const [inputMode, setInputMode] = useState("keyboard");
   const [basladi, setBasladi] = useState(false);
   const [hazirlaniyor, setHazirlaniyor] = useState(false);
   const [durum, setDurum] = useState(null);
@@ -78,6 +85,19 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const [kalanSure, setKalanSure] = useState(null);
   const [cevaplarAcik, setCevaplarAcik] = useState(true);
   const { width: ekranGenislik } = useWindowDimensions();
+
+  // Sesli cevap durumu — süre sayacı bunlara baktığı için yukarıda tanımlı.
+  const seciliRef = useRef(null);
+  seciliRef.current = durum?.secili ? durum : null;
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(() => {
+    const d = seciliRef.current;
+    if (!d || !d.secili) return [];
+    return sesIpuclari(PLAYERS, [d.izgara.satirlar[d.secili.satir], d.izgara.sutunlar[d.secili.sutun]]);
+  });
+  const [sesHatasi, setSesHatasi] = useState(null);
+  const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
+  const { settings: appSettings } = useAppSettings();
+  const sesOnayiAcik = appSettings?.voiceConfirm !== false;
 
 
   // 26 Eylül 2026 (Kerem: "logolar ideal boyutta değil") — logo eskiden sabit
@@ -110,7 +130,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       // 13 Eylül 2026 (Kerem: "gelen takımlar zorluk derecesine göre daha kolay
       // olmalı") — ızgara ARTIK zorluğa göre kuruluyor; eskiden zorluk sadece
       // CPU'yu etkiliyordu, soru her seviyede aynı zorluktaydı.
-      const izgara = izgaraUret(PLAYERS, zorluk);
+      const izgara = izgaraUret(PLAYERS, xoxAyar);
       if (!izgara) { setUretilemedi(true); setHazirlaniyor(false); return; }
       // veriSeti veriliyor: dokuz karenin cevapları bir kez hesaplanıp durumda
       // saklanıyor (bkz. lib/gridGame.js baslangicDurumu).
@@ -120,7 +140,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       setHazirlaniyor(false);
       setBasladi(true);
     }, 40);
-  }, [zorluk]);
+  }, [xoxAyar]);
 
   // --- CPU sırası ----------------------------------------------------------
   useEffect(() => {
@@ -132,12 +152,12 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       setCpuDusunuyor(false);
       setDurum((d) => {
         if (!d || d.bitti || d.sira !== O) return d;
-        const indis = cpuHucreSec(d, zorluk, Math.random, PLAYERS);
+        const indis = cpuHucreSec(d, xoxAyar, Math.random, PLAYERS);
         if (indis === null) return d;
         const satir = Math.floor(indis / 3);
         const sutun = indis % 3;
         const secili = aksiyonuIsle(d, { tip: "hucreSec", satir, sutun }, baglam) || d;
-        const ad = cpuCevapSec(secili, satir, sutun, baglam, zorluk);
+        const ad = cpuCevapSec(secili, satir, sutun, baglam, xoxAyar);
         const sonraki = ad
           ? aksiyonuIsle(secili, { tip: "cevap", metin: ad }, baglam)
           : aksiyonuIsle(secili, { tip: "pas" }, baglam);
@@ -146,7 +166,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     }, 900 + Math.random() * 900);
 
     return () => { if (zamanlayiciRef.current) clearTimeout(zamanlayiciRef.current); };
-  }, [durum, cpuyaKarsi, zorluk, baglam]);
+  }, [durum, cpuyaKarsi, xoxAyar, baglam]);
 
   // --- Hamle süresi ----------------------------------------------------------
   const insanSirasi = !!durum && !durum.bitti && (!cpuyaKarsi || durum.sira === X);
@@ -158,6 +178,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
 
   useEffect(() => {
     if (kalanSure === null) return;
+    if (isProcessing || sesOnayIstegi) return; // ses işlenirken / onay açıkken durur
     if (kalanSure <= 0) {
       setKalanSure(null);
       setGirdi("");
@@ -166,7 +187,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     }
     const t = setTimeout(() => setKalanSure((s) => (s === null ? null : s - 1)), 1000);
     return () => clearTimeout(t);
-  }, [kalanSure, baglam]);
+  }, [kalanSure, baglam, isProcessing, sesOnayIstegi]);
 
   // --- Maç sonu: her karenin doğru cevapları ----------------------------------
   // 26 Eylül 2026 (Kerem: "maç sonunda doğru cevapları görebileceğimiz bir alan")
@@ -258,6 +279,47 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     if (yeni) { setDurum(yeni); setGirdi(""); }
   }
 
+  // --- Sesli cevap (27 Eylül 2026, Kerem: "xox'te sesli cevap yok") ----------
+  // Whisper ipucu: seçili karenin iki kulübünün tanınmış oyuncuları (doğru
+  // cevaplar da içinde ama bir o kadar yanlış aday var — kopya vermiyor).
+
+  async function mikrofonaBas() {
+    setSesHatasi(null);
+    if (isRecording) {
+      try {
+        const metin = await stopRecording();
+        if (!metin) { setSesHatasi("Sesi anlayamadım, tekrar dener misin?"); return; }
+        const gonder = (a) => cevapGonder(a);
+        const yaz = (a) => { setGirdi(a); setInputMode("keyboard"); };
+        if (sesOnayiAcik) setSesOnayIstegi({ duyulan: metin, ad: metin, gonder, yaz });
+        else gonder(metin);
+      } catch (err) {
+        setSesHatasi(err.message || "Ses tanıma başarısız oldu");
+      }
+    } else {
+      try { await startRecording(); } catch (err) { setSesHatasi(err.message || "Mikrofona erişilemedi"); }
+    }
+  }
+  function sesOnayla(a) { const i = sesOnayIstegi; setSesOnayIstegi(null); if (i && i.gonder) i.gonder(a); }
+  function sesYaz(a) { const i = sesOnayIstegi; setSesOnayIstegi(null); if (i && i.yaz) i.yaz(a); }
+  async function sesTekrar() {
+    setSesOnayIstegi(null);
+    try { await startRecording(); } catch (err) { setSesHatasi(err.message || "Mikrofona erişilemedi"); }
+  }
+  // Sıra değişince açık kalan kayıt/onay temizlensin.
+  useEffect(() => {
+    if (!durum?.secili) {
+      setSesOnayIstegi(null);
+      if (isRecording) stopRecording([]).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durum?.secili]);
+
+  const modVarsayilanKaydet = useModVarsayilanlari("xox", { zorluk: setZorluk, sure: setCevapSuresi, yontem: setInputMode });
+  useEffect(() => {
+    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"]] }) });
+  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi]);
+
   function cevapGonder(ad) {
     const metin = String(ad ?? girdi).trim();
     if (!metin || !durum?.secili) return;
@@ -279,6 +341,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
         aciklama="Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan kazanır."
         vurgu={VURGU}
         onGeri={onExitSilent || onExit}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode })}
         onBasla={yeniOyun}
         baslaYukleniyor={hazirlaniyor}
       >
@@ -299,20 +362,23 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             : "Zorluk ızgaradaki kulüpleri ve karelerin ne kadar kolay doldurulacağını belirler."}
         >
           <ZorlukSecici
-            seviyeler={ZORLUKLAR.map((z) => ({ id: z.id, etiket: z.etiket, aciklama: z.aciklama }))}
-            secili={zorluk}
-            onSec={setZorluk}
+            deger={zorluk}
+            onDegis={setZorluk}
+            aciklama={(z) => (z <= 2 ? "Bol ortak isimli dev kulüpler." : z <= 4 ? "Tanıdık kulüpler, rahat kareler." : z <= 6 ? "Dengeli." : z <= 8 ? "Az ortak isimli kareler." : "İğne deliği kareler.")}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP SÜRESİ (HAMLE BAŞINA)">
+        <KurulumBolum baslik={MOD_TANIMLARI.xox.sure.etiket}>
           <SureSecici
-            secenekler={SURE_SECENEKLERI}
+            secenekler={MOD_TANIMLARI.xox.sure.secenekler}
             deger={cevapSuresi}
             onDegis={setCevapSuresi}
-            asgari={ASGARI_SURE}
-            azami={AZAMI_SURE}
-            aciklama="Sıra sana geçtiğinde süre başlar. Dolarsa sıra rakibe geçer."
+            asgari={MOD_TANIMLARI.xox.sure.asgari}
+            azami={MOD_TANIMLARI.xox.sure.azami}
+            aciklama={MOD_TANIMLARI.xox.sure.aciklama}
           />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP YÖNTEMİ" not="İki yöntem de oyun sırasında her zaman kullanılabilir; bu seçim hangisinin öne çıkacağını belirler.">
+          <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
       </ModKurulum>
     );
@@ -383,19 +449,43 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
-                  placeholder="Futbolcu adı yaz..."
+                  placeholder={inputMode === "voice" ? "Konuş ya da yaz..." : "Futbolcu adı yaz..."}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
                   onChangeText={setGirdi}
                   onSubmitEditing={() => cevapGonder()}
                   returnKeyType="send"
                   autoCorrect={false}
-                  autoFocus
+                  autoCapitalize="words"
+                  spellCheck={false}
+                  autoFocus={inputMode !== "voice"}
                 />
-                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()}>
+                <SoundPressable
+                  style={[styles.mikrofonBtn, isRecording && styles.mikrofonBtnAktif]}
+                  onPress={mikrofonaBas}
+                  disabled={isProcessing}
+                  accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle cevap ver"}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator color={COLORS.text} />
+                  ) : (
+                    <Ionicons name={isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#fff" : COLORS.text} />
+                  )}
+                </SoundPressable>
+                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>
               </View>
+              {isRecording ? <Text style={styles.sesIpucu}>Dinliyorum — bitince kırmızı düğmeye dokun</Text> : null}
+              {isProcessing ? <Text style={styles.sesIpucu}>Yazıya çevriliyor...</Text> : null}
+              {sesHatasi ? <Text style={[styles.sesIpucu, { color: COLORS.danger }]}>{sesHatasi}</Text> : null}
+              <VoiceConfirm
+                istek={sesOnayIstegi}
+                onOnayla={sesOnayla}
+                onTekrar={sesTekrar}
+                onYaz={sesYaz}
+                onIptal={() => setSesOnayIstegi(null)}
+              />
 
               {oneriler.length > 0 && (
                 <ScrollView
@@ -682,6 +772,12 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md,
     color: COLORS.text, fontSize: 15,
   },
+  mikrofonBtn: {
+    width: 48, height: 48, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
+  },
+  mikrofonBtnAktif: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  sesIpucu: { ...TYPE.caption, textAlign: "center", marginTop: SPACING.sm },
   gonderBtn: {
     backgroundColor: COLORS.accent, borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, ...SHADOW.card,

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MODE_GUIDES } from "../lib/modeGuides";
+import { useOyunBilgisi } from "../lib/modAyarlari";
 import { COLORS, SPACING, RADIUS, TYPE, SHADOW } from "../lib/theme";
 
 // ============================================================================
@@ -71,6 +72,10 @@ export function ModeGuideButton({ onPress }) {
 }
 
 export default function ModeGuide({ mod, gorunur, onClose }) {
+  // 27 Eylül 2026 (Kerem: "bilemedim/pes et butonları, süre kısıtları, lig
+  // kısıtları her yerden bakılabilsin") — ekranlar güncel ayarlarını
+  // lib/modAyarlari.js'e yazıyor; bu pencere her modda aynı yerden gösteriyor.
+  const bilgi = useOyunBilgisi(mod === "fiveClubsCpu" ? "fiveClubs" : mod);
   const rehber = MODE_GUIDES[mod];
   if (!rehber) return null;
 
@@ -84,7 +89,19 @@ export default function ModeGuide({ mod, gorunur, onClose }) {
           </View>
           <Text style={styles.altBaslik}>Nasıl oynanır</Text>
 
-          <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+            {bilgi && bilgi.satirlar && bilgi.satirlar.length ? (
+              <View style={styles.ayarKutu}>
+                <Text style={styles.ayarBaslik}>BU MAÇIN AYARLARI</Text>
+                {bilgi.satirlar.map(([ad, deger]) => (
+                  <View key={ad} style={styles.ayarSatir}>
+                    <Text style={styles.ayarAd}>{ad}</Text>
+                    <Text style={styles.ayarDeger} numberOfLines={2}>{deger}</Text>
+                  </View>
+                ))}
+                <Text style={styles.ayarNot}>Varsayılanları Ayarlar &gt; Mod Varsayılanları'ndan değiştirebilirsin.</Text>
+              </View>
+            ) : null}
             {rehber.points.map((madde, i) => (
               <View key={i} style={styles.maddeSatiri}>
                 <View style={styles.nokta}>
@@ -96,7 +113,7 @@ export default function ModeGuide({ mod, gorunur, onClose }) {
           </ScrollView>
 
           <Pressable style={styles.anaBtn} onPress={onClose}>
-            <Text style={styles.anaBtnYazi}>ANLADIM, BAŞLA</Text>
+            <Text style={styles.anaBtnYazi}>TAMAM</Text>
           </Pressable>
           <Pressable onPress={onClose} hitSlop={12}>
             <Text style={styles.atla}>Atla</Text>
@@ -125,6 +142,15 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     ...SHADOW.card,
   },
+  ayarKutu: {
+    backgroundColor: COLORS.bg, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.lg,
+  },
+  ayarBaslik: { ...TYPE.eyebrow, fontSize: 11, marginBottom: SPACING.sm },
+  ayarSatir: { flexDirection: "row", justifyContent: "space-between", gap: SPACING.md, paddingVertical: 3 },
+  ayarAd: { ...TYPE.caption },
+  ayarDeger: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flexShrink: 1, textAlign: "right" },
+  ayarNot: { ...TYPE.caption, fontSize: 11, color: COLORS.textFaint, marginTop: SPACING.sm },
   baslikSatiri: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   baslik: { ...TYPE.h2, flexShrink: 1 },
   altBaslik: { ...TYPE.caption, marginTop: SPACING.xs, marginBottom: SPACING.lg },

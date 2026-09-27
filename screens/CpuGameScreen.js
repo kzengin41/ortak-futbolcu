@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi, zorlukMotoru, VARSAYILAN_ZORLUK_ID } from "../components/ModKurulum";
+import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
+import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,8 +46,7 @@ const WIN_LIMIT_OPTIONS = [
 ];
 
 export default function CpuGameScreen({ onExit, onExitSilent }) {
-  const [zorlukId, setZorlukId] = useState(VARSAYILAN_ZORLUK_ID);
-  const difficulty = zorlukMotoru(zorlukId); // 1-10 motor ölçeği (tur havuzu + CPU)
+  const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
   const [roundSeconds, setRoundSeconds] = useState(ROUND_TIME_OPTIONS[1]);
   const [targetScore, setTargetScore] = useState(5);
   const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
@@ -377,6 +377,13 @@ export default function CpuGameScreen({ onExit, onExitSilent }) {
     }
   }
 
+  // 27 Eylül 2026 — merkezî mod ayarları (lib/modAyarlari.js): varsayılanlar
+  // Ayarlar'dan gelir, kurulumda değiştirilebilir, oyun içinde "?" ile görülür.
+  const modVarsayilanKaydet = useModVarsayilanlari("cpu", { zorluk: setDifficulty, sure: setRoundSeconds, galibiyet: setTargetScore, yontem: setInputMode });
+  useEffect(() => {
+    oyunBilgisiniYaz("cpu", { satirlar: ayarSatirlari({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, lig: presetLabel, yontem: inputMode }) });
+  }, [difficulty, roundSeconds, targetScore, presetLabel, inputMode]);
+
   if (!started) {
     // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı
     // olmalı. her moddaki mimari dizayn aynı olmalı.") — kurulum ekranı artık
@@ -387,19 +394,20 @@ export default function CpuGameScreen({ onExit, onExitSilent }) {
         aciklama="İki kulüp çıkar. İkisinde de oynamış bir futbolcuyu CPU'dan önce söyle."
         vurgu={MODE_COLORS.teamTeam}
         onGeri={onExitSilent || onExit}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, yontem: inputMode })}
         onBasla={() => setStarted(true)}
       >
         <KurulumBolum baslik="ZORLUK">
-          <ZorlukSecici secili={zorlukId} onSec={setZorlukId} />
+          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Sadece efsaneler ve süper yıldızlar sorulur, CPU yavaş ve sık yanılır." : z <= 7 ? "Büyük liglerin bilinen oyuncuları sorulur, CPU dengeli." : "Az bilinen oyuncular da sorulur, CPU hızlı ve isabetli.")} />
         </KurulumBolum>
         <KurulumBolum baslik="TUR SÜRESİ">
           <SureSecici
-            secenekler={[8, 10, 15, 20]}
+            secenekler={MOD_TANIMLARI.cpu.sure.secenekler}
             deger={roundSeconds}
             onDegis={setRoundSeconds}
-            asgari={5}
-            azami={60}
-            aciklama="Takımlar göründükten sonra zile basmak için süre. Zile basınca cevap için ayrıca 12 sn var."
+            asgari={MOD_TANIMLARI.cpu.sure.asgari}
+            azami={MOD_TANIMLARI.cpu.sure.azami}
+            aciklama={MOD_TANIMLARI.cpu.sure.aciklama}
           />
         </KurulumBolum>
         <KurulumBolum baslik="GALİBİYET SINIRI">
@@ -632,6 +640,14 @@ export default function CpuGameScreen({ onExit, onExitSilent }) {
                 <Text style={styles.switchModeLinkText}>Bunun yerine sesle söylemek istiyorum</Text>
               </SoundPressable>
             </>
+          )}
+          {/* 27 Eylül 2026 (Kerem: "ülke-takım modunda bilemedim butonu yok")
+              — zile bastıktan sonra da pes edilebilsin: yanlış cevapla aynı
+              sonuç (CPU'ya anında son şans verilir, tur beklemeden biter). */}
+          {buzzedBy === "p1" && (
+            <SoundPressable onPress={() => { if (sesOnayIstegi) setSesOnayIstegi(null); resolveCpuInstant(); }} style={styles.passBtn}>
+              <Text style={styles.passBtnText}>Bilemedim</Text>
+            </SoundPressable>
           )}
         </KeyboardAvoidingView>
       )}

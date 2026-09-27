@@ -25,14 +25,49 @@ import { addXP, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 
 import PoolEmpty from "../components/PoolEmpty";
 import TimerBar from "../components/TimerBar";
-import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici } from "../components/ModKurulum";
+import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici, SecimCipleri, CokluSecim } from "../components/ModKurulum";
+import TeamBadge from "../components/TeamBadge";
+import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { countryTr } from "../lib/countryNamesTr";
 import { positionTr } from "../lib/positionNamesTr";
 let PLAYER_HINTS = {};
 try { PLAYER_HINTS = require("../lib/playerHints.json"); } catch (e) {}
 
-// 27 Eylül 2026: kurulumdaki zorluk = başlangıç seviyesi.
-const BASLANGIC_SEVIYESI = { 1: 1, 2: 4, 3: 9, 4: 16, 5: 21 };
+// 27 Eylül 2026: kurulumdaki zorluk (1-10) = başlangıç seviyesi.
+const BASLANGIC_SEVIYESI = { 1: 1, 2: 2, 3: 3, 4: 5, 5: 7, 6: 9, 7: 12, 8: 15, 9: 18, 10: 21 };
+
+// 27 Eylül 2026 (Kerem: "kim bu modunda sene kısıtı konmalı. Lefter falan
+// soruyor, aşırı eski. ... 2010-günümüz default seçili gelmeli") — oyuncunun
+// aktif olduğu yıllar seçilen dönemlerden en az biriyle kesişmeli.
+// Aktif yıllar: son yıl = playerYears.json; ilk yıl = doğum yılı + 18
+// (doğum yılı yoksa son yıldan 12 yıl geri — ortalama bir kariyer).
+const BU_YIL = new Date().getFullYear();
+const DONEMLER = [
+  { deger: "eski", etiket: "1980 ve öncesi", bas: 0, son: 1980 },
+  { deger: "80-2000", etiket: "1980 – 2000", bas: 1980, son: 2000 },
+  { deger: "2000-2010", etiket: "2000 – 2010", bas: 2000, son: 2010 },
+  { deger: "2010-2020", etiket: "2010 – 2020", bas: 2010, son: 2020 },
+  { deger: "2020+", etiket: "2020 – günümüz", bas: 2020, son: 9999 },
+];
+const VARSAYILAN_DONEMLER = ["2010-2020", "2020+"];
+
+function aktifYillar(ad) {
+  let son = PLAYER_LAST_ACTIVE_YEAR[ad];
+  if (!Number.isFinite(son) || son < 1850 || son > BU_YIL + 1) son = null;
+  const dogum = (PLAYER_BIRTH_POSITION[ad] || {}).birthYear;
+  let bas = Number.isFinite(dogum) && dogum > 1850 ? dogum + 18 : null;
+  if (bas == null && son != null) bas = son - 12;
+  if (son == null && bas != null) son = Math.min(BU_YIL, bas + 15);
+  if (bas == null || son == null) return null;
+  return [bas, son];
+}
+
+function donemdeMi(ad, secili) {
+  if (secili.length === DONEMLER.length) return true; // hepsi seçiliyse filtre yok
+  const yil = aktifYillar(ad);
+  if (!yil) return false;
+  return DONEMLER.some((d) => secili.includes(d.deger) && yil[0] <= d.son && yil[1] >= d.bas);
+}
 
 // Zorluk Eğrisi (Difficulty curve mapping)
 // Seviyeye göre oyuncu popülerlik sıralamasındaki havuzu belirler
@@ -132,7 +167,8 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
   // zorluk ve süre seçilemiyordu (Kerem: "her mod için zorluk ayarı olmalı.
   // süre ayarı olmalı").
   const [phase, setPhase] = useState("setup"); // setup, playing, roundEnd, gameOver
-  const [zorlukId, setZorlukId] = useState(1);
+  const [zorlukId, setZorlukId] = useState(3); // 1-10
+  const [donemler, setDonemler] = useState(VARSAYILAN_DONEMLER);
   const [soruSuresi, setSoruSuresi] = useState(null); // saniye | null (süresiz)
   const [kalanSure, setKalanSure] = useState(null);
   const baslangicSeviyesi = BASLANGIC_SEVIYESI[zorlukId] || 1;
@@ -172,9 +208,9 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
 
   const sortedPlayers = useMemo(() => {
     return PLAYERS
-      .filter(p => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name))
+      .filter(p => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name) && donemdeMi(p.name, donemler))
       .sort((a, b) => calculatePlayerPopularity(b) - calculatePlayerPopularity(a));
-  }, [guvenilirFotoVar]);
+  }, [guvenilirFotoVar, donemler]);
 
   // seviye parametresi: setLevel ile aynı anda çağrıldığında eski (bayat)
   // seviyeyi kullanmasın diye yeni seviye doğrudan veriliyor.
@@ -233,6 +269,24 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
     startNewRound(baslangicSeviyesi);
   }
 
+  const modVarsayilanKaydet = useModVarsayilanlari("whoAmICpu", { zorluk: setZorlukId, sure: setSoruSuresi, yontem: setInputMode });
+  const { settings: ayarlar, loaded: ayarlarYuklendi } = useAppSettings();
+  const donemYuklendi = useRef(false);
+  useEffect(() => {
+    if (!ayarlarYuklendi || donemYuklendi.current) return;
+    donemYuklendi.current = true;
+    const kayitli = ayarlar?.modVarsayilanlari?.whoAmICpu?.donemler;
+    if (Array.isArray(kayitli) && kayitli.length) setDonemler(kayitli.filter((d) => DONEMLER.some((x) => x.deger === d)));
+  }, [ayarlarYuklendi]);
+  useEffect(() => {
+    oyunBilgisiniYaz("whoAmICpu", {
+      satirlar: ayarSatirlari({
+        zorluk: zorlukId, sure: soruSuresi, yontem: inputMode,
+        ekstra: [["Dönem", DONEMLER.filter((d) => donemler.includes(d.deger)).map((d) => d.etiket).join(", ")], ["Can", "3"]],
+      }),
+    });
+  }, [zorlukId, soruSuresi, inputMode, donemler]);
+
   // Soru süresi (seçildiyse). Ses işlenirken / onay penceresi açıkken durur.
   useEffect(() => {
     if (phase !== "playing" || kalanSure === null) return;
@@ -261,12 +315,14 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
   };
   
   const buyRandomClub = () => {
-    if (roundScore - 1500 < 0 || !player) return;
+    // 27 Eylül 2026: kod 1500 düşüyordu, düğmede ise "-600" yazıyordu
+    // (12 Eylül'de fiyat 600'e indirilmiş ama sadece yazı değişmişti).
+    if (roundScore - 600 < 0 || !player) return;
     const available = player.clubs.map((c, idx) => idx).filter(idx => !revealed.clubs.includes(idx));
     if (available.length === 0) return;
     
     const randomIdx = available[Math.floor(Math.random() * available.length)];
-    setRoundScore(prev => prev - 1500);
+    setRoundScore(prev => prev - 600);
     setRevealed(prev => ({ ...prev, clubs: [...prev.clubs, randomIdx] }));
   };
 
@@ -387,30 +443,35 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
         vurgu={MODE_COLORS.whoAmI}
         onGeri={onExitSilent || onExit}
         onBasla={oyunuBaslat}
+        baslaDevreDisi={sortedPlayers.length === 0}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorlukId, sure: soruSuresi, yontem: inputMode, donemler })}
       >
-        <KurulumBolum baslik="ZORLUK" not="Oyuna hangi seviyeden başlayacağını belirler. Her doğru cevapta seviye yine artar.">
+        <KurulumBolum
+          baslik="DÖNEM"
+          not={`Seçtiğin yıllarda oynamış, fotoğrafı olan ${sortedPlayers.length} futbolcu var.`}
+        >
+          <CokluSecim secenekler={DONEMLER} secililer={donemler} onDegis={setDonemler} />
+        </KurulumBolum>
+        <KurulumBolum baslik="ZORLUK">
           <ZorlukSecici
-            seviyeler={[
-              { id: 1, etiket: "Çok Kolay", aciklama: "Seviye 1'den: dünya yıldızları" },
-              { id: 2, etiket: "Kolay", aciklama: "Seviye 4'ten: çok bilinen isimler" },
-              { id: 3, etiket: "Orta", aciklama: "Seviye 9'dan: bilinen oyuncular" },
-              { id: 4, etiket: "Zor", aciklama: "Seviye 16'dan: az bilinenler" },
-              { id: 5, etiket: "Çok Zor", aciklama: "Seviye 21'den: sadece meraklılar için" },
-            ]}
-            secili={zorlukId}
-            onSec={setZorlukId}
+            deger={zorlukId}
+            onDegis={setZorlukId}
+            aciklama={(z) => `Seviye ${BASLANGIC_SEVIYESI[z]}'den başlar. ` + (z <= 3 ? "En bilinen yıldızlar." : z <= 6 ? "Bilinen oyuncular." : "Az bilinenler de gelir.")}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="SORU SÜRESİ">
+        <KurulumBolum baslik={MOD_TANIMLARI.whoAmICpu.sure.etiket}>
           <SureSecici
-            secenekler={[30, 60, 90]}
+            secenekler={MOD_TANIMLARI.whoAmICpu.sure.secenekler}
             deger={soruSuresi}
             onDegis={setSoruSuresi}
             suresizVar
-            asgari={15}
-            azami={300}
-            aciklama="Süre dolarsa bir can gider."
+            asgari={MOD_TANIMLARI.whoAmICpu.sure.asgari}
+            azami={MOD_TANIMLARI.whoAmICpu.sure.azami}
+            aciklama={MOD_TANIMLARI.whoAmICpu.sure.aciklama}
           />
+        </KurulumBolum>
+        <KurulumBolum baslik="CEVAP YÖNTEMİ" not="İki yöntem de oyun sırasında her zaman kullanılabilir.">
+          <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
       </ModKurulum>
     );
@@ -431,8 +492,7 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
 
   const info = PLAYER_BIRTH_POSITION[player.name] || {};
   const teams = PLAYER_NATIONAL_TEAMS[player.name];
-  const lastYear = PLAYER_LAST_ACTIVE_YEAR[player.name];
-  
+
   // Biyografi Metni
   let bioText = "";
   if (PLAYER_HINTS[player.name] && PLAYER_HINTS[player.name] !== "YOK") {
@@ -440,329 +500,505 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
   } else {
     bioText = generateDynamicBio(player, info, teams);
   }
-
-  // Fotoğraf URL (Bulanık için) — bkz. lib/playerPhotos.js: karışık veri
-  // biçimini (tam URL / sadece dosya adı) tek noktadan doğru çözüyor.
   const photoUrl = resolvePlayerPhotoUrl(player.name);
+  const kulupAdi = (c) => (typeof c === "string" ? c : (c && c.name) || String(c));
+  const kapaliKulup = player.clubs.length - revealed.clubs.length;
+
+  function pesEt() {
+    if (sesOnayIstegi) setSesOnayIstegi(null);
+    const kalanCan = lives - 1;
+    setLives(kalanCan);
+    setCombo(0);
+    recordRound("whoAmICpu", false);
+    playWrong();
+    if (kalanCan <= 0) addXP(XP_MAC_MAGLUBIYETI);
+    setPhase(kalanCan <= 0 ? "gameOver" : "roundEnd");
+    setFeedback({ type: "wrong", text: "Pes ettin — bir can gitti" });
+  }
+
+  function mikrofon() {
+    if (isRecording) sesiBitirVeCevapla();
+    else startVoiceListening();
+  }
+
+  // ==========================================================================
+  // 27 Eylül 2026 — EKRAN BAŞTAN TASARLANDI (Kerem: "10.000 puan çok küçük
+  // görünüyor, oynadığı takımlar kısmı çok yer kaplıyor, oyuncu adını yazarken
+  // klavye aşırı aşağıda kalıyor, öneriler görünmüyor. sesli cevap seçeneği
+  // yok. ... MÜKEMMEL ÖTESİ BİR TASARIM").
+  //
+  //  ┌ Üst şerit: canlar · seviye · toplam skor
+  //  ├ CEVAP ÇUBUĞU (EN ÜSTTE, SABİT): yazı kutusu + mikrofon + gönder;
+  //  │   öneriler kutunun HEMEN ALTINDA açılır. Klavye ekranın altını
+  //  │   kapatsa bile hiçbiri klavyenin arkasında kalamaz (XOX'te aynı çözüm
+  //  │   işe yaradı). Sesli cevap artık gizli bir bağlantı değil, her zaman
+  //  │   görünen mikrofon düğmesi.
+  //  ├ Kaydırılan alan:
+  //  │   • VİTRİN: gizemli oyuncu kartı + KOCAMAN "kalan ödül"
+  //  │   • AÇILAN BİLGİLER: satın alınan ipuçları kart olarak
+  //  │   • İPUCU MARKETİ: 2 sütunlu karolar (ikon, ad, fiyat)
+  //  │   • KARİYER: tek satırda küçük numaralı çipler (eskiden 100x60'lık
+  //  │     kutular yatay kaydırılıyordu, ekranın üçte birini kaplıyordu)
+  //  │   • Jokerler + Pes et
+  // ==========================================================================
+  const IPUCLARI = [
+    { tip: "nationality", ikon: "earth", ad: "Uyruk & Mevki", fiyat: 500 },
+    { tip: "eraAge", ikon: "calendar", ad: "Doğum Yılı", fiyat: 500 },
+    { tip: "firstLetter", ikon: "text", ad: "Baş Harfler", fiyat: 800 },
+    { tip: "bio", ikon: "mic-circle", ad: "Spikerin Notu", fiyat: 2000 },
+    ...(photoUrl ? [{ tip: "silhouette", ikon: "body", ad: "Silüet", fiyat: 3000 }] : []),
+  ];
+
+  const ustSerit = (
+    <View style={y.ustSerit}>
+      <BackButton text="Menü" onPress={onExit} />
+      <View style={y.canlar}>
+        {[...Array(3)].map((_, i) => (
+          <Ionicons key={i} name={i < lives ? "heart" : "heart-outline"} size={22} color={i < lives ? COLORS.danger : COLORS.textFaint} />
+        ))}
+      </View>
+      <View style={y.seviyeRozet}>
+        <Text style={y.seviyeUst}>SEVİYE</Text>
+        <Text style={y.seviyeSayi}>{level}</Text>
+      </View>
+      <View style={y.skorKutu}>
+        <Text style={y.skorUst}>SKOR</Text>
+        <Text style={y.skorSayi}>{totalScore.toLocaleString("tr-TR")}</Text>
+      </View>
+    </View>
+  );
 
   return (
-    <GameBackground style={styles.container}>
-      <BackButton text="Menüye Dön" onPress={onExit} style={{ marginLeft: 20, marginBottom: 8 }} />
-      <View style={styles.topBar}>
-        <View style={styles.hearts}>
-          {[...Array(3)].map((_, i) => (
-            <Ionicons key={i} name={i < lives ? "heart" : "heart-outline"} size={20} color={i < lives ? COLORS.danger : COLORS.textFaint} />
-          ))}
-        </View>
-        <View style={styles.levelBadge}>
-          <Text style={styles.levelText}>SEVİYE {level}</Text>
-        </View>
-        <View style={styles.scoreBox}>
-          <Text style={styles.scoreLabel}>SKOR</Text>
-          <Text style={styles.scoreValue}>{totalScore}</Text>
-        </View>
-      </View>
+    <GameBackground style={y.kap}>
+      {ustSerit}
 
       {phase === "playing" && kalanSure !== null && soruSuresi ? (
-        <View style={{ marginTop: -8 }}>
-          <TimerBar current={kalanSure} total={soruSuresi} />
+        <View style={y.sureSatir}>
+          <View style={{ flex: 1 }}><TimerBar current={kalanSure} total={soruSuresi} /></View>
+          <Text style={[y.sureYazi, kalanSure <= 5 && { color: COLORS.danger }]}>{kalanSure} sn</Text>
         </View>
       ) : null}
 
-      {combo >= 3 && (
-        <View style={styles.comboBar}>
-          <Ionicons name="flame" size={16} color={COLORS.ctaDark} />
-          <Text style={styles.comboText}>{combo} KOMBO (x1.5 ÇARPAN)</Text>
-          <Ionicons name="flame" size={16} color={COLORS.ctaDark} />
-        </View>
-      )}
-
-      {/* 11 Eylül 2026 (Kerem: "bu mod ekrana sığmıyor, oyuncu adı yazma kısmı
-          klavyenin altında kalıyor, öneriler gözükmüyor") — iki ayrı sorun
-          vardı: (1) klavye açılınca içerik yukarı itilmiyordu, giriş alanı ve
-          hemen altındaki öneri listesi klavyenin arkasında kalıyordu;
-          (2) ScrollView'da `keyboardShouldPersistTaps` yoktu, bu yüzden bir
-          öneriye dokunmak önce sadece klavyeyi kapatıyor, dokunuş öneriye
-          hiç ulaşmıyordu. */}
-      {phase === "playing" && !feedback && (
-        <KeyboardAvoidingView
-          style={{ flex: 1, width: "100%" }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 12}
-        >
-        <ScrollView
-          ref={scrollRef}
-          style={styles.scrollArea}
-          contentContainerStyle={{ paddingBottom: 160 }}
-          keyboardShouldPersistTaps="always"
-          showsVerticalScrollIndicator={false}
-        >
-          
-          <View style={styles.dossierHeader}>
-            
-            <Text style={styles.potScore}>Kalan Ödül: <Text style={{ color: COLORS.success }}>{roundScore}</Text></Text>
+      {phase === "playing" && (
+        <>
+          {/* --- CEVAP ÇUBUĞU (sabit, üstte) --- */}
+          <View style={y.cevapKutu}>
+            <View style={y.cevapSatir}>
+              <Ionicons name="search" size={18} color={COLORS.textMuted} style={{ marginLeft: 4 }} />
+              <TextInput
+                style={y.cevapGirdi}
+                autoCorrect={false}
+                autoCapitalize="words"
+                spellCheck={false}
+                placeholder={inputMode === "voice" ? "Mikrofona bas ya da yaz..." : "Bu futbolcu kim?"}
+                placeholderTextColor={COLORS.textFaint}
+                value={answerInput}
+                onChangeText={setAnswerInput}
+                onSubmitEditing={() => { if (answerInput.trim()) { checkAnswer(answerInput.trim()); setAnswerInput(""); } }}
+                returnKeyType="send"
+              />
+              <SoundPressable
+                onPress={mikrofon}
+                disabled={isProcessing}
+                style={[y.ikonDugme, (isRecording || inputMode === "voice") && y.ikonDugmeVurgu, isRecording && y.ikonDugmeKayit]}
+                accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle cevap ver"}
+              >
+                <Ionicons
+                  name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"}
+                  size={20}
+                  color={isRecording || inputMode === "voice" ? COLORS.accentDark : COLORS.text}
+                />
+              </SoundPressable>
+              <SoundPressable
+                onPress={() => { if (answerInput.trim()) { checkAnswer(answerInput.trim()); setAnswerInput(""); } }}
+                style={[y.ikonDugme, y.gonderDugme]}
+                accessibilityLabel="Tahmini gönder"
+              >
+                <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
+              </SoundPressable>
+            </View>
+            {suggestions.length > 0 && answerInput.trim().length > 1 ? (
+              <View style={y.oneriListe}>
+                {suggestions.slice(0, 4).map((ad) => (
+                  <SoundPressable key={ad} style={y.oneriSatir} onPress={() => { setAnswerInput(""); checkAnswer(ad); }}>
+                    <Ionicons name="person-circle-outline" size={18} color={COLORS.textMuted} />
+                    <Text style={y.oneriYazi} numberOfLines={1}>{ad}</Text>
+                  </SoundPressable>
+                ))}
+              </View>
+            ) : null}
+            {isRecording ? <Text style={y.sesDurum}>Dinliyorum — bitince kırmızı düğmeye dokun</Text> : null}
+            {isProcessing ? <Text style={y.sesDurum}>Yazıya çevriliyor...</Text> : null}
+            {voiceError ? <Text style={[y.sesDurum, { color: COLORS.danger }]}>{voiceError}</Text> : null}
+            <VoiceConfirm
+              istek={sesOnayIstegi}
+              onOnayla={sesOnayla}
+              onTekrar={sesTekrar}
+              onYaz={sesYaz}
+              onIptal={() => setSesOnayIstegi(null)}
+            />
           </View>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-              {/* 1. Uyruk & Mevki */}
-              {revealed.nationality ? (
-                <View style={styles.clueIconRevealed}>
-                  <Ionicons name="earth" size={18} color={COLORS.accent} />
-                  {/* 12 Eylül 2026 (Kerem: "bu modda mevki, ülke isimleri vs
-                      hep İngilizce geliyor") — veri seti İngilizce kalıyor,
-                      sadece gösterim Türkçeleşiyor. */}
-                  <Text style={styles.clueRevealedText}>
-                    {(teams || []).map(countryTr).join(", ") || "?"}
-                  </Text>
-                  <Text style={styles.clueRevealedSub}>{positionTr(info.position) || "?"}</Text>
-                </View>
-              ) : (
-                <Pressable style={[styles.clueIconBox, roundScore < 500 && styles.buyBtnDisabled]} onPress={() => buyClue('nationality', 500)}>
-                  <Ionicons name="earth" size={24} color={COLORS.accent} />
-                  <Text style={styles.clueIconPrice}>-500</Text>
-                </Pressable>
-              )}
-
-              {/* 2. Yaş & Dönem */}
-              {revealed.eraAge ? (
-                <View style={styles.clueIconRevealed}>
-                  <Ionicons name="calendar" size={18} color={COLORS.accent} />
-                  <Text style={styles.clueRevealedText}>D: {info.birthYear || "?"}</Text>
-                </View>
-              ) : (
-                <Pressable style={[styles.clueIconBox, roundScore < 500 && styles.buyBtnDisabled]} onPress={() => buyClue('eraAge', 500)}>
-                  <Ionicons name="calendar" size={24} color={COLORS.accent} />
-                  <Text style={styles.clueIconPrice}>-500</Text>
-                </Pressable>
-              )}
-
-              {/* 4. İlk Harf */}
-              {revealed.firstLetter ? (
-                <View style={styles.clueIconRevealed}>
-                  <Ionicons name="text" size={18} color={COLORS.accent} />
-                  {/* 12 Eylül 2026 (Kerem: "isim ipucu daha ucuz olmalı ve
-                      hem isim hem soy isim baş harfini vermeli") — eskiden
-                      2500 puana SADECE ilk harf veriyordu, yani en pahalı
-                      ipuçlarından biri en az bilgiyi veriyordu. */}
-                  <Text style={styles.clueRevealedBig}>{basHarfler(player.name)}</Text>
-                </View>
-              ) : (
-                <Pressable
-                  disabled={roundScore < 800}
-                  style={[styles.clueIconBox, roundScore < 800 && styles.buyBtnDisabled]}
-                  onPress={() => buyClue('firstLetter', 800)}>
-                  <Ionicons name="text" size={24} color={COLORS.accent} />
-                  <Text style={styles.clueIconPrice}>-800</Text>
-                </Pressable>
-              )}
-
-              {/* 5. Silüet */}
-              {photoUrl && (
-                revealed.silhouette ? (
-                  <View style={styles.clueIconRevealed}>
-                    {photoBroken ? (
-                      <Text style={styles.clueIconPrice}>Fotoğraf yüklenemedi</Text>
-                    ) : (
-                      <HizliResim
-                        source={{ uri: photoUrl }}
-                        style={styles.silhouetteThumb}
-                        tintColor={COLORS.cardBorder}
-                        cachePolicy="memory-disk"
-                        priority="high"
-                        transition={100}
-                        onError={() => setPhotoBroken(true)}
-                      />
-                    )}
-                  </View>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={y.icerik}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* --- VİTRİN --- */}
+            <View style={y.vitrin}>
+              <View style={y.gizemHalka}>
+                {revealed.silhouette && photoUrl && !photoBroken ? (
+                  <HizliResim
+                    source={{ uri: photoUrl }}
+                    style={y.siluet}
+                    tintColor={COLORS.text}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    priority="high"
+                    transition={120}
+                    onError={() => setPhotoBroken(true)}
+                  />
                 ) : (
-                  <Pressable style={[styles.clueIconBox, roundScore < 3000 && styles.buyBtnDisabled]} onPress={() => buyClue('silhouette', 3000)}>
-                    <Ionicons name="body" size={24} color={COLORS.accent} />
-                    <Text style={styles.clueIconPrice}>-3000</Text>
-                  </Pressable>
-                )
-              )}
-
-              {/* 3. Biyografi / Spiker Notu */}
-              {revealed.bio ? (
-                <View style={[styles.clueIconRevealed, styles.bioRevealedBox]}>
-                  <View style={styles.bioHeaderRow}>
-                    <Ionicons name="book" size={16} color={COLORS.accent} />
-                    <Text style={styles.bioHeaderText}>Spikerin Notu</Text>
-                  </View>
-                  <Text style={styles.bioBodyText}>{bioText}</Text>
-                </View>
-              ) : (
-                <Pressable style={[styles.clueIconBox, styles.bioBuyBtn, roundScore < 2000 && styles.buyBtnDisabled]} onPress={() => buyClue('bio', 2000)}>
-                  <Ionicons name="book" size={22} color={COLORS.accent} />
-                  <Text style={styles.bioBuyText}>Spikerin Notu (-2000)</Text>
-                </Pressable>
-              )}
-            </View>
-            
-            <View style={styles.clubsSection}>
-              <View style={styles.clubsHeaderRow}>
-                <Text style={styles.clubsTitle}>Oynadığı Kulüpler ({player.clubs.length})</Text>
-                {player.clubs.length > revealed.clubs.length && (
-                  <Pressable
-                    disabled={roundScore < 600}
-                    style={[styles.buyBtnSmall, roundScore < 600 && styles.buyBtnDisabled]}
-                    onPress={buyRandomClub}>
-                    {/* 12 Eylül 2026: 1500 -> 600. Kulüp listesi bu modun en
-                        doğal ipucu; pahalı olması oyuncuyu ipucu almaktan
-                        kaçırıp turu sıkıcılaştırıyordu. */}
-                    <Text style={styles.buyBtnSmallText}>+ Rastgele Kulüp (-600)</Text>
-                  </Pressable>
+                  <Text style={y.soru}>?</Text>
                 )}
               </View>
-              
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 8 }}>
-              {player.clubs.map((c, i) => {
-                const isRevealed = revealed.clubs.includes(i);
-                const clubName = isRevealed ? (typeof c === 'string' ? c : (c.name || c)) : `Kulüp ${i + 1}`;
+              <View style={{ flex: 1 }}>
+                <Text style={y.odulUst}>KALAN ÖDÜL</Text>
+                <Text style={y.odulSayi} adjustsFontSizeToFit numberOfLines={1}>{roundScore.toLocaleString("tr-TR")}</Text>
+                <Text style={y.odulAlt}>
+                  {revealed.clubs.length === 0 && !revealed.silhouette
+                    ? "Kulüp ya da silüet açmadan bilirsen +2.000 kâhin bonusu"
+                    : "İpucu aldıkça ödül azalır"}
+                </Text>
+                {combo >= 3 ? (
+                  <View style={y.kombo}>
+                    <Ionicons name="flame" size={14} color={COLORS.ctaDark} />
+                    <Text style={y.komboYazi}>{combo} KOMBO · x1,5</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            {/* --- AÇILAN BİLGİLER --- */}
+            {(revealed.nationality || revealed.eraAge || revealed.firstLetter || revealed.bio) ? (
+              <View style={y.bilgiler}>
+                {revealed.nationality ? (
+                  <View style={y.bilgiKart}>
+                    <Ionicons name="earth" size={16} color={COLORS.accent} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={y.bilgiEtiket}>Uyruk · Mevki</Text>
+                      <Text style={y.bilgiDeger}>
+                        {(teams || []).map(countryTr).join(", ") || "Bilinmiyor"} · {positionTr(info.position) || "?"}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+                {revealed.eraAge ? (
+                  <View style={y.bilgiKart}>
+                    <Ionicons name="calendar" size={16} color={COLORS.accent} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={y.bilgiEtiket}>Doğum yılı</Text>
+                      <Text style={y.bilgiDeger}>{info.birthYear || "Bilinmiyor"}</Text>
+                    </View>
+                  </View>
+                ) : null}
+                {revealed.firstLetter ? (
+                  <View style={y.bilgiKart}>
+                    <Ionicons name="text" size={16} color={COLORS.accent} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={y.bilgiEtiket}>Baş harfler</Text>
+                      <Text style={[y.bilgiDeger, { fontSize: 22, letterSpacing: 2 }]}>{basHarfler(player.name)}</Text>
+                    </View>
+                  </View>
+                ) : null}
+                {revealed.bio ? (
+                  <View style={[y.bilgiKart, { alignItems: "flex-start" }]}>
+                    <Ionicons name="mic-circle" size={16} color={COLORS.accent} style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={y.bilgiEtiket}>Spikerin notu</Text>
+                      <Text style={y.bioYazi}>{bioText}</Text>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
+            {/* --- İPUCU MARKETİ --- */}
+            <Text style={y.bolumBaslik}>İPUÇLARI</Text>
+            <View style={y.market}>
+              {IPUCLARI.filter((i) => !revealed[i.tip]).map((i) => {
+                const yetmez = roundScore < i.fiyat;
                 return (
-                  <View key={i} style={[styles.clubSlot, isRevealed && styles.clubSlotRevealed, { width: 100, height: 60, justifyContent: "center" }]}>
-                    <Text style={[styles.clubSlotText, isRevealed && { color: COLORS.text }]} numberOfLines={2} adjustsFontSizeToFit>{clubName}</Text>
+                  <SoundPressable
+                    key={i.tip}
+                    style={[y.karo, yetmez && y.karoPasif]}
+                    disabled={yetmez}
+                    onPress={() => buyClue(i.tip, i.fiyat)}
+                  >
+                    <Ionicons name={i.ikon} size={22} color={yetmez ? COLORS.textFaint : COLORS.accent} />
+                    <Text style={y.karoAd} numberOfLines={1}>{i.ad}</Text>
+                    <Text style={[y.karoFiyat, yetmez && { color: COLORS.textFaint }]}>−{i.fiyat.toLocaleString("tr-TR")}</Text>
+                  </SoundPressable>
+                );
+              })}
+              {kapaliKulup > 0 ? (
+                <SoundPressable
+                  style={[y.karo, roundScore < 600 && y.karoPasif]}
+                  disabled={roundScore < 600}
+                  onPress={buyRandomClub}
+                >
+                  <Ionicons name="shirt" size={22} color={roundScore < 600 ? COLORS.textFaint : COLORS.accent} />
+                  <Text style={y.karoAd} numberOfLines={1}>Rastgele Kulüp</Text>
+                  <Text style={[y.karoFiyat, roundScore < 600 && { color: COLORS.textFaint }]}>−600</Text>
+                </SoundPressable>
+              ) : null}
+            </View>
+
+            {/* --- KARİYER --- */}
+            <Text style={y.bolumBaslik}>KARİYER · {player.clubs.length} KULÜP</Text>
+            <View style={y.kariyer}>
+              {player.clubs.map((c, i) => {
+                const acik = revealed.clubs.includes(i);
+                return acik ? (
+                  <View key={i} style={[y.kulupCip, y.kulupCipAcik]}>
+                    <TeamBadge name={kulupAdi(c)} size={18} />
+                    <Text style={y.kulupAd} numberOfLines={1}>{kulupAdi(c)}</Text>
+                  </View>
+                ) : (
+                  <View key={i} style={y.kulupCip}>
+                    <Text style={y.kulupNo}>{i + 1}</Text>
+                    <Text style={y.kulupGizli}>???</Text>
                   </View>
                 );
               })}
-            </ScrollView>
-          </View>
+            </View>
 
-          {/* JOKERLER */}
-          <View style={styles.jokersRow}>
-            <Pressable style={[styles.jokerBtn, !jokers.lastClub && styles.jokerDisabled]} onPress={useJokerLastClub}>
-              <Ionicons name="sparkles" size={18} color="#E9D5FF" />
-              <Text style={styles.jokerText}>Son Kulüp</Text>
-            </Pressable>
-            <Pressable style={[styles.jokerBtn, !jokers.skip && styles.jokerDisabled]} onPress={useJokerSkip}>
-              <Ionicons name="play-skip-forward" size={18} color="#E9D5FF" />
-              <Text style={styles.jokerText}>Pas Geç</Text>
-            </Pressable>
-          </View>
-
-          {/* TAHMİN GİRİŞİ */}
-          {/* 12 Eylül 2026 (Kerem: "pes edince sanki bilmişim gibi combo devam
-              ediyor, pes edince can da gitmiyor") — pes etmek yanlış cevapla
-              aynı sonucu doğurmalı: can gider, kombo sıfırlanır. Eskiden
-              bedavaydı ve sonraki ekrandaki "SONRAKİ SEVİYE" ile seviye bile
-              atlatıyordu, yani sınırsız ilerlemenin bedava yolu buydu. */}
-          <Pressable style={styles.giveUpBtn} onPress={() => {
-            const kalanCan = lives - 1;
-            setLives(kalanCan);
-            setCombo(0);
-            recordRound("whoAmICpu", false);
-            setPhase(kalanCan <= 0 ? "gameOver" : "roundEnd");
-            setFeedback({ type: "wrong", text: "Pes ettin — bir can gitti" });
-            setTimeout(() => setFeedback(null), 1500);
-          }}>
-            <Ionicons name="flag" size={14} color={COLORS.text} />
-            <Text style={styles.giveUpBtnText}>Pes Et</Text>
-          </Pressable>
-          <View style={styles.inputArea}>
-            {inputMode === "keyboard" ? (
-              <>
-                <TextInput
-                  autoCorrect={false}
-                  autoCapitalize="words"
-                  spellCheck={false}
-                  style={styles.input}
-                  placeholder="Futbolcunun Adı..."
-                  placeholderTextColor={COLORS.textMuted}
-                  value={answerInput}
-                  // Klavye açılınca giriş alanı + öneriler görünür kalsın diye
-                  // listenin sonuna kaydırıyoruz.
-                  onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250)}
-                  onChangeText={setAnswerInput}
-                  onSubmitEditing={() => {
-                    if (answerInput.trim()) checkAnswer(answerInput.trim());
-                  }}
-                />
-                {suggestions.length > 0 && answerInput.length > 1 && (
-                  <View style={styles.suggestBox}>
-                    {suggestions.slice(0, 5).map((s, i) => (
-                      <SoundPressable key={i} onPress={() => { setAnswerInput(s); checkAnswer(s); }} style={styles.suggestRow}>
-                        <Text style={styles.suggestText}>{s}</Text>
-                      </SoundPressable>
-                    ))}
-                  </View>
-                )}
-                <SoundPressable onPress={() => { setInputMode("voice"); startVoiceListening(); }} style={styles.switchModeLink}>
-                  <Text style={styles.switchModeLinkText}>Bunun yerine sesle söylemek istiyorum</Text>
-                </SoundPressable>
-              </>
-            ) : (
-              <>
-                <View style={{ alignItems: "center" }}>
-                  <SoundPressable
-                    onPress={isRecording ? sesiBitirVeCevapla : startVoiceListening}
-                    style={[styles.micBtnBig, isRecording && styles.micBtnActive]}
-                  >
-                    <Text style={styles.micBtnBigText}>{isRecording ? "DİNLENİYOR..." : "MİKROFONU AÇ"}</Text>
-                  </SoundPressable>
-                </View>
-                {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
-                <VoiceConfirm
-                  istek={sesOnayIstegi}
-                  onOnayla={sesOnayla}
-                  onTekrar={sesTekrar}
-                  onYaz={sesYaz}
-                  onIptal={() => setSesOnayIstegi(null)}
-                />
-                <SoundPressable onPress={() => { if (isRecording) stopRecording([]).catch(() => {}); setSesOnayIstegi(null); setInputMode("keyboard"); }} style={styles.switchModeLink}>
-                  <Text style={styles.switchModeLinkText}>Bunun yerine klavye kullanmak istiyorum</Text>
-                </SoundPressable>
-              </>
-            )}
-          </View>
-        </ScrollView>
-        </KeyboardAvoidingView>
+            {/* --- JOKERLER + PES ET --- */}
+            <View style={y.jokerler}>
+              <SoundPressable
+                style={[y.joker, !jokers.lastClub && y.jokerPasif]}
+                disabled={!jokers.lastClub}
+                onPress={useJokerLastClub}
+              >
+                <Ionicons name="sparkles" size={16} color={jokers.lastClub ? COLORS.cta : COLORS.textFaint} />
+                <Text style={y.jokerYazi}>Son Kulüp</Text>
+                <Text style={y.jokerAlt}>{jokers.lastClub ? "1 hak" : "kullanıldı"}</Text>
+              </SoundPressable>
+              <SoundPressable
+                style={[y.joker, !jokers.skip && y.jokerPasif]}
+                disabled={!jokers.skip}
+                onPress={useJokerSkip}
+              >
+                <Ionicons name="play-skip-forward" size={16} color={jokers.skip ? COLORS.cta : COLORS.textFaint} />
+                <Text style={y.jokerYazi}>Pas Geç</Text>
+                <Text style={y.jokerAlt}>{jokers.skip ? "1 hak · can gitmez" : "kullanıldı"}</Text>
+              </SoundPressable>
+            </View>
+            <SoundPressable style={y.pesEt} onPress={pesEt}>
+              <Ionicons name="flag-outline" size={14} color={COLORS.textMuted} />
+              <Text style={y.pesEtYazi}>Pes et (bir can gider)</Text>
+            </SoundPressable>
+          </ScrollView>
+        </>
       )}
 
-      {feedback && phase === "playing" && (
-        <View style={styles.feedbackOverlay}>
-          <AnswerFeedback type={feedback.type} message={feedback.text} />
+      {phase === "playing" && feedback && feedback.type === "wrong" ? (
+        <View style={y.geriBildirim} pointerEvents="none">
+          <AnswerFeedback type="wrong" message={feedback.text} onDone={() => setFeedback(null)} />
         </View>
-      )}
+      ) : null}
 
       {phase === "roundEnd" && (
-        <View style={styles.resultPanel}>
-          <PlayerPhoto name={player.name} size={120} />
-          <Text style={styles.resultTitle}>{player.name}</Text>
-          <Text style={styles.resultSubtitle}>{feedback.text}</Text>
-          <Pressable style={styles.primaryBtn} onPress={() => { setLevel(level + 1); startNewRound(level + 1); }}>
-            <Text style={styles.primaryBtnText}>SONRAKİ SEVİYE</Text>
-            <Ionicons name="arrow-forward" size={18} color={COLORS.accentDark} />
-          </Pressable>
-        </View>
+        <ScrollView contentContainerStyle={y.sonucIcerik}>
+          <View style={y.sonucKart}>
+            <Text style={[y.sonucUst, feedback?.type === "correct" ? { color: COLORS.accent } : { color: COLORS.danger }]}>
+              {feedback?.type === "correct" ? "DOĞRU!" : "BU SEFER OLMADI"}
+            </Text>
+            <PlayerPhoto name={player.name} size={130} />
+            <Text style={y.sonucAd}>{player.name}</Text>
+            <Text style={y.sonucMetin}>{feedback?.text}</Text>
+            <View style={y.kariyerSonuc}>
+              {player.clubs.map((c, i) => (
+                <View key={i} style={[y.kulupCip, y.kulupCipAcik]}>
+                  <TeamBadge name={kulupAdi(c)} size={16} />
+                  <Text style={y.kulupAd} numberOfLines={1}>{kulupAdi(c)}</Text>
+                </View>
+              ))}
+            </View>
+            <SoundPressable style={y.anaDugme} onPress={() => { setLevel(level + 1); startNewRound(level + 1); }}>
+              <Text style={y.anaDugmeYazi}>SONRAKİ SEVİYE</Text>
+              <Ionicons name="arrow-forward" size={18} color={COLORS.accentDark} />
+            </SoundPressable>
+          </View>
+        </ScrollView>
       )}
 
       {phase === "gameOver" && (
-        <View style={styles.gameOverPanel}>
-          <Text style={styles.gameOverTitle}>OYUN BİTTİ</Text>
-          <Text style={styles.gameOverSubtitle}>Aranan Futbolcu: {player.name}</Text>
-          <PlayerPhoto name={player.name} size={100} />
-          
-          <View style={styles.statsCard}>
-            <Text style={styles.statRow}>Seviye: <Text style={{ color: COLORS.text }}>{level}</Text></Text>
-            <Text style={styles.statRow}>Toplam Skor: <Text style={{ color: COLORS.success }}>{totalScore}</Text></Text>
+        <ScrollView contentContainerStyle={y.sonucIcerik}>
+          <View style={y.sonucKart}>
+            <Text style={[y.sonucUst, { color: COLORS.danger }]}>OYUN BİTTİ</Text>
+            <View style={y.istatistik}>
+              <View style={y.istatKutu}>
+                <Text style={y.istatSayi}>{level}</Text>
+                <Text style={y.istatAd}>seviye</Text>
+              </View>
+              <View style={y.istatKutu}>
+                <Text style={[y.istatSayi, { color: COLORS.success }]}>{totalScore.toLocaleString("tr-TR")}</Text>
+                <Text style={y.istatAd}>toplam skor</Text>
+              </View>
+            </View>
+            <Text style={y.sonucMetin}>Son futbolcu: {player.name}</Text>
+            <PlayerPhoto name={player.name} size={90} />
+            <SoundPressable style={y.anaDugme} onPress={oyunuBaslat}>
+              <Ionicons name="refresh" size={18} color={COLORS.accentDark} />
+              <Text style={y.anaDugmeYazi}>TEKRAR OYNA</Text>
+            </SoundPressable>
+            <SoundPressable style={y.ikincilDugme} onPress={() => setPhase("setup")}>
+              <Text style={y.ikincilYazi}>Ayarları değiştir</Text>
+            </SoundPressable>
+            <SoundPressable style={y.ikincilDugme} onPress={onExitSilent || onExit}>
+              <Text style={y.ikincilYazi}>Menüye dön</Text>
+            </SoundPressable>
           </View>
-
-          <Text style={styles.shareText}>
-            Ortak Futbolcu 'Kim Bu?' Modunda {level}. Seviyeye ulaştım! Skor: {totalScore}
-          </Text>
-
-          <Pressable style={styles.primaryBtn} onPress={oyunuBaslat}>
-            <Ionicons name="refresh" size={18} color={COLORS.accentDark} />
-            <Text style={styles.primaryBtnText}>TEKRAR OYNA</Text>
-          </Pressable>
-          <BackButton text="Menüye Dön" onPress={onExitSilent || onExit} style={{ marginTop: 24, alignSelf: "center" }} />
-        </View>
+        </ScrollView>
       )}
-      
-      
     </GameBackground>
   );
 }
+
+// 27 Eylül 2026 — yeni tasarımın stilleri (temaya bağlı).
+const y = StyleSheet.create({
+  kap: { flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.xxl },
+  ustSerit: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: SPACING.sm },
+  canlar: { flexDirection: "row", gap: 2, flex: 1, justifyContent: "center" },
+  seviyeRozet: {
+    alignItems: "center", backgroundColor: MODE_COLORS.whoAmI.dark, borderColor: MODE_COLORS.whoAmI.main,
+    borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: 2,
+  },
+  seviyeUst: { color: MODE_COLORS.whoAmI.main, fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  seviyeSayi: { color: COLORS.text, fontSize: 18, fontWeight: "900", lineHeight: 20 },
+  skorKutu: { alignItems: "flex-end", minWidth: 72 },
+  skorUst: { ...TYPE.caption, fontSize: 9, letterSpacing: 1 },
+  skorSayi: { color: COLORS.success, fontSize: 18, fontWeight: "900" },
+  sureSatir: { flexDirection: "row", alignItems: "center", marginTop: -8 },
+  sureYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.text, width: 44, textAlign: "right" },
+
+  cevapKutu: { marginBottom: SPACING.sm, zIndex: 10 },
+  cevapSatir: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: COLORS.card, borderColor: MODE_COLORS.whoAmI.main, borderWidth: 2,
+    borderRadius: RADIUS.lg, padding: 4,
+  },
+  cevapGirdi: { flex: 1, color: COLORS.text, fontSize: 17, fontWeight: "700", paddingVertical: 10, paddingHorizontal: 6 },
+  ikonDugme: {
+    width: 44, height: 44, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.bg,
+  },
+  ikonDugmeVurgu: { backgroundColor: COLORS.accent },
+  ikonDugmeKayit: { backgroundColor: COLORS.danger },
+  gonderDugme: { backgroundColor: COLORS.accent },
+  oneriListe: {
+    marginTop: 4, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.md, overflow: "hidden",
+  },
+  oneriSatir: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.sm, minHeight: 46,
+    paddingHorizontal: SPACING.md, borderBottomColor: COLORS.cardBorder, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  oneriYazi: { ...TYPE.body, fontWeight: "700", flex: 1 },
+  sesDurum: { ...TYPE.caption, textAlign: "center", marginTop: 6 },
+
+  icerik: { paddingBottom: SPACING.xxxl },
+  vitrin: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.lg,
+    backgroundColor: MODE_COLORS.whoAmI.dark, borderColor: MODE_COLORS.whoAmI.main, borderWidth: 1,
+    borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.md,
+  },
+  gizemHalka: {
+    width: 92, height: 92, borderRadius: 46, alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.bg, borderColor: MODE_COLORS.whoAmI.main, borderWidth: 3, overflow: "hidden",
+  },
+  siluet: { width: 92, height: 92 },
+  soru: { color: MODE_COLORS.whoAmI.main, fontSize: 52, fontWeight: "900" },
+  odulUst: { color: MODE_COLORS.whoAmI.main, fontSize: 11, fontWeight: "900", letterSpacing: 2 },
+  odulSayi: { color: COLORS.text, fontSize: 42, fontWeight: "900", letterSpacing: -1 },
+  odulAlt: { ...TYPE.caption, fontSize: 11 },
+  kombo: {
+    flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", marginTop: 6,
+    backgroundColor: COLORS.cta, borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 3,
+  },
+  komboYazi: { color: COLORS.ctaDark, fontSize: 11, fontWeight: "900" },
+
+  bilgiler: { gap: SPACING.sm, marginBottom: SPACING.md },
+  bilgiKart: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
+  },
+  bilgiEtiket: { ...TYPE.caption, fontSize: 11 },
+  bilgiDeger: { ...TYPE.body, fontWeight: "800" },
+  bioYazi: { ...TYPE.body, fontSize: 14, lineHeight: 20, fontStyle: "italic" },
+
+  bolumBaslik: { ...TYPE.eyebrow, fontSize: 11, color: MODE_COLORS.whoAmI.main, marginTop: SPACING.sm, marginBottom: SPACING.sm },
+  market: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginBottom: SPACING.sm },
+  karo: {
+    flexBasis: "31%", flexGrow: 1, minHeight: 84, alignItems: "center", justifyContent: "center", gap: 2,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1.5,
+    borderRadius: RADIUS.md, padding: SPACING.sm,
+  },
+  karoPasif: { opacity: 0.45 },
+  karoAd: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", fontSize: 12 },
+  karoFiyat: { color: COLORS.cta, fontSize: 13, fontWeight: "900" },
+
+  kariyer: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: SPACING.md },
+  kariyerSonuc: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center", marginVertical: SPACING.md },
+  kulupCip: {
+    flexDirection: "row", alignItems: "center", gap: 5, height: 32, maxWidth: "100%",
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.pill, paddingHorizontal: 10,
+  },
+  kulupCipAcik: { borderColor: COLORS.accent },
+  kulupNo: { ...TYPE.caption, fontWeight: "900", color: COLORS.textFaint },
+  kulupGizli: { ...TYPE.caption, fontWeight: "900", letterSpacing: 1 },
+  kulupAd: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flexShrink: 1 },
+
+  jokerler: { flexDirection: "row", gap: SPACING.sm, marginTop: SPACING.sm },
+  joker: {
+    flex: 1, alignItems: "center", gap: 2, minHeight: 64, justifyContent: "center",
+    backgroundColor: COLORS.card, borderColor: COLORS.cta, borderWidth: 1.5, borderRadius: RADIUS.md, padding: SPACING.sm,
+  },
+  jokerPasif: { borderColor: COLORS.cardBorder, opacity: 0.5 },
+  jokerYazi: { ...TYPE.caption, color: COLORS.text, fontWeight: "900" },
+  jokerAlt: { ...TYPE.caption, fontSize: 10 },
+  pesEt: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: SPACING.md, marginTop: SPACING.sm },
+  pesEtYazi: { ...TYPE.caption, textDecorationLine: "underline" },
+
+  geriBildirim: { ...StyleSheet.absoluteFillObject },
+
+  sonucIcerik: { paddingBottom: SPACING.xxxl, paddingTop: SPACING.md },
+  sonucKart: {
+    alignItems: "center", backgroundColor: COLORS.card, borderColor: MODE_COLORS.whoAmI.main, borderWidth: 1.5,
+    borderRadius: RADIUS.xl, padding: SPACING.xl, gap: SPACING.sm,
+  },
+  sonucUst: { fontSize: 13, fontWeight: "900", letterSpacing: 2, marginBottom: SPACING.sm },
+  sonucAd: { ...TYPE.h1, textAlign: "center", marginTop: SPACING.sm },
+  sonucMetin: { ...TYPE.body, textAlign: "center", color: COLORS.textMuted },
+  istatistik: { flexDirection: "row", gap: SPACING.md, marginVertical: SPACING.sm },
+  istatKutu: {
+    alignItems: "center", minWidth: 110, backgroundColor: COLORS.bg, borderRadius: RADIUS.md,
+    paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg,
+  },
+  istatSayi: { color: COLORS.text, fontSize: 30, fontWeight: "900" },
+  istatAd: { ...TYPE.caption },
+  anaDugme: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm, alignSelf: "stretch",
+    backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingVertical: SPACING.lg, marginTop: SPACING.md,
+  },
+  anaDugmeYazi: { ...TYPE.button, fontSize: 16, color: COLORS.accentDark },
+  ikincilDugme: { paddingVertical: SPACING.sm },
+  ikincilYazi: { ...TYPE.caption, textDecorationLine: "underline" },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 40 },

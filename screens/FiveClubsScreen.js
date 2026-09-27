@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { MODE_COLORS } from "../lib/theme";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
+import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -62,7 +63,11 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   const [started, setStarted] = useState(false);
   const [roundSeconds, setRoundSeconds] = useState(FIVE_CLUB_TIME_OPTIONS[1]);
   const [inputMode, setInputMode] = useState("voice"); // "keyboard" | "voice"
-  const [difficulty, setDifficulty] = useState(FIVE_CLUB_DEFAULT_DIFFICULTY); // "normal" | "zor" | "cokZor"
+  // 27 Eylül 2026: zorluk artık 1-10 (bkz. lib/modAyarlari.js). Kulüp havuzu
+  // 3 kademe: 1-3 normal, 4-7 zor, 8-10 çok zor; CPU'nun pas geçme ihtimali
+  // ise 10 kademenin her birinde ayrı.
+  const [zorluk10, setZorluk10] = useState(5);
+  const difficulty = zorluk10 <= 3 ? "normal" : zorluk10 <= 7 ? "zor" : "cokZor";
 
   const [usedClubKeys, setUsedClubKeys] = useState(new Set());
   const [roundNumber, setRoundNumber] = useState(1);
@@ -193,7 +198,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
     // Normal zorlukta CPU'nun %25, zorda %15, çok zorda %8 ihtimalle
     // bulamaması oyunu nefes aldırıyor.
-    const pasEsigi = difficulty === "cokZor" ? 0.08 : difficulty === "zor" ? 0.15 : 0.25;
+    const pasEsigi = 0.32 - (zorluk10 - 1) * 0.028; // 1 -> %32 ... 10 -> %7
     if (sansliMi < pasEsigi) return null;
 
     // İnsanın bu turda söylediği ismi CPU tekrar söylemesin — hem kuralın
@@ -408,6 +413,11 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     startNewRound();
   }
 
+  const modVarsayilanKaydet = useModVarsayilanlari("fiveClubs", { zorluk: setZorluk10, sure: setRoundSeconds, yontem: setInputMode });
+  useEffect(() => {
+    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? "CPU" : "2 kişi"], ["Tur sayısı", "3"]] }) });
+  }, [zorluk10, roundSeconds, inputMode, vsCpu]);
+
   if (!started) {
     // 27 Eylül 2026 — ortak kurulum ekranı (bkz. components/ModKurulum.js).
     // Bu modun zorluğu kulüp HAVUZU (Normal / Zor / Çok Zor) olduğu için
@@ -420,17 +430,16 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           : "Ekranda 5 büyük kulüp çıkar. Sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."}
         vurgu={MODE_COLORS.fiveClubs}
         onGeri={onExitSilent || onExit}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode })}
         onBasla={() => setStarted(true)}
       >
         <KurulumBolum baslik="ZORLUK">
           <ZorlukSecici
-            seviyeler={[
-              { id: "normal", etiket: "Normal", aciklama: "Sadece en büyük kulüpler" + (vsCpu ? " · CPU sık pas geçer" : "") },
-              { id: "zor", etiket: "Zor", aciklama: "Şampiyonlar Ligi klasikleri de girer" + (vsCpu ? " · CPU daha isabetli" : "") },
-              { id: "cokZor", etiket: "Çok Zor", aciklama: "54 kulüplük tam havuz" + (vsCpu ? " · CPU en iyi cevabı arar" : "") },
-            ]}
-            secili={difficulty}
-            onSec={setDifficulty}
+            deger={zorluk10}
+            onDegis={setZorluk10}
+            aciklama={(z) =>
+              (z <= 3 ? "Sadece en büyük kulüpler." : z <= 7 ? "Şampiyonlar Ligi klasikleri de girer." : "54 kulüplük tam havuz.") +
+              (vsCpu ? (z <= 3 ? " CPU sık pas geçer." : z <= 7 ? " CPU dengeli." : " CPU en iyi cevabı arar.") : "")}
           />
         </KurulumBolum>
         <KurulumBolum baslik="CEVAP SÜRESİ">
