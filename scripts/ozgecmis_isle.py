@@ -320,7 +320,13 @@ for ad, k in (ham.get("oyuncu") or {}).items():
     en_son_bas = max([t.get("b") or 0 for t in kulup_takimlari] + [0])
     # Wikipedia bilgi kutusu (4. aşama, "current_club") en güncel kaynak:
     # serbest / emekli / yeni kulüp bilgisi Wikidata'dan önce gelir.
-    ib = k.get("guncel") or {}
+    ib = dict(k.get("guncel") or {})
+    # Eski çekimdeki ayrıştırma hatası: boş "current_club" alanında bir sonraki
+    # satır ("| clubnumber =") kulüp adı sanılmıştı. Bunlar "alan boş" demek.
+    if ib.get("durum") == "kulup" and (not ib.get("kulup") or ib["kulup"].lstrip().startswith("|") or "=" in ib["kulup"]):
+        ib = {"durum": "bos_alan", "kulup": None}
+    if ib.get("durum") == "bos_alan":
+        ib = {"durum": "serbest", "kulup": None}
     if aktif and ib.get("durum") == "emekli":
         aktif = False
     if aktif and ib.get("durum") == "serbest":
@@ -403,8 +409,15 @@ for ad, k in (ham.get("oyuncu") or {}).items():
 # 0-100 YÜZDELİK (100 = en tanınan). Oyun zorluğu sıralamaya baktığı için ölçek
 # değil sıra önemli. Aynı adı taşıyan oyunculardan uygulamada puanı sadece bu
 # kişiyle doğrulanmış olan alır (clubWeights'teki adaş koruması).
+# Wikipedia'da futbolcu sayfası yerine ünlü birinin sayfasına bağlanmış ya da
+# şöhretini futbol dışında kazanmış kayıtlar (28 Eylül ölçümü: Jason Statham,
+# Julio Iglesias ilk 20'ye giriyordu). Ayrıca doğrulanmış kariyeri (k) olmayan
+# ve uygulamada tek kulübü olan kayıtlara tanınırlık puanı verilmez.
+TANIN_HARIC = {"Jason Statham", "Julio Iglesias"}
 tanin = {ad: k.get("tanin") for ad, k in (ham.get("oyuncu") or {}).items()
-         if ad in profiller and isinstance(k.get("tanin"), dict)}
+         if ad in profiller and isinstance(k.get("tanin"), dict)
+         and ad not in TANIN_HARIC
+         and (profiller[ad].get("k") or len(uyg.get(ad) or []) >= 2)}
 def _yuzdelik(degerler):
     sirali = sorted(degerler.items(), key=lambda x: x[1])
     n = len(sirali); out = {}; i = 0

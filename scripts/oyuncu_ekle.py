@@ -153,30 +153,37 @@ def main():
     for c in kulupler:
         sade_kulup.setdefault(sade(c), c)
 
+    YEDEK = {"b", "c", "ii", "iii", "u17", "u18", "u19", "u20", "u21", "u23", "reserves", "youth",
+             "castilla", "atletic", "primavera", "jong", "academy"}
+
+    def yedek_mi(ad):
+        return bool(set(sade(ad).split()) & YEDEK)
+
     def uygulama_adi(lab):
+        """Wikidata takım adı -> uygulamadaki yazım. 28 Eylül düzeltmesi: ilk
+        sürüm "Fenerbahçe Istanbul", "Deportivo Alavés", "Al Hilal SFC" gibi
+        uzun resmi adları eşleyemiyordu. Artık adayların içinden (çekirdek
+        kelimeleri etiketin içinde kalan ya da çok benzeyen) EN ÇOK KULLANILAN
+        yazım seçiliyor; B takımı/altyapı işaretleri iki tarafta da aynı olmalı."""
         if not lab:
             return None
-        s = sade(lab)
-        if s in sade_kulup:
-            return sade_kulup[s]
-        s2 = sade(SONEK.sub("", lab))
-        if s2 in sade_kulup:
-            return sade_kulup[s2]
-        ck = cekirdek(lab)
-        en, puan = None, 0.0
+        ck = cekirdek(SONEK.sub("", lab)) or cekirdek(lab)
+        adaylar = []
         if ck:
-            for c in kulupler[:6000]:
+            for c in kulupler[:8000]:
                 cc = cekirdek(c)
-                if not cc:
+                if not cc or yedek_mi(c) != yedek_mi(lab):
                     continue
                 o = len(ck & cc)
                 if not o:
                     continue
-                p = o / len(ck | cc)
-                if p > puan:
-                    en, puan = c, p
-        if en and puan >= 0.6:
-            return en
+                if cc <= ck or o / len(ck | cc) >= 0.6:
+                    adaylar.append(c)
+        if adaylar:
+            return max(adaylar, key=lambda c: kulup_say[c])
+        s2 = sade(lab)
+        if s2 in sade_kulup:
+            return sade_kulup[s2]
         return SONEK.sub("", lab).strip()
 
     yeni = []

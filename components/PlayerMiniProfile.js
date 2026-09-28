@@ -142,7 +142,7 @@ function BasariRozetleri({ kodlar, sayilar }) {
 function DurumKarti({ pr, active, lastYear, olumYili, age }) {
   if (!pr) return null;
   const satirlar = [];
-  if (pr.sb && active !== false && !olumYili) satirlar.push({ ikon: "person-outline", etiket: "DURUM", metin: "Serbest oyuncu" });
+  if (pr.sb && active !== false && !olumYili) satirlar.push({ ikon: "person-outline", etiket: "DURUM", metin: "Şu an kulübü yok" });
   if (pr.g && active) satirlar.push({ ikon: "shirt", etiket: pr.gk ? "ŞU ANKİ KULÜBÜ (KİRALIK)" : "ŞU ANKİ KULÜBÜ", kulup: pr.g });
   else if (pr.s) satirlar.push({ ikon: "flag-outline", etiket: pr.sy || lastYear ? `SON KULÜBÜ (${pr.sy || lastYear})` : "SON KULÜBÜ", kulup: pr.s });
   if (olumYili) satirlar.push({ ikon: "rose-outline", etiket: "VEFAT", metin: `${tarihYaz(pr.o)}${age ? ` · ${age} yaşında` : ""}` });
@@ -187,7 +187,9 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
   if (pr?.a) chips.push({ icon: "footsteps", text: pr.a === "İki ayak" ? "İki ayak" : `${pr.a} ayak` });
   if (info?.national && info.national.length) chips.push({ icon: "flag", text: info.national.map(countryTr).join(", ") });
   if (info?.lastYear && !olumYili) {
-    if (active && pr?.sb) chips.push({ icon: "person-outline", text: "Serbest" });
+    // sb: Wikipedia'da güncel kulüp alanı boş ya da "free agent" (serbest kalmış
+    // ya da yeni bırakmış olabilir) — ikisi için de doğru olan ifade "kulüpsüz".
+    if (active && pr?.sb) chips.push({ icon: "person-outline", text: "Kulüpsüz" });
     else chips.push({ icon: active ? "flash" : "time", text: active ? "Aktif" : `Son sezon ${info.lastYear}` });
   }
 

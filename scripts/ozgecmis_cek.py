@@ -526,10 +526,16 @@ EMEKLI_RE = re.compile(r"retired|emekli", re.I)
 
 def guncel_kulup_ayristir(wt):
     """Bilgi kutusu wikitext'i -> {"durum": "kulup"|"serbest"|"emekli"|"bos", "kulup": str|None, "kiralik": bool}"""
-    m = re.search(r"^\s*\|\s*current[_ ]?club\s*=\s*(.*)$", wt or "", re.I | re.M)
+    # 28 Eylül 2026 düzeltmesi: eskiden "=" sonrasındaki \s* satır sonunu da
+    # yutuyordu; alan BOŞ olunca bir sonraki satır ("| clubnumber =") kulüp
+    # adı sanılıyordu (1.389 oyuncu, Icardi dahil). Artık yalnız boşluk/tab.
+    m = re.search(r"^[ \t]*\|[ \t]*current[_ ]?club[ \t]*=[ \t]*(.*)$", wt or "", re.I | re.M)
     if not m:
         return {"durum": "bos", "kulup": None}
     ham = m.group(1)
+    if not ham.strip() or re.match(r"^\s*\|", ham):
+        # Alan var ama boş: Wikipedia'da serbest kalan oyuncunun kulübü genelde silinir.
+        return {"durum": "bos_alan", "kulup": None}
     # ayni satirdaki bir sonraki alan (| clubnumber = ...) varsa kes
     ham = re.split(r"\s\|\s*[a-z_]+\s*=", ham)[0]
     temiz = wikilink_temizle(ham).strip(" '\"")
