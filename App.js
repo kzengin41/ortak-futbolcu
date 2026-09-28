@@ -6,6 +6,8 @@ import { NavigationContainer, CommonActions, useNavigation, useNavigationContain
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+// Çökme raporlama (Sentry) — ekranlardan ÖNCE yüklensin ki açılıştaki hatalar da yakalansın.
+import { Sentry, hataRaporla } from "./lib/hataRaporu";
 
 // --- Hafif ekranlar: doğrudan (statik) import edilir, açılışta hemen gerekir. ---
 import OynaScreen from "./screens/OynaScreen";
@@ -427,8 +429,8 @@ class HataSiniri extends React.Component {
     return { hata };
   }
   componentDidCatch(hata, bilgi) {
-    // Çökme raporlama (Sentry vb.) eklenirse bağlanacak yer burası.
     console.log("Beklenmeyen hata:", hata, bilgi?.componentStack);
+    hataRaporla(hata, bilgi);
   }
   render() {
     if (!this.state.hata) return this.props.children;
@@ -454,7 +456,7 @@ class HataSiniri extends React.Component {
   }
 }
 
-export default function App() {
+function App() {
   return (
     <SafeAreaProvider>
       <SettingsProvider>
@@ -484,3 +486,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+// Sentry.wrap: kök bileşeni sarar (dokunma kırıntıları, yakalanmamış render hataları).
+export default Sentry.wrap(App);

@@ -1,6 +1,6 @@
 # Gizlilik Politikası — 3-2-1: Bitir İşi
 
-**Son güncelleme:** 25 Eylül 2026
+**Son güncelleme:** 29 Eylül 2026
 
 Bu politika, **3-2-1: Bitir İşi** mobil uygulamasının hangi verileri topladığını,
 neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada
@@ -71,13 +71,25 @@ depolama alanına konur. Buraya özel veya hassas bir fotoğraf yüklememeni ön
 Oyun içindeki "Bildir" düğmesiyle bir hata bildirirsen yazdığın metin ve cihaz
 kimliğin bize ulaşır.
 
+### 5. Çökme raporları
+
+Uygulama çöker ya da beklenmedik bir hata oluşursa, hatayı bulup düzeltebilmemiz
+için otomatik bir çökme raporu **Sentry** servisine (sunucuları Avrupa Birliği'nde)
+gönderilir. Raporda yalnızca teknik bilgiler bulunur: hata mesajı, hatanın kodda
+nerede oluştuğu, hatadan hemen önce hangi ekranlarda olduğun, cihaz modeli,
+işletim sistemi ve uygulama sürümü.
+
+Raporlara adın, e-postan, hesap bilgilerin, IP adresin, ekran görüntüsü veya ses
+kaydı **eklenmez**. Bu raporlar reklam ya da kullanıcı takibi için kullanılmaz ve
+en geç 90 gün içinde silinir.
+
 ---
 
 ## Toplamadığımız veriler
 
 Konum bilgisi, rehber, çağrı kayıtları, SMS, diğer uygulamaların listesi, reklam
 kimliği ve benzeri hiçbir veriye erişmiyoruz. Üçüncü taraf reklam veya analiz
-izleyicisi kullanmıyoruz.
+izleyicisi kullanmıyoruz (yukarıdaki çökme raporları yalnızca hata ayıklama içindir).
 
 ---
 
@@ -87,6 +99,7 @@ izleyicisi kullanmıyoruz.
 |---|---|---|
 | Supabase (AB) | Cihaz kimliği, hesap bilgileri, oyun ilerlemesi, ses kaydı (geçici) | Sunucu ve veritabanı altyapısı |
 | OpenAI (ABD) | Ses kaydı | Sesi yazıya çevirmek |
+| Sentry (AB) | Çökme raporları (teknik bilgi) | Hataları bulup düzeltmek |
 
 Bunun dışında hiç kimseyle veri paylaşmıyoruz, satmıyoruz, kiralamıyoruz.
 

@@ -3,6 +3,14 @@
     "name": "3-2-1: Bitir İşi",
     "slug": "ortak-futbolcu",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2f3d3e94-c554-4e05-9cda-fe6f752c1b08",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B1613",
@@ -52,7 +60,16 @@
           "photosPermission": "Profil fotoğrafı seçebilmen için galerine erişmemiz gerekiyor."
         }
       ],
-      "./plugins/withPaketAdiDuzelt"
+      "./plugins/withPaketAdiDuzelt",
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://sentry.io/",
+          "organization": "kont-studio",
+          "project": "bitir-isi",
+          "note": "SENTRY_AUTH_TOKEN yalnizca EAS ortam degiskeninde (Sensitive)."
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -201,6 +201,12 @@ kodda gerçekten ne olduğuna bakarak dolduruldu:
 | Cihaz kimliği | Evet | Hayır | Zorunlu | Analiz, uygulama işlevselliği |
 | Uygulama etkileşimi (oynanan mod, skor) | Evet | Hayır | Zorunlu | Analiz |
 | Hata/kullanıcı bildirimi metni | Evet | Hayır | İsteğe bağlı | Uygulama işlevselliği |
+| Uygulama bilgileri ve performans → **Kilitlenme günlükleri** | Evet (Sentry, 29 Eylül 2026) | Hayır* | Zorunlu | Analiz |
+| Uygulama bilgileri ve performans → **Teşhis** | Evet (Sentry: cihaz modeli, OS, sürüm) | Hayır* | Zorunlu | Analiz |
+
+\* Google'ın tanımında, veriyi senin adına işleyen hizmet sağlayıcıya (Sentry,
+Supabase) göndermek "paylaşım" sayılmıyor. OpenAI satırı ise temkinli olarak
+"paylaşılıyor" işaretli bırakıldı.
 
 Ek cevaplar:
 - **Veriler aktarım sırasında şifreleniyor mu?** Evet (tamamı HTTPS).

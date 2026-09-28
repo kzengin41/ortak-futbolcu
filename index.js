@@ -20,6 +20,9 @@ import { View, Text } from "react-native";
 import { registerRootComponent } from "expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS, temayiUygula } from "./lib/theme";
+// Çökme raporlama (Sentry) en başta başlasın: App.js yüklenirken çıkan hatalar da
+// yakalanır. (App.js de aynı modülü içe aktarıyor; modül bir kez çalışır.)
+import { Sentry } from "./lib/hataRaporu";
 
 // lib/SettingsContext.js ile AYNI anahtar — tek bir ayar deposu var.
 const AYAR_ANAHTARI = "ortak-futbolcu-sound-settings";
@@ -65,6 +68,7 @@ function Kok() {
         const Yuklenen = require("./App").default;
         setApp(() => Yuklenen);
       } catch (e) {
+        try { Sentry.captureException(e, { tags: { kaynak: "acilis" } }); } catch {}
         setHata(String((e && e.message) || e));
       }
     })();

@@ -323,6 +323,9 @@ for ad, k in (ham.get("oyuncu") or {}).items():
     ib = dict(k.get("guncel") or {})
     # Eski çekimdeki ayrıştırma hatası: boş "current_club" alanında bir sonraki
     # satır ("| clubnumber =") kulüp adı sanılmıştı. Bunlar "alan boş" demek.
+    # Yarım kalmış wiki bağlantısı: "[[FC Dinamo Batumi|" → "FC Dinamo Batumi"
+    if ib.get("kulup") and ib["kulup"].lstrip().startswith("[["):
+        ib["kulup"] = re.split(r"\||\]\]", ib["kulup"].strip()[2:])[0].strip()
     if ib.get("durum") == "kulup" and (not ib.get("kulup") or ib["kulup"].lstrip().startswith("|") or "=" in ib["kulup"]):
         ib = {"durum": "bos_alan", "kulup": None}
     if ib.get("durum") == "bos_alan":

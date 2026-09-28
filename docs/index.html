@@ -39,7 +39,7 @@
 <body>
 <main>
 <h1>Gizlilik Politikası — 3-2-1: Bitir İşi</h1>
-<p><strong>Son güncelleme:</strong> 25 Eylül 2026</p>
+<p><strong>Son güncelleme:</strong> 29 Eylül 2026</p>
 <p>Bu politika, <strong>3-2-1: Bitir İşi</strong> mobil uygulamasının hangi verileri topladığını, neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada anlatılanları kabul etmiş olursun.</p>
 <p>Veri sorumlusu: Kerem Zengin — iletişim: <strong>KontStudioApps@gmail.com</strong></p>
 <hr>
@@ -55,9 +55,11 @@
 <p>Hesap açarsan şunları saklarız: e-posta adresin, seçtiğin görünen ad, seçtiğin avatar rengi veya yüklediğin profil fotoğrafı, ve oyun ilerlemen (deneyim puanı, seviye, açtığın futbolcular, istatistikler). Şifren bize hiç ulaşmaz; kimlik doğrulamayı Supabase Auth yapar ve şifreler orada şifrelenmiş olarak tutulur. Profil fotoğrafı yüklersen bu fotoğraf, adresini bilenlerin erişebileceği bir depolama alanına konur. Buraya özel veya hassas bir fotoğraf yüklememeni öneririz.</p>
 <h3>4. Hata bildirimleri</h3>
 <p>Oyun içindeki &quot;Bildir&quot; düğmesiyle bir hata bildirirsen yazdığın metin ve cihaz kimliğin bize ulaşır.</p>
+<h3>5. Çökme raporları</h3>
+<p>Uygulama çöker ya da beklenmedik bir hata oluşursa, hatayı bulup düzeltebilmemiz için otomatik bir çökme raporu <strong>Sentry</strong> servisine (sunucuları Avrupa Birliği'nde) gönderilir. Raporda yalnızca teknik bilgiler bulunur: hata mesajı, hatanın kodda nerede oluştuğu, hatadan hemen önce hangi ekranlarda olduğun, cihaz modeli, işletim sistemi ve uygulama sürümü. Raporlara adın, e-postan, hesap bilgilerin, IP adresin, ekran görüntüsü veya ses kaydı <strong>eklenmez</strong>. Bu raporlar reklam ya da kullanıcı takibi için kullanılmaz ve en geç 90 gün içinde silinir.</p>
 <hr>
 <h2>Toplamadığımız veriler</h2>
-<p>Konum bilgisi, rehber, çağrı kayıtları, SMS, diğer uygulamaların listesi, reklam kimliği ve benzeri hiçbir veriye erişmiyoruz. Üçüncü taraf reklam veya analiz izleyicisi kullanmıyoruz.</p>
+<p>Konum bilgisi, rehber, çağrı kayıtları, SMS, diğer uygulamaların listesi, reklam kimliği ve benzeri hiçbir veriye erişmiyoruz. Üçüncü taraf reklam veya analiz izleyicisi kullanmıyoruz (yukarıdaki çökme raporları yalnızca hata ayıklama içindir).</p>
 <hr>
 <h2>Verilerin paylaşıldığı taraflar</h2>
 <div class="tablo-kap">
@@ -75,6 +77,11 @@
   <td>OpenAI (ABD)</td>
   <td>Ses kaydı</td>
   <td>Sesi yazıya çevirmek</td>
+</tr>
+<tr>
+  <td>Sentry (AB)</td>
+  <td>Çökme raporları (teknik bilgi)</td>
+  <td>Hataları bulup düzeltmek</td>
 </tr>
 </tbody>
 </table>
