@@ -46,3 +46,15 @@ PRIVACY_POLICY.md
 # package.json/app.json/supabase klasörü var; derlemede işi yok ve iki proje
 # kökü bir arada durduğunda autolinking/Metro yanlış kökü seçebiliyor.
 ortak-futbolcu-expo/
+
+# 29 Eylül 2026 — .easignore, .gitignore'u devre dışı bıraktığı için gitignore'daki
+# ham veri de buraya yazılmalı; yoksa veri/ (~90 MB) her derlemede sunucuya gidiyor.
+veri/
+yedek/
+yedekler/
+silinen/
+bulunanlar/
+# Yerelde yanlışlıkla "expo prebuild" çalıştırılırsa EAS projeyi yönetilen (managed)
+# saymaya devam etsin: yerel native klasörler yüklenmesin, sunucu kendisi üretsin.
+android/
+ios/
