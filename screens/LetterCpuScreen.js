@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
+import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
-import {   View, Text, TextInput, Pressable, StyleSheet, Animated, Easing , Modal , ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Animated, Easing, Modal, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { PLAYERS } from "../lib/players";
@@ -34,6 +36,7 @@ function cpuZorluk(z) {
 
 // Filtre (Kapsam) Seçenekleri
 const SCOPE_OPTIONS = [
+  { id: "profil", label: "⚙️ Eşleşme profilim" },
   { id: "all", label: "🌍 Tüm Dünya" },
   { id: "turkish", label: "🇹🇷 Sadece Türkler" },
   { id: "big4", label: "🦅🦁🐂 4 Büyükler" }
@@ -62,7 +65,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   const [phase, setPhase] = useState("setup"); // setup, selectLetter, countdown, racing, result, gameOver
   
   // Setup Options
-  const [scope, setScope] = useState("all");
+  // 28 Eylül 2026 — varsayılan kapsam Eşleşme Profili (Ayarlar'daki genel profil).
+  const [scope, setScope] = useState("profil");
+  const eslesme = useEslesmeProfili();
   const [subMode, setSubMode] = useState("classic");
   // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı olmalı")
   const [zorlukId, setZorlukId] = useState(5); // 1-10
@@ -103,6 +108,12 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   const timerRef = useRef(null);
   const fuseAnim = useRef(new Animated.Value(1)).current;
   const cpuTimerRef = useRef(null);
+  // 28 Eylül 2026 — ekrandan çıkınca (artık tur sırasında da çıkılabiliyor)
+  // sayaçlar arkada çalışıp kapanmış ekranın durumunu değiştirmesin.
+  useEffect(() => () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (cpuTimerRef.current) clearTimeout(cpuTimerRef.current);
+  }, []);
   // NOT: startCpuTimer'ın setTimeout'u içindeki eski "phase !== 'racing'" kontrolü
   // her zaman eski (stale) bir `phase` değerini görüyordu — çünkü
   // handleCountdownComplete önce setPhase("racing") çağırıyor (asenkron), SONRA
@@ -116,7 +127,12 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   // Kapsama Göre Havuz
   const filteredPlayers = useMemo(() => {
     let pList = PLAYERS;
-    if (scope === "turkish") {
+    if (scope === "profil") {
+      const pr = eslesme.derlenmis;
+      // Tek bir uygun kulüp yeter (bu modda kulüp çifti yok). oyuncuCarpani iki
+      // uygun kulüp istediği için listeyi ikiledik; dönem/yıl sınırı yine uygulanır.
+      pList = PLAYERS.filter((p) => (p.clubs || []).some((c) => pr.kulupCarpani(c) > 0) && pr.oyuncuCarpani({ ...p, clubs: [...p.clubs, ...p.clubs] }) > 0);
+    } else if (scope === "turkish") {
       pList = PLAYERS.filter(p => {
         const teams = require("../lib/playerNationalTeams").PLAYER_NATIONAL_TEAMS[p.name];
         return teams && (teams.includes("Türkiye") || teams.includes("Turkey") || teams.includes("T\u00fcrkiye"));
@@ -134,7 +150,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     // Bu ekran bir kez açıldıktan sonra uygulamanın tamamında PLAYERS popülerlik
     // sırasında kalıyor, rastgeleliğe dayanan bütün modlar etkileniyordu.
     return [...pList].sort((a, b) => calculatePlayerPopularity(b) - calculatePlayerPopularity(a));
-  }, [scope]);
+  }, [scope, eslesme.derlenmis]);
 
   const suggestIndex = useMemo(() => buildSuggestIndex(filteredPlayers), [filteredPlayers]);
   const suggestions = useMemo(() => {
@@ -333,11 +349,17 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       setTimeLeft(t);
       if (t <= 0) {
         clearInterval(timerRef.current);
-        handleTimeOut();
+        // 28 Eylül 2026 — BAYAT KAPANIŞ düzeltmesi (denetim bulgusu #4): bu
+        // aralık, zincirde yeni hamle yapıldığı handler'da (setChainHistory ile
+        // AYNI anda) kuruluyordu; doğrudan handleTimeOut çağırmak o anki ESKİ
+        // chainHistory'yi görüyor ve süre dolunca puanı yanlış tarafa
+        // yazabiliyordu. Artık her render'da güncellenen ref üzerinden çağrılıyor.
+        if (zamanAsimiRef.current) zamanAsimiRef.current();
       }
     }, 1000);
   };
 
+  const zamanAsimiRef = useRef(null);
   const handleTimeOut = () => {
     // Süre bitti. Kimin sırasındaydı?
     // Klasik modda: İlk bilen kazanırdı. Süre bittiyse kimse puan alamaz. (Berabere)
@@ -358,6 +380,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       }
     }
   };
+  zamanAsimiRef.current = handleTimeOut;
 
   const handleCountdownComplete = () => {
     setPhase("racing");
@@ -569,6 +592,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         <KurulumBolum baslik="CEVAP YÖNTEMİ">
           <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
+        {scope === "profil" ? <EslesmeProfiliBolumu eslesme={eslesme} /> : null}
         <KurulumBolum baslik="KAPSAM" not={`Bu ayarlarla havuzda ${filteredPlayers.length} oyuncu var.`}>
           <SecimCipleri
             secenekler={SCOPE_OPTIONS.map((o) => ({ deger: o.id, etiket: o.label }))}
@@ -582,7 +606,11 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
 
   return (
     <GameBackground style={styles.container}>
-        {(phase !== "countdown" && phase !== "racing") && (
+      {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
+      <KeyboardAvoidingView style={{ flex: 1, width: "100%" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        {/* 28 Eylül 2026 — tur sırasında da çıkış var (denetim bulgusu #2);
+            BackButton onay soruyor, kazara çıkış olmuyor. */}
+        {phase !== "countdown" && (
           <BackButton
             onPress={phase === "gameOver" ? (onExitSilent || onExit) : onExit}
             style={{ marginLeft: 20, marginTop: 10, marginBottom: 10 }}
@@ -719,7 +747,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
           )}
 
           {/* INPUT */}
-          {phase === "racing" && !feedback && (
+          {/* 28 Eylül 2026 — yanlış cevap uyarısı gösterilirken de giriş alanı
+              açık kalıyor; eskiden 1,5 sn boyunca kapanıyor ama süre akıyordu. */}
+          {phase === "racing" && (!feedback || feedback.type === "wrong") && (
             <View style={styles.inputArea}>
               <TextInput
                 autoCorrect={false}
@@ -847,6 +877,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         </View>
       </Modal>
 
+      </KeyboardAvoidingView>
     </GameBackground>
   );
 }

@@ -5,7 +5,7 @@
   "Nicolas Anelka": [
     "İngiltere'de Yılın Genç Futbolcusu"
   ],
-  "Pierre Cardin picha grande": [
+  "Pierre-Emerick Aubameyang": [
     "Afrika'da Yılın Futbolcusu"
   ],
   "Patrick Vieira": [
@@ -70,10 +70,6 @@
     "Yılın Fransız Oyuncusu",
     "Footballer of the month",
     "Goal of the Month"
-  ],
-  "Daniel González Güiza": [
-    "Pichichi Ödülü",
-    "Medal of Andalusia"
   ],
   "Ronaldinho": [
     "Ballon d'Or",
@@ -374,10 +370,6 @@
   "Iulian Filipescu": [
     "Sport Merit Order"
   ],
-  "Anatolii Tymoshchuk": [
-    "Honored Worker of Physical Culture and Sports of Ukraine",
-    "Order for Courage 3rd Class of Ukraine"
-  ],
   "Carlos Vela": [
     "Landon Donovan MVP Ödülü",
     "MLS Golden Boot"
@@ -508,9 +500,6 @@
   "Jack Wilshere": [
     "İngiltere'de Yılın Genç Futbolcusu"
   ],
-  "Xavi Hernández": [
-    "Princess of Asturias Award for Sports"
-  ],
   "Ole Gunnar Solskjær": [
     "Peer Gynt Literary Award",
     "Olavstatuetten",
@@ -534,5 +523,16 @@
     "L'Équipe Şampiyonlar Şampiyonu",
     "Officer of the Legion of Honour",
     "UEFA Başkanlık Ödülü"
+  ],
+  "Anatoliy Tymoshchuk": [
+    "Honored Worker of Physical Culture and Sports of Ukraine",
+    "Order for Courage 3rd Class of Ukraine"
+  ],
+  "Dani Güiza": [
+    "Pichichi Ödülü",
+    "Medal of Andalusia"
+  ],
+  "Xavi": [
+    "Princess of Asturias Award for Sports"
   ]
 }

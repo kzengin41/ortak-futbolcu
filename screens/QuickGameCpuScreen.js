@@ -8,7 +8,7 @@ import GameBackground from "../components/GameBackground";
 import { useAudioPlayer } from "expo-audio";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
-import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
 import { generateQuickRound, computeRoundPool } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
@@ -17,7 +17,7 @@ import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto, { prefetchPlayerPhoto } from "../components/PlayerPhoto";
-import LeagueSelectModal from "../components/LeagueSelectModal";
+import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TimerBar from "../components/TimerBar";
@@ -32,15 +32,9 @@ const CHOICE_SECONDS = 6;
 
 export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
   const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
-  const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
+  // 28 Eylül 2026 — lig/kapsam yerine Eşleşme Profili (bkz. lib/eslesmeProfili.js)
+  const eslesme = useEslesmeProfili();
   const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
-  const appliedDefaultPresetRef = useRef(false);
-  useEffect(() => {
-    if (appSettingsLoaded && !appliedDefaultPresetRef.current) {
-      appliedDefaultPresetRef.current = true;
-      if (appSettings.defaultLeaguePresetId) setPresetSelection({ id: appSettings.defaultLeaguePresetId });
-    }
-  }, [appSettingsLoaded, appSettings.defaultLeaguePresetId]);
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [started, setStarted] = useState(false);
 
@@ -62,22 +56,12 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
   const countPlayer2 = useAudioPlayer(count2Source);
   const countPlayer1 = useAudioPlayer(count1Source);
 
-  const allowedClubs = useMemo(
-    () =>
-      presetSelection.clubs ?? clubsForPreset(presetSelection.id, CLUB_INFO),
-    [presetSelection]
-  );
-  const presetLabel = useMemo(() => {
-    if (presetSelection.clubs) {
-      const n = presetSelection.id.replace("custom:", "").split(",").length;
-      return `Özel seçim (${n} lig)`;
-    }
-    return LEAGUE_PRESETS.find((p) => p.id === presetSelection.id)?.label || "Tümü";
-  }, [presetSelection]);
+  const allowedClubs = eslesme.derlenmis.kapsam;
+  const presetLabel = eslesme.derlenmis.etiket;
 
   const pool = useMemo(
-    () => computeRoundPool(PLAYERS, allowedClubs, difficulty),
-    [allowedClubs, difficulty]
+    () => computeRoundPool(PLAYERS, eslesme.derlenmis, difficulty),
+    [eslesme.derlenmis, difficulty]
   );
 
   const startNewRound = useCallback(() => {
@@ -169,16 +153,14 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
             aciklama={MOD_TANIMLARI.quickCpu.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="LİG / KAPSAM">
+        <KurulumBolum baslik="EŞLEŞME PROFİLİ">
           <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
         </KurulumBolum>
-        <LeagueSelectModal
+        <EslesmeProfiliPenceresi
           visible={leagueModalOpen}
-          currentPreset={presetSelection.clubs ? null : presetSelection.id}
-          onSelect={(sel) => {
-            setPresetSelection(sel);
-            setLeagueModalOpen(false);
-          }}
+          profil={eslesme.profil}
+          onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
+          onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
           onClose={() => setLeagueModalOpen(false)}
         />
       </ModKurulum>

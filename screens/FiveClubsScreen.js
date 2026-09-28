@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { MODE_COLORS } from "../lib/theme";
+import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
@@ -126,10 +128,12 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
   const suggestions = useMemo(() => suggestPlayers(suggestIndex, answerInput), [suggestIndex, answerInput]);
 
+  // 28 Eylül 2026 — Eşleşme Profili
+  const eslesme = useEslesmeProfili();
   const startNewRound = useCallback(() => {
     const clubPool = FIVE_CLUB_DIFFICULTIES[difficulty].pool;
     setUsedClubKeys((prev) => {
-      const r = generateFiveClubRound(PLAYERS, clubPool, prev);
+      const r = generateFiveClubRound(PLAYERS, clubPool, prev, undefined, eslesme.derlenmis);
       setRound(r);
       if (!r) return prev;
       const next = new Set(prev);
@@ -146,7 +150,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     setAnswersRevealed(false);
     setShowAnswersPanel(false);
     setHeardText(null);
-  }, [roundSeconds, difficulty]);
+  }, [roundSeconds, difficulty, eslesme.derlenmis]);
 
   useEffect(() => {
     if (started) startNewRound();
@@ -442,6 +446,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               (vsCpu ? (z <= 3 ? " CPU sık pas geçer." : z <= 7 ? " CPU dengeli." : " CPU en iyi cevabı arar.") : "")}
           />
         </KurulumBolum>
+        <EslesmeProfiliBolumu eslesme={eslesme} not="Ekrana gelen 5 kulüp profilin bölge ve kulüp ayarlarına göre seçilir." />
         <KurulumBolum baslik="CEVAP SÜRESİ">
           <SureSecici
             secenekler={FIVE_CLUB_TIME_OPTIONS}
@@ -651,6 +656,8 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
   return (
     <GameBackground style={styles.container}>
+      {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
+      <KeyboardAvoidingView style={{ flex: 1, width: "100%" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       {showReport && (
         <ReportModal
           visible={showReport}
@@ -807,6 +814,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           </Pressable>
         </View>
       )}
+      </KeyboardAvoidingView>
     </GameBackground>
   );
 }

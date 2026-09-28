@@ -6,11 +6,8 @@ import TabHeader from "../components/TabHeader";
 import { getPokedexPool, getUnlockedPlayers } from "../lib/pokedex";
 import { getProfile } from "../lib/profile";
 import PlayerPhoto from "../components/PlayerPhoto";
-import { PLAYER_NATIONAL_TEAMS } from "../lib/playerNationalTeams";
-import { PLAYER_BIRTH_POSITION } from "../lib/playerBirthPosition";
+import PlayerMiniProfile from "../components/PlayerMiniProfile";
 
-import { countryTr } from "../lib/countryNamesTr";
-import { positionTr } from "../lib/positionNamesTr";
 import { COLORS } from "../lib/theme";
 // 30 Ağustos 2026: Ansiklopedi artık kendi sekmesi (bottom tab) — bir üst
 // ekrana "çıkış" kavramı yok, tab bar'ın kendisi navigasyonu sağlıyor. Bu
@@ -26,6 +23,8 @@ export default function PlayerProfileScreen() {
   const [onlyUnlocked, setOnlyUnlocked] = useState(false); // Kerem: "sadece açılanları göster" butonu
 
   const pool = useMemo(() => getPokedexPool(), []);
+  // Koleksiyon numarası — her kart için pool.findIndex (3000 x 3000) yerine bir kez.
+  const sira = useMemo(() => new Map(pool.map((p, i) => [p.name, i + 1])), [pool]);
 
   useEffect(() => {
     getUnlockedPlayers().then(arr => {
@@ -57,8 +56,7 @@ export default function PlayerProfileScreen() {
   const renderItem = ({ item, index }) => {
     const isUnlocked = unlockedNames.has(item.name);
     // Asıl havuzdaki sırasını bul (Arama yapıldığında index değişir, o yüzden index'i pool'dan alalım)
-    const dexRank = pool.findIndex(p => p.name === item.name); // 0-indexli
-    const dexNumber = dexRank + 1;
+    const dexNumber = sira.get(item.name) || index + 1;
 
     return (
       <Pressable
@@ -90,40 +88,12 @@ export default function PlayerProfileScreen() {
     );
   }
 
-  // EĞER OYUNCU DETAYINA TIKLANDIYSA
-  if (selectedPlayer) {
-    const info = PLAYER_BIRTH_POSITION[selectedPlayer.name] || {};
-    const teams = PLAYER_NATIONAL_TEAMS[selectedPlayer.name] || [];
-    return (
-      <GameBackground style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>KARİYER İNCELEME</Text>
-        </View>
-        <View style={styles.detailCard}>
-          <PlayerPhoto name={selectedPlayer.name} size={120} />
-          <Text style={styles.detailName}>{selectedPlayer.name}</Text>
-          {/* 12 Eylül 2026: ülke ve mevki artık Türkçe gösteriliyor. */}
-          <Text style={styles.detailSub}>
-            {(teams || []).map(countryTr).join(", ")} • {positionTr(info.position) || "?"}
-          </Text>
-
-          <View style={{marginTop: 20, width: "100%"}}>
-            <Text style={{color:COLORS.accent, fontWeight:"900", marginBottom:8}}>OYNADIĞI KULÜPLER</Text>
-            {selectedPlayer.clubs.map((c, i) => (
-              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <Ionicons name="shield" size={14} color={COLORS.accent} />
-                <Text style={styles.detailClubText}>{c.name}</Text>
-              </View>
-            ))}
-          </View>
-
-          <Pressable style={styles.primaryBtn} onPress={() => setSelectedPlayer(null)}>
-            <Text style={styles.primaryBtnText}>KOLEKSİYONA DÖN</Text>
-          </Pressable>
-        </View>
-      </GameBackground>
-    );
-  }
+  // 28 Eylül 2026 — eski "KARİYER İNCELEME" sayfası kaldırıldı (denetim
+  // bulgusu #5: kaydırma yoktu, kulüp adları boş çıkıyordu — kulüpler düz
+  // metin olduğu halde c.name okunuyordu — ve Android geri tuşu uygulamadan
+  // çıkarıyordu). Açılmış karta dokununca artık uygulamanın her yerindeki
+  // oyuncu kartı (PlayerMiniProfile: kulüpler, yıllar, başarılar) açılıyor;
+  // geri tuşu sadece kartı kapatıyor.
 
   // KOLEKSİYON LİSTESİ (POKEDEX)
   return (
@@ -164,8 +134,25 @@ export default function PlayerProfileScreen() {
         </Pressable>
       </View>
 
+      <PlayerMiniProfile
+        name={selectedPlayer ? selectedPlayer.name : null}
+        visible={!!selectedPlayer}
+        onClose={() => setSelectedPlayer(null)}
+      />
       <FlatList
         data={filteredPool}
+        ListEmptyComponent={
+          <View style={styles.bos}>
+            <Ionicons name={onlyUnlocked ? "lock-closed-outline" : "search-outline"} size={28} color={COLORS.textMuted} />
+            <Text style={styles.bosYazi}>
+              {onlyUnlocked && !search.trim()
+                ? "Henüz açılmış futbolcu yok. Oyunlarda doğru bildiğin her futbolcu buraya eklenir."
+                : "Aramana uyan futbolcu yok."}
+            </Text>
+          </View>
+        }
+        initialNumToRender={18}
+        windowSize={7}
         keyExtractor={(item) => item.name}
         renderItem={renderItem}
         numColumns={3}
@@ -177,6 +164,8 @@ export default function PlayerProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  bos: { alignItems: "center", gap: 10, paddingVertical: 40, paddingHorizontal: 30 },
+  bosYazi: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", lineHeight: 19 },
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 40 },
   header: { paddingHorizontal: 20, marginBottom: 10, alignItems: "center" },
   title: { color: COLORS.text, fontSize: 20, fontWeight: "900", textAlign: "center" },

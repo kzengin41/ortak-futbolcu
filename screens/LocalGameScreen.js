@@ -8,7 +8,7 @@ import GameBackground from "../components/GameBackground";
 import { useAudioPlayer } from "expo-audio";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
-import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
 import { generateRound, computeRoundPool, findMatchedPlayer, suggestPlayers, buildSuggestIndex, ANSWER_SECONDS, ROUND_TIME_OPTIONS, sesIpuclari } from "../lib/gameEngine";
 import { playerWeight, recognitionScore } from "../lib/clubWeights";
@@ -22,7 +22,7 @@ import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto, { oncedenYukle } from "../components/PlayerPhoto";
-import LeagueSelectModal from "../components/LeagueSelectModal";
+import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TimerBar from "../components/TimerBar";
@@ -47,15 +47,9 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
   const [started, setStarted] = useState(false);
   const [roundSeconds, setRoundSeconds] = useState(ROUND_TIME_OPTIONS[1]);
   const [targetScore, setTargetScore] = useState(5);
-  const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
+  // 28 Eylül 2026 — lig/kapsam yerine Eşleşme Profili (bkz. lib/eslesmeProfili.js)
+  const eslesme = useEslesmeProfili();
   const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
-  const appliedDefaultPresetRef = useRef(false);
-  useEffect(() => {
-    if (appSettingsLoaded && !appliedDefaultPresetRef.current) {
-      appliedDefaultPresetRef.current = true;
-      if (appSettings.defaultLeaguePresetId) setPresetSelection({ id: appSettings.defaultLeaguePresetId });
-    }
-  }, [appSettingsLoaded, appSettings.defaultLeaguePresetId]);
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [inputMode, setInputMode] = useState("voice"); // "keyboard" | "voice"
   const [viewMode, setViewMode] = useState("side"); // "side" | "mirror"
@@ -146,21 +140,12 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
   const [scoreP1, setScoreP1] = useState(0);
   const [scoreP2, setScoreP2] = useState(0);
 
-  // presetSelection.clubs varsa (detaylı lig-lig seçimden geldiyse) doğrudan
+  // Eşleşme profili (lib/eslesmeProfili.js) kapsamı: izin verilen kulüpler
   // onu kullan, yoksa standart ön ayarı isme göre çöz.
-  const allowedClubs = useMemo(
-    () => presetSelection.clubs ?? clubsForPreset(presetSelection.id, CLUB_INFO),
-    [presetSelection]
-  );
+  const allowedClubs = eslesme.derlenmis.kapsam;
   const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
-  const presetLabel = useMemo(() => {
-    if (presetSelection.clubs) {
-      const n = presetSelection.id.replace("custom:", "").split(",").length;
-      return `Özel seçim (${n} lig)`;
-    }
-    return LEAGUE_PRESETS.find((p) => p.id === presetSelection.id)?.label || "Tümü";
-  }, [presetSelection]);
-  const pool = useMemo(() => computeRoundPool(PLAYERS, allowedClubs, difficulty), [allowedClubs, difficulty]);
+  const presetLabel = eslesme.derlenmis.etiket;
+  const pool = useMemo(() => computeRoundPool(PLAYERS, eslesme.derlenmis, difficulty), [eslesme.derlenmis, difficulty]);
 
   const startNewRound = useCallback(() => {
     setUsedPairs((prev) => {
@@ -353,16 +338,14 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
             onSec={setInputMode}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="LİG / KAPSAM">
+        <KurulumBolum baslik="EŞLEŞME PROFİLİ">
           <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
         </KurulumBolum>
-        <LeagueSelectModal
+        <EslesmeProfiliPenceresi
           visible={leagueModalOpen}
-          currentPreset={presetSelection.clubs ? null : presetSelection.id}
-          onSelect={(sel) => {
-            setPresetSelection(sel);
-            setLeagueModalOpen(false);
-          }}
+          profil={eslesme.profil}
+          onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
+          onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
           onClose={() => setLeagueModalOpen(false)}
         />
       </ModKurulum>
@@ -482,6 +465,8 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 
   return (
     <GameBackground style={styles.container}>
+      {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
+      <KeyboardAvoidingView style={{ flex: 1, width: "100%", justifyContent: "center" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || (typeof winningPlayer !== 'undefined' && winningPlayer ? winningPlayer.name : "Bilinmiyor")} />}
 
       {/* GLOBAL TOP HEADER — 31 Ağustos 2026 (Kerem: "üstteki butonların
@@ -756,6 +741,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           <Text style={styles.backLink}>Menüye dön</Text>
         </Pressable>
       )}
+      </KeyboardAvoidingView>
     </GameBackground>
   );
 }

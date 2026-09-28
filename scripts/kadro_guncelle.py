@@ -216,10 +216,14 @@ def kanonik(kulup):
     return TAKMA_AD.get(kulup, kulup)
 
 
+MILLI_TAKIM = re.compile(r"national .*team|olympic .*team|\bnational team\b|rugby union team", re.I)
+
+
 def kulupleri_tekille(liste):
     """Kanonik ada çevirir; aynı kulüp iki kez geçiyorsa SONUNCUSU kalır
     (son kulüp = güncel kulüp bilgisi korunur)."""
-    yeni = [kanonik(k) for k in liste]
+    # 28 Eylül 2026: milli takımlar kulüp listesine girmesin (787 oyuncuda vardı, temizlendi)
+    yeni = [kanonik(k) for k in liste if not MILLI_TAKIM.search(k)]
     son = {k: i for i, k in enumerate(yeni)}
     return [k for i, k in enumerate(yeni) if son[k] == i]
 

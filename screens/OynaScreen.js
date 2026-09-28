@@ -9,6 +9,7 @@ import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme
 import PlayerStatusBar from "../components/PlayerStatusBar";
 import DailyGoalsCard from "../components/DailyGoalsCard";
 import DailyPuzzleCard from "../components/DailyPuzzleCard";
+import TakimSorusuPenceresi from "../components/TakimSorusuPenceresi";
 // "Oyna" sekmesi — 30 Ağustos 2026'da alt menüye (bottom tab) geçişle birlikte
 // eski HomeScreen'den ayrıştırıldı: Online ve Ansiklopedi artık kendi
 // sekmeleri, oyuncu kartı + Ayarlar/Yardım artık Profilim sekmesinde — bu
@@ -23,6 +24,7 @@ import DailyPuzzleCard from "../components/DailyPuzzleCard";
 const MODES = [
   {
     key: "teamTeam",
+    grup: "klasik",
     title: "Ortak Kulüp",
     desc: "İki takımda da oynamış ortak futbolcuyu bul",
     icon: "shield-checkmark",
@@ -35,6 +37,7 @@ const MODES = [
   },
   {
     key: "teamCountry",
+    grup: "klasik",
     title: "Kulüp & Ülke",
     desc: "Bir ülke + bir kulüpte oynamış futbolcuyu bul",
     icon: "earth",
@@ -43,6 +46,7 @@ const MODES = [
   },
   {
     key: "letters",
+    grup: "bilgi",
     title: "İlk Harften Bul",
     desc: "Verilen baş harflerle başlayan futbolcuyu bul",
     icon: "text",
@@ -51,6 +55,7 @@ const MODES = [
   },
   {
     key: "whoAmI",
+    grup: "bilgi",
     title: "Kim Bu Futbolcu?",
     desc: "İpuçlarıyla gizli futbolcuyu tahmin et",
     icon: "help-circle",
@@ -59,6 +64,7 @@ const MODES = [
   },
   {
     key: "training",
+    grup: "bilgi",
     title: "Hızlı Antrenman",
     desc: "4 şıklı, seri cevaplamaca (sadece offline)",
     icon: "flash",
@@ -67,6 +73,7 @@ const MODES = [
   },
   {
     key: "hotSeat",
+    grup: "arkadas",
     title: "Tek Telefon 2 Kişi",
     desc: "Ekran ikiye bölünür, tek telefonda 2 oyuncu",
     icon: "phone-portrait",
@@ -76,6 +83,7 @@ const MODES = [
   {
     // 4 Eylül 2026 (Kerem'in yeni mod isteği) — bkz. screens/FiveClubsScreen.js
     key: "fiveClubs",
+    grup: "klasik",
     title: "5 Kulüp",
     desc: "5 büyük kulüpten kaçında oynadığını bil, en çok puanı topla",
     icon: "podium",
@@ -94,6 +102,7 @@ const MODES = [
     // Rakip tipi ve zorluk ekranın KENDİ kurulum adımında seçiliyor, bu yüzden
     // burada seçenek modalı yok.
     key: "xox",
+    grup: "klasik",
     title: "Futbolcu XOX",
     desc: "3x3 ızgara, kareyi almak için ortak futbolcuyu söyle",
     icon: "grid",
@@ -102,6 +111,15 @@ const MODES = [
     colorKey: "xox",
     id: "xox",
   },
+];
+
+// 28 Eylül 2026 — denetim bulgusu #7: "8 eşit ağırlıklı mod kartı, gruplama/öneri
+// yok". Kartlar üç başlık altında; en üstte tek dokunuşla oyuna sokan bir
+// "Hemen Oyna" kartı (Ortak Kulüp, CPU'ya karşı — ayarlar eşleşme profilinden).
+const GRUPLAR = [
+  { id: "klasik", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
+  { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
+  { id: "arkadas", baslik: "Arkadaşınla Aynı Telefonda", ikon: "people" },
 ];
 
 const { width } = Dimensions.get("window");
@@ -146,6 +164,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle }) {
 
   return (
     <GameBackground style={styles.container}>
+      <TakimSorusuPenceresi />
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
@@ -167,16 +186,31 @@ export default function OynaScreen({ onSelect, onDailyPuzzle }) {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Ionicons name="game-controller" size={16} color={COLORS.accent} />
-            <Text style={styles.sectionTitle}>Oyun Modları</Text>
-          </View>
-          <View style={styles.grid}>
-            {MODES.map((m) => (
-              <GridCard key={m.key} mode={m} onPress={() => handleCardPress(m)} />
-            ))}
-          </View>
+          <PressScale style={styles.hemen} onPress={() => handleSelect("cpu")}>
+            <View style={styles.hemenIkon}>
+              <Ionicons name="play" size={26} color={COLORS.accentDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.hemenBaslik}>Hemen Oyna</Text>
+              <Text style={styles.hemenAlt}>Ortak Kulüp · CPU'ya karşı · senin eşleşme profilinle</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={COLORS.accentDark} />
+          </PressScale>
         </View>
+
+        {GRUPLAR.map((g) => (
+          <View key={g.id} style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name={g.ikon} size={16} color={COLORS.accent} />
+              <Text style={styles.sectionTitle}>{g.baslik}</Text>
+            </View>
+            <View style={styles.grid}>
+              {MODES.filter((m) => m.grup === g.id).map((m) => (
+                <GridCard key={m.key} mode={m} onPress={() => handleCardPress(m)} />
+              ))}
+            </View>
+          </View>
+        ))}
       </Animated.ScrollView>
 
       <Modal visible={!!pickerMode} transparent animationType="fade" onRequestClose={() => setPickerMode(null)}>
@@ -228,7 +262,17 @@ const styles = StyleSheet.create({
   // marka bloğu compact'e çekildiği için üst boşluk da ölçeğe döndü.
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl },
 
-  section: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.xxl },
+  section: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl },
+  hemen: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md,
+    backgroundColor: COLORS.accent, borderRadius: RADIUS.lg, padding: SPACING.lg, ...SHADOW.card,
+  },
+  hemenIkon: {
+    width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.12)",
+  },
+  hemenBaslik: { ...TYPE.h2, color: COLORS.accentDark },
+  hemenAlt: { fontSize: 12, fontWeight: "700", color: COLORS.accentDark, opacity: 0.8, marginTop: 2 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.md, marginLeft: 4 },
   sectionTitle: { ...TYPE.h2 },
 

@@ -8,7 +8,7 @@ import GameBackground from "../components/GameBackground";
 import { useAudioPlayer } from "expo-audio";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
-import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
 import { generateDraftRound, findMatchedTeam, findMatchedPlayer, suggestPlayers, buildSuggestIndex, buildClubSuggestIndex, suggestClubs, ANSWER_SECONDS, getCpuProfile, ROUND_TIME_OPTIONS, sesIpuclari } from "../lib/gameEngine";
 import { playerWeight, recognitionScore } from "../lib/clubWeights";
@@ -23,7 +23,7 @@ import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto, { oncedenYukle } from "../components/PlayerPhoto";
-import LeagueSelectModal from "../components/LeagueSelectModal";
+import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TimerBar from "../components/TimerBar";
@@ -51,15 +51,9 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
   const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
   const [roundSeconds, setRoundSeconds] = useState(ROUND_TIME_OPTIONS[1]);
   const [targetScore, setTargetScore] = useState(5);
-  const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
+  // 28 Eylül 2026 — lig/kapsam yerine Eşleşme Profili (bkz. lib/eslesmeProfili.js)
+  const eslesme = useEslesmeProfili();
   const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
-  const appliedDefaultPresetRef = useRef(false);
-  useEffect(() => {
-    if (appSettingsLoaded && !appliedDefaultPresetRef.current) {
-      appliedDefaultPresetRef.current = true;
-      if (appSettings.defaultLeaguePresetId) setPresetSelection({ id: appSettings.defaultLeaguePresetId });
-    }
-  }, [appSettingsLoaded, appSettings.defaultLeaguePresetId]);
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [inputMode, setInputMode] = useState("keyboard"); // "keyboard" | "voice"
   const [started, setStarted] = useState(false);
@@ -162,17 +156,8 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
   // Lig filtresi ve oyuncu havuzu SADECE preset değiştiğinde (oyun başında)
   // hesaplanır — her tur yeniden hesaplamak (binlerce oyuncuyu taramak)
   // gerçek cihazlarda donmaya yol açıyordu.
-  const allowedClubs = useMemo(
-    () => presetSelection.clubs ?? clubsForPreset(presetSelection.id, CLUB_INFO),
-    [presetSelection]
-  );
-  const presetLabel = useMemo(() => {
-    if (presetSelection.clubs) {
-      const n = presetSelection.id.replace("custom:", "").split(",").length;
-      return `Özel seçim (${n} lig)`;
-    }
-    return LEAGUE_PRESETS.find((p) => p.id === presetSelection.id)?.label || "Tümü";
-  }, [presetSelection]);
+  const allowedClubs = eslesme.derlenmis.kapsam;
+  const presetLabel = eslesme.derlenmis.etiket;
   const [draftTeam, setDraftTeam] = useState("");
 
   
@@ -474,16 +459,14 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
             onSec={setInputMode}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="LİG / KAPSAM">
+        <KurulumBolum baslik="EŞLEŞME PROFİLİ">
           <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
         </KurulumBolum>
-        <LeagueSelectModal
+        <EslesmeProfiliPenceresi
           visible={leagueModalOpen}
-          currentPreset={presetSelection.clubs ? null : presetSelection.id}
-          onSelect={(sel) => {
-            setPresetSelection(sel);
-            setLeagueModalOpen(false);
-          }}
+          profil={eslesme.profil}
+          onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
+          onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
           onClose={() => setLeagueModalOpen(false)}
         />
       </ModKurulum>

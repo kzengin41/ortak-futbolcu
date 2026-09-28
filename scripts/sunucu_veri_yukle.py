@@ -22,7 +22,7 @@ KULLANIM (PowerShell, proje klasöründe):
 ANAHTAR: service_role anahtarı uygulamaya GÖMÜLMEZ. Sadece --key ile ya da
 SUPABASE_SERVICE_KEY ortam değişkeniyle verilir.
 """
-import argparse, io, json, os, sys, time
+import argparse, io, json, os, re, sys, time
 
 try:
     import requests
@@ -61,7 +61,36 @@ def veri_hazirla():
         players.append({"id": i, "name": p["name"]})
         for c in sorted(set(p.get("clubs") or [])):
             player_clubs.append({"player_id": i, "club_id": kulup_id[c]})
-    return clubs, players, player_clubs
+    return clubs, players, player_clubs, takma_adlar(players)
+
+
+def takma_adlar(players):
+    """28 Eylul 2026: lib/playerAliases.json (birlesen cift kayitlar) + gameEngine.js'teki
+    TEK_ISIM_TAKMA_ADLARI -> [{player_id, alias}]. Sunucu cevap kontrolu bunlari da kabul eder."""
+    idler = {}
+    for p in players:
+        idler.setdefault(p["name"], []).append(p["id"])
+    kaynak = {}
+    yol = os.path.join(os.path.dirname(PLAYERS_YOLU), "playerAliases.json")
+    if os.path.exists(yol):
+        with io.open(yol, encoding="utf-8") as f:
+            for ad, liste in json.load(f).items():
+                kaynak.setdefault(ad, set()).update(liste)
+    yol = os.path.join(os.path.dirname(PLAYERS_YOLU), "gameEngine.js")
+    if os.path.exists(yol):
+        with io.open(yol, encoding="utf-8") as f:
+            metin = f.read()
+        i = metin.find("export const TEK_ISIM_TAKMA_ADLARI = {")
+        if i >= 0:
+            blok = metin[i:metin.find("};", i)]
+            for m in re.finditer(r'"([^"]+)":\s*\[([^\]]*)\]', blok):
+                kaynak.setdefault(m.group(1), set()).update(re.findall(r'"([^"]+)"', m.group(2)))
+    satirlar = []
+    for ad, liste in kaynak.items():
+        for pid in idler.get(ad, []):
+            for t in sorted(liste):
+                satirlar.append({"player_id": pid, "alias": t})
+    return satirlar
 
 
 def istek(oturum, yontem, url, **kw):
@@ -88,9 +117,9 @@ def main():
     ap.add_argument("--deneme", action="store_true", help="hicbir seyi degistirme, sadece say")
     a = ap.parse_args()
 
-    clubs, players, player_clubs = veri_hazirla()
-    print("Yuklenecek: %d kulup, %d oyuncu, %d oyuncu-kulup baglantisi"
-          % (len(clubs), len(players), len(player_clubs)))
+    clubs, players, player_clubs, takmalar = veri_hazirla()
+    print("Yuklenecek: %d kulup, %d oyuncu, %d oyuncu-kulup baglantisi, %d takma ad"
+          % (len(clubs), len(players), len(player_clubs), len(takmalar)))
     if a.deneme:
         print("--deneme: sunucuya dokunulmadi.")
         return 0
@@ -111,7 +140,7 @@ def main():
         "Prefer": "return=minimal",
     })
 
-    print("1/4 Eski veri siliniyor...")
+    print("1/5 Eski veri siliniyor...")
     r = istek(oturum, "POST", proje + "/rest/v1/rpc/veri_sifirla", data="{}")
     if r.status_code >= 300:
         print("   HATA (%s): %s" % (r.status_code, r.text[:400]))
@@ -120,7 +149,7 @@ def main():
 
     for sira, (tablo, satirlar) in enumerate(
             [("clubs", clubs), ("players", players), ("player_clubs", player_clubs)], 2):
-        print("%d/4 %s yukleniyor (%d satir)..." % (sira, tablo, len(satirlar)))
+        print("%d/5 %s yukleniyor (%d satir)..." % (sira, tablo, len(satirlar)))
         for bas in range(0, len(satirlar), PARCA):
             parca = satirlar[bas:bas + PARCA]
             r = istek(oturum, "POST", proje + "/rest/v1/" + tablo,
@@ -131,6 +160,16 @@ def main():
                 return 1
             print("   %d / %d" % (min(bas + PARCA, len(satirlar)), len(satirlar)), end="\r")
         print()
+
+    # Takma adlar: tablo yoksa (supabase/takma_adlar.sql calismamissa) atlanir.
+    print("5/5 takma adlar yukleniyor (%d satir)..." % len(takmalar))
+    for bas in range(0, len(takmalar), PARCA):
+        r = istek(oturum, "POST", proje + "/rest/v1/player_aliases",
+                  data=json.dumps(takmalar[bas:bas + PARCA], ensure_ascii=False).encode("utf-8"))
+        if r.status_code >= 300:
+            print("   UYARI: takma adlar yuklenemedi (%s). supabase/takma_adlar.sql dosyasini"
+                  " SQL Editor'de calistirip bu scripti tekrar calistir." % r.status_code)
+            break
 
     print("\nTAMAM. Online modlar artik uygulamadaki guncel veriyi kullaniyor.")
     return 0

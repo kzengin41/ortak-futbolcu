@@ -5,8 +5,8 @@ import { supabase, getDeviceId } from "../lib/supabaseClient";
 import GameBackground from "../components/GameBackground";
 import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
-import LeagueSelectModal from "../components/LeagueSelectModal";
-import { LEAGUE_PRESETS, DEFAULT_PRESET_ID, clubsForPreset } from "../lib/leaguePresets";
+import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { CLUB_INFO } from "../lib/clubs";
 import { useAppSettings } from "../lib/SettingsContext";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
@@ -58,15 +58,9 @@ const GAME_MODES = [
 // taşındı — hiçbir fonksiyon/prop imzası değişmedi.
 export default function OnlineLobbyScreen({ onRoomReady }) {
   const [mode, setMode] = useState(null); // null | 'create' | 'join'
-  const [presetSelection, setPresetSelection] = useState({ id: DEFAULT_PRESET_ID });
-  const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
-  const appliedDefaultPresetRef = useRef(false);
-  useEffect(() => {
-    if (appSettingsLoaded && !appliedDefaultPresetRef.current) {
-      appliedDefaultPresetRef.current = true;
-      if (appSettings.defaultLeaguePresetId) setPresetSelection({ id: appSettings.defaultLeaguePresetId });
-    }
-  }, [appSettingsLoaded, appSettings.defaultLeaguePresetId]);
+  // 28 Eylül 2026 — Eşleşme Profili. Online'da sunucu sadece izinli kulüp
+  // listesini uyguluyor (ağırlıklar tek kişilik modlarda geçerli).
+  const eslesme = useEslesmeProfili();
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [gameMode, setGameMode] = useState("classic");
   const [isRanked, setIsRanked] = useState(false); // classic | whoami | draft
@@ -135,11 +129,8 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
     // aynı kaynak: CLUB_INFO + lig ön ayarı) ve sunucudan sadece onların
     // kimlikleri isteniyor.
     let allowedClubIds = null;
-    const izinliAdlar = presetSelection.clubs
-      ? [...presetSelection.clubs]
-      : presetSelection.id !== "all"
-      ? [...(clubsForPreset(presetSelection.id, CLUB_INFO) || [])]
-      : null;
+    const izinliKume = eslesme.derlenmis.onlineKapsam();
+    const izinliAdlar = izinliKume ? [...izinliKume] : null;
     if (izinliAdlar) {
       allowedClubIds = [];
       for (let i = 0; i < izinliAdlar.length; i += 150) {
@@ -228,9 +219,7 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
     setCode("");
   }
 
-  const presetLabel = presetSelection.clubs
-    ? "Özel Seçim"
-    : (LEAGUE_PRESETS.find((p) => p.id === presetSelection.id)?.label || "Tümü");
+  const presetLabel = eslesme.derlenmis.etiket;
 
   return (
     <GameBackground style={styles.container}>
@@ -278,7 +267,7 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
               })}
             </View>
 
-            <SectionLabel icon="earth" text="Kapsam" hint="oda kurarken geçerli" />
+            <SectionLabel icon="earth" text="Eşleşme Profili" hint="oda kurarken geçerli" />
             <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
               <Ionicons name="filter" size={18} color={COLORS.accent} />
               <Text style={styles.presetRowText}>{presetLabel}</Text>
@@ -286,10 +275,12 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
               <Text style={styles.presetChangeText}>Değiştir</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.accent} />
             </SoundPressable>
-            <LeagueSelectModal
+            <EslesmeProfiliPenceresi
               visible={leagueModalOpen}
-              currentPreset={presetSelection.clubs ? null : presetSelection.id}
-              onSelect={(sel) => setPresetSelection(sel)}
+              profil={eslesme.profil}
+              online
+              onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
+              onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
               onClose={() => setLeagueModalOpen(false)}
             />
 

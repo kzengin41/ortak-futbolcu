@@ -26,6 +26,8 @@ import { addXP, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import PoolEmpty from "../components/PoolEmpty";
 import TimerBar from "../components/TimerBar";
 import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici, SecimCipleri, CokluSecim } from "../components/ModKurulum";
+import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import TeamBadge from "../components/TeamBadge";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { countryTr } from "../lib/countryNamesTr";
@@ -206,11 +208,22 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
     return !/cloudfront/i.test(ham);
   }, []);
 
+  // 28 Eylül 2026 — Eşleşme Profili: profilin dışarıda bıraktığı kulüplerden
+  // hiçbirinde oynamamış oyuncular havuza girmez; tercih edilen bölgedeki
+  // oyuncular sıralamada öne çekilir (seviye düzeni yine tanınırlığa göre).
+  const eslesme = useEslesmeProfili();
   const sortedPlayers = useMemo(() => {
-    return PLAYERS
-      .filter(p => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name) && donemdeMi(p.name, donemler))
-      .sort((a, b) => calculatePlayerPopularity(b) - calculatePlayerPopularity(a));
-  }, [guvenilirFotoVar, donemler]);
+    const pr = eslesme.derlenmis;
+    const enIyi = (p) => p.clubs.reduce((m, c) => Math.max(m, pr.kulupCarpani(c)), 0);
+    const takimda = (p) => pr.takim && p.clubs.some((c) => c === pr.takim);
+    const anahtar = new Map();
+    const liste = PLAYERS
+      .filter(p => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name) && donemdeMi(p.name, donemler) && enIyi(p) > 0);
+    for (const p of liste) {
+      anahtar.set(p, calculatePlayerPopularity(p) + 8 * Math.log2(Math.max(0.1, enIyi(p))) + (takimda(p) ? 6 : 0));
+    }
+    return liste.sort((a, b) => anahtar.get(b) - anahtar.get(a));
+  }, [guvenilirFotoVar, donemler, eslesme.derlenmis]);
 
   // seviye parametresi: setLevel ile aynı anda çağrıldığında eski (bayat)
   // seviyeyi kullanmasın diye yeni seviye doğrudan veriliyor.
@@ -459,6 +472,7 @@ export default function WhoAmI2Screen({ onExit, onExitSilent }) {
             aciklama={(z) => `Seviye ${BASLANGIC_SEVIYESI[z]}'den başlar. ` + (z <= 3 ? "En bilinen yıldızlar." : z <= 6 ? "Bilinen oyuncular." : "Az bilinenler de gelir.")}
           />
         </KurulumBolum>
+        <EslesmeProfiliBolumu eslesme={eslesme} not="Hangi kulüplerin oyuncularının sorulacağını belirler. Dönem seçimi yukarıda ayrıca geçerli." />
         <KurulumBolum baslik={MOD_TANIMLARI.whoAmICpu.sure.etiket}>
           <SureSecici
             secenekler={MOD_TANIMLARI.whoAmICpu.sure.secenekler}

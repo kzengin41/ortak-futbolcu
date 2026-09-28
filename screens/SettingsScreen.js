@@ -7,7 +7,10 @@ import Slider from "@react-native-community/slider";
 import BackButton from "../components/BackButton";
 import ModVarsayilanlariPaneli from "../components/ModVarsayilanlariPaneli";
 import { useAppSettings } from "../lib/SettingsContext";
-import { LEAGUE_PRESETS } from "../lib/leaguePresets";
+import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
+import TakimSecici from "../components/TakimSecici";
+import TeamBadge from "../components/TeamBadge";
+import { ayarlardanProfil, profilEtiketi } from "../lib/eslesmeProfili";
 import {
   bildirimDesteginVarMi, hatirlatmaKuruluMu, hatirlatmayiKur, hatirlatmayiKaldir,
   HATIRLATMA_SAATI, expoGodaMiyiz,
@@ -24,6 +27,9 @@ const ITEMS = [
 
 export default function SettingsScreen({ onBack }) {
   const { settings, setSetting } = useAppSettings();
+  const genelProfil = ayarlardanProfil(settings);
+  const [profilAcik, setProfilAcik] = useState(false);
+  const [takimAcik, setTakimAcik] = useState(false);
 
   // 26 Eylül 2026 — tema seçilince uygulamayı kendisi yeniden yüklüyor,
   // kullanıcıdan "kapat aç" beklemiyoruz. Yazma BİTMEDEN yeniden yüklemek
@@ -78,28 +84,48 @@ export default function SettingsScreen({ onBack }) {
         <BackButton onPress={onBack} confirm={false} />
         <Text style={styles.title}>Ayarlar</Text>
 
-        <Text style={styles.sectionTitle}>Varsayılan Kapsam</Text>
+        {/* 28 Eylül 2026 — Kerem: "her şeye hükmeden bir ayarlar yapımız olsun.
+            adam tek tek uğraşmak istemezse oradan halletsin." Buradaki profil
+            BÜTÜN modların varsayılanı; mod kurulumunda sadece o maç için
+            değiştirilebilir. */}
+        <Text style={styles.sectionTitle}>Eşleşme Profili</Text>
         <Text style={styles.sectionDesc}>
-          Girdiğin oyun modlarında liste bu kapsamla başlar — istersen mod içinde değiştirebilirsin.
+          Hangi kulüplerin ve oyuncuların çıkacağını belirler. Bütün modlar bununla başlar; istersen mod kurulumunda o maç için değiştirirsin.
         </Text>
-        <View style={styles.presetList}>
-          {LEAGUE_PRESETS.map((p) => {
-            const active = (settings.defaultLeaguePresetId || LEAGUE_PRESETS[0].id) === p.id;
-            return (
-              <SoundPressable
-                key={p.id}
-                style={[styles.presetRow, active && styles.presetRowActive]}
-                onPress={() => setSetting("defaultLeaguePresetId", p.id)}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 }}>
-                  <Text style={styles.presetFlag}>{p.flag || "⚽"}</Text>
-                  <Text style={[styles.presetLabel, active && styles.presetLabelActive]}>{p.label}</Text>
-                </View>
-                {active && <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />}
-              </SoundPressable>
-            );
-          })}
-        </View>
+        <SoundPressable style={styles.profilKart} onPress={() => setProfilAcik(true)}>
+          <Ionicons name="options" size={22} color={COLORS.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.presetLabelActive}>{profilEtiketi(genelProfil)}</Text>
+            <Text style={styles.sectionDesc}>Hızlı · Ayarla · Detaylı</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
+        </SoundPressable>
+
+        <Text style={styles.sectionTitle}>Tuttuğun Takım</Text>
+        <Text style={styles.sectionDesc}>
+          Takımın turlarda daha sık çıkar. Ne sıklıkla çıkacağını eşleşme profilinden ayarlarsın.
+        </Text>
+        <SoundPressable style={styles.profilKart} onPress={() => setTakimAcik((a) => !a)}>
+          {genelProfil.takim ? <TeamBadge name={genelProfil.takim} size={30} /> : <Ionicons name="shield-outline" size={22} color={COLORS.accent} />}
+          <Text style={[styles.presetLabel, { flex: 1 }]}>{genelProfil.takim || "Seçilmedi"}</Text>
+          <Ionicons name={takimAcik ? "chevron-up" : "chevron-down"} size={18} color={COLORS.accent} />
+        </SoundPressable>
+        {takimAcik ? (
+          <View style={{ marginBottom: 26 }}>
+            <TakimSecici
+              secili={genelProfil.takim}
+              kompakt
+              onSec={(t) => { setSetting("eslesmeProfili", { ...genelProfil, takim: t }); setTakimAcik(false); }}
+            />
+          </View>
+        ) : <View style={{ height: 14 }} />}
+        <EslesmeProfiliPenceresi
+          visible={profilAcik}
+          profil={genelProfil}
+          ayarlarModu
+          onVarsayilanYap={(pr) => { setSetting("eslesmeProfili", pr); setProfilAcik(false); }}
+          onClose={() => setProfilAcik(false)}
+        />
 
         <Text style={styles.sectionTitle}>Mod Varsayılanları</Text>
         <Text style={styles.sectionDesc}>
@@ -280,6 +306,11 @@ export default function SettingsScreen({ onBack }) {
 }
 
 const styles = StyleSheet.create({
+  profilKart: {
+    flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: COLORS.card,
+    borderColor: COLORS.accent, borderWidth: 1, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16,
+    marginBottom: 8,
+  },
   container: { flex: 1, width: "100%", paddingHorizontal: 20 },
   backLink: { color: COLORS.textMuted, fontSize: 13 },
   title: { color: COLORS.text, fontSize: 22, fontWeight: "900", marginBottom: 20 },

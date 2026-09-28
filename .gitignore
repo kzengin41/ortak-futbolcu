@@ -41,3 +41,6 @@ Thumbs.db
 
 # Projenin içindeki eski kopya — depoya girmesin
 ortak-futbolcu-expo/
+
+# Özgeçmiş ham verisi (35 MB, gece scripti üretir; uygulama lib/ altındaki işlenmiş dosyaları kullanır)
+veri/

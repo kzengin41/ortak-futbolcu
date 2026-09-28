@@ -11,6 +11,8 @@ import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PoolEmpty from "../components/PoolEmpty";
+import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import TimerBar from "../components/TimerBar";
 import { recognitionScore } from "../lib/clubWeights";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
@@ -25,7 +27,8 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import {
-  izgaraUret, zorlukAyari10, baslangicDurumu, aksiyonuIsle, hucreCevaplari, kareTukendiMi,
+  izgaraUret, zorlukAyari10, baslangicDurumu, IZGARA_TURLERI, basariVerisiVarMi,
+  kosulTuru, kosulEtiketi, kosulBayragi, kosulIkonu, aksiyonuIsle, hucreCevaplari, kareTukendiMi,
   cpuHucreSec, cpuCevapSec, sonucMetni, ZORLUKLAR, VARSAYILAN_ZORLUK, X, O,
 } from "../lib/gridGame";
 
@@ -64,6 +67,29 @@ const VARSAYILAN_SURE = 30;
 const ASGARI_SURE = 15;
 const AZAMI_SURE = 300;
 
+// Izgara başlığı: kulüpse logo, ülkeyse bayrak, başarıysa ikon + Türkçe ad.
+function BaslikRozeti({ baslik, boyut }) {
+  const tur = kosulTuru(baslik);
+  return (
+    <>
+      {tur === "kulup" ? (
+        <TeamBadge name={baslik} size={boyut} />
+      ) : (
+        <View style={[styles.kosulDaire, { width: boyut, height: boyut, borderRadius: boyut / 2 }]}>
+          {tur === "ulke" ? (
+            <Text style={{ fontSize: boyut * 0.55 }} allowFontScaling={false}>{kosulBayragi(baslik)}</Text>
+          ) : (
+            <Ionicons name={kosulIkonu(baslik)} size={boyut * 0.5} color={COLORS.cta} />
+          )}
+        </View>
+      )}
+      <Text style={[styles.baslikText, tur !== "kulup" && { color: COLORS.text, fontWeight: "800" }]} numberOfLines={2}>
+        {kosulEtiketi(baslik)}
+      </Text>
+    </>
+  );
+}
+
 export default function XoxScreen({ onExit, onExitSilent }) {
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
@@ -72,6 +98,8 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const [rakipTipi, setRakipTipi] = useState("cpu");   // "cpu" | "iki"
   // 27 Eylül 2026: zorluk 1-10 (bkz. lib/modAyarlari.js, gridGame zorlukAyari10)
   const [zorluk, setZorluk] = useState(4);
+  // 27 Eylül 2026 — ızgara türü: sadece kulüp / kulüp+ülke / kulüp+başarı / karma
+  const [izgaraTuru, setIzgaraTuru] = useState("kulup");
   const xoxAyar = useMemo(() => zorlukAyari10(zorluk), [zorluk]);
   const [inputMode, setInputMode] = useState("keyboard");
   const [basladi, setBasladi] = useState(false);
@@ -92,7 +120,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(() => {
     const d = seciliRef.current;
     if (!d || !d.secili) return [];
-    return sesIpuclari(PLAYERS, [d.izgara.satirlar[d.secili.satir], d.izgara.sutunlar[d.secili.sutun]]);
+    return sesIpuclari(PLAYERS, [d.izgara.satirlar[d.secili.satir], d.izgara.sutunlar[d.secili.sutun]].filter((h) => kosulTuru(h) === "kulup"));
   });
   const [sesHatasi, setSesHatasi] = useState(null);
   const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
@@ -121,6 +149,8 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const zamanlayiciRef = useRef(null);
   useEffect(() => () => { if (zamanlayiciRef.current) clearTimeout(zamanlayiciRef.current); }, []);
 
+  // 28 Eylül 2026 — Eşleşme Profili (Ayarlar'daki genel profil; kurulumda bu maç için değişir)
+  const eslesme = useEslesmeProfili();
   const yeniOyun = useCallback(() => {
     setHazirlaniyor(true);
     setUretilemedi(false);
@@ -130,7 +160,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       // 13 Eylül 2026 (Kerem: "gelen takımlar zorluk derecesine göre daha kolay
       // olmalı") — ızgara ARTIK zorluğa göre kuruluyor; eskiden zorluk sadece
       // CPU'yu etkiliyordu, soru her seviyede aynı zorluktaydı.
-      const izgara = izgaraUret(PLAYERS, xoxAyar);
+      const izgara = izgaraUret(PLAYERS, xoxAyar, Math.random, izgaraTuru, eslesme.derlenmis);
       if (!izgara) { setUretilemedi(true); setHazirlaniyor(false); return; }
       // veriSeti veriliyor: dokuz karenin cevapları bir kez hesaplanıp durumda
       // saklanıyor (bkz. lib/gridGame.js baslangicDurumu).
@@ -140,7 +170,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       setHazirlaniyor(false);
       setBasladi(true);
     }, 40);
-  }, [xoxAyar]);
+  }, [xoxAyar, izgaraTuru, eslesme.derlenmis]);
 
   // --- CPU sırası ----------------------------------------------------------
   useEffect(() => {
@@ -205,8 +235,8 @@ export default function XoxScreen({ onExit, onExitSilent }) {
         .sort((a, b) => recognitionScore(b) - recognitionScore(a));
       liste.push({
         anahtar: `${r}-${c}`,
-        satir: durum.izgara.satirlar[r],
-        sutun: durum.izgara.sutunlar[c],
+        satir: kosulEtiketi(durum.izgara.satirlar[r]),
+        sutun: kosulEtiketi(durum.izgara.sutunlar[c]),
         sahip: durum.tahta[i],
         verilen: durum.hucreSahipleri[`${r}-${c}`]?.ad || null,
         adlar: oyuncular.map((p) => p.name),
@@ -317,8 +347,8 @@ export default function XoxScreen({ onExit, onExitSilent }) {
 
   const modVarsayilanKaydet = useModVarsayilanlari("xox", { zorluk: setZorluk, sure: setCevapSuresi, yontem: setInputMode });
   useEffect(() => {
-    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"]] }) });
-  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi]);
+    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"]] }) });
+  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru]);
 
   function cevapGonder(ad) {
     const metin = String(ad ?? girdi).trim();
@@ -367,6 +397,23 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             aciklama={(z) => (z <= 2 ? "Bol ortak isimli dev kulüpler." : z <= 4 ? "Tanıdık kulüpler, rahat kareler." : z <= 6 ? "Dengeli." : z <= 8 ? "Az ortak isimli kareler." : "İğne deliği kareler.")}
           />
         </KurulumBolum>
+        <KurulumBolum
+          baslik="IZGARA TÜRÜ"
+          not={izgaraTuru === "kulup"
+            ? "Satır ve sütunlarda sadece kulüpler."
+            : izgaraTuru === "ulke"
+            ? "Bazı sütunlarda ülke olur: \"Brezilyalı + Real Madrid'de oynamış\"."
+            : izgaraTuru === "basari"
+            ? "Bazı sütunlarda başarı olur: \"Ballon d'Or sahibi + Real Madrid'de oynamış\"."
+            : "Ülke ve başarı sütunları karışık gelir."}
+        >
+          <SecimCipleri
+            secenekler={IZGARA_TURLERI.filter((t) => (t.deger !== "basari" && t.deger !== "karma") || basariVerisiVarMi() || t.deger === "karma")}
+            secili={izgaraTuru}
+            onSec={setIzgaraTuru}
+          />
+        </KurulumBolum>
+        <EslesmeProfiliBolumu eslesme={eslesme} not="Izgaradaki kulüpler profilin bölge ve kulüp ayarlarına göre seçilir." />
         <KurulumBolum baslik={MOD_TANIMLARI.xox.sure.etiket}>
           <SureSecici
             secenekler={MOD_TANIMLARI.xox.sure.secenekler}
@@ -442,7 +489,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
           {secili && !durum.bitti && benimSiram && (
             <View style={styles.cevapPaneli}>
               <Text style={styles.hedefText}>
-                {durum.izgara.satirlar[secili.satir]} + {durum.izgara.sutunlar[secili.sutun]}
+                {kosulEtiketi(durum.izgara.satirlar[secili.satir])} + {kosulEtiketi(durum.izgara.sutunlar[secili.sutun])}
               </Text>
               <Text style={styles.hedefAlt}>{seciliCevapSayisi} olası cevap</Text>
 
@@ -524,8 +571,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               <View style={styles.kose} />
               {durum.izgara.sutunlar.map((k) => (
                 <View key={k} style={styles.baslikHucre}>
-                  <TeamBadge name={k} size={logoBoyut} />
-                  <Text style={styles.baslikText} numberOfLines={2}>{k}</Text>
+                  <BaslikRozeti baslik={k} boyut={logoBoyut} />
                 </View>
               ))}
             </View>
@@ -533,8 +579,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             {durum.izgara.satirlar.map((satirKulup, r) => (
               <View key={satirKulup} style={styles.izgaraSatir}>
                 <View style={styles.baslikHucre}>
-                  <TeamBadge name={satirKulup} size={logoBoyut} />
-                  <Text style={styles.baslikText} numberOfLines={2}>{satirKulup}</Text>
+                  <BaslikRozeti baslik={satirKulup} boyut={logoBoyut} />
                 </View>
                 {durum.izgara.sutunlar.map((_, c) => {
                   const indis = r * 3 + c;
@@ -692,6 +737,10 @@ const styles = StyleSheet.create({
   baslikHucre: {
     flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center",
     gap: 2, paddingHorizontal: 2,
+  },
+  kosulDaire: {
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.card, borderColor: COLORS.cta, borderWidth: 2,
   },
   baslikText: { ...TYPE.caption, fontSize: 10, lineHeight: 12, textAlign: "center", color: COLORS.textMuted },
   hucre: {
