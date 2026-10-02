@@ -76,10 +76,27 @@ export function gizliAd(ad) {
   return { ilk, kalan };
 }
 
+// 3 Ekim 2026 (Kerem: "logolar böyle çok renksiz ya, rastgele renkli palavra
+// logolar koyalım") — gerçek armayı ima etmeyen, her vitrinde rastgele üretilen
+// renkli kalkanlar. Renk çiftleri canlı ve birbirinden ayırt edilir; desen
+// dört tipten biri (düz + kuşak, dikey çizgi, ikiye bölünmüş, çapraz bant).
+const ARMA_RENKLERI = [
+  ["#E63946", "#F1FAEE"], ["#1D4ED8", "#FACC15"], ["#16A34A", "#F8FAFC"], ["#7C3AED", "#F59E0B"],
+  ["#0EA5E9", "#0F172A"], ["#DC2626", "#111827"], ["#F97316", "#1E3A8A"], ["#DB2777", "#FDE68A"],
+  ["#14B8A6", "#7F1D1D"], ["#FACC15", "#14532D"], ["#2563EB", "#F8FAFC"], ["#991B1B", "#60A5FA"],
+];
+const DESENLER = ["kusak", "cizgi", "yarim", "capraz"];
+export function rastgeleArma(rastgele = Math.random) {
+  const [a, b] = ARMA_RENKLERI[Math.floor(rastgele() * ARMA_RENKLERI.length)];
+  const ters = rastgele() < 0.5;
+  return { ana: ters ? b : a, ikinci: ters ? a : b, desen: DESENLER[Math.floor(rastgele() * DESENLER.length)] };
+}
+
 export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDailyPuzzle }) {
   const { settings } = useAppSettings();
   const profil = ayarlardanProfil(settings);
   const [cift, setCift] = useState(null);
+  const [armalar, setArmalar] = useState([null, null]);
   const [seviye, setSeviye] = useState(null);
   const [seri, setSeri] = useState({ count: 0, lastPlayedDate: null });
   const [bulmaca, setBulmaca] = useState(null);
@@ -89,6 +106,9 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
     useCallback(() => {
       let iptal = false;
       setCift(vitrinCiftiSec(profil));
+      let a1 = rastgeleArma(), a2 = rastgeleArma();
+      for (let i = 0; i < 5 && a2.ana === a1.ana; i++) a2 = rastgeleArma();
+      setArmalar([a1, a2]);
       getProfile().then((p) => !iptal && setSeviye(xpProgress(p))).catch(() => {});
       getStreak().then((s) => !iptal && setSeri(s)).catch(() => {});
       getBulmacaDurumu().then((d) => !iptal && setBulmaca(d)).catch(() => {});
@@ -139,9 +159,9 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
         <View style={styles.kahraman}>
           <Text style={styles.kahramanUst}>SIRADAKİ MAÇIN HAZIR</Text>
           <View style={styles.takimlar}>
-            <GizliTakim ad={sol} />
+            <GizliTakim ad={sol} arma={armalar[0]} />
             <Text style={styles.carpi}>✕</Text>
-            <GizliTakim ad={sag} />
+            <GizliTakim ad={sag} arma={armalar[1]} />
           </View>
           <Text style={styles.kahramanAciklama}>İki kulüp, bir ortak futbolcu. Önce sen bul.</Text>
           <PressScale
@@ -186,12 +206,38 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
   );
 }
 
-function GizliTakim({ ad }) {
-  return (
-    <View style={styles.takim}>
+function Arma({ arma }) {
+  if (!arma) {
+    return (
       <View style={styles.arma}>
         <Text style={styles.armaSoru}>?</Text>
       </View>
+    );
+  }
+  const { ana, ikinci, desen } = arma;
+  return (
+    <View style={[styles.armaRenkli, { backgroundColor: ana, borderColor: ikinci }]}>
+      {desen === "cizgi" ? (
+        <View style={styles.cizgiler}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View key={i} style={{ flex: 1, backgroundColor: i % 2 ? ikinci : ana }} />
+          ))}
+        </View>
+      ) : null}
+      {desen === "yarim" ? <View style={[styles.yarim, { backgroundColor: ikinci }]} /> : null}
+      {desen === "kusak" ? <View style={[styles.kusak, { backgroundColor: ikinci }]} /> : null}
+      {desen === "capraz" ? <View style={[styles.capraz, { backgroundColor: ikinci }]} /> : null}
+      <View style={[styles.soruRozet, { borderColor: ikinci }]}>
+        <Text style={styles.soruRozetYazi}>?</Text>
+      </View>
+    </View>
+  );
+}
+
+function GizliTakim({ ad, arma }) {
+  return (
+    <View style={styles.takim}>
+      <Arma arma={arma} />
       {typeof ad === "string" ? (
         <Text style={styles.takimAd}>?</Text>
       ) : (
@@ -238,6 +284,20 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   armaSoru: { color: COLORS.textMuted, fontSize: 34, fontWeight: "900" },
+  armaRenkli: {
+    width: 70, height: 80, borderTopLeftRadius: 12, borderTopRightRadius: 12,
+    borderBottomLeftRadius: 35, borderBottomRightRadius: 35, borderWidth: 3,
+    overflow: "hidden", alignItems: "center", justifyContent: "center",
+  },
+  cizgiler: { position: "absolute", top: 0, bottom: 0, left: 0, right: 0, flexDirection: "row" },
+  yarim: { position: "absolute", top: 0, bottom: 0, left: 0, width: "50%" },
+  kusak: { position: "absolute", left: 0, right: 0, top: "36%", height: "26%" },
+  capraz: { position: "absolute", width: 26, height: 140, top: -30, left: 22, transform: [{ rotate: "35deg" }] },
+  soruRozet: {
+    width: 34, height: 34, borderRadius: 17, borderWidth: 2, backgroundColor: "rgba(10,16,24,0.82)",
+    alignItems: "center", justifyContent: "center",
+  },
+  soruRozetYazi: { color: "#FFFFFF", fontSize: 19, fontWeight: "900" },
   takimAd: { color: COLORS.text, fontSize: 20, fontWeight: "900", letterSpacing: 1.5 },
   takimNokta: { color: COLORS.textMuted, fontWeight: "900" },
   carpi: { color: COLORS.textMuted, fontSize: 26, fontWeight: "900" },
