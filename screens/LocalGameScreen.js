@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
   buzzBtn: { flex: 1, borderColor: "#7CFF5C", borderWidth: 2, borderRadius: 18, paddingVertical: 36, alignItems: "center" },
   buzzBtnDisabled: { borderColor: "#28394B" },
   buzzBtnText: { color: "#7CFF5C", fontWeight: "900", fontSize: 14 },
-  buzzBtnTextDisabled: { color: "#56697A" },
+  buzzBtnTextDisabled: { color: "#8CA0B3" },
   passBtn: { 
     marginTop: 12, 
     paddingVertical: 14, 

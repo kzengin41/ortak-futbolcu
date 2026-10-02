@@ -84,7 +84,7 @@ function BaslikRozeti({ baslik, boyut }) {
           )}
         </View>
       )}
-      <Text style={[styles.baslikText, tur !== "kulup" && { color: COLORS.text, fontWeight: "800" }]} numberOfLines={2}>
+      <Text style={[styles.baslikText, tur !== "kulup" && { color: COLORS.text, fontWeight: "800" }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
         {kosulEtiketi(baslik)}
       </Text>
     </>
@@ -604,7 +604,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
                           <Text style={[styles.hucreIsaret, sahip === O && { color: COLORS.cta }]}>
                             {sahip === X ? "X" : "O"}
                           </Text>
-                          <Text style={styles.hucreAd} numberOfLines={2}>{sahipBilgi?.ad}</Text>
+                          <Text style={styles.hucreAd} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{sahipBilgi?.ad}</Text>
                         </>
                       ) : (
                         <Ionicons
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
 
   ustBaslik: { ...TYPE.h1, textAlign: "center", marginTop: SPACING.md },
   aciklama: { ...TYPE.bodyMuted, textAlign: "center", marginTop: SPACING.sm, marginBottom: SPACING.xl },
-  blokBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 11, marginBottom: SPACING.sm },
+  blokBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 12, marginBottom: SPACING.sm },
 
   secimSatir: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.lg },
   secimKart: {
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   zorlukNokta: { flexDirection: "row", gap: 3 },
   nokta: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.cardBorder },
   zorlukEtiket: { ...TYPE.h3, fontSize: 14 },
-  zorlukAciklama: { ...TYPE.caption, fontSize: 11, marginTop: 1 },
+  zorlukAciklama: { ...TYPE.caption, fontSize: 12, marginTop: 1 },
   secimKartAktif: { borderColor: COLORS.accent, backgroundColor: COLORS.accent },
   secimText: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", textAlign: "center" },
   secimTextAktif: { color: COLORS.accentDark },
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     backgroundColor: COLORS.card, borderColor: COLORS.cta, borderWidth: 2,
   },
-  baslikText: { ...TYPE.caption, fontSize: 10, lineHeight: 12, textAlign: "center", color: COLORS.textMuted },
+  baslikText: { ...TYPE.caption, fontSize: 12, lineHeight: 16, textAlign: "center", color: COLORS.textMuted },
   hucre: {
     flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center",
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
   hucreKazanan: { borderWidth: 3, borderColor: VURGU.main },
   hucreTukendi: { opacity: 0.4 },
   hucreIsaret: { ...TYPE.h2, color: COLORS.accent },
-  hucreAd: { ...TYPE.caption, fontSize: 8, textAlign: "center", color: COLORS.textMuted },
+  hucreAd: { ...TYPE.caption, fontSize: 12, textAlign: "center", color: COLORS.textMuted },
 
   sonucKart: {
     backgroundColor: COLORS.card, borderColor: VURGU.main, borderWidth: 2,
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg,
   },
   cevaplarBaslikSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: SPACING.xs },
-  cevaplarBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 11 },
+  cevaplarBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 12 },
   cevapKart: {
     borderTopColor: COLORS.cardBorder, borderTopWidth: 1, paddingVertical: SPACING.sm,
   },
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
     borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg,
   },
-  kullanilanBaslik: { ...TYPE.caption, fontSize: 9, letterSpacing: 1 },
+  kullanilanBaslik: { ...TYPE.caption, fontSize: 12, letterSpacing: 1 },
   kullanilanText: { ...TYPE.caption, color: COLORS.text, marginTop: 2 },
 
   cevapPaneli: {

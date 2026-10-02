@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   scrollContainer: { flex: 1, backgroundColor: "#0B1620", paddingHorizontal: 20 },
   title: { color: "#F3F7FA", fontSize: 22, fontWeight: "900" },
   subtitle: { color: "#8CA0B3", fontSize: 13, marginTop: 8, lineHeight: 19 },
-  hint: { color: "#56697A", fontSize: 12, marginTop: 4 },
+  hint: { color: "#8CA0B3", fontSize: 12, marginTop: 4 },
   popRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   popRowActive: { borderColor: "#7CFF5C", backgroundColor: "#16222E" },
   popRowTitle: { color: "#F3F7FA", fontWeight: "800", fontSize: 14 },
   popRowTitleActive: { color: "#7CFF5C" },
-  popRowDesc: { color: "#8CA0B3", fontSize: 11, marginTop: 2 },
+  popRowDesc: { color: "#8CA0B3", fontSize: 12, marginTop: 2 },
   checkmark: { color: "#7CFF5C", fontSize: 16, fontWeight: "900" },
   leagueSelectBtn: {
     flexDirection: "row",

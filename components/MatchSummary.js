@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   etiket: { ...TYPE.bodyMuted, flex: 1, fontSize: 13 },
   deger: { ...TYPE.h3, fontSize: 15, fontVariant: ["tabular-nums"] },
   rekor: {
-    color: COLORS.cta, fontSize: 10, fontWeight: "900", letterSpacing: 1.5,
+    color: COLORS.cta, fontSize: 12, fontWeight: "900", letterSpacing: 1.5,
     textAlign: "center", marginTop: 2,
   },
 });

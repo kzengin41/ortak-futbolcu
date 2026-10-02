@@ -292,7 +292,7 @@ export default function AccountScreen({ onBack }) {
               </View>
 
               <Text style={styles.sectionLabel}>
-                Avatar Rengi <Text style={{ color: COLORS.textFaint, textTransform: "none", letterSpacing: 0 }}>(fotoğraf yoksa kullanılır)</Text>
+                Avatar Rengi <Text style={{ color: COLORS.textMuted, textTransform: "none", letterSpacing: 0 }}>(fotoğraf yoksa kullanılır)</Text>
               </Text>
               <View style={styles.colorRow}>
                 {AVATAR_COLORS.map((hex) => (
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: COLORS.accent, borderRadius: RADIUS.md, width: 44, height: 44, alignItems: "center", justifyContent: "center" },
 
   deleteBtn: { alignSelf: "center", marginTop: SPACING.lg, paddingVertical: 10, paddingHorizontal: 16 },
-  deleteText: { color: COLORS.textFaint, fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },
+  deleteText: { color: COLORS.textMuted, fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },
   signOutBtn: {
     marginTop: SPACING.xxl,
     flexDirection: "row",

@@ -118,11 +118,11 @@ const styles = StyleSheet.create({
   levelBadgeText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 16 },
   playerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
   playerName: { ...TYPE.h3, flexShrink: 1, marginRight: SPACING.sm },
-  playerXpLabel: { ...TYPE.caption, fontSize: 11 },
+  playerXpLabel: { ...TYPE.caption, fontSize: 12 },
   xpTrack: { height: 6, borderRadius: 3, backgroundColor: COLORS.bg, overflow: "hidden" },
   xpFill: { height: "100%", borderRadius: 3, backgroundColor: COLORS.accent },
   streakWrap: { alignItems: "center", justifyContent: "center", minWidth: 28 },
-  streakText: { ...TYPE.caption, fontWeight: "900", color: COLORS.textFaint, marginTop: 1 },
+  streakText: { ...TYPE.caption, fontWeight: "900", color: COLORS.textMuted, marginTop: 1 },
 
   menuList: { gap: SPACING.md },
   menuRow: {

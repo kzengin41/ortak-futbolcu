@@ -186,10 +186,10 @@ const styles = StyleSheet.create({
   card: { width: "31%", backgroundColor: COLORS.card, borderRadius: 12, padding: 8, alignItems: "center", marginBottom: 12, borderColor: COLORS.cardBorder, borderWidth: 1 },
   cardUnlocked: { borderColor: COLORS.accent, backgroundColor: COLORS.card },
   cardLocked: { opacity: 0.6 },
-  dexNumber: { position: "absolute", top: 4, left: 4, color: COLORS.textMuted, fontSize: 10, fontWeight: "900" },
+  dexNumber: { position: "absolute", top: 4, left: 4, color: COLORS.textMuted, fontSize: 12, fontWeight: "900" },
   photoContainer: { width: 60, height: 60, borderRadius: 30, overflow: "hidden", backgroundColor: "#000", marginVertical: 8, justifyContent: "center", alignItems: "center" },
   silhouette: { opacity: 0.5 },
-  playerName: { color: COLORS.text, fontSize: 10, fontWeight: "800", textAlign: "center" },
+  playerName: { color: COLORS.text, fontSize: 12, fontWeight: "800", textAlign: "center" },
 
   detailCard: { flex: 1, backgroundColor: COLORS.card, margin: 20, borderRadius: 20, padding: 20, alignItems: "center", borderColor: COLORS.cardBorder, borderWidth: 2 },
   detailName: { color: COLORS.text, fontSize: 24, fontWeight: "900", marginTop: 16, textAlign: "center" },

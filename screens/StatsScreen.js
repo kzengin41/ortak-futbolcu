@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   summaryValue: { ...TYPE.h2, fontSize: 20 },
-  summaryLabel: { ...TYPE.caption, fontSize: 10, textAlign: "center" },
+  summaryLabel: { ...TYPE.caption, fontSize: 12, textAlign: "center" },
 
   sectionTitle: { ...TYPE.h3, marginBottom: SPACING.sm, marginTop: SPACING.sm },
   card: {

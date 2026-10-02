@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   mailBtnYazi: { color: COLORS.ctaDark, fontSize: 13, fontWeight: "900" },
   feragat: {
-    ...TYPE.caption, color: COLORS.textFaint, textAlign: "center",
+    ...TYPE.caption, color: COLORS.textMuted, textAlign: "center",
     marginTop: SPACING.lg, lineHeight: 17,
   },
 });

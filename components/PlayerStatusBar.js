@@ -69,7 +69,7 @@ export default function PlayerStatusBar() {
         <Text
           style={[
             styles.seriSayi,
-            seri.count === 0 && { color: COLORS.textFaint },
+            seri.count === 0 && { color: COLORS.textMuted },
             seriRiskte && { color: COLORS.cta },
           ]}
         >
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
   },
   seviyeYazi: { color: COLORS.accentDark, fontWeight: "900", fontSize: 16 },
   ustSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  etiket: { ...TYPE.caption, fontSize: 10, letterSpacing: 1, fontWeight: "900" },
-  xpYazi: { ...TYPE.caption, fontSize: 10, color: COLORS.textFaint, fontVariant: ["tabular-nums"] },
+  etiket: { ...TYPE.caption, fontSize: 12, letterSpacing: 1, fontWeight: "900" },
+  xpYazi: { ...TYPE.caption, fontSize: 12, color: COLORS.textMuted, fontVariant: ["tabular-nums"] },
   barZemin: {
     height: 5, backgroundColor: COLORS.bg, borderRadius: RADIUS.pill,
     marginTop: 5, overflow: "hidden",

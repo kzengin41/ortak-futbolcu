@@ -98,6 +98,6 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   baslikSatiri: { flexDirection: "row", alignItems: "center", gap: 5 },
-  baslik: { color: COLORS.cta, fontSize: 9.5, fontWeight: "900", letterSpacing: 1 },
+  baslik: { color: COLORS.cta, fontSize: 12, fontWeight: "900", letterSpacing: 1 },
   ad: { ...TYPE.h3, fontSize: 15, marginTop: 1 },
 });

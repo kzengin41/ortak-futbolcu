@@ -626,7 +626,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
               <View style={s.tabloBaslik}>
                 <Text style={[s.tabloBaslikYazi, { flex: 1 }]}>TAHMİNLERİN</Text>
                 {["BAYRAK", "MEVKİ", "YAŞ", "LİG", "KULÜP"].map((b) => (
-                  <Text key={b} style={[s.tabloBaslikYazi, s.hucreGenislik]}>{b}</Text>
+                  <Text key={b} style={[s.tabloBaslikYazi, s.hucreGenislik]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{b}</Text>
                 ))}
               </View>
               {tahminler.map((t) => (
@@ -818,7 +818,7 @@ const s = StyleSheet.create({
   kap: { flex: 1, backgroundColor: COLORS.bg },
   ust: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm, paddingBottom: SPACING.sm },
   canlar: { flexDirection: "row", gap: 3 },
-  ustEtiket: { fontSize: 11, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted },
+  ustEtiket: { fontSize: 12, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted },
   ustSayi: { fontSize: 22, fontWeight: "900", color: COLORS.text },
 
   afis: {
@@ -826,7 +826,7 @@ const s = StyleSheet.create({
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: 18,
     backgroundColor: "#2A1F06", borderWidth: 1, borderColor: "#5A430E",
   },
-  afisUst: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: "#FFD98A" },
+  afisUst: { fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: "#FFD98A" },
   afisSayi: { fontSize: 40, fontWeight: "900", color: COLORS.cta, lineHeight: 44 },
   afisCarpan: { fontSize: 22, fontWeight: "900", color: "#FFE3A3" },
   afisAlt: { fontSize: 12, fontWeight: "700", color: "#FFD98A" },
@@ -857,7 +857,7 @@ const s = StyleSheet.create({
   sikYazi: { color: COLORS.text, fontSize: 14, fontWeight: "800", textAlign: "center" },
 
   tabloBaslik: { flexDirection: "row", alignItems: "flex-end", gap: 4, marginTop: SPACING.md, marginBottom: 4 },
-  tabloBaslikYazi: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5, color: COLORS.textMuted, textAlign: "center" },
+  tabloBaslikYazi: { fontSize: 12, fontWeight: "800", letterSpacing: 0.5, color: COLORS.textMuted, textAlign: "center" },
   hucreGenislik: { width: 40 },
   tahminSatir: {
     flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5, paddingHorizontal: 8, marginBottom: 5,
@@ -868,7 +868,7 @@ const s = StyleSheet.create({
   hucreYazi: { fontSize: 14, fontWeight: "900" },
 
   bolum: { marginTop: SPACING.lg, marginBottom: SPACING.sm, fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: COLORS.textMuted },
-  bolumAlt: { fontSize: 11, fontWeight: "600", letterSpacing: 0, color: COLORS.textMuted },
+  bolumAlt: { fontSize: 12, fontWeight: "600", letterSpacing: 0, color: COLORS.textMuted },
   izgara: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   kart: { borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 4 },
   kartKapali: { backgroundColor: "#141E2B", borderColor: "#2E3E55" },
@@ -878,21 +878,21 @@ const s = StyleSheet.create({
   kartKilitli: { backgroundColor: "#0F1620", borderColor: "#222D3B", opacity: 0.6 },
   kilitSatir: { flexDirection: "row", alignItems: "center", gap: 3 },
   kartBedelKilitli: { fontSize: 13, fontWeight: "900", color: COLORS.textMuted, textDecorationLine: "line-through" },
-  kartEtiket: { fontSize: 10, fontWeight: "800", letterSpacing: 0.6, color: COLORS.textMuted },
+  kartEtiket: { fontSize: 12, fontWeight: "800", letterSpacing: 0.6, color: COLORS.textMuted },
   kartDeger: { fontSize: 14, fontWeight: "900", color: COLORS.text, textAlign: "center", alignSelf: "stretch" },
   arkadasAd: { fontSize: 14, fontWeight: "900", color: COLORS.text, textAlign: "center", alignSelf: "stretch" },
   kartBedel: { fontSize: 13, fontWeight: "900", color: COLORS.cta },
-  kariyerYil: { fontSize: 11, fontWeight: "800", color: "#C9D4DF" },
-  kariyerAd: { fontSize: 11, fontWeight: "800", color: COLORS.text, textAlign: "center" },
+  kariyerYil: { fontSize: 12, fontWeight: "800", color: "#C9D4DF" },
+  kariyerAd: { fontSize: 12, fontWeight: "800", color: COLORS.text, textAlign: "center" },
   kalkan: {
     width: 28, height: 32, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 14, borderBottomRightRadius: 14,
     borderWidth: 2, borderStyle: "dashed", borderColor: COLORS.cardBorder, alignItems: "center", justifyContent: "center",
   },
   kalkanSoru: { fontSize: 15, fontWeight: "900", color: COLORS.textMuted },
-  bedava: { fontSize: 11, fontWeight: "900", color: COLORS.accent },
+  bedava: { fontSize: 12, fontWeight: "900", color: COLORS.accent },
   vitrinAd: { fontSize: 13, fontWeight: "800", color: COLORS.text, textAlign: "center" },
-  basari: { fontSize: 11, fontWeight: "700", color: "#FFE3A3", textAlign: "center", marginTop: 2 },
-  arkadasAlt: { fontSize: 11, fontWeight: "600", color: COLORS.textMuted },
+  basari: { fontSize: 12, fontWeight: "700", color: "#FFE3A3", textAlign: "center", marginTop: 2 },
+  arkadasAlt: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
   siluetKutu: { alignItems: "center", marginTop: SPACING.md },
   siluet: { width: 140, height: 140, borderRadius: 70 },
 
@@ -917,8 +917,8 @@ const s = StyleSheet.create({
   sonucMeta: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted, marginTop: 2 },
   sonucKariyer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginTop: SPACING.md },
   sonucKulup: { width: 70, minHeight: 60, borderRadius: 12, backgroundColor: "#10283A", borderWidth: 1, borderColor: "#2B6A8E", alignItems: "center", justifyContent: "center", padding: 4 },
-  sonucKulupYil: { fontSize: 10, fontWeight: "800", color: "#9FCBE6" },
-  sonucKulupAd: { fontSize: 11, fontWeight: "800", color: COLORS.text, textAlign: "center", marginTop: 2 },
+  sonucKulupYil: { fontSize: 12, fontWeight: "800", color: "#9FCBE6" },
+  sonucKulupAd: { fontSize: 12, fontWeight: "800", color: COLORS.text, textAlign: "center", marginTop: 2 },
   dokum: { alignSelf: "stretch", marginTop: SPACING.md, padding: SPACING.lg, borderRadius: 18, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, gap: 7 },
   dokumSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   dokumAd: { fontSize: 15, fontWeight: "600", color: COLORS.textMuted },

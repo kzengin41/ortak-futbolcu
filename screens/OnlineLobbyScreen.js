@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
 
   sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.sm, marginTop: 2 },
   sectionLabel: { ...TYPE.caption, textTransform: "uppercase", letterSpacing: 1, fontWeight: "800" },
-  sectionLabelHint: { ...TYPE.caption, fontSize: 11, color: COLORS.textFaint },
+  sectionLabelHint: { ...TYPE.caption, fontSize: 12, color: COLORS.textMuted },
 
   modeCard: {
     flexDirection: "row",
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  yakindaRozetText: { color: COLORS.textMuted, fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
+  yakindaRozetText: { color: COLORS.textMuted, fontSize: 12, fontWeight: "900", letterSpacing: 0.5 },
   modeCardActive: { borderColor: COLORS.accent, backgroundColor: "#1F5E3B" },
   modeIconWrap: {
     width: 38, height: 38, borderRadius: 19,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   modeIconWrapActive: { backgroundColor: COLORS.accent },
   modeCardTitle: { ...TYPE.h3, fontSize: 14 },
   modeCardTitleActive: { color: COLORS.accent },
-  modeCardDesc: { ...TYPE.caption, fontSize: 11, marginTop: 2 },
+  modeCardDesc: { ...TYPE.caption, fontSize: 12, marginTop: 2 },
 
   presetRow: {
     flexDirection: "row",

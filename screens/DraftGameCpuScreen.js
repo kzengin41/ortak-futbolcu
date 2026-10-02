@@ -5,6 +5,7 @@ import { MODE_COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { cpuCevabiSec } from "../lib/taninirlik";
 import { useAudioPlayer } from "expo-audio";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
@@ -253,8 +254,9 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
       setBuzzedBy("cpu");
       setPhase("answering");
       setTimeout(() => {
-        if (willBeCorrect && round.validAnswers.length > 0) {
-          const pick = round.validAnswers[Math.floor(Math.random() * round.validAnswers.length)];
+        // 4 Ekim 2026 — CPU yalnızca zorluğuna göre tanıyabileceği oyuncuları bilir (lib/taninirlik.js).
+        const pick = willBeCorrect ? cpuCevabiSec(round.validAnswers, difficulty) : null;
+        if (pick) {
           endRound("cpu", `CPU doğru bildi: ${pick.name}`, pick);
         } else {
           registerWrong("cpu");
@@ -293,8 +295,8 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
     if (cpuTimeoutRef.current) clearTimeout(cpuTimeoutRef.current);
     const profile = getCpuProfile(difficulty);
     const willBeCorrect = Math.random() < profile.correctChance;
-    if (willBeCorrect && round.validAnswers.length > 0) {
-      const pick = round.validAnswers[Math.floor(Math.random() * round.validAnswers.length)];
+    const pick = willBeCorrect ? cpuCevabiSec(round.validAnswers, difficulty) : null;
+    if (pick) {
       endRound("cpu", `CPU doğru bildi: ${pick.name}`, pick);
     } else {
       endRound(null, "İkiniz de bilemediniz.");
@@ -840,7 +842,7 @@ const styles = StyleSheet.create({
   buzzBtn: { marginTop: 16, borderColor: "#7CFF5C", borderWidth: 2, borderRadius: 20, paddingVertical: 40, alignItems: "center" },
   buzzBtnDisabled: { borderColor: "#28394B" },
   buzzBtnText: { color: "#7CFF5C", fontWeight: "900", fontSize: 16 },
-  buzzBtnTextDisabled: { color: "#56697A" },
+  buzzBtnTextDisabled: { color: "#8CA0B3" },
   passBtn: { 
     marginTop: 12, 
     paddingVertical: 14, 

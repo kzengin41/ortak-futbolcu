@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   sekmeYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.textMuted },
   sekmeYaziAktif: { color: COLORS.accentDark },
   icerik: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
-  not: { ...TYPE.caption, color: COLORS.textFaint, marginTop: SPACING.xs, marginBottom: SPACING.sm },
+  not: { ...TYPE.caption, color: COLORS.textMuted, marginTop: SPACING.xs, marginBottom: SPACING.sm },
   kartlar: { gap: SPACING.sm },
   kart: {
     flexDirection: "row", alignItems: "center", gap: SPACING.md, minHeight: 64,
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8, paddingHorizontal: 6, backgroundColor: COLORS.card,
   },
   aCipAktif: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  aCipYazi: { fontSize: 11, fontWeight: "800", color: COLORS.textMuted },
+  aCipYazi: { fontSize: 12, fontWeight: "800", color: COLORS.textMuted },
   aCipYaziAktif: { color: COLORS.accentDark },
   aramaKutu: {
     flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: COLORS.card,

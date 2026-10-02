@@ -7,6 +7,7 @@ import { MODE_COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, Animated, Easing, Modal, ScrollView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { cpuCevabiSec, taninmisMi } from "../lib/taninirlik";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
@@ -50,15 +51,25 @@ const SUBMODES = [
 
 const charMap = { 'À':'A', 'Á':'A', 'Â':'A', 'Ä':'A', 'Å':'A', 'É':'E', 'Í':'I', 'Ñ':'N', 'Ó':'O', 'Ø':'O', 'Þ':'T', 'Č':'C', 'Đ':'D', 'Ľ':'L', 'Ł':'L', 'Š':'S', 'Ž':'Z', 'Ș':'S', 'Α':'A', 'Ğ':'G' };
 
+// 4 Ekim 2026 — HARF EŞDEĞERLİĞİ. Eskiden yalnızca birkaç yabancı harf
+// çevriliyordu; Ç, Ş, Ö, Ü, İ hiç çevrilmediği için "Çağlar Söyüncü",
+// "Şükrü Saracoğlu" gibi isimler HİÇBİR harf çiftine girmiyordu (A–Z dışı
+// sayılıp atılıyordu) — yani C-S çiftinde Çağlar Söyüncü yazan oyuncu yanlış
+// sayılıyordu. Artık her aksan atılıyor: Ç=C, Ş=S, Ğ=G, Ö=O, Ü=U, İ=I, É=E…
+function harfiSadelestir(c) {
+  if (!c) return '';
+  const u = c.toLocaleUpperCase('tr');
+  if (charMap[u]) return charMap[u];
+  const sade = u.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return charMap[sade] || sade[0] || '';
+}
 function normalizeFirst(word) {
   if (!word) return '';
-  let c = word.trim()[0].toUpperCase();
-  return charMap[c] || c;
+  return harfiSadelestir(word.trim()[0]);
 }
 function normalizeLast(word) {
   if (!word) return '';
-  let c = word.trim().slice(-1).toUpperCase();
-  return charMap[c] || c;
+  return harfiSadelestir(word.trim().slice(-1));
 }
 
 export default function LetterCpuScreen({ onExit, onExitSilent }) {
@@ -198,7 +209,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       const upper = p.name.toUpperCase();
       const letters = new Set();
       for (const ch of upper) {
-        const c = charMap[ch] || ch;
+        const c = harfiSadelestir(ch);
         if (c >= 'A' && c <= 'Z') letters.add(c);
       }
       const arr = [...letters];
@@ -277,6 +288,23 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     setPhase("countdown");
   };
 
+  // 4 Ekim 2026 (Kerem: "harf çifti en az 3 tanınmış cevap") — bir harf çifti
+  // ancak en az 3 TANINMIŞ cevabı varsa sorulur; yoksa çift "imkânsız" gibi
+  // hissettiriyordu. Kapsam çok darsa (ör. "Sadece Türkler") ve hiçbir çift bu
+  // şartı sağlamıyorsa eski kurala (en az 1 cevap) düşülür.
+  const taninmisCiftVar = useMemo(() => {
+    if (!isPairMode) return false;
+    for (const list of activeMap.values()) if (list.filter(taninmisMi).length >= 3) return true;
+    return false;
+  }, [activeMap, isPairMode]);
+  const ciftUygun = (pair) => {
+    const list = activeMap.get(pair) || [];
+    if (!taninmisCiftVar) return list.length > 0;
+    let n = 0;
+    for (const p of list) if (taninmisMi(p) && ++n >= 3) return true;
+    return false;
+  };
+
   const handleSelectLetter = (letter) => {
     setUserLetter(letter);
 
@@ -286,7 +314,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       for (let c = 65; c <= 90; c++) {
         const cpuL = String.fromCharCode(c);
         const pair = [letter, cpuL].sort().join('-');
-        if (activeMap.has(pair) && activeMap.get(pair).length > 0) {
+        if (ciftUygun(pair)) {
           validCpuLetters.push(cpuL);
         }
       }
@@ -315,8 +343,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   const handleRandomLetter = () => {
     if (isPairMode) {
       const letters = new Set();
-      for (const [pair, players] of activeMap.entries()) {
-        if (!players || players.length === 0) continue;
+      for (const pair of activeMap.keys()) {
+        if (!ciftUygun(pair)) continue;
         const [a, b] = pair.split("-");
         letters.add(a);
         letters.add(b);
@@ -406,10 +434,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         const pool = activeMap.get(pair) || [];
         // Kolay seviyelerde CPU bazen bulamıyor (bekleyip pes ediyor).
         if (Math.random() < cpuZorluk(zorlukId).bulamama) return;
-        if (pool.length > 0) {
-          const guess = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
-          processGuess(guess, "cpu");
-        }
+        // 4 Ekim 2026 — CPU yalnızca zorluğuna göre tanıyabileceği oyuncuları bilir (lib/taninirlik.js).
+        const guess = cpuCevabiSec(pool, zorlukId);
+        if (guess) processGuess(guess, "cpu");
       } else {
         // Zincir modu CPU tahmini
         const currentLetter = chainHistory.length === 0 ? userLetter : normalizeLast(chainHistory[chainHistory.length - 1].name);
@@ -417,8 +444,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         // Filtre: Daha önce söylenenler hariç
         const valid = pool.filter(p => !chainHistory.some(ch => ch.name === p.name));
         
-        if (valid.length > 0) {
-          const guess = valid[Math.floor(Math.random() * Math.min(10, valid.length))];
+        const guess = cpuCevabiSec(valid, zorlukId);
+        if (guess) {
           processGuess(guess, "cpu");
         } else {
           // CPU bulamadı! Player kazandı!
@@ -669,6 +696,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
               : subMode === "contains"
               ? "Adında veya soyadında bu iki harfi İÇEREN (nerede olursa olsun) futbolcuyu bulacaksın"
               : "Kelime zincirini başlatacak ilk harfi seçiyorsun"}
+            {"\n"}Türkçe harfler eşdeğer: Ç=C, Ş=S, Ğ=G, Ö=O, Ü=U, İ=I.
           </Text>
 
           {!atananHarfler && (
@@ -718,6 +746,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
                 <Text style={styles.letterLabel}>CPU Harfi</Text>
                 <Text style={styles.letterValue}>{phase === "countdown" ? "?" : cpuLetter}</Text>
               </View>
+              {/* 4 Ekim 2026 — Ç/C kuralı her turda görünür */}
+              <Text style={styles.harfKurali}>Ç=C · Ş=S · Ğ=G · Ö=O · Ü=U · İ=I sayılır</Text>
             </View>
           ) : (
             <View style={styles.chainCard}>
@@ -857,8 +887,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
                   return p.name.toUpperCase().startsWith(a || "");
                 } else if (subMode === "contains") {
                   const upper = p.name.toUpperCase();
-                  const hasA = [...upper].some(ch => (charMap[ch] || ch) === a);
-                  const hasB = [...upper].some(ch => (charMap[ch] || ch) === b);
+                  const hasA = [...upper].some(ch => harfiSadelestir(ch) === a);
+                  const hasB = [...upper].some(ch => harfiSadelestir(ch) === b);
                   return hasA && hasB;
                 } else {
                   const first = normalizeFirst(p.name.split(" ")[0]);
@@ -911,8 +941,8 @@ const styles = StyleSheet.create({
   atandiBaslik: { color: "#8CA0B3", fontSize: 13, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase" },
   atandiSatir: { flexDirection: "row", alignItems: "center", gap: 16 },
   atandiHarf: { color: "#7CFF5C", fontSize: 64, fontWeight: "900" },
-  atandiAyrac: { color: "#56697A", fontSize: 28, fontWeight: "900" },
-  atandiAlt: { color: "#56697A", fontSize: 13, fontWeight: "600" },
+  atandiAyrac: { color: "#8CA0B3", fontSize: 28, fontWeight: "900" },
+  atandiAlt: { color: "#8CA0B3", fontSize: 13, fontWeight: "600" },
   randomLetterBtn: { width: "100%", borderColor: "#7CFF5C", borderWidth: 1.5, borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 16, marginBottom: 4 },
   randomLetterBtnText: { color: "#7CFF5C", fontWeight: "800", fontSize: 15 },
 
@@ -923,10 +953,11 @@ const styles = StyleSheet.create({
   keyBtn: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 8, width: "13%", aspectRatio: 1, alignItems: "center", justifyContent: "center", marginBottom: 4 },
   keyBtnText: { color: "#7CFF5C", fontSize: 20, fontWeight: "900" },
 
-  lettersCard: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 16, padding: 20, marginTop: 20, marginBottom: 20 },
+  lettersCard: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 16, padding: 20, paddingBottom: 30, marginTop: 20, marginBottom: 20 },
   letterBox: { alignItems: "center" },
   letterLabel: { color: "#8CA0B3", fontSize: 12, fontWeight: "700", marginBottom: 8 },
   letterValue: { color: "#F3F7FA", fontSize: 48, fontWeight: "900" },
+  harfKurali: { position: "absolute", bottom: 6, left: 0, right: 0, textAlign: "center", color: "#8CA0B3", fontSize: 12, fontWeight: "700" },
   letterPlus: { color: "#7CFF5C", fontSize: 32, fontWeight: "900", marginHorizontal: 24 },
   
   chainCard: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 16, padding: 20, marginTop: 20, marginBottom: 20, alignItems: "center" },

@@ -7,6 +7,7 @@ import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari } from "../lib/mo
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { cpuBilirMi, taninirlik } from "../lib/taninirlik";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import { useAudioPlayer } from "expo-audio";
 import { PLAYERS } from "../lib/players";
@@ -17,6 +18,7 @@ import {
   generateFiveClubRound,
   scoreFiveClubAnswer,
   bestFiveClubAnswersGrouped,
+  enIyiFiveClubCevabi,
   FIVE_CLUB_TIME_OPTIONS,
   FIVE_CLUB_MIN_OVERLAP,
   FIVE_CLUB_TOTAL_ROUNDS,
@@ -131,12 +133,19 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
   // 28 Eylül 2026 — Eşleşme Profili
   const eslesme = useEslesmeProfili();
+  // 4 Ekim 2026 — son 2 turun kulüpleri (bir sonraki turda tekrar gelmesin)
+  const sonKuluplerRef = useRef([]);
+  const enIyiCevap = useMemo(
+    () => (phase === "result" && round ? enIyiFiveClubCevabi(PLAYERS, round.clubs, taninirlik) : null),
+    [phase, round]
+  );
   const startNewRound = useCallback(() => {
     const clubPool = FIVE_CLUB_DIFFICULTIES[difficulty].pool;
     setUsedClubKeys((prev) => {
-      const r = generateFiveClubRound(PLAYERS, clubPool, prev, undefined, eslesme.derlenmis);
+      const r = generateFiveClubRound(PLAYERS, clubPool, prev, undefined, eslesme.derlenmis, sonKuluplerRef.current.flat());
       setRound(r);
       if (!r) return prev;
+      sonKuluplerRef.current = [...sonKuluplerRef.current, r.clubs].slice(-2);
       const next = new Set(prev);
       next.add(r.key);
       return next;
@@ -211,13 +220,14 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     const soylenmis = roundResults.p1?.player?.name || null;
 
     for (const n of tercih) {
-      const aday = (kovalar[n] || []).filter((a) => a.player.name !== soylenmis);
+      // 4 Ekim 2026 — CPU yalnızca tanıyabileceği oyuncuları söyler (lib/taninirlik.js).
+      const aday = (kovalar[n] || []).filter((a) => a.player.name !== soylenmis && cpuBilirMi(a.player.name, zorluk10));
       if (aday.length) {
         return aday[Math.floor(Math.random() * aday.length)];
       }
     }
     return null;
-  }, [round, difficulty, roundResults]);
+  }, [round, difficulty, roundResults, zorluk10]);
 
   // CPU sırası: insan turunu bitirdikten sonra (ya da hiç buzz'lamadıysa
   // rastgele bir anda) devreye giriyor.
@@ -726,7 +736,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
                   <View style={styles.clubBadgeWrap}>
                     <TeamBadge name={c} size={40} />
                   </View>
-                  <Text allowFontScaling={false} style={styles.clubName} numberOfLines={2}>{c}</Text>
+                  <Text allowFontScaling={false} style={styles.clubName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{c}</Text>
                   {isMatched && (
                     <View style={styles.clubCheck}>
                       {byP1 && (
@@ -782,6 +792,23 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
                   );
                 })}
               </View>
+
+              {/* 4 Ekim 2026 (Kerem: "tur sonunda en iyi cevap") */}
+              {enIyiCevap ? (
+                <View style={styles.enIyiKart}>
+                  <Text style={styles.enIyiEtiket}>BU TURUN EN İYİ CEVABI</Text>
+                  <View style={styles.enIyiSatir}>
+                    <PlayerPhoto name={enIyiCevap.player.name} size={44} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.enIyiAd} numberOfLines={1}>{enIyiCevap.player.name}</Text>
+                      <Text style={styles.enIyiAlt} numberOfLines={2}>
+                        5 kulübün {enIyiCevap.count}'{enIyiCevap.count === 2 ? "si" : enIyiCevap.count === 3 ? "ü" : enIyiCevap.count === 4 ? "ü" : "i"}: {enIyiCevap.matchedClubs.join(", ")}
+                      </Text>
+                    </View>
+                    <Text style={styles.enIyiPuan}>+{enIyiCevap.count}</Text>
+                  </View>
+                </View>
+              ) : null}
 
               {!showAnswersPanel && (
                 <Pressable style={styles.showAnswersBtn} hitSlop={10} onPress={() => setShowAnswersPanel(true)}>
@@ -845,21 +872,21 @@ const styles = StyleSheet.create({
   clubCell: { width: "30%", alignItems: "center", paddingVertical: 10, borderRadius: 12, position: "relative", minHeight: 92 },
   clubCellMatched: { backgroundColor: "rgba(124,255,92,0.12)" },
   clubBadgeWrap: { height: 40, width: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  clubName: { color: "#F3F7FA", fontSize: 11, fontWeight: "800", textAlign: "center", lineHeight: 14 },
+  clubName: { color: "#F3F7FA", fontSize: 12, fontWeight: "800", textAlign: "center", lineHeight: 16 },
   clubCheck: { position: "absolute", top: 2, right: 4, flexDirection: "row", gap: 3 },
   finderBadge: { width: 17, height: 17, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   finderBadgeP1: { backgroundColor: "#7CFF5C" },   // Oyuncu 1 — yeşil
   finderBadgeP2: { backgroundColor: "#FFB020" },   // Oyuncu 2 — altın/amber
-  finderBadgeText: { color: "#0B1620", fontSize: 11, fontWeight: "900" },
+  finderBadgeText: { color: "#0B1620", fontSize: 12, fontWeight: "900" },
 
   hintText: { color: "#8CA0B3", fontSize: 12, textAlign: "center", marginTop: 10, fontStyle: "italic" },
   buzzRow: { flexDirection: "row", gap: 12, marginTop: 14 },
   buzzBtn: { flex: 1, borderColor: "#7CFF5C", borderWidth: 2, borderRadius: 18, paddingVertical: 24, alignItems: "center", justifyContent: "center", minHeight: 96 },
   buzzBtnText: { color: "#7CFF5C", fontWeight: "900", fontSize: 14 },
-  buzzBtnSub: { color: "#8CA0B3", fontWeight: "700", fontSize: 11, marginTop: 4 },
+  buzzBtnSub: { color: "#8CA0B3", fontWeight: "700", fontSize: 12, marginTop: 4 },
   buzzBtnCpu: { opacity: 0.75, borderStyle: "dashed" },
   buzzBtnDone: { borderColor: "#28394B", backgroundColor: "#16222E", paddingHorizontal: 8 },
-  buzzBtnDoneLabel: { color: "#56697A", fontWeight: "900", fontSize: 12 },
+  buzzBtnDoneLabel: { color: "#8CA0B3", fontWeight: "900", fontSize: 12 },
   buzzBtnDoneScore: { color: "#7CFF5C", fontWeight: "800", fontSize: 12, marginTop: 6, textAlign: "center" },
   passLink: { color: "#8CA0B3", fontSize: 12, fontWeight: "700", textDecorationLine: "underline" },
 
@@ -884,15 +911,21 @@ const styles = StyleSheet.create({
 
   resultRow: { flexDirection: "row", gap: 12, width: "100%" },
   resultCard: { flex: 1, backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 16, padding: 14, alignItems: "center" },
-  resultCardLabel: { color: "#8CA0B3", fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  resultCardLabel: { color: "#8CA0B3", fontWeight: "800", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   resultCardName: { color: "#F3F7FA", fontWeight: "800", fontSize: 13, marginTop: 6, textAlign: "center" },
   resultCardGain: { color: "#FFB020", fontWeight: "900", fontSize: 14, marginTop: 6 },
 
+  enIyiKart: { width: "100%", marginTop: 14, padding: 12, borderRadius: 14, backgroundColor: "#2A1F06", borderWidth: 1, borderColor: "#5A430E" },
+  enIyiEtiket: { color: "#FFD98A", fontSize: 12, fontWeight: "800", letterSpacing: 1.2 },
+  enIyiSatir: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 },
+  enIyiAd: { color: "#F3F7FA", fontSize: 15, fontWeight: "900" },
+  enIyiAlt: { color: "#C9D4DF", fontSize: 12, fontWeight: "600", marginTop: 2 },
+  enIyiPuan: { color: "#FFB020", fontSize: 22, fontWeight: "900" },
   showAnswersBtn: { borderColor: "#7CFF5C", borderWidth: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18, marginBottom: 12, marginTop: 16 },
   showAnswersBtnText: { color: "#7CFF5C", fontSize: 13, fontWeight: "700" },
   answersPanelTitle: { color: "#F3F7FA", fontWeight: "900", fontSize: 14 },
   revealToggleBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#7CFF5C", borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10 },
-  revealToggleText: { color: "#0B1620", fontWeight: "900", fontSize: 11 },
+  revealToggleText: { color: "#0B1620", fontWeight: "900", fontSize: 12 },
   bucketHeader: { color: "#FFB020", fontWeight: "900", fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 },
   // 4 Eylül 2026 (Kerem: "doğru cevap içindeki kutucuklar sabit boyutta
   // olmalı, liste içinde kaydırılabilmeli") — KÖK NEDEN: gizli/açık satırlar
@@ -904,7 +937,7 @@ const styles = StyleSheet.create({
   // kaydırılabilir.
   answersBox: { height: 220, width: "100%", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 14, marginBottom: 12 },
   answersBoxItem: { color: "#F3F7FA", fontSize: 13, fontWeight: "700" },
-  answersBoxSub: { color: "#8CA0B3", fontSize: 11, marginTop: 2 },
+  answersBoxSub: { color: "#8CA0B3", fontSize: 12, marginTop: 2 },
   answersBoxRow: { flexDirection: "row", alignItems: "center", gap: 10, height: 44 },
   maskedAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#28394B" },
   maskedLineWide: { width: "55%", height: 10, borderRadius: 5, backgroundColor: "#28394B" },

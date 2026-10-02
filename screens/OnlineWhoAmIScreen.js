@@ -368,26 +368,26 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm,
   },
-  skorEtiket: { ...TYPE.caption, fontSize: 10, letterSpacing: 1 },
+  skorEtiket: { ...TYPE.caption, fontSize: 12, letterSpacing: 1 },
   skorTur: { ...TYPE.h1, color: VURGU.main },
-  skorPuan: { ...TYPE.caption, fontSize: 11 },
+  skorPuan: { ...TYPE.caption, fontSize: 12 },
   turKutu: { flex: 1.1, alignItems: "center" },
   turEtiket: { ...TYPE.h3, fontSize: 14 },
-  hedefEtiket: { ...TYPE.caption, fontSize: 10, textAlign: "center" },
-  kopukEtiket: { ...TYPE.caption, fontSize: 10, color: COLORS.danger, marginTop: 2 },
+  hedefEtiket: { ...TYPE.caption, fontSize: 12, textAlign: "center" },
+  kopukEtiket: { ...TYPE.caption, fontSize: 12, color: COLORS.danger, marginTop: 2 },
 
   ipucuBaslikSatir: {
     flexDirection: "row", alignItems: "center",
     justifyContent: "space-between", marginBottom: SPACING.sm,
   },
-  ipucuBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 11 },
+  ipucuBaslik: { ...TYPE.eyebrow, color: VURGU.main, fontSize: 12 },
   puanRozet: { ...TYPE.caption, color: COLORS.cta, fontWeight: "900" },
 
   ipucuKart: {
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
     borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm,
   },
-  ipucuEtiket: { ...TYPE.caption, fontSize: 10, letterSpacing: 1, textTransform: "uppercase" },
+  ipucuEtiket: { ...TYPE.caption, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
   ipucuMetin: { ...TYPE.body, fontWeight: "800", marginTop: 2 },
   kalanIpucuText: { ...TYPE.caption, textAlign: "center", marginTop: SPACING.sm },
 

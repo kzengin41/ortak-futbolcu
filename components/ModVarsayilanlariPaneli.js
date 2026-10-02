@@ -113,5 +113,5 @@ const styles = StyleSheet.create({
   ad: { ...TYPE.body, fontWeight: "800" },
   ozet: { ...TYPE.caption, marginTop: 2 },
   icerik: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md },
-  not: { ...TYPE.caption, color: COLORS.textFaint, marginTop: SPACING.md },
+  not: { ...TYPE.caption, color: COLORS.textMuted, marginTop: SPACING.md },
 });

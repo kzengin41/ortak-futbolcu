@@ -6,6 +6,7 @@ import GameBackground from "../components/GameBackground";
 import PressScale from "../components/ui/PressScale";
 import SoundPressable from "../components/SoundPressable";
 import TakimSorusuPenceresi from "../components/TakimSorusuPenceresi";
+import BilgiTestiPenceresi from "../components/BilgiTestiPenceresi";
 import { useAppSettings } from "../lib/SettingsContext";
 import { ayarlardanProfil, profilEtiketi, etkinAyar } from "../lib/eslesmeProfili";
 import { getProfile, xpProgress } from "../lib/profile";
@@ -135,6 +136,8 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
   return (
     <GameBackground style={styles.kap}>
       <TakimSorusuPenceresi />
+      {/* 4 Ekim 2026 — takım sorusundan hemen sonra bir kez: futbol bilgisi testi */}
+      <BilgiTestiPenceresi otomatik />
       <ScrollView contentContainerStyle={styles.icerik} showsVerticalScrollIndicator={false}>
         {/* Üst satır: seviye + seri */}
         <View style={styles.ust}>

@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   presetText: { color: COLORS.text, fontSize: 15, fontWeight: "700", flex: 1 },
   presetTextActive: { color: COLORS.accent },
   checkmark: { color: COLORS.accent, fontSize: 16, fontWeight: "900" },
-  hint: { color: COLORS.textFaint, fontSize: 12, marginBottom: 12 },
+  hint: { color: COLORS.textMuted, fontSize: 12, marginBottom: 12 },
   
   leaguesWrap: { flexDirection: "column", gap: 0, marginBottom: 16 },
   leagueRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   leagueRowText: { color: COLORS.textMuted, fontSize: 14, fontWeight: "700" },
   leagueRowTextActive: { color: COLORS.accent },
   expandBtn: { backgroundColor: COLORS.bg, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: COLORS.accent },
-  expandBtnText: { color: COLORS.accent, fontSize: 11, fontWeight: "700" },
+  expandBtnText: { color: COLORS.accent, fontSize: 12, fontWeight: "700" },
   
   clubsWrap: { padding: 8, backgroundColor: "#144528", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, marginTop: -8, paddingTop: 16 },
   clubRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: COLORS.card },

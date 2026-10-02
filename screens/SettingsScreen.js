@@ -9,6 +9,8 @@ import ModVarsayilanlariPaneli from "../components/ModVarsayilanlariPaneli";
 import { useAppSettings } from "../lib/SettingsContext";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import TakimSecici from "../components/TakimSecici";
+import BilgiTestiPenceresi from "../components/BilgiTestiPenceresi";
+import { seviyeEtiketi } from "../lib/bilgiSeviyesi";
 import TeamBadge from "../components/TeamBadge";
 import { ayarlardanProfil, profilEtiketi } from "../lib/eslesmeProfili";
 import {
@@ -30,6 +32,7 @@ export default function SettingsScreen({ onBack }) {
   const genelProfil = ayarlardanProfil(settings);
   const [profilAcik, setProfilAcik] = useState(false);
   const [takimAcik, setTakimAcik] = useState(false);
+  const [testAcik, setTestAcik] = useState(false);
 
   // 26 Eylül 2026 — tema seçilince uygulamayı kendisi yeniden yüklüyor,
   // kullanıcıdan "kapat aç" beklemiyoruz. Yazma BİTMEDEN yeniden yüklemek
@@ -88,6 +91,24 @@ export default function SettingsScreen({ onBack }) {
             adam tek tek uğraşmak istemezse oradan halletsin." Buradaki profil
             BÜTÜN modların varsayılanı; mod kurulumunda sadece o maç için
             değiştirilebilir. */}
+        {/* 4 Ekim 2026 — futbol bilgisi testi: seviye bütün modların varsayılan zorluğu */}
+        <Text style={styles.sectionTitle}>Futbol Bilgin</Text>
+        <Text style={styles.sectionDesc}>
+          Kısa testin sonucu. Elle değiştirmediğin her mod bu zorlukla başlar; oynadıkça kendiliğinden ince ayarlanır.
+        </Text>
+        <SoundPressable style={styles.profilKart} onPress={() => setTestAcik(true)}>
+          <Ionicons name="school" size={22} color={COLORS.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.presetLabelActive}>
+              {Number.isFinite(settings.bilgiSeviyesi) ? `${settings.bilgiSeviyesi} / 10 · ${seviyeEtiketi(settings.bilgiSeviyesi)}` : "Test çözülmedi"}
+            </Text>
+            <Text style={styles.sectionDesc}>{Number.isFinite(settings.bilgiSeviyesi) ? "Testi tekrar çöz" : "8 soru, 1 dakika"}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
+        </SoundPressable>
+        <View style={{ height: 14 }} />
+        <BilgiTestiPenceresi visible={testAcik} onKapat={() => setTestAcik(false)} />
+
         <Text style={styles.sectionTitle}>Eşleşme Profili</Text>
         <Text style={styles.sectionDesc}>
           Hangi kulüplerin ve oyuncuların çıkacağını belirler. Bütün modlar bununla başlar; istersen mod kurulumunda o maç için değiştirirsin.
@@ -357,7 +378,7 @@ const styles = StyleSheet.create({
   temaSerit: { flex: 1 },
   temaAd: { color: COLORS.text, fontWeight: "800", fontSize: 13 },
   temaAdAktif: { color: COLORS.accent },
-  temaAciklama: { color: COLORS.textMuted, fontSize: 11, marginTop: 2, lineHeight: 15 },
+  temaAciklama: { color: COLORS.textMuted, fontSize: 12, marginTop: 2, lineHeight: 16 },
   temaTik: { position: "absolute", top: 6, right: 6 },
   ozelKap: {
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder,

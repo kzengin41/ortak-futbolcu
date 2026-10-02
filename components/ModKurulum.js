@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   aciklama: { ...TYPE.bodyMuted, textAlign: "center", marginTop: SPACING.md, marginBottom: SPACING.sm },
 
   bolum: { marginTop: SPACING.lg },
-  bolumBaslik: { ...TYPE.eyebrow, fontSize: 11, marginBottom: SPACING.sm },
+  bolumBaslik: { ...TYPE.eyebrow, fontSize: 12, marginBottom: SPACING.sm },
   not: { ...TYPE.caption, marginTop: SPACING.sm },
 
   cipSatir: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm },
