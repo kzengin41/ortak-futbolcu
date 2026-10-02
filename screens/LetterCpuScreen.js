@@ -4,7 +4,7 @@ import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
-import { View, Text, TextInput, Pressable, StyleSheet, Animated, Easing, Modal, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Animated, Easing, Modal, ScrollView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { PLAYERS } from "../lib/players";
@@ -605,9 +605,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   }
 
   return (
-    <GameBackground style={styles.container}>
+    <GameBackground style={styles.container} klavye="kaydir">
       {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
-      <KeyboardAvoidingView style={{ flex: 1, width: "100%" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <View style={{ flex: 1, width: "100%" }}>
         {/* 28 Eylül 2026 — tur sırasında da çıkış var (denetim bulgusu #2);
             BackButton onay soruyor, kazara çıkış olmuyor. */}
         {phase !== "countdown" && (
@@ -877,7 +877,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         </View>
       </Modal>
 
-      </KeyboardAvoidingView>
+      </View>
     </GameBackground>
   );
 }

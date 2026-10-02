@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import GameBackground from "../components/GameBackground";
+import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import BackButton from "../components/BackButton";
 import SoundPressable from "../components/SoundPressable";
 import { signUpWithEmail, signInWithEmail, signOut, getCurrentUser } from "../lib/auth";
@@ -209,8 +210,8 @@ export default function AccountScreen({ onBack }) {
 
   return (
     <GameBackground style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KlavyeAlani style={{ flex: 1 }}>
+        <KlavyeScroll contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <BackButton onPress={onBack} confirm={false} />
           <Text style={styles.title}>Hesabım</Text>
 
@@ -333,8 +334,8 @@ export default function AccountScreen({ onBack }) {
               </SoundPressable>
             </>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KlavyeScroll>
+      </KlavyeAlani>
     </GameBackground>
   );
 }

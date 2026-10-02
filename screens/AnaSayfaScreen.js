@@ -197,9 +197,17 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
           {!bulmacaBitti && <Ionicons name="chevron-forward" size={18} color={COLORS.cta} />}
         </SoundPressable>
 
-        <SoundPressable style={styles.tumModlar} onPress={onAllModes}>
-          <Ionicons name="grid-outline" size={18} color={COLORS.textMuted} />
-          <Text style={styles.tumModlarYazi}>Tüm modlar</Text>
+        {/* 4 Ekim 2026 (Kerem: "anasayfadaki tüm modlar butonu da belli
+            olmuyor") — artık günlük satırıyla aynı ağırlıkta bir kart. */}
+        <SoundPressable style={styles.tumModlar} onPress={onAllModes} accessibilityRole="button" accessibilityLabel="Tüm modlar">
+          <View style={styles.tumModlarIkon}>
+            <Ionicons name="grid" size={20} color={TUM_MODLAR_RENGI} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.gunlukBaslik}>Tüm modlar</Text>
+            <Text style={styles.gunlukAlt} numberOfLines={1}>Kim Bu, 5 Kulüp, XOX, İlk Harf ve dahası</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={TUM_MODLAR_RENGI} />
         </SoundPressable>
       </ScrollView>
     </GameBackground>
@@ -249,6 +257,8 @@ function GizliTakim({ ad, arma }) {
     </View>
   );
 }
+
+const TUM_MODLAR_RENGI = "#5EC8FF";
 
 const styles = StyleSheet.create({
   kap: { flex: 1, backgroundColor: COLORS.bg },
@@ -325,8 +335,11 @@ const styles = StyleSheet.create({
   gunlukAlt: { color: COLORS.textMuted, fontSize: 13, fontWeight: "600", marginTop: 2 },
 
   tumModlar: {
-    marginTop: SPACING.md, height: 54, borderRadius: 16, borderWidth: 1, borderColor: COLORS.cardBorder,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    marginTop: SPACING.md, flexDirection: "row", alignItems: "center", gap: SPACING.md,
+    padding: SPACING.lg, borderRadius: 20, borderWidth: 1, borderColor: TUM_MODLAR_RENGI, backgroundColor: COLORS.card,
   },
-  tumModlarYazi: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
+  tumModlarIkon: {
+    width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.bg,
+  },
 });

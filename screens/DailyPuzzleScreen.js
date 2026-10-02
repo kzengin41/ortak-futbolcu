@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView, Share,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
@@ -135,16 +136,13 @@ export default function DailyPuzzleScreen({ onExit }) {
 
   return (
     <GameBackground style={styles.kap}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KlavyeAlani style={{ flex: 1 }}>
         <BackButton onPress={onExit} />
 
-        <ScrollView
+        <KlavyeScroll
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: SPACING.xxl }}
           keyboardShouldPersistTaps="handled"
-          // iOS'ta klavye açılınca içeriği kendiliğinden yukarı iter; panel
-          // zaten üstte ama uzun ızgaralarda bu da işe yarıyor.
-          automaticallyAdjustKeyboardInsets
         >
           <Text style={styles.ustBaslik}>GÜNÜN BULMACASI</Text>
           <Text style={styles.no}>#{bulmaca.no}</Text>
@@ -244,7 +242,7 @@ export default function DailyPuzzleScreen({ onExit }) {
               <Text style={styles.yarinText}>Yarın yeni bir soru seni bekliyor</Text>
             </View>
           ) : null}
-        </ScrollView>
+        </KlavyeScroll>
 
         {geriBildirim && (
           <View style={styles.geriBildirimSarmal} pointerEvents="none">
@@ -255,7 +253,7 @@ export default function DailyPuzzleScreen({ onExit }) {
             />
           </View>
         )}
-      </KeyboardAvoidingView>
+      </KlavyeAlani>
     </GameBackground>
   );
 }

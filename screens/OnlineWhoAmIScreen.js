@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PlayerPhoto, { prefetchPlayerPhoto } from "../components/PlayerPhoto";
@@ -209,7 +210,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
 
   return (
     <GameBackground style={styles.kap}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KlavyeAlani style={{ flex: 1 }}>
         <View style={styles.ustSerit}>
           <View style={styles.skorKutu}>
             <Text style={styles.skorEtiket}>SEN</Text>
@@ -352,7 +353,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
         <SoundPressable onPress={onExit} style={styles.cikisBtn}>
           <Text style={styles.cikisText}>Odadan çık</Text>
         </SoundPressable>
-      </KeyboardAvoidingView>
+      </KlavyeAlani>
     </GameBackground>
   );
 }

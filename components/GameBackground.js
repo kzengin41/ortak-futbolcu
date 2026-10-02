@@ -2,6 +2,7 @@ import React from "react";
 import { ImageBackground, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import backgrounds from "../assets/backgrounds";
+import { KlavyeAlani, KlavyeScroll } from "./Klavye";
 
 const randomBg = backgrounds.length > 0
   ? backgrounds[Math.floor(Math.random() * backgrounds.length)]
@@ -27,7 +28,19 @@ const randomBg = backgrounds.length > 0
 // kaplıyor. İç View'ın backgroundColor'ı bilinçli olarak "transparent"a
 // zorlanıyor (çağıran ekranların styles.container'ındaki backgroundColor
 // resmi KAPATMASIN diye — o renk zaten sadece resim yokken bir fallback'ti).
-export default function GameBackground({ children, style }) {
+// 4 Ekim 2026 — `klavye="kaydir"`: ScrollView'i olmayan oyun ekranlarında
+// içerik kaydırılabilir bir alana alınır ve klavye açılınca cevap kutusu ile
+// öneriler klavyenin üstünde kalır (bkz. components/Klavye.js).
+// `klavye="pay"`: yalnızca klavye kadar alt boşluk (ekranın kendi listesi
+// zaten küçülebiliyorsa).
+function kaydirmaStili(style) {
+  const duz = StyleSheet.flatten(style) || {};
+  // ScrollView içeriğinde flex:1 kaydırmayı öldürür; yerine flexGrow:1.
+  const { flex, backgroundColor, ...kalan } = duz;
+  return [{ flexGrow: 1 }, kalan];
+}
+
+export default function GameBackground({ children, style, klavye }) {
   return (
     <ImageBackground
       source={randomBg}
@@ -46,7 +59,17 @@ export default function GameBackground({ children, style }) {
         locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={[style, styles.forceTransparent]}>{children}</View>
+      {klavye === "kaydir" ? (
+        <KlavyeAlani>
+          <KlavyeScroll style={{ flex: 1 }} contentContainerStyle={kaydirmaStili(style)} showsVerticalScrollIndicator={false}>
+            {children}
+          </KlavyeScroll>
+        </KlavyeAlani>
+      ) : klavye === "pay" ? (
+        <KlavyeAlani style={[style, styles.forceTransparent]}>{children}</KlavyeAlani>
+      ) : (
+        <View style={[style, styles.forceTransparent]}>{children}</View>
+      )}
     </ImageBackground>
   );
 }

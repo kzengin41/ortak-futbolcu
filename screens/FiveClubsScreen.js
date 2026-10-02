@@ -4,9 +4,10 @@ import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import { useAudioPlayer } from "expo-audio";
 import { PLAYERS } from "../lib/players";
 import {
@@ -657,7 +658,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   return (
     <GameBackground style={styles.container}>
       {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
-      <KeyboardAvoidingView style={{ flex: 1, width: "100%" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KlavyeAlani style={{ width: "100%" }}>
       {showReport && (
         <ReportModal
           visible={showReport}
@@ -692,7 +693,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
       )}
 
       {phase !== "gameOver" && (
-        <ScrollView
+        <KlavyeScroll
           style={{ flex: 1, width: "100%" }}
           contentContainerStyle={{ paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
@@ -796,7 +797,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               </Pressable>
             </View>
           )}
-        </ScrollView>
+        </KlavyeScroll>
       )}
 
       {phase === "gameOver" && (
@@ -814,7 +815,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           </Pressable>
         </View>
       )}
-      </KeyboardAvoidingView>
+      </KlavyeAlani>
     </GameBackground>
   );
 }

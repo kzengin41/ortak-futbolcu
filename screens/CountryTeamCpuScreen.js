@@ -2,7 +2,7 @@
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 // 12 Eylül 2026 — CountryClubArcadeScreen importu KALDIRILDI. Bu bileşen
 // dosyanın hiçbir yerinde render EDİLMİYORDU ama import edildiği için
@@ -610,7 +610,7 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
   const p1Locked = lockedOut.has("p1");
 
   return (
-    <GameBackground style={styles.container}>
+    <GameBackground style={styles.container} klavye="kaydir">
       {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || (typeof winningPlayer !== 'undefined' && winningPlayer ? winningPlayer.name : "Bilinmiyor")} />}
 
       {/* GLOBAL TOP HEADER — 31 Ağustos 2026 (Kerem: "üstteki butonların
@@ -802,8 +802,9 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
         // skor + takım kartı üstte olduğu için "Gönder" satırından aşağısı
         // klavyenin altında kalıyordu. Bu ekranların hiçbirinde
         // KeyboardAvoidingView yoktu (yalnızca WhoAmI'de vardı).
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        // 4 Ekim 2026 — Android'de bu da yetmiyordu; artık ekranın tamamı
+        // GameBackground klavye="kaydir" ile sarılı (components/Klavye.js).
+        <View
           style={{ marginTop: 20 }}
         >
           {buzzedBy === "cpu" ? (
@@ -901,7 +902,7 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
               <Text style={styles.passBtnText}>Bilemedim</Text>
             </SoundPressable>
           )}
-        </KeyboardAvoidingView>
+        </View>
       )}
 
       {phase === "result" && showResultPanel && (
@@ -916,7 +917,7 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
             </Pressable>
           )}
           {showAnswers && (
-            <ScrollView style={styles.answersBox} contentContainerStyle={{ padding: 12 }}>
+            <ScrollView style={styles.answersBox} contentContainerStyle={{ padding: 12 }} nestedScrollEnabled>
               {[...round.validAnswers]
                 // 12 Eylül 2026 (Kerem: "doğru cevaplar listelenirken popülerliğe
                 // göre sıralanmalı, şimdi en üstte saçma sapan adamlar çıkıyor")

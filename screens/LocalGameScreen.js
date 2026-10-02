@@ -2,7 +2,7 @@
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { useAudioPlayer } from "expo-audio";
@@ -464,9 +464,9 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 
 
   return (
-    <GameBackground style={styles.container}>
+    <GameBackground style={styles.container} klavye="kaydir">
       {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
-      <KeyboardAvoidingView style={{ flex: 1, width: "100%", justifyContent: "center" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <View style={{ flex: 1, width: "100%", justifyContent: "center" }}>
       {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || (typeof winningPlayer !== 'undefined' && winningPlayer ? winningPlayer.name : "Bilinmiyor")} />}
 
       {/* GLOBAL TOP HEADER — 31 Ağustos 2026 (Kerem: "üstteki butonların
@@ -688,7 +688,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
             </Pressable>
           )}
           {showAnswers && (
-            <ScrollView style={styles.answersBox} contentContainerStyle={{ padding: 12 }}>
+            <ScrollView style={styles.answersBox} contentContainerStyle={{ padding: 12 }} nestedScrollEnabled>
               {[...round.validAnswers]
                 // 12 Eylül 2026 (Kerem: "doğru cevaplar listelenirken popülerliğe
                 // göre sıralanmalı, şimdi en üstte saçma sapan adamlar çıkıyor")
@@ -741,7 +741,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           <Text style={styles.backLink}>Menüye dön</Text>
         </Pressable>
       )}
-      </KeyboardAvoidingView>
+      </View>
     </GameBackground>
   );
 }

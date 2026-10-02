@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions,
+  ActivityIndicator, useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
@@ -445,15 +446,12 @@ export default function XoxScreen({ onExit, onExitSilent }) {
 
   return (
     <GameBackground style={styles.kap}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KlavyeAlani style={{ flex: 1 }}>
         <BackButton onPress={onExitSilent || onExit} />
 
-        <ScrollView
+        <KlavyeScroll
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
           keyboardShouldPersistTaps="handled"
-          // iOS'ta klavye açılınca içeriği kendiliğinden yukarı iter; panel
-          // zaten üstte ama uzun ızgaralarda bu da işe yarıyor.
-          automaticallyAdjustKeyboardInsets
         >
           {!secili && !durum.bitti && benimSiram && (
             <Text style={styles.ipucu}>Almak istediğin kareye dokun</Text>
@@ -674,7 +672,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               <Text style={styles.kullanilanText}>{durum.kullanilanlar.join(" · ")}</Text>
             </View>
           )}
-        </ScrollView>
+        </KlavyeScroll>
 
         {geriBildirim && (
           <View style={styles.geriBildirimSarmal} pointerEvents="none">
@@ -686,7 +684,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             />
           </View>
         )}
-      </KeyboardAvoidingView>
+      </KlavyeAlani>
     </GameBackground>
   );
 }

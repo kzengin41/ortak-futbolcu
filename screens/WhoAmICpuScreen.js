@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image as HizliResim } from "expo-image";
 import GameBackground from "../components/GameBackground";
+import { KlavyeAlani, useKlavyeAcik } from "../components/Klavye";
 import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
@@ -15,7 +16,6 @@ import PlayerPhoto, { prefetchPlayerPhoto } from "../components/PlayerPhoto";
 import PlayerMiniProfile from "../components/PlayerMiniProfile";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
-import { calculatePlayerPopularity } from "../lib/clubWeights";
 import { PLAYER_BIRTH_POSITION } from "../lib/playerBirthPosition";
 import { PLAYER_NATIONAL_TEAMS } from "../lib/playerNationalTeams";
 import { PLAYER_LAST_ACTIVE_YEAR } from "../lib/playerYears";
@@ -32,7 +32,7 @@ import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, Y
 import { oyuncuBasarilari } from "../lib/basarilar";
 import {
   masaKur, unluTakimArkadasi, simdiBilirsen, carpan, turPuani, karsilastir, ortakKartlariAc,
-  yeniCan, mevkiKategorisi, AZAMI_CAN, BASLANGIC_PUANI, ASGARI_PUAN,
+  yeniCan, acilabilirMi, mevkiKategorisi, AZAMI_CAN, BASLANGIC_PUANI, ASGARI_PUAN,
 } from "../lib/kimBuMasa";
 
 // ============================================================================
@@ -164,15 +164,24 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     return !/cloudfront/i.test(ham);
   }, []);
 
+  // 4 Ekim 2026 (Kerem: "sırf gs'de oynadı diye endogan adili falan çıkıyor.
+  // bunlar kolay değil ki, zor, gurme.") — ESKİ sıralama popülerlik puanına
+  // eşleşme profilinden büyük bir ek (TR kulübü ×5 → +18,6, tuttuğun takım
+  // +6) ekliyordu; bu ek oyuncular arasındaki tanınırlık farkını eziyordu ve
+  // GS'de birkaç maç oynamış biri ilk 150'ye giriyordu. YENİ: sıralama
+  // yalnızca tanınırlıkla (playerFame: [güncel, tüm zamanlar] yüzdelik).
+  // Eşleşme profili sadece SÜZGEÇ: profildeki kulüplerde oynamamış oyuncu
+  // sorulmaz, ama profil kimseyi öne çıkarmaz. (Endoğan Adili artık ~4.100.
+  // sırada; Uğurcan ~200, Barış Alper ~150.)
   const sortedPlayers = useMemo(() => {
     const pr = eslesme.derlenmis;
-    const enIyi = (p) => p.clubs.reduce((m, c) => Math.max(m, pr.kulupCarpani(c)), 0);
-    const takimda = (p) => pr.takim && p.clubs.some((c) => c === pr.takim);
+    const profilde = (p) => p.clubs.some((c) => pr.kulupCarpani(c) > 0);
+    const taninirlik = (ad) => { const t = TANIN[ad]; return t ? Math.max(t[0] || 0, t[1] || 0) : 0; };
     const anahtar = new Map();
     const liste = PLAYERS.filter(
-      (p) => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name) && donemdeMi(p.name, donemler) && enIyi(p) > 0
+      (p) => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name) && donemdeMi(p.name, donemler) && profilde(p)
     );
-    for (const p of liste) anahtar.set(p, calculatePlayerPopularity(p) + 8 * Math.log2(Math.max(0.1, enIyi(p))) + (takimda(p) ? 6 : 0));
+    for (const p of liste) anahtar.set(p, taninirlik(p.name));
     return liste.sort((a, b) => anahtar.get(b) - anahtar.get(a));
   }, [guvenilirFotoVar, donemler, eslesme.derlenmis]);
 
@@ -234,6 +243,8 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     });
   }, [zorlukId, soruSuresi, inputMode, donemler]);
 
+  const klavyeAcik = useKlavyeAcik();
+
   // -- hesaplar
   const sikCarpani = siklar ? 0.5 : 1;
   const potansiyel = masa ? Math.round(simdiBilirsen(masa, acik) * sikCarpani) : BASLANGIC_PUANI;
@@ -270,6 +281,11 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
 
   function kartCevir(kart) {
     if (phase !== "playing" || acik[kart.id]) return;
+    if (!acilabilirMi(masa, acik, kart)) {
+      setUyari(`Puanın yetmiyor: bu kart ${sayi(kart.bedel)}, puanın ${sayi(ASGARI_PUAN)}'in altına inemez. Tahmin et ya da joker kullan.`);
+      return;
+    }
+    if (uyari) setUyari(null);
     setAcik((a) => ({ ...a, [kart.id]: "satin" }));
   }
 
@@ -518,18 +534,22 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
 
   // ======================================================================= OYUN
   const kartDurumu = (k) => acik[k.id] || null;
+  const kilitli = (k) => !acik[k.id] && !acilabilirMi(masa, acik, k);
+  const turAnahtari = player.name + ":"; // yeni turda kartlar kapalı başlasın (animasyonsuz)
   return (
     <GameBackground style={s.kap}>
       {ustSerit}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={s.afis}>
-          <View>
+      <KlavyeAlani>
+        {/* 4 Ekim 2026 — klavye açıkken afiş tek satıra iniyor; cevap kutusu ve
+            öneriler klavyenin üstünde kalsın diye. */}
+        <View style={[s.afis, klavyeAcik && s.afisKucuk]}>
+          <View style={klavyeAcik && { flexDirection: "row", alignItems: "baseline", gap: 8 }}>
             <Text style={s.afisUst}>ŞİMDİ BİLİRSEN</Text>
-            <Text style={s.afisSayi}>{sayi(potansiyel)}</Text>
+            <Text style={[s.afisSayi, klavyeAcik && s.afisSayiKucuk]}>{sayi(potansiyel)}</Text>
           </View>
           <View style={{ alignItems: "flex-end" }}>
-            {carp > 1 ? <Text style={s.afisCarpan}>×{String(carp).replace(".", ",")}</Text> : null}
-            <Text style={s.afisAlt}>{carp === 2 ? "kart çevirmeden" : carp > 1 ? "1–2 kartla" : `en az ${sayi(ASGARI_PUAN)}`}</Text>
+            {carp > 1 ? <Text style={[s.afisCarpan, klavyeAcik && { fontSize: 18 }]}>×{String(carp).replace(".", ",")}</Text> : null}
+            {!klavyeAcik ? <Text style={s.afisAlt}>{carp === 2 ? "kart çevirmeden" : carp > 1 ? "1–2 kartla" : `en az ${sayi(ASGARI_PUAN)}`}</Text> : null}
           </View>
         </View>
 
@@ -569,7 +589,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
           </View>
           {suggestions.length > 0 && answerInput.trim().length > 1 ? (
             <View style={s.oneriler}>
-              {suggestions.slice(0, 4).map((ad) => (
+              {suggestions.slice(0, klavyeAcik ? 3 : 4).map((ad) => (
                 <SoundPressable key={ad} style={s.oneri} onPress={() => tahminEt(ad)}>
                   <Ionicons name="person-circle-outline" size={18} color={COLORS.textMuted} />
                   <Text style={s.oneriYazi} numberOfLines={1}>{ad}</Text>
@@ -623,9 +643,19 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
           <Text style={s.bolum}>KİMLİK</Text>
           <View style={s.izgara}>
             {masa.kimlik.map((k) => (
-              <Kart key={k.id} kart={k} durum={kartDurumu(k)} onPress={() => kartCevir(k)} genislik="23.5%">
-                <Text style={s.kartEtiket}>{k.etiket}</Text>
-                {kartDurumu(k) ? <Text style={s.kartDeger} numberOfLines={2}>{k.deger}</Text> : <Text style={s.kartBedel}>{sayi(k.bedel)}</Text>}
+              <Kart key={turAnahtari + k.id} kart={k} durum={kartDurumu(k)} kilitli={kilitli(k)} onPress={() => kartCevir(k)} genislik="23.5%">
+                {(d) => (
+                  <>
+                    <Text style={s.kartEtiket}>{k.etiket}</Text>
+                    {/* 4 Ekim 2026 (Kerem: "ülke ismi kutuya tam sığmamış alt
+                        satıra taşıyor") — tek satır, sığmazsa yazı küçülür. */}
+                    {d ? (
+                      <Text style={s.kartDeger} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{k.deger}</Text>
+                    ) : (
+                      <Bedel kart={k} kilitli={kilitli(k)} />
+                    )}
+                  </>
+                )}
               </Kart>
             ))}
           </View>
@@ -633,14 +663,18 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
           <Text style={s.bolum}>KARİYER · {masa.kariyer.length} KULÜP <Text style={s.bolumAlt}>eskiden yeniye</Text></Text>
           <View style={s.izgara}>
             {masa.kariyer.map((k) => (
-              <Kart key={k.id} kart={k} durum={kartDurumu(k)} onPress={() => kartCevir(k)} genislik="18.4%" yukseklik={88}>
-                <Text style={s.kariyerYil}>{k.yil}</Text>
-                {kartDurumu(k) ? (
-                  <Text style={s.kariyerAd} numberOfLines={3}>{k.kulup}</Text>
-                ) : (
-                  <View style={s.kalkan}><Text style={s.kalkanSoru}>?</Text></View>
+              <Kart key={turAnahtari + k.id} kart={k} durum={kartDurumu(k)} kilitli={kilitli(k)} onPress={() => kartCevir(k)} genislik="18.4%" yukseklik={88}>
+                {(d) => (
+                  <>
+                    <Text style={s.kariyerYil}>{k.yil}</Text>
+                    {d ? (
+                      <Text style={s.kariyerAd} numberOfLines={3}>{k.kulup}</Text>
+                    ) : (
+                      <View style={s.kalkan}><Text style={s.kalkanSoru}>?</Text></View>
+                    )}
+                    {d === "bedava" ? <Text style={s.bedava}>bedava</Text> : !d ? <Bedel kart={k} kilitli={kilitli(k)} /> : <View />}
+                  </>
                 )}
-                {kartDurumu(k) === "bedava" ? <Text style={s.bedava}>bedava</Text> : !kartDurumu(k) ? <Text style={s.kartBedel}>{sayi(k.bedel)}</Text> : <View />}
               </Kart>
             ))}
           </View>
@@ -650,31 +684,43 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
               <Text style={s.bolum}>VİTRİN</Text>
               <View style={s.izgara}>
                 {masa.vitrin.map((k) => (
-                  <Kart key={k.id} kart={k} durum={kartDurumu(k)} onPress={() => kartCevir(k)} genislik="31.8%" yukseklik={kartDurumu(k) && k.id === "basarilar" ? undefined : 80}>
-                    <Text style={s.vitrinAd}>{k.etiket}</Text>
-                    {!kartDurumu(k) ? (
-                      <Text style={s.kartBedel}>{sayi(k.bedel)}</Text>
-                    ) : k.id === "basarilar" ? (
-                      k.liste.map((b, i) => <Text key={i} style={s.basari} numberOfLines={2}>{b}</Text>)
-                    ) : k.id === "arkadas" ? (
+                  <Kart key={turAnahtari + k.id} kart={k} durum={kartDurumu(k)} kilitli={kilitli(k)} onPress={() => kartCevir(k)} genislik="31.8%" yukseklik={kartDurumu(k) && k.id === "basarilar" ? undefined : 80}>
+                    {(d) => (
                       <>
-                        <Text style={s.kartDeger} numberOfLines={2}>{k.deger}</Text>
-                        <Text style={s.arkadasAlt} numberOfLines={1}>{k.alt}</Text>
+                        <Text style={s.vitrinAd} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{k.etiket}</Text>
+                        {!d ? (
+                          <Bedel kart={k} kilitli={kilitli(k)} />
+                        ) : k.id === "basarilar" ? (
+                          k.liste.map((b, i) => <Text key={i} style={s.basari} numberOfLines={2}>{b}</Text>)
+                        ) : k.id === "arkadas" ? (
+                          <>
+                            <Text style={s.arkadasAd} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{k.deger}</Text>
+                            <Text style={s.arkadasAlt} numberOfLines={1}>{k.alt}</Text>
+                          </>
+                        ) : (
+                          <Ionicons name="image" size={20} color={COLORS.accent} />
+                        )}
                       </>
-                    ) : (
-                      <Ionicons name="body" size={20} color={COLORS.accent} />
                     )}
                   </Kart>
                 ))}
               </View>
+              {/* 4 Ekim 2026 (Kerem: "silüet bu modda 1 kere bile yüklenmedi")
+                  — KÖK NEDEN: silüet, fotoğrafı tintColor ile tek renge
+                  boyayarak yapılıyordu. Bu yalnızca arka planı şeffaf PNG'lerde
+                  şekil verir; bizim fotoğraflarımız JPG/WebP (opak), yani
+                  sonuç her zaman düz renkli bir daireydi — "yüklenmedi" gibi
+                  görünüyordu. YENİ: aynı fotoğraf güçlü bulanıklıkla
+                  gösteriliyor (kart adı da "Bulanık foto"). */}
               {acik.siluet && fotoUrl && !photoBroken ? (
                 <View style={s.siluetKutu}>
                   <HizliResim
                     source={{ uri: fotoUrl }}
                     style={s.siluet}
-                    tintColor={COLORS.text}
+                    blurRadius={24}
                     contentFit="cover"
                     cachePolicy="memory-disk"
+                    transition={150}
                     onError={() => setPhotoBroken(true)}
                   />
                 </View>
@@ -693,26 +739,62 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
             </SoundPressable>
           </View>
           <SoundPressable style={s.pesEt} onPress={() => turuKaybet("Pes ettin — bir can gitti")}>
-            <Text style={s.pesEtYazi}>Pes et</Text>
+            <Ionicons name="flag-outline" size={16} color={COLORS.danger} />
+            <Text style={s.pesEtYazi}>Pes et · 1 can</Text>
           </SoundPressable>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KlavyeAlani>
     </GameBackground>
   );
 }
 
-function Kart({ kart, durum, onPress, genislik, yukseklik = 70, children }) {
-  const stil = durum === "bedava" ? s.kartBedava : durum === "baslangic" ? s.kartBaslangic : durum ? s.kartAcik : s.kartKapali;
+// 4 Ekim 2026 (Kerem: "kartlar açılırken kart dönme animasyonu ile açılsa
+// daha güzel olmaz mı?") — kapalıdan açığa geçerken kart Y ekseninde döner:
+// ilk yarıda kapalı yüz 90°'ye kadar döner, o anda yüz değişir, ikinci yarıda
+// açık yüz 90°'den 0°'a gelir. `children` bir fonksiyon: ekranda o an hangi
+// yüzün göründüğünü (gorunen) alır. Tur başında açık gelen kart dönmez.
+function Kart({ kart, durum, kilitli, onPress, genislik, yukseklik = 70, children }) {
+  const [gorunen, setGorunen] = useState(durum);
+  const aci = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (durum === gorunen) return;
+    if (!durum || gorunen) { setGorunen(durum); return; } // kapanma / yüz değişimi: anında
+    Animated.timing(aci, { toValue: 1, duration: 160, easing: Easing.in(Easing.quad), useNativeDriver: true }).start(() => {
+      setGorunen(durum);
+      aci.setValue(-1);
+      Animated.timing(aci, { toValue: 0, duration: 200, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+    });
+  }, [durum]);
+  const rotateY = aci.interpolate({ inputRange: [-1, 0, 1], outputRange: ["-90deg", "0deg", "90deg"] });
+  const stil = gorunen === "bedava" ? s.kartBedava : gorunen === "baslangic" ? s.kartBaslangic : gorunen ? s.kartAcik : kilitli ? s.kartKilitli : s.kartKapali;
   return (
-    <SoundPressable
-      style={[s.kart, stil, { width: genislik, minHeight: yukseklik }]}
-      onPress={onPress}
-      disabled={!!durum}
-      accessibilityLabel={durum ? `${kart.etiket || kart.yil} açık` : `${kart.etiket || kart.yil} kartını çevir, ${kart.bedel} puan`}
-    >
-      {children}
-    </SoundPressable>
+    <Animated.View style={{ width: genislik, transform: [{ perspective: 700 }, { rotateY }] }}>
+      <SoundPressable
+        style={[s.kart, stil, { minHeight: yukseklik }]}
+        onPress={onPress}
+        disabled={!!durum}
+        accessibilityLabel={
+          durum ? `${kart.etiket || kart.yil} açık`
+            : kilitli ? `${kart.etiket || kart.yil} kartı için puan yetmiyor`
+            : `${kart.etiket || kart.yil} kartını çevir, ${kart.bedel} puan`
+        }
+      >
+        {children(gorunen)}
+      </SoundPressable>
+    </Animated.View>
   );
+}
+
+function Bedel({ kart, kilitli }) {
+  if (kilitli) {
+    return (
+      <View style={s.kilitSatir}>
+        <Ionicons name="lock-closed" size={11} color={COLORS.textMuted} />
+        <Text style={s.kartBedelKilitli}>{sayi(kart.bedel)}</Text>
+      </View>
+    );
+  }
+  return <Text style={s.kartBedel}>{sayi(kart.bedel)}</Text>;
 }
 
 const HUCRE = {
@@ -748,6 +830,8 @@ const s = StyleSheet.create({
   afisSayi: { fontSize: 40, fontWeight: "900", color: COLORS.cta, lineHeight: 44 },
   afisCarpan: { fontSize: 22, fontWeight: "900", color: "#FFE3A3" },
   afisAlt: { fontSize: 12, fontWeight: "700", color: "#FFD98A" },
+  afisKucuk: { paddingVertical: 6 },
+  afisSayiKucuk: { fontSize: 24, lineHeight: 28 },
 
   sure: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginHorizontal: SPACING.lg, marginTop: SPACING.sm },
   sureYazi: { fontSize: 13, fontWeight: "800", color: COLORS.textMuted, width: 44, textAlign: "right" },
@@ -791,8 +875,12 @@ const s = StyleSheet.create({
   kartAcik: { backgroundColor: "#10283A", borderColor: "#2B6A8E" },
   kartBaslangic: { backgroundColor: "#10283A", borderColor: "#5EC8FF" },
   kartBedava: { backgroundColor: "#0E2A18", borderColor: "#2F7A47" },
+  kartKilitli: { backgroundColor: "#0F1620", borderColor: "#222D3B", opacity: 0.6 },
+  kilitSatir: { flexDirection: "row", alignItems: "center", gap: 3 },
+  kartBedelKilitli: { fontSize: 13, fontWeight: "900", color: COLORS.textMuted, textDecorationLine: "line-through" },
   kartEtiket: { fontSize: 10, fontWeight: "800", letterSpacing: 0.6, color: COLORS.textMuted },
-  kartDeger: { fontSize: 15, fontWeight: "900", color: COLORS.text, textAlign: "center" },
+  kartDeger: { fontSize: 14, fontWeight: "900", color: COLORS.text, textAlign: "center", alignSelf: "stretch" },
+  arkadasAd: { fontSize: 14, fontWeight: "900", color: COLORS.text, textAlign: "center", alignSelf: "stretch" },
   kartBedel: { fontSize: 13, fontWeight: "900", color: COLORS.cta },
   kariyerYil: { fontSize: 11, fontWeight: "800", color: "#C9D4DF" },
   kariyerAd: { fontSize: 11, fontWeight: "800", color: COLORS.text, textAlign: "center" },
@@ -815,8 +903,13 @@ const s = StyleSheet.create({
   },
   jokerPasif: { opacity: 0.55 },
   jokerYazi: { fontSize: 14, fontWeight: "800", color: COLORS.text },
-  pesEt: { alignSelf: "center", paddingVertical: SPACING.md, paddingHorizontal: SPACING.xl, marginTop: SPACING.sm },
-  pesEtYazi: { fontSize: 14, fontWeight: "700", color: COLORS.textMuted },
+  // 4 Ekim 2026 (Kerem: "pes et butonu arkaplan ile aynı renkte kalmış
+  // görünmüyor") — artık kırmızı çerçeveli, tam genişlikte düğme.
+  pesEt: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 46, marginTop: SPACING.sm,
+    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.danger, backgroundColor: "rgba(255,93,93,0.10)",
+  },
+  pesEtYazi: { fontSize: 15, fontWeight: "800", color: COLORS.danger },
 
   sonucIcerik: { alignItems: "center", paddingHorizontal: SPACING.lg, paddingBottom: 48 },
   sonucUst: { marginTop: SPACING.md, marginBottom: SPACING.md, fontSize: 22, fontWeight: "900", letterSpacing: 3 },

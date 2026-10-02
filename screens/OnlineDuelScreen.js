@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import { supabase } from "../lib/supabaseClient";
 import TeamBadge from "../components/TeamBadge";
 
@@ -144,8 +145,10 @@ export default function OnlineDuelScreen({ room, onExit }) {
   const myScore = myPlayer === 1 ? roomRow?.score1 : roomRow?.score2;
   const oppScore = myPlayer === 1 ? roomRow?.score2 : roomRow?.score1;
 
+  // 4 Ekim 2026 — klavye cevap kutusunu kapatmasın (components/Klavye.js).
   return (
-    <View style={styles.container}>
+    <KlavyeAlani style={styles.container}>
+    <KlavyeScroll contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
       <View style={styles.scoreRow}>
         <View style={styles.scoreBox}>
           <Text style={styles.scoreLabel}>Sen</Text>
@@ -241,7 +244,8 @@ export default function OnlineDuelScreen({ room, onExit }) {
       <Pressable onPress={onExit} style={{ marginTop: 24 }}>
         <Text style={styles.backLink}>Odadan çık</Text>
       </Pressable>
-    </View>
+    </KlavyeScroll>
+    </KlavyeAlani>
   );
 }
 

@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Scroll
 import { Ionicons } from "@expo/vector-icons";
 import { supabase, getDeviceId } from "../lib/supabaseClient";
 import GameBackground from "../components/GameBackground";
+import { KlavyeScroll } from "../components/Klavye";
 import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
@@ -222,8 +223,8 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
   const presetLabel = eslesme.derlenmis.etiket;
 
   return (
-    <GameBackground style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <GameBackground style={styles.container} klavye="pay">
+      <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TabHeader compact />
         <Text style={styles.title}>Online 1v1</Text>
 
@@ -353,7 +354,7 @@ export default function OnlineLobbyScreen({ onRoomReady }) {
             </SoundPressable>
           </View>
         )}
-      </ScrollView>
+      </KlavyeScroll>
     </GameBackground>
   );
 }
