@@ -454,11 +454,15 @@ if len(tanin) >= 1000:
     # 1 Ekim 2026 (Kerem: "Uğurcan Çakır ilk 3000'de yok, ilk 200'de olmalı"):
     # oyuncular Türk. Genel karışım (en/tr/dil sayısı) dünya yıldızlarını doğru
     # sıralıyor ama Türkiye'de herkesin bildiği oyuncuları geride bırakıyordu.
-    # Güncel puan = max(genel, %60 Türkçe görüntülenme + %40 genel): dünya
+    # Güncel puan = max(genel, %85 Türkçe görüntülenme + %15 genel): dünya
     # yıldızları yerinde kalır, Türkiye'de çok aranan oyuncular öne çıkar.
+    # 3 Ekim 2026: 0,6 → 0,85. 0,6'da Uğurcan 488., Barış Alper 400.; 0,85'te
+    # 191. ve 154. (Kerem: "ilk 200'de olmalı"); Benzema 40., De Bruyne 69.,
+    # Pedri 151. ile dünya yıldızları yerinde kalıyor.
+    TR_AGIRLIGI = 0.85
     def _genel(a):
         return 0.35 * p_en[a] + 0.35 * p_tr[a] + 0.30 * p_sl[a]
-    guncel = _yuzdelik({a: max(_genel(a), 0.6 * p_tr[a] + 0.4 * _genel(a)) for a in tanin})
+    guncel = _yuzdelik({a: max(_genel(a), TR_AGIRLIGI * p_tr[a] + (1 - TR_AGIRLIGI) * _genel(a)) for a in tanin})
     tum = _yuzdelik({a: 0.55 * p_sl[a] + 0.30 * p_en[a] + 0.15 * p_tr[a] for a in tanin})
     unler = {a: [round(guncel[a] * 100, 3), round(tum[a] * 100, 3)] for a in tanin}
     sayac["tanin"] = len(unler)

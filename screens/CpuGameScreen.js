@@ -379,7 +379,8 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
   const modVarsayilanKaydet = useModVarsayilanlari("cpu", { zorluk: setDifficulty, sure: setRoundSeconds, galibiyet: setTargetScore, yontem: setInputMode });
   // Varsayılanlar (yukarıdaki kanca) aynı geçişte uygulandıktan sonra başla.
   useEffect(() => {
-    if (hemenBasla && appSettingsLoaded && !started) setStarted(true);
+    // Kerem (3 Ekim): ana sayfadan başlayan maç 3'te bitsin.
+    if (hemenBasla && appSettingsLoaded && !started) { setTargetScore(3); setStarted(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hemenBasla, appSettingsLoaded]);
   useEffect(() => {

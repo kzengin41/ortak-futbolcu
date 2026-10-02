@@ -52,7 +52,7 @@ const ONBOARDING_KEY = "ortak-futbolcu-onboarding-done";
 const NO_CONFIRM_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding", "settings", "help", "stats", "account", "sources"]);
 // Bu isimlerde hardware-back'e basınca (uygulamanın en üst seviyesindeyken)
 // varsayılan davranış uygulanır (Android'de genelde uygulamadan çıkış).
-const APP_EXIT_ROUTES = new Set(["oyna", "online", "ansiklopedi", "profilim", "onboarding"]);
+const APP_EXIT_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding"]);
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -97,10 +97,11 @@ function OynaRoute({ navigation }) {
   );
 }
 
+// 3 Ekim 2026 (Kerem: "tüm modlar altta ayrı bir sayfa olarak da erişilebilsin")
+// — artık alt menüde kendi sekmesi; ana sayfadaki buton da bu sekmeye götürür.
 function TumModlarRoute({ navigation }) {
   return (
     <OynaScreen
-      onBack={() => navigation.goBack()}
       onSelect={(mode) => navigation.navigate(mode)}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
     />
@@ -289,7 +290,8 @@ function getOnlineLetterRoute() {
 }
 
 const TAB_ICONS = {
-  oyna: "game-controller",
+  oyna: "home",
+  tumModlar: "grid",
   online: "flame",
   ansiklopedi: "book",
   profilim: "person-circle",
@@ -309,7 +311,8 @@ function MainTabsRoute() {
         tabBarIcon: ({ color, size }) => <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />,
       })}
     >
-      <Tab.Screen name="oyna" component={OynaRoute} options={{ title: "Oyna" }} />
+      <Tab.Screen name="oyna" component={OynaRoute} options={{ title: "Ana Sayfa" }} />
+      <Tab.Screen name="tumModlar" component={TumModlarRoute} options={{ title: "Tüm Modlar" }} />
       <Tab.Screen name="online" component={OnlineRoute} options={{ title: "Online" }} />
       <Tab.Screen name="ansiklopedi" getComponent={getAnsiklopediRoute} options={{ title: "Ansiklopedi" }} />
       <Tab.Screen name="profilim" component={ProfilimRoute} options={{ title: "Profilim" }} />
@@ -354,7 +357,6 @@ function RootNavigator({ initialRouteName }) {
     <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
       <Stack.Screen name="onboarding" component={OnboardingRoute} options={{ animation: "fade" }} />
       <Stack.Screen name="mainTabs" component={MainTabsRoute} />
-      <Stack.Screen name="tumModlar" component={TumModlarRoute} />
       <Stack.Screen name="settings" component={SettingsRoute} />
       <Stack.Screen name="help" component={HelpRoute} />
       <Stack.Screen name="sources" component={SourcesRoute} />
