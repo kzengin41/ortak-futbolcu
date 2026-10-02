@@ -3,13 +3,11 @@ import { View, Text, StyleSheet, Animated, Dimensions, Modal, Pressable } from "
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import PressScale from "../components/ui/PressScale";
-import TabHeader from "../components/TabHeader";
+import BackButton from "../components/BackButton";
 import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 
-import PlayerStatusBar from "../components/PlayerStatusBar";
 import DailyGoalsCard from "../components/DailyGoalsCard";
 import DailyPuzzleCard from "../components/DailyPuzzleCard";
-import TakimSorusuPenceresi from "../components/TakimSorusuPenceresi";
 // "Oyna" sekmesi — 30 Ağustos 2026'da alt menüye (bottom tab) geçişle birlikte
 // eski HomeScreen'den ayrıştırıldı: Online ve Ansiklopedi artık kendi
 // sekmeleri, oyuncu kartı + Ayarlar/Yardım artık Profilim sekmesinde — bu
@@ -125,7 +123,12 @@ const GRUPLAR = [
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - SPACING.xl * 2 - SPACING.md) / 2;
 
-export default function OynaScreen({ onSelect, onDailyPuzzle }) {
+// 3 Ekim 2026 — bu ekran artık ana sayfa DEĞİL, "Tüm Modlar" sayfası (yeni ana
+// sayfa: screens/AnaSayfaScreen.js). Seviye şeridi, "Hemen Oyna" kartı ve
+// "tuttuğun takım" sorusu ana sayfaya taşındı; burada geri düğmesi + modlar +
+// günün bulmacası / görevler kaldı (Kerem: "mevcut anasayfamızı yeni bir sayfa
+// olarak muhafaza edip...").
+export default function OynaScreen({ onSelect, onDailyPuzzle, onBack }) {
   const [pickerMode, setPickerMode] = useState(null); // seçenek modalı açık olan mod (options'lı olanlar için)
 
   async function handleSelect(modeId) {
@@ -164,7 +167,6 @@ export default function OynaScreen({ onSelect, onDailyPuzzle }) {
 
   return (
     <GameBackground style={styles.container}>
-      <TakimSorusuPenceresi />
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
@@ -175,27 +177,16 @@ export default function OynaScreen({ onSelect, onDailyPuzzle }) {
             ilerlemeye dair tek bir piksel göstermiyor" ve "40px '3-2-1'
             hiçbir iş yapmıyor". Marka bloğu compact'e çekildi, yerine
             seviye/XP/seri şeridi ve günlük görev kartı geldi. */}
-        <TabHeader compact />
+        <View style={styles.baslikSatiri}>
+          {onBack ? <BackButton onPress={onBack} /> : null}
+          <Text style={styles.sayfaBaslik}>Tüm Modlar</Text>
+        </View>
 
         <View style={styles.ustBloklar}>
-          <PlayerStatusBar />
           {/* 12 Eylül 2026 — Günün Bulmacası: geri gelme sebebi. Görev
               kartının ÜSTÜNDE duruyor çünkü günde bir kez ve süreli. */}
           <DailyPuzzleCard onPress={onDailyPuzzle} />
           <DailyGoalsCard />
-        </View>
-
-        <View style={styles.section}>
-          <PressScale style={styles.hemen} onPress={() => handleSelect("cpu")}>
-            <View style={styles.hemenIkon}>
-              <Ionicons name="play" size={26} color={COLORS.accentDark} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.hemenBaslik}>Hemen Oyna</Text>
-              <Text style={styles.hemenAlt}>Ortak Kulüp · CPU'ya karşı · senin eşleşme profilinle</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={COLORS.accentDark} />
-          </PressScale>
         </View>
 
         {GRUPLAR.map((g) => (
@@ -258,6 +249,8 @@ function GridCard({ mode, onPress }) {
 
 const styles = StyleSheet.create({
   ustBloklar: { gap: SPACING.md, marginBottom: SPACING.xxl },
+  baslikSatiri: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.lg, gap: SPACING.sm },
+  sayfaBaslik: { ...TYPE.h1 },
   // 12 Eylül 2026: paddingTop 50 SPACING ölçeğinde olmayan bir değerdi;
   // marka bloğu compact'e çekildiği için üst boşluk da ölçeğe döndü.
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl },

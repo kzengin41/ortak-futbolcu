@@ -666,6 +666,51 @@ def asama5(ist, durum, oyuncular):
             json_yaz(ILERLEME, durum)
     json_yaz(ILERLEME, durum)
 
+    # --- 5a+: Türkçe sayfası olup Wikidata'da trwiki bağlantısı görünmeyenler ---
+    # 3 Ekim 2026: Uğurcan Çakır ve Şenol Güneş'in Türkçe Vikipedi sayfası var ama
+    # Wikidata kayıtlarında trwiki bağlantısı çıkmadı (sayfa çoğu zaman başka/kopya bir
+    # Wikidata kaydına bağlı). Bu oyuncular için Türkçe Vikipedi'ye adıyla soruluyor
+    # (50'şer başlık, yönlendirmeler izlenir). Kabul: sayfanın Wikidata kaydı bizimkiyle
+    # aynıysa, ya da oyuncu Türk vatandaşıysa (adaş riskine karşı yabancılarda kayıt
+    # eşleşmesi şart). Anlam ayrımı sayfaları alınmaz. "trk" = soruldu işareti.
+    TRWP = "https://tr.wikipedia.org/w/api.php"
+    def _turk_mu(a):
+        return "Q43" in ((wd.get(esles[a]["qid"]) or {}).get("uyruk") or [])
+    aday = [a for a in adlar
+            if not tn.get(a, {}).get("trw") and not tn.get(a, {}).get("trk")
+            and (tn.get(a, {}).get("sl", 0) >= 8 or _turk_mu(a))]
+    log("ASAMA 5a+: %d oyuncunun Turkce sayfasi adiyla aranacak" % len(aday))
+    bulunan = 0
+    for n, grup in enumerate(parcala(aday, 50)):
+        d = ist.get(TRWP, {"action": "query", "titles": "|".join(grup), "redirects": 1,
+                           "prop": "pageprops", "ppprop": "wikibase_item|disambiguation"})
+        q = (d or {}).get("query") or {}
+        donus = {}
+        for x in (q.get("normalized") or []) + (q.get("redirects") or []):
+            donus[x.get("from")] = x.get("to")
+        sayfalar = {}
+        for pg in q.get("pages") or []:
+            pp = pg.get("pageprops") or {}
+            if pg.get("missing") or pg.get("invalid") or "disambiguation" in pp:
+                continue
+            sayfalar[pg.get("title")] = pp.get("wikibase_item")
+        for a in grup:
+            t = a
+            for _ in range(3):
+                t = donus.get(t, t)
+            k = tn.setdefault(a, {})
+            k["trk"] = 1
+            if t in sayfalar:
+                ayni = sayfalar[t] == esles[a]["qid"]
+                if ayni or _turk_mu(a):
+                    k["trw"] = t
+                    bulunan += 1
+        if n % 20 == 0:
+            log("    %d/%d grup" % (n + 1, (len(aday) + 49) // 50))
+            json_yaz(ILERLEME, durum)
+    log("    Turkce sayfasi bulunan: %d" % bulunan)
+    json_yaz(ILERLEME, durum)
+
     # --- 5b: goruntulenme (REST, paralel ama nazik: 6 is parcacigi) ---
     bas, bit = _pv_aralik()
     isler = []

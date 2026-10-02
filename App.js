@@ -11,6 +11,7 @@ import { Sentry, hataRaporla } from "./lib/hataRaporu";
 
 // --- Hafif ekranlar: doğrudan (statik) import edilir, açılışta hemen gerekir. ---
 import OynaScreen from "./screens/OynaScreen";
+import AnaSayfaScreen from "./screens/AnaSayfaScreen";
 import ProfilimScreen from "./screens/ProfilimScreen";
 import HelpScreen from "./screens/HelpScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -48,7 +49,7 @@ const ONBOARDING_KEY = "ortak-futbolcu-onboarding-done";
 // Bu ekranlarda hardware-back basınca onay istemeden direkt ana menüye dönülür.
 // Not: 4 sekme (oyna/online/ansiklopedi/profilim) hepsi "ana menü seviyesi" —
 // hiçbirinde kaybedilecek bir oyun ilerlemesi yok, o yüzden hepsi burada.
-const NO_CONFIRM_ROUTES = new Set(["oyna", "online", "ansiklopedi", "profilim", "onboarding", "settings", "help", "stats", "account", "sources"]);
+const NO_CONFIRM_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding", "settings", "help", "stats", "account", "sources"]);
 // Bu isimlerde hardware-back'e basınca (uygulamanın en üst seviyesindeyken)
 // varsayılan davranış uygulanır (Android'de genelde uygulamadan çıkış).
 const APP_EXIT_ROUTES = new Set(["oyna", "online", "ansiklopedi", "profilim", "onboarding"]);
@@ -82,9 +83,24 @@ function confirmedExit(navigation) {
 // Online ve Ansiklopedi kendi sekmelerine, Profilim (XP/seviye/seri + Ayarlar +
 // Nasıl Oynanır) yeni bir sekmeye taşındı. "Oyna" sekmesinde sadece 6 offline
 // oyun modu kalıyor.
+// 3 Ekim 2026 — "Oyna" sekmesi artık YENİ ANA SAYFA (screens/AnaSayfaScreen.js,
+// tasarım kartı 1A). OYNA: Ortak Kulüp, kurulum ekranı atlanır, ilk tur
+// vitrindeki gizli kulüp çifti. Eski mod ızgarası "Tüm Modlar" sayfası oldu.
 function OynaRoute({ navigation }) {
   return (
+    <AnaSayfaScreen
+      onPlay={(cift) => navigation.navigate("cpu", { hemenBasla: true, ilkCift: cift || null })}
+      onCustomize={() => navigation.navigate("cpu")}
+      onAllModes={() => navigation.navigate("tumModlar")}
+      onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
+    />
+  );
+}
+
+function TumModlarRoute({ navigation }) {
+  return (
     <OynaScreen
+      onBack={() => navigation.goBack()}
       onSelect={(mode) => navigation.navigate(mode)}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
     />
@@ -163,7 +179,7 @@ function AccountRoute({ navigation }) {
 // NOT: Screen burada zaten ÇÖZÜLMÜŞ (require edilmiş) bir component olarak gelir —
 // gecikmeli yükleme sorumluluğu withExit'te değil, bunu çağıran getComponent'te.
 function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {}) {
-  return function Wrapped({ navigation }) {
+  return function Wrapped({ navigation, route }) {
     const handleExit = () => (confirm ? confirmedExit(navigation) : goHome(navigation));
     // 11 Eylül 2026 — mod rehberi (bkz. components/ModeGuide.js). Merkezî
     // olarak burada: 12 oyun ekranını tek tek değiştirmek yerine tek yer.
@@ -176,7 +192,9 @@ function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {
     // ediyor.
     return (
       <View style={{ flex: 1 }}>
-        <Screen onExit={handleExit} onExitSilent={() => goHome(navigation)} {...(ekstraProps || {})} />
+        {/* 3 Ekim 2026: rota parametreleri de ekrana geçiyor (ana sayfadaki OYNA →
+            Ortak Kulüp'e hemenBasla + ilkCift). */}
+        <Screen onExit={handleExit} onExitSilent={() => goHome(navigation)} {...(ekstraProps || {})} {...(route?.params || {})} />
         {rehber.varMi && <ModeGuideButton onPress={rehber.ac} />}
         {rehber.varMi && (
           <ModeGuide mod={mod} gorunur={rehber.gorunur} onClose={rehber.kapat} />
@@ -336,6 +354,7 @@ function RootNavigator({ initialRouteName }) {
     <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
       <Stack.Screen name="onboarding" component={OnboardingRoute} options={{ animation: "fade" }} />
       <Stack.Screen name="mainTabs" component={MainTabsRoute} />
+      <Stack.Screen name="tumModlar" component={TumModlarRoute} />
       <Stack.Screen name="settings" component={SettingsRoute} />
       <Stack.Screen name="help" component={HelpRoute} />
       <Stack.Screen name="sources" component={SourcesRoute} />

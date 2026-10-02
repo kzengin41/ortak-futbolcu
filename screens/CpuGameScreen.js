@@ -10,7 +10,7 @@ import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
-import { generateRound, computeRoundPool, findMatchedPlayer, suggestPlayers, buildSuggestIndex, ANSWER_SECONDS, getCpuProfile, ROUND_TIME_OPTIONS, sesIpuclari } from "../lib/gameEngine";
+import { generateRound, playersForPair, computeRoundPool, findMatchedPlayer, suggestPlayers, buildSuggestIndex, ANSWER_SECONDS, getCpuProfile, ROUND_TIME_OPTIONS, sesIpuclari } from "../lib/gameEngine";
 import { playerWeight, recognitionScore } from "../lib/clubWeights";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -45,7 +45,10 @@ const WIN_LIMIT_OPTIONS = [
   { label: "Sınırsız", value: Infinity },
 ];
 
-export default function CpuGameScreen({ onExit, onExitSilent }) {
+// 3 Ekim 2026 — ana sayfadaki OYNA: `hemenBasla` kurulum ekranını atlar (ayarlar
+// Ayarlar'daki varsayılanlardan), `ilkCift` vitrinde gizli gösterilen kulüp
+// çiftidir ve ilk tur olarak oynanır (profile uymuyorsa yok sayılır).
+export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false, ilkCift = null }) {
   const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
   const [roundSeconds, setRoundSeconds] = useState(ROUND_TIME_OPTIONS[1]);
   const [targetScore, setTargetScore] = useState(5);
@@ -176,9 +179,18 @@ export default function CpuGameScreen({ onExit, onExitSilent }) {
   const presetLabel = eslesme.derlenmis.etiket;
   const pool = useMemo(() => computeRoundPool(PLAYERS, eslesme.derlenmis, difficulty), [eslesme.derlenmis, difficulty]);
 
+  const ilkCiftRef = useRef(ilkCift);
   const startNewRound = useCallback(() => {
     setUsedPairs((prev) => {
-      const r = generateRound(pool, PLAYERS, prev, allowedClubs);
+      let r = null;
+      const ic = ilkCiftRef.current;
+      if (ic && ic.length === 2) {
+        ilkCiftRef.current = null;
+        const uygun = !allowedClubs || (allowedClubs.has(ic[0]) && allowedClubs.has(ic[1]));
+        const gecerli = uygun ? playersForPair(PLAYERS, ic[0], ic[1]) : [];
+        if (gecerli.length) r = { teamA: ic[0], teamB: ic[1], validAnswers: gecerli, key: [ic[0], ic[1]].sort().join("|") };
+      }
+      if (!r) r = generateRound(pool, PLAYERS, prev, allowedClubs);
       setRound(r);
       if (r && r.validAnswers) { oncedenYukle(r.validAnswers); }
       if (!r) return prev;
@@ -365,9 +377,17 @@ export default function CpuGameScreen({ onExit, onExitSilent }) {
   // 27 Eylül 2026 — merkezî mod ayarları (lib/modAyarlari.js): varsayılanlar
   // Ayarlar'dan gelir, kurulumda değiştirilebilir, oyun içinde "?" ile görülür.
   const modVarsayilanKaydet = useModVarsayilanlari("cpu", { zorluk: setDifficulty, sure: setRoundSeconds, galibiyet: setTargetScore, yontem: setInputMode });
+  // Varsayılanlar (yukarıdaki kanca) aynı geçişte uygulandıktan sonra başla.
+  useEffect(() => {
+    if (hemenBasla && appSettingsLoaded && !started) setStarted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hemenBasla, appSettingsLoaded]);
   useEffect(() => {
     oyunBilgisiniYaz("cpu", { satirlar: ayarSatirlari({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, lig: presetLabel, yontem: inputMode }) });
   }, [difficulty, roundSeconds, targetScore, presetLabel, inputMode]);
+
+  // Ana sayfadan "hemen başla" ile gelindiyse kurulum ekranı bir an bile görünmesin.
+  if (!started && hemenBasla) return <GameBackground style={styles.container} />;
 
   if (!started) {
     // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı
