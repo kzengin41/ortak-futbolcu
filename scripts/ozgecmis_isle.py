@@ -268,8 +268,20 @@ for _tut, _siller in _takma.items():
             _hamo[_tut] = _hamo[_sil]; sayac["takma_ad_tasindi"] += 1
             break
 
+# 1 Ekim 2026: Wikidata'da adı eşleşen ama futbolcu OLMAYAN kişiler (basketbolcu,
+# şarkıcı, aktör...). Açıklamada "futbolcu" geçiyorsa (ör. "futbolcu ve basketbolcu")
+# dokunulmaz. Bunların ne profili ne tanınırlığı kullanılır.
+BASKA_ALAN = re.compile(r"basketbol|beyzbol|amerikan futbol|buz hokeyi|ragbi|rugby|kriket|şarkıcı|"
+                        r"aktör|aktris|bisikletçi|tenisçi|voleybolcu|boksör", re.I)
+def baska_alan_mi(k):
+    acik = k.get("aciklama_tr") or ""
+    return bool(BASKA_ALAN.search(acik)) and "futbolcu" not in acik.lower()
+
 for ad, k in (ham.get("oyuncu") or {}).items():
     if ad not in uyg:
+        continue
+    if baska_alan_mi(k):
+        sayac["baska_alan"] += 1
         continue
     sayac["kayit"] += 1
     kulup_takimlari = [t for t in (k.get("takimlar") or []) if not milli_mi(t["q"])]
@@ -439,7 +451,14 @@ if len(tanin) >= 1000:
     p_sl = _yuzdelik({a: t.get("sl") or 0 for a, t in tanin.items()})
     p_en = _yuzdelik({a: math.log10(1 + (t.get("en") or 0)) for a, t in tanin.items()})
     p_tr = _yuzdelik({a: math.log10(1 + (t.get("tr") or 0)) for a, t in tanin.items()})
-    guncel = _yuzdelik({a: 0.35 * p_en[a] + 0.35 * p_tr[a] + 0.30 * p_sl[a] for a in tanin})
+    # 1 Ekim 2026 (Kerem: "Uğurcan Çakır ilk 3000'de yok, ilk 200'de olmalı"):
+    # oyuncular Türk. Genel karışım (en/tr/dil sayısı) dünya yıldızlarını doğru
+    # sıralıyor ama Türkiye'de herkesin bildiği oyuncuları geride bırakıyordu.
+    # Güncel puan = max(genel, %60 Türkçe görüntülenme + %40 genel): dünya
+    # yıldızları yerinde kalır, Türkiye'de çok aranan oyuncular öne çıkar.
+    def _genel(a):
+        return 0.35 * p_en[a] + 0.35 * p_tr[a] + 0.30 * p_sl[a]
+    guncel = _yuzdelik({a: max(_genel(a), 0.6 * p_tr[a] + 0.4 * _genel(a)) for a in tanin})
     tum = _yuzdelik({a: 0.55 * p_sl[a] + 0.30 * p_en[a] + 0.15 * p_tr[a] for a in tanin})
     unler = {a: [round(guncel[a] * 100, 3), round(tum[a] * 100, 3)] for a in tanin}
     sayac["tanin"] = len(unler)

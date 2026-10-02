@@ -645,17 +645,22 @@ def asama5(ist, durum, oyuncular):
     adlar = [a for a in dict.fromkeys(p["name"] for p in oyuncular) if esles.get(a)]
 
     # --- 5a: sitelinks (Wikidata, 50'serli) ---
+    # 1 Ekim 2026: Türkçe Wikipedia başlığı ("trw") da buradan alınıyor. 2. aşamadaki
+    # trwiki bilgisi binlerce oyuncuda eksik kalmıştı (Uğurcan Çakır, Şenol Güneş...),
+    # bu yüzden Türkçe görüntülenmeleri 0 sayılıp tanınırlıkları çok düşük çıkıyordu.
     qid_ad = {}
     for a in adlar:
-        if "sl" not in tn.get(a, {}):
+        if "sl" not in tn.get(a, {}) or "trw" not in tn.get(a, {}):
             qid_ad.setdefault(esles[a]["qid"], []).append(a)
     log("ASAMA 5a: %d oyuncunun dil sayisi okunacak" % len(qid_ad))
     for n, grup in enumerate(parcala(list(qid_ad), 50)):
         d = ist.get(WD, {"action": "wbgetentities", "ids": "|".join(grup), "props": "sitelinks"})
         for qid, e in ((d or {}).get("entities") or {}).items():
             sl = [k for k in (e.get("sitelinks") or {}) if k.endswith("wiki") and k not in DIGER_WIKI]
+            trw = ((e.get("sitelinks") or {}).get("trwiki") or {}).get("title") or ""
             for a in qid_ad.get(qid, []):
                 tn.setdefault(a, {})["sl"] = len(sl)
+                tn[a]["trw"] = trw
         if n % 50 == 0:
             log("    %d/%d grup" % (n + 1, (len(qid_ad) + 49) // 50))
             json_yaz(ILERLEME, durum)
@@ -668,10 +673,13 @@ def asama5(ist, durum, oyuncular):
         k = tn.setdefault(a, {})
         if "en" not in k:
             isler.append((a, "en", "en.wikipedia", esles[a]["baslik"]))
-        trw = (wd.get(esles[a]["qid"]) or {}).get("trwiki")
-        if "tr" not in k:
+        trw = k.get("trw") or (wd.get(esles[a]["qid"]) or {}).get("trwiki")
+        # Türkçe sayfası olduğu hâlde 0 görünenler (eski eksik başlık ya da başarısız
+        # sorgu) bir kez yeniden sorulur; "trv" = bu düzeltmeyle sorgulandı işareti.
+        if "tr" not in k or (not k.get("tr") and trw and k.get("trv") != 2):
             if trw:
                 isler.append((a, "tr", "tr.wikipedia", trw))
+                k["trv"] = 2
             else:
                 k["tr"] = 0
     log("ASAMA 5b: %d goruntulenme sorgusu (%s - %s)" % (len(isler), bas, bit))
