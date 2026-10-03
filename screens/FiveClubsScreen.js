@@ -73,6 +73,11 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   // 3 kademe: 1-3 normal, 4-7 zor, 8-10 çok zor; CPU'nun pas geçme ihtimali
   // ise 10 kademenin her birinde ayrı.
   const [zorluk10, setZorluk10] = useState(5);
+  // 4 Ekim 2026 (benchmark .29237 + Kerem: "son turun altın tur olması isteğe
+  // bağlı olsun") — tur sayısı 3 ya da 5; son tur altın tur (puanlar ×2) kurulumda
+  // açılıp kapatılır, varsayılan KAPALI.
+  const [turSayisi, setTurSayisi] = useState(FIVE_CLUB_TOTAL_ROUNDS);
+  const [altinTur, setAltinTur] = useState(false);
   // 4 Ekim 2026 — CPU gerçek rakip (lib/cpuKarakterleri.js) + maç sonu kartı verisi
   const karakter = useMemo(() => karakterSec(zorluk10), [zorluk10]);
   const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: karakter.ad } : PLAYER_LABEL;
@@ -320,7 +325,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   // bittiğinde (doğru/yanlış/pas fark etmez) round SONA ERMEZ, sadece o
   // oyuncu "answered" setine eklenir. İkisi de tamamlayınca (ya da süre
   // dolunca) sonuç paneli gösterilir.
+  const altinTurMu = altinTur && roundNumber === turSayisi;
   function recordTurnResult(who, gained, player, matchedClubs) {
+    if (altinTurMu) gained = gained * 2;
     setRoundResults((prev) => ({ ...prev, [who]: { gained, player: player || null, matchedClubs: matchedClubs || [] } }));
     if (who === "p1") setScoreP1((s) => s + gained);
     else setScoreP2((s) => s + gained);
@@ -424,7 +431,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   function goToNextRound() {
     const a = roundResults.p1?.gained || 0, b = roundResults.p2?.gained || 0;
     setTurlar((l) => [...l, a > b ? "sen" : b > a ? "rakip" : "yok"]);
-    if (roundNumber >= FIVE_CLUB_TOTAL_ROUNDS) {
+    if (roundNumber >= turSayisi) {
       setMacSonuSozu(tepki(karakter, scoreP1 > scoreP2 ? "kaybetti" : "kazandi"));
       setPhase("gameOver");
     } else {
@@ -455,8 +462,18 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     kurulumaDon: () => { setStarted(false); setScoreP1(0); setScoreP2(0); setRoundNumber(1); },
   });
   useEffect(() => {
-    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? `${karakter.avatar} ${karakter.ad}` : "2 kişi"], ["Tur sayısı", "3"]] }) });
-  }, [zorluk10, roundSeconds, inputMode, vsCpu]);
+    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? `${karakter.avatar} ${karakter.ad}` : "2 kişi"], ["Tur sayısı", String(turSayisi)], ["Son tur altın", altinTur ? "Açık (×2)" : "Kapalı"]] }) });
+  }, [zorluk10, roundSeconds, inputMode, vsCpu, turSayisi, altinTur, karakter]);
+  // Tur sayısı ve altın tur da "son seçimler" arasında hatırlanır.
+  const turAyariYuklendi = useRef(false);
+  useEffect(() => {
+    if (turAyariYuklendi.current || !settings) return;
+    const k = settings.modVarsayilanlari && settings.modVarsayilanlari.fiveClubs;
+    if (!k) return;
+    turAyariYuklendi.current = true;
+    if (k.turSayisi === 3 || k.turSayisi === 5) setTurSayisi(k.turSayisi);
+    if (typeof k.altinTur === "boolean") setAltinTur(k.altinTur);
+  }, [settings]);
 
   if (!started) {
     // 27 Eylül 2026 — ortak kurulum ekranı (bkz. components/ModKurulum.js).
@@ -470,7 +487,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           : "Ekranda 5 büyük kulüp çıkar. Sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."}
         vurgu={MODE_COLORS.fiveClubs}
         onGeri={onExitSilent || onExit}
-        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode })}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, turSayisi, altinTur })}
         onBasla={() => setStarted(true)}
       >
         <KurulumBolum baslik="ZORLUK">
@@ -502,6 +519,12 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
             secili={inputMode}
             onSec={setInputMode}
           />
+        </KurulumBolum>
+        <KurulumBolum baslik="TUR SAYISI">
+          <SecimCipleri secenekler={[{ deger: 3, etiket: "3 tur" }, { deger: 5, etiket: "5 tur" }]} secili={turSayisi} onSec={setTurSayisi} />
+        </KurulumBolum>
+        <KurulumBolum baslik="SON TUR ALTIN TUR" not="Açıkken son turda bütün puanlar ×2 — geride kalan son turda maçı çevirebilir.">
+          <SecimCipleri secenekler={[{ deger: false, etiket: "Kapalı" }, { deger: true, etiket: "Açık ★" }]} secili={altinTur} onSec={setAltinTur} />
         </KurulumBolum>
       </ModKurulum>
     );
@@ -735,7 +758,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           keyboardShouldPersistTaps="always"
         >
           <View style={styles.topInfoRow}>
-            <Text style={styles.roundBadge}>Tur {roundNumber} / {FIVE_CLUB_TOTAL_ROUNDS}</Text>
+            <Text style={[styles.roundBadge, altinTurMu && { color: "#FFD700" }]}>
+              {altinTurMu ? `★ ALTIN TUR — puanlar ×2 · ${roundNumber} / ${turSayisi}` : `Tur ${roundNumber} / ${turSayisi}`}
+            </Text>
             <View style={styles.scoreRow}>
               {/* Renk kodu, kulüp rozetlerindeki 1/2 göstergeleriyle AYNI:
                   Oyuncu 1 yeşil, Oyuncu 2 altın — kimin neyi bulduğu tek
@@ -844,7 +869,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
               <Pressable style={styles.primaryBtn} onPress={goToNextRound}>
                 <Text style={styles.primaryBtnText}>
-                  {roundNumber >= FIVE_CLUB_TOTAL_ROUNDS ? "Sonuçları Gör" : "Sıradaki Tur"}
+                  {roundNumber >= turSayisi ? "Sonuçları Gör" : roundNumber === turSayisi - 1 && altinTur ? "Altın Tura Geç ★" : "Sıradaki Tur"}
                 </Text>
               </Pressable>
             </View>

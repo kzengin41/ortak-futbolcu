@@ -104,6 +104,7 @@ function TumModlarRoute({ navigation }) {
     <OynaScreen
       onSelect={(mode) => navigation.navigate(mode)}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
+      onGunlukOyun={(id) => navigation.navigate(id)}
     />
   );
 }
@@ -230,6 +231,11 @@ const getFiveClubsCpuRoute = () => withExit(require("./screens/FiveClubsScreen")
 // 12 Eylül 2026 — Futbolcu XOX. Rakip tipi (CPU / 2 kişi) ve zorluk ekranın
 // kendi kurulum adımında seçildiği için tek rota yetiyor.
 const getXoxRoute = () => withExit(require("./screens/XoxScreen").default, { mod: "xox" });
+// 4 Ekim 2026 — günlük oyunlar (herkese aynı soru, ilerleme kaydediliyor → onaysız çıkış)
+// ve İlk Harf'in tek kişilik zinciri (kurulum yok, rehber yok: kurallar ekranda).
+const getGunluk5Route = () => withExit(require("./screens/GunlukBesKulupScreen").default, { confirm: false });
+const getGunlukIzgaraRoute = () => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false });
+const getHarfZinciriRoute = () => withExit(require("./screens/HarfZinciriScreen").default);
 
 // Online sekmesi: doğrudan lobi ekranını gösterir (artık ayrı bir "onlineLobby"
 // stack rotası değil, sekmenin kendisi). Bir oda hazır olduğunda ROOT stack'teki
@@ -387,6 +393,9 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="onlineLetter" getComponent={getOnlineLetterRoute} />
       <Stack.Screen name="dailyPuzzle" getComponent={getDailyPuzzleRoute} />
       <Stack.Screen name="xox" getComponent={getXoxRoute} />
+      <Stack.Screen name="gunluk5" getComponent={getGunluk5Route} />
+      <Stack.Screen name="gunlukIzgara" getComponent={getGunlukIzgaraRoute} />
+      <Stack.Screen name="letterZincir" getComponent={getHarfZinciriRoute} />
     </Stack.Navigator>
   );
 }

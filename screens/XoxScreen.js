@@ -31,7 +31,7 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import {
-  izgaraUret, zorlukAyari10, baslangicDurumu, IZGARA_TURLERI, basariVerisiVarMi,
+  izgaraUret, zorlukAyari10, baslangicDurumu, IZGARA_TURLERI, basariVerisiVarMi, calinabilirMi, CALMA_HAKKI,
   kosulTuru, kosulEtiketi, kosulBayragi, kosulIkonu, aksiyonuIsle, hucreCevaplari, kareTukendiMi,
   cpuHucreSec, cpuCevapSec, sonucMetni, ZORLUKLAR, VARSAYILAN_ZORLUK, X, O,
 } from "../lib/gridGame";
@@ -106,6 +106,8 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const karakter = useMemo(() => karakterSec(zorluk), [zorluk]);
   // 27 Eylül 2026 — ızgara türü: sadece kulüp / kulüp+ülke / kulüp+başarı / karma
   const [izgaraTuru, setIzgaraTuru] = useState("kulup");
+  // 4 Ekim 2026 — çalma kuralı (benchmark .29313: oyuncu başı 3 hak, varsayılan açık)
+  const [calma, setCalma] = useState(true);
   const xoxAyar = useMemo(() => zorlukAyari10(zorluk), [zorluk]);
   const [inputMode, setInputMode] = useState("keyboard");
   const [basladi, setBasladi] = useState(false);
@@ -131,6 +133,15 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const [sesHatasi, setSesHatasi] = useState(null);
   const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
   const { settings: appSettings } = useAppSettings();
+  // Çalma kuralı tercihi de "son seçimler" arasında hatırlanır.
+  const calmaYuklendi = useRef(false);
+  useEffect(() => {
+    if (calmaYuklendi.current || !appSettings) return;
+    const k = appSettings.modVarsayilanlari && appSettings.modVarsayilanlari.xox;
+    if (!k) return;
+    calmaYuklendi.current = true;
+    if (typeof k.calma === "boolean") setCalma(k.calma);
+  }, [appSettings]);
   const sesOnayiAcik = appSettings?.voiceConfirm !== false;
 
 
@@ -170,13 +181,13 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       if (!izgara) { setUretilemedi(true); setHazirlaniyor(false); return; }
       // veriSeti veriliyor: dokuz karenin cevapları bir kez hesaplanıp durumda
       // saklanıyor (bkz. lib/gridGame.js baslangicDurumu).
-      setDurum(baslangicDurumu(izgara, X, PLAYERS));
+      setDurum(baslangicDurumu(izgara, X, PLAYERS, { calma }));
       setGirdi("");
       setGeriBildirim(null);
       setHazirlaniyor(false);
       setBasladi(true);
     }, 40);
-  }, [xoxAyar, izgaraTuru, eslesme.derlenmis]);
+  }, [xoxAyar, izgaraTuru, eslesme.derlenmis, calma]);
 
   // --- CPU sırası ----------------------------------------------------------
   useEffect(() => {
@@ -265,12 +276,14 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: cpuHamlesi ? `${karakter.ad}: ${h.ad}` : h.ad });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: (h.calma ? "ÇALDI! " : "") + (cpuHamlesi ? `${karakter.ad}: ${h.ad}` : h.ad) });
     } else if (h.tip === "yanlis") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
-        message: cpuHamlesi ? `${karakter.ad} bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
+        message: h.ayniIsim
+          ? "Çalmak için FARKLI bir futbolcu gerekir"
+          : cpuHamlesi ? `${karakter.ad} bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
       });
     } else if (h.tip === "pas") {
       setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? `${karakter.ad} pas geçti` : "Pas geçtin" });
@@ -387,7 +400,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
         aciklama="Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan kazanır."
         vurgu={VURGU}
         onGeri={onExitSilent || onExit}
-        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode })}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode, calma })}
         onBasla={yeniOyun}
         baslaYukleniyor={hazirlaniyor}
       >
@@ -429,6 +442,9 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             onSec={setIzgaraTuru}
           />
         </KurulumBolum>
+        <KurulumBolum baslik="ÇALMA KURALI" not={`Açıkken rakibin aldığı kareye dokunup o kare için FARKLI bir futbolcu söylersen kare senin olur. Herkesin ${CALMA_HAKKI} çalma hakkı var.`}>
+          <SecimCipleri secenekler={[{ deger: true, etiket: "Açık" }, { deger: false, etiket: "Kapalı" }]} secili={calma} onSec={setCalma} />
+        </KurulumBolum>
         <EslesmeProfiliBolumu eslesme={eslesme} not="Izgaradaki kulüpler profilin bölge ve kulüp ayarlarına göre seçilir." />
         <KurulumBolum baslik={MOD_TANIMLARI.xox.sure.etiket}>
           <SureSecici
@@ -469,8 +485,17 @@ export default function XoxScreen({ onExit, onExitSilent }) {
           keyboardShouldPersistTaps="handled"
         >
           {!secili && !durum.bitti && benimSiram && (
-            <Text style={styles.ipucu}>Almak istediğin kareye dokun</Text>
+            <Text style={styles.ipucu}>
+              {durum.calmaHakki && durum.calmaHakki[durum.sira] > 0
+                ? "Boş bir kareye dokun — ya da rakibin karesini çal"
+                : "Almak istediğin kareye dokun"}
+            </Text>
           )}
+          {durum.calmaHakki ? (
+            <Text style={styles.calmaSatir}>
+              Çalma hakkı · X: {durum.calmaHakki[X]} · O: {durum.calmaHakki[O]}
+            </Text>
+          ) : null}
 
           <View style={styles.siraSerit}>
             <View style={[styles.isaretRozet, { backgroundColor: durum.sira === X ? VURGU.main : COLORS.card }]}>
@@ -504,7 +529,11 @@ export default function XoxScreen({ onExit, onExitSilent }) {
               <Text style={styles.hedefText}>
                 {kosulEtiketi(durum.izgara.satirlar[secili.satir])} + {kosulEtiketi(durum.izgara.sutunlar[secili.sutun])}
               </Text>
-              <Text style={styles.hedefAlt}>{seciliCevapSayisi} olası cevap</Text>
+              <Text style={styles.hedefAlt}>
+                {secili.calma
+                  ? `ÇALMA · "${durum.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""}" dışında bir futbolcu söyle (1 çalma hakkı gider)`
+                  : `${seciliCevapSayisi} olası cevap`}
+              </Text>
 
               <View style={styles.girdiSatir}>
                 <TextInput
@@ -601,6 +630,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
                   const seciliMi = secili?.satir === r && secili?.sutun === c;
                   const kazananDa = durum.kazananCizgi?.includes(indis);
                   const tukendi = !sahip && kareTukendiMi(durum, r, c, PLAYERS);
+                  const calinabilir = !durum.bitti && benimSiram && calinabilirMi(durum, indis);
                   return (
                     <SoundPressable
                       key={c}
@@ -611,6 +641,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
                         sahip === O && styles.hucreO,
                         kazananDa && styles.hucreKazanan,
                         tukendi && styles.hucreTukendi,
+                        calinabilir && styles.hucreCalinabilir,
                       ]}
                       onPress={() => hucreyeDokun(r, c)}
                     >
@@ -785,6 +816,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.sm, padding: 2,
   },
   hucreSecili: { borderColor: VURGU.main },
+  hucreCalinabilir: { borderStyle: "dashed", borderColor: COLORS.cta },
+  calmaSatir: { textAlign: "center", fontSize: 12, fontWeight: "700", color: COLORS.textMuted, marginTop: 4 },
   hucreX: { backgroundColor: "#173A22", borderColor: COLORS.accent },
   hucreO: { backgroundColor: "#3D2600", borderColor: COLORS.cta },
   hucreKazanan: { borderWidth: 3, borderColor: VURGU.main },

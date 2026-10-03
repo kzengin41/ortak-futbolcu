@@ -8,6 +8,7 @@ import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme
 
 import DailyGoalsCard from "../components/DailyGoalsCard";
 import DailyPuzzleCard from "../components/DailyPuzzleCard";
+import GunlukOyunlarKarti from "../components/GunlukOyunlarKarti";
 // "Oyna" sekmesi — 30 Ağustos 2026'da alt menüye (bottom tab) geçişle birlikte
 // eski HomeScreen'den ayrıştırıldı: Online ve Ansiklopedi artık kendi
 // sekmeleri, oyuncu kartı + Ayarlar/Yardım artık Profilim sekmesinde — bu
@@ -40,6 +41,16 @@ const MODES = [
     icon: "text",
     colorKey: "letters",
     id: "letterCpu",
+  },
+  {
+    // 4 Ekim 2026 (benchmark .28548) — İlk Harf zincirinin tek kişilik hâli.
+    key: "harfZinciri",
+    grup: "bilgi",
+    title: "Harf Zinciri",
+    desc: "Son harften devam et, 3 canla en uzun zinciri kur",
+    icon: "link",
+    colorKey: "letters",
+    id: "letterZincir",
   },
   {
     key: "whoAmI",
@@ -109,7 +120,7 @@ const CARD_WIDTH = (width - SPACING.xl * 2 - SPACING.md) / 2;
 // "tuttuğun takım" sorusu ana sayfaya taşındı; burada geri düğmesi + modlar +
 // günün bulmacası / görevler kaldı (Kerem: "mevcut anasayfamızı yeni bir sayfa
 // olarak muhafaza edip...").
-export default function OynaScreen({ onSelect, onDailyPuzzle, onBack }) {
+export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onBack }) {
   const [pickerMode, setPickerMode] = useState(null); // seçenek modalı açık olan mod (options'lı olanlar için)
 
   async function handleSelect(modeId) {
@@ -167,6 +178,10 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onBack }) {
           {/* 12 Eylül 2026 — Günün Bulmacası: geri gelme sebebi. Görev
               kartının ÜSTÜNDE duruyor çünkü günde bir kez ve süreli. */}
           <DailyPuzzleCard onPress={onDailyPuzzle} />
+          {/* 4 Ekim 2026 — Günlük 5 Kulüp + Günlük Izgara (.29283, .29364) */}
+          {onGunlukOyun ? (
+            <GunlukOyunlarKarti onBesKulup={() => onGunlukOyun("gunluk5")} onIzgara={() => onGunlukOyun("gunlukIzgara")} />
+          ) : null}
           <DailyGoalsCard />
         </View>
 

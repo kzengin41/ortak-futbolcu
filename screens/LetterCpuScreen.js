@@ -48,7 +48,9 @@ const SCOPE_OPTIONS = [
 const SUBMODES = [
   { id: "classic", label: "🔠 Klasik (Baştan)", desc: "Ad ve soyadı bu iki harfle BAŞLAYAN oyuncu" },
   { id: "contains", label: "🔎 İçinde Geçen", desc: "Ad veya soyadında bu iki harfi İÇEREN oyuncu (nerede olursa olsun)" },
-  { id: "chain", label: "🔗 Son Harf (Zincir)", desc: "Son harften oyuncu türetme" }
+  { id: "chain", label: "🔗 Son Harf (Zincir)", desc: "Son harften oyuncu türetme" },
+  // 4 Ekim 2026 (.28548) — tek kişilik hayatta kalma ayrı ekranda (Harf Zinciri); seçilince oraya geçer.
+  { id: "hayatta", label: "⏱️ Zincir — Tek Başına", desc: "CPU yok: 3 canla en uzun zinciri kur, rekorunu kır" },
 ];
 
 const charMap = { 'À':'A', 'Á':'A', 'Â':'A', 'Ä':'A', 'Å':'A', 'É':'E', 'Í':'I', 'Ñ':'N', 'Ó':'O', 'Ø':'O', 'Þ':'T', 'Č':'C', 'Đ':'D', 'Ľ':'L', 'Ł':'L', 'Š':'S', 'Ž':'Z', 'Ș':'S', 'Α':'A', 'Ğ':'G' };
@@ -74,7 +76,7 @@ function normalizeLast(word) {
   return harfiSadelestir(word.trim().slice(-1));
 }
 
-export default function LetterCpuScreen({ onExit, onExitSilent }) {
+export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
   const [phase, setPhase] = useState("setup"); // setup, selectLetter, countdown, racing, result, gameOver
   
   // Setup Options
@@ -626,7 +628,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
           <SecimCipleri
             secenekler={SUBMODES.map((m) => ({ deger: m.id, etiket: m.label }))}
             secili={subMode}
-            onSec={setSubMode}
+            onSec={(id) => (id === "hayatta" ? (onModaGit ? onModaGit("letterZincir") : null) : setSubMode(id))}
           />
         </KurulumBolum>
         <KurulumBolum baslik="ZORLUK">
@@ -692,7 +694,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
           <Text style={styles.setupTitle}>Oyun Modunu Seç</Text>
           <View style={styles.setupOptions}>
             {SUBMODES.map(m => (
-              <Pressable key={m.id} style={[styles.setupBtn, subMode === m.id && styles.setupBtnActive]} onPress={() => setSubMode(m.id)}>
+              <Pressable key={m.id} style={[styles.setupBtn, subMode === m.id && styles.setupBtnActive]} onPress={() => (m.id === "hayatta" ? (onModaGit ? onModaGit("letterZincir") : null) : setSubMode(m.id))}>
                 <Text style={[styles.setupBtnText, subMode === m.id && styles.setupBtnTextActive]}>{m.label}</Text>
                 <Text style={styles.setupBtnDesc}>{m.desc}</Text>
               </Pressable>

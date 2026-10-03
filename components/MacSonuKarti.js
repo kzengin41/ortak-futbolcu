@@ -22,11 +22,11 @@ export default function MacSonuKarti({
 }) {
   // kazanan: "sen" | "rakip" | "berabere" — skordan çıkmayan sonuçlar için (XOX: üçlü sıra).
   // kareSatir: kareleri satırlara böl (XOX tahtası 3×3).
-  // solo: { puan, rekor, yeniRekor, satirlar: [[etiket, değer], ...] } — tek
+  // solo: { puan, rekor, yeniRekor, baslik?, satirlar: [[etiket, değer], ...] } — tek
   // kişilik modlar (Çoktan seçmeli, İlk Harf zinciri) skor yerine puan + rekor gösterir.
   const kazandin = kazanan ? kazanan === "sen" : skorSen > skorRakip;
   const berabere = kazanan ? kazanan === "berabere" : skorSen === skorRakip;
-  const baslik = solo ? (solo.yeniRekor ? "YENİ REKOR!" : "SÜRE DOLDU") : berabere ? "BERABERE" : kazandin ? "KAZANDIN!" : `${(rakip?.ad || "RAKİP").toLocaleUpperCase("tr")} KAZANDI`;
+  const baslik = solo ? (solo.baslik || (solo.yeniRekor ? "YENİ REKOR!" : "SÜRE DOLDU")) : berabere ? "BERABERE" : kazandin ? "KAZANDIN!" : `${(rakip?.ad || "RAKİP").toLocaleUpperCase("tr")} KAZANDI`;
   const kareDizi = turlar.map((t) => (t === "sen" ? "🟩" : t === "rakip" ? "🟥" : "⬜"));
   const kareler = kareSatir
     ? Array.from({ length: Math.ceil(kareDizi.length / kareSatir) }, (_, i) => kareDizi.slice(i * kareSatir, (i + 1) * kareSatir).join("")).join("\n")
