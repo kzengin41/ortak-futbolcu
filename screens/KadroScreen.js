@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -12,11 +13,13 @@ import { PLAYERS } from "../lib/players";
 import { findMatchedPlayer, suggestPlayers, buildSuggestIndex } from "../lib/gameEngine";
 import { kadroGetir, sahaSatirlari, tamamlanma } from "../lib/kadrolar";
 import { bulunanEkle, tamamlandiKaydet } from "../lib/kadroKoleksiyon";
+import { hedefler as avHedefleri } from "../lib/kadroAvi";
+import { oyuncuGetir } from "../lib/kimBuVeri";
 import { unlockPlayer } from "../lib/pokedex";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { flagForCountry } from "../lib/countryFlags";
 import { countryTr } from "../lib/countryNamesTr";
-import { COLORS, SPACING, RADIUS } from "../lib/theme";
+import { COLORS, SPACING, RADIUS, MODE_COLORS } from "../lib/theme";
 
 // ============================================================================
 // KADRO (Ansiklopedi → Takımlar → bir sezon ya da final) — 4 Ekim 2026
@@ -36,7 +39,8 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
   const oneriler = useMemo(() => (girdi.trim().length > 2 ? suggestPlayers(suggestIndex, girdi).slice(0, 4) : []), [suggestIndex, girdi]);
 
-  useEffect(() => { bulunanKumesi().then(setBulunan).catch(() => {}); }, []);
+  // Paket 13: Kadro Avı'ndan dönünce bulunanlar tazelensin.
+  useFocusEffect(useCallback(() => { bulunanKumesi().then(setBulunan).catch(() => {}); }, []));
 
   const geri = () => (navigation ? navigation.goBack() : null);
   if (!kadro) {
@@ -94,6 +98,18 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
 
       {t.tamam ? <Text style={s.tamam}>KADRO TAMAMLANDI</Text> : null}
 
+      {/* Paket 13 — Kadro Avı: bu kadronun bulunmamış bir oyuncusu kart masasında. */}
+      {!t.tamam && navigation && avHedefleri(kadro, bulunan, (ad) => !!oyuncuGetir(ad)).length ? (
+        <SoundPressable style={s.av} onPress={() => navigation.navigate("kadroAvi", { id: kadro.id })} accessibilityLabel="Kadro Avı">
+          <Ionicons name="search-circle" size={22} color={COLORS.accentDark} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.avBaslik}>KADRO AVI</Text>
+            <Text style={s.avAlt}>Gizli bir oyuncuyu kartlarla bul, kadroya ekle</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.accentDark} />
+        </SoundPressable>
+      ) : null}
+
       <Saha satirlar={satirlar} bulundu={bulundu} onPress={(o) => (bulundu(o) && o.v ? setProfil(o.a) : null)} />
       <Kulube yedek={kadro.yedek} bulundu={bulundu} onPress={(o) => (bulundu(o) && o.v ? setProfil(o.a) : null)} />
       {kadro.tip === "sezon" ? (
@@ -144,6 +160,9 @@ const s = StyleSheet.create({
   rozet: { minWidth: 56, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 12, alignItems: "center", backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
   rozetTamam: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   rozetYazi: { fontSize: 15, fontWeight: "900", color: COLORS.text },
+  av: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 14, backgroundColor: MODE_COLORS.whoAmI.main, marginBottom: SPACING.sm },
+  avBaslik: { fontSize: 14, fontWeight: "900", letterSpacing: 1, color: COLORS.accentDark },
+  avAlt: { fontSize: 12, fontWeight: "700", color: COLORS.accentDark, opacity: 0.8 },
   tamam: { textAlign: "center", fontSize: 13, fontWeight: "900", letterSpacing: 2, color: COLORS.accent, marginBottom: 8 },
   not: { fontSize: 11, fontWeight: "600", color: COLORS.textMuted, textAlign: "center", marginTop: 8 },
   girdiSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 2, borderColor: COLORS.accent, paddingHorizontal: 6, height: 54 },

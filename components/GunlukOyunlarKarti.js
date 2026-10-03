@@ -8,16 +8,18 @@ import { gunlukDurumOku, BES_KULUP_HAK, IZGARA_HAK } from "../lib/gunlukKayit";
 
 // Tüm Modlar'daki "Günlük 5 Kulüp" + "Günlük Izgara" girişleri (4 Ekim 2026).
 // Bulmacaların KENDİSİ burada üretilmiyor; sadece bugünün kaydına bakılıyor.
-export default function GunlukOyunlarKarti({ onBesKulup, onIzgara, onKadro }) {
+export default function GunlukOyunlarKarti({ onBesKulup, onIzgara, onKadro, onKimBu }) {
   const [bes, setBes] = useState(null);
   const [izg, setIzg] = useState(null);
   const [kdr, setKdr] = useState(null);
+  const [kb, setKb] = useState(null);
 
   const yukle = useCallback(() => {
     let iptal = false;
     gunlukDurumOku("5kulup").then((d) => { if (!iptal) setBes(d || {}); }).catch(() => {});
     gunlukDurumOku("izgara").then((d) => { if (!iptal) setIzg(d || {}); }).catch(() => {});
     gunlukDurumOku("kadro").then((d) => { if (!iptal) setKdr(d || {}); }).catch(() => {});
+    gunlukDurumOku("kimBu").then((d) => { if (!iptal) setKb(d || {}); }).catch(() => {});
     return () => { iptal = true; };
   }, []);
   useEffect(yukle, [yukle]);
@@ -35,11 +37,16 @@ export default function GunlukOyunlarKarti({ onBesKulup, onIzgara, onKadro }) {
   const kdrB = (kdr?.bulunan || []).length;
   const kdrAlt = !kdr ? "…" : kdr.bitti ? `Bugün ${kdrB}/11 ✓` : kdrB ? `${kdrB}/11 · devam et` : "Efsane maçın ilk 11'i · seriyi korur 🔥";
 
+  // Paket 13 — Günlük Kim Bu (5 tahmin hakkı)
+  const kbT = (kb?.tahminler || []).length;
+  const kbAlt = !kb ? "…" : kb.bitti ? (kb.dogru ? `Bugün ${Math.round(kb.puan || 0).toLocaleString("tr-TR")} puan ✓` : "Bugün bilemedin ✓") : kbT ? `${5 - kbT} hak kaldı` : "5 tahmin · seriyi korur 🔥";
+
   return (
     <View style={{ gap: SPACING.sm }}>
-    {onKadro ? (
+    {onKadro || onKimBu ? (
       <View style={[s.satir]}>
-        <Kutu baslik="Günün Kadrosu" alt={kdrAlt} ikon="shirt" renk={MODE_COLORS.teamTeam.main} bitti={!!kdr?.bitti} onPress={onKadro} />
+        {onKadro ? <Kutu baslik="Günün Kadrosu" alt={kdrAlt} ikon="shirt" renk={MODE_COLORS.teamTeam.main} bitti={!!kdr?.bitti} onPress={onKadro} /> : null}
+        {onKimBu ? <Kutu baslik="Günlük Kim Bu" alt={kbAlt} ikon="help-circle" renk={MODE_COLORS.whoAmI.main} bitti={!!kb?.bitti} onPress={onKimBu} /> : null}
       </View>
     ) : null}
     <View style={s.satir}>

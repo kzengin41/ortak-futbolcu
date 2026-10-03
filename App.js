@@ -244,6 +244,9 @@ const getHarfZinciriRoute = () => withExit(require("./screens/HarfZinciriScreen"
 const getGunlukKadroRoute = () => withExit(require("./screens/GunlukKadroScreen").default, { confirm: false });
 const getKadroRoute = () => require("./screens/KadroScreen").default;
 const getSunucuRoute = () => withExit(require("./screens/SunucuScreen").default, { mod: "sunucu" });
+// Paket 13 — Günlük Kim Bu ve Kadro Avı (kart masası; components/KimBuMasa.js)
+const getGunlukKimBuRoute = () => withExit(require("./screens/GunlukKimBuScreen").default, { confirm: false, mod: "gunlukKimBu" });
+const getKadroAviRoute = () => withExit(require("./screens/KadroAviScreen").default, { mod: "kadroAvi" });
 
 // Online sekmesi: doğrudan lobi ekranını gösterir (artık ayrı bir "onlineLobby"
 // stack rotası değil, sekmenin kendisi). Bir oda hazır olduğunda ROOT stack'teki
@@ -438,6 +441,8 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="sunucu" getComponent={getSunucuRoute} />
       <Stack.Screen name="gunlukKadro" getComponent={getGunlukKadroRoute} />
       <Stack.Screen name="kadro" getComponent={getKadroRoute} />
+      <Stack.Screen name="gunlukKimBu" getComponent={getGunlukKimBuRoute} />
+      <Stack.Screen name="kadroAvi" getComponent={getKadroAviRoute} />
     </Stack.Navigator>
   );
 }

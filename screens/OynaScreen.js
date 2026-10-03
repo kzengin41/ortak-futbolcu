@@ -63,10 +63,17 @@ const MODES = [
     key: "whoAmI",
     grup: "bilgi",
     title: "Kim Bu Futbolcu?",
-    desc: "İpuçlarıyla gizli futbolcuyu tahmin et",
+    desc: "Kartları çevir, gizli futbolcuyu bil",
     icon: "help-circle",
     colorKey: "whoAmI",
     id: "whoAmICpu",
+    // Paket 13 — Kim Bu modları (benchmark): Seri, Kadro Avı, Online düello.
+    // Günlük Kim Bu üstteki günlük kutularda.
+    options: [
+      { id: "whoAmICpu", rakip: "cpu", label: "Seri", alt: "3 can, seviye seviye zorlaşır" },
+      { id: "kadroAvi", rakip: "cpu", label: "Kadro Avı", alt: "Bir kadronun gizli oyuncusu — bulunca kadroya eklenir" },
+      { id: "online", rakip: "online", label: "Online", alt: "Aynı masada düello: ilk bilen alır", sekme: true, params: { mod: "whoami" } },
+    ],
   },
   {
     // 4 Ekim 2026 (.28709) — eski "Tek Telefon 2 Kişi" kartının yerine. 2 kişilik
@@ -199,7 +206,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
           <DailyPuzzleCard onPress={onDailyPuzzle} />
           {/* 4 Ekim 2026 — Günlük 5 Kulüp + Günlük Izgara (.29283, .29364) */}
           {onGunlukOyun ? (
-            <GunlukOyunlarKarti onKadro={() => onGunlukOyun("gunlukKadro")} onBesKulup={() => onGunlukOyun("gunluk5")} onIzgara={() => onGunlukOyun("gunlukIzgara")} />
+            <GunlukOyunlarKarti onKadro={() => onGunlukOyun("gunlukKadro")} onKimBu={() => onGunlukOyun("gunlukKimBu")} onBesKulup={() => onGunlukOyun("gunluk5")} onIzgara={() => onGunlukOyun("gunlukIzgara")} />
           ) : null}
           <DailyGoalsCard />
         </View>
