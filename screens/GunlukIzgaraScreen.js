@@ -12,6 +12,7 @@ import {
   gununIzgarasi, kareCevaplari, nadirlik, izgaraPaylasim, gunlukDurumOku, gunlukDurumYaz, IZGARA_HAK, kosulEtiketi,
 } from "../lib/gunlukOyunlar";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
+import { gunlukOyunBitti } from "../lib/gunlukKayit";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
@@ -104,6 +105,8 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
     setGirdi("");
     setSecili(null);
     gunlukDurumYaz("izgara", { kareler: yeniKareler, kullanilan: yeniKullanilan });
+    // Tek seri kuralı (.29585): günlük oyunu bitirmek seriyi sürdürür.
+    if (yeniKullanilan >= IZGARA_HAK || yeniKareler.filter(Boolean).length === 9) gunlukOyunBitti("izgara").catch(() => {});
   }
 
   async function paylas() {

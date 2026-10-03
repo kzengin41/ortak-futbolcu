@@ -16,6 +16,7 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP } from "../lib/profile";
+import { gorevOlayi } from "../lib/dailyGoals";
 import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
 
 // ============================================================================
@@ -102,6 +103,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
     if (s.tip === "tekrar") { cezaVer(`${s.oyuncu.name} zaten söylendi`, false); return; }
     if (s.tip === "yanlisHarf") { cezaVer(`${s.oyuncu.name} "${harf}" ile başlamıyor`, false); return; }
     const yeniZincir = [...zincir, s.oyuncu.name];
+    if (yeniZincir.length === 8) gorevOlayi("zincir8").catch(() => {});
     setZincir(yeniZincir);
     setKareler((k) => [...k, "sen"]);
     playCorrect();

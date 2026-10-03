@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SoundPressable from "./SoundPressable";
 import PlayerPhoto from "./PlayerPhoto";
 import MatchSummary from "./MatchSummary";
 import { COLORS, SPACING, RADIUS } from "../lib/theme";
+import { gorevOlayi } from "../lib/dailyGoals";
 
 // ============================================================================
 // MAÇ SONU KARTI — 4 Ekim 2026
@@ -25,6 +26,13 @@ export default function MacSonuKarti({
   // solo: { puan, rekor, yeniRekor, baslik?, satirlar: [[etiket, değer], ...] } — tek
   // kişilik modlar (Çoktan seçmeli, İlk Harf zinciri) skor yerine puan + rekor gösterir.
   const kazandin = kazanan ? kazanan === "sen" : skorSen > skorRakip;
+  // 4 Ekim 2026 (.29623) — görev olayları: CPU'ya karşı galibiyet (kart bir kez, maç sonunda açılır).
+  useEffect(() => {
+    if (solo || !kazandin || !rakip || !rakip.avatar) return;
+    gorevOlayi("macKazan").catch(() => {});
+    if (modeId === "xoxCpu") gorevOlayi("xoxKazan").catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const berabere = kazanan ? kazanan === "berabere" : skorSen === skorRakip;
   const baslik = solo ? (solo.baslik || (solo.yeniRekor ? "YENİ REKOR!" : "SÜRE DOLDU")) : berabere ? "BERABERE" : kazandin ? "KAZANDIN!" : `${(rakip?.ad || "RAKİP").toLocaleUpperCase("tr")} KAZANDI`;
   const kareDizi = turlar.map((t) => (t === "sen" ? "🟩" : t === "rakip" ? "🟥" : "⬜"));

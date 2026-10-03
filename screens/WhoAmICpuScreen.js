@@ -22,6 +22,7 @@ import { PLAYER_LAST_ACTIVE_YEAR } from "../lib/playerYears";
 import { resolvePlayerPhotoUrl, PLAYER_PHOTO_FILENAME } from "../lib/playerPhotos";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
+import { gorevOlayi } from "../lib/dailyGoals";
 import { addXP, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import PoolEmpty from "../components/PoolEmpty";
 import TimerBar from "../components/TimerBar";
@@ -317,6 +318,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
       if (carp > 1) dokum.push([satin === 0 ? "Kart çevirmeden bildin" : "Az kartla bildin", `×${String(carp).replace(".", ",")}`]);
       if (siklar) dokum.push(["4 şık jokeri", "×0,5"]);
       recordRound("whoAmICpu", true);
+      if (satin === 0 && !siklar) gorevOlayi("kimBuIpucusuz").catch(() => {});
       playCorrect();
       unlockPlayer(player.name);
       const yeniSeri = seriPuani + puan;

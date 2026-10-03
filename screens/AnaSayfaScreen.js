@@ -10,7 +10,7 @@ import BilgiTestiPenceresi from "../components/BilgiTestiPenceresi";
 import { useAppSettings } from "../lib/SettingsContext";
 import { ayarlardanProfil, profilEtiketi, etkinAyar } from "../lib/eslesmeProfili";
 import { getProfile, xpProgress } from "../lib/profile";
-import { getStreak } from "../lib/streak";
+import { getStreak, seriDurumu } from "../lib/streak";
 import { getBulmacaDurumu } from "../lib/dailyPuzzleStore";
 import { DENEME_HAKKI, gunNumarasi } from "../lib/dailyPuzzle";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
@@ -118,7 +118,9 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
     }, [settings?.eslesmeProfili])
   );
 
-  const bugunOynandi = seri.lastPlayedDate === bugunStr();
+  // 4 Ekim 2026 (.29585) — tek seri kuralı + dondurma: gösterilen sayı seriDurumu'ndan.
+  const sd = seriDurumu(seri);
+  const bugunOynandi = sd.durum === "tamam";
   const sol = gizliAd(cift?.[0]);
   const sag = gizliAd(cift?.[1]);
 
@@ -152,9 +154,9 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
               </Text>
             </View>
           </View>
-          <View style={[styles.seriHap, seri.count > 0 && !bugunOynandi && styles.seriRiskte]}>
+          <View style={[styles.seriHap, sd.gosterilen > 0 && !bugunOynandi && styles.seriRiskte]} accessibilityLabel={`${sd.gosterilen} günlük seri. ${sd.mesaj}`}>
             <Ionicons name="flame" size={16} color={bugunOynandi ? COLORS.cta : COLORS.textMuted} />
-            <Text style={styles.seriYazi}>{seri.count} gün</Text>
+            <Text style={styles.seriYazi}>{sd.gosterilen} gün{sd.durum === "dondurma" ? " ❄️" : ""}</Text>
           </View>
         </View>
 

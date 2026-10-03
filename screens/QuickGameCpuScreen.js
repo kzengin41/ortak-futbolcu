@@ -16,6 +16,7 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP } from "../lib/profile";
+import { gorevOlayi } from "../lib/dailyGoals";
 import ReportModal from "../components/ReportModal";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
@@ -133,6 +134,7 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
     let yeniSeviye = seviye;
     if (dogru) {
       const s = seri + 1;
+      if (s === 6) gorevOlayi("coktanSeri6").catch(() => {});
       const c = carpan(s);
       setSeri(s);
       setEnUzunSeri((e) => Math.max(e, s));

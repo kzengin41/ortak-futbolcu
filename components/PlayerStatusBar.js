@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { getProfile, xpProgress } from "../lib/profile";
-import { getStreak } from "../lib/streak";
+import { getStreak, seriDurumu } from "../lib/streak";
 import { COLORS, SPACING, RADIUS, TYPE } from "../lib/theme";
 
 // ============================================================================
@@ -39,8 +39,10 @@ export default function PlayerStatusBar() {
   );
 
   const ilerleme = xpProgress(profil);
-  const bugunOynandi = seri.lastPlayedDate === bugunStr();
-  const seriRiskte = seri.count > 0 && !bugunOynandi;
+  // 4 Ekim 2026 (.29585) — tek seri kuralı + dondurma.
+  const sd = seriDurumu(seri);
+  const seriSayi = sd.gosterilen;
+  const seriRiskte = seriSayi > 0 && sd.durum !== "tamam";
 
   return (
     <View style={styles.serit}>
@@ -64,16 +66,16 @@ export default function PlayerStatusBar() {
         <Ionicons
           name="flame"
           size={16}
-          color={seri.count === 0 ? COLORS.textFaint : seriRiskte ? COLORS.cta : COLORS.accent}
+          color={seriSayi === 0 ? COLORS.textFaint : seriRiskte ? COLORS.cta : COLORS.accent}
         />
         <Text
           style={[
             styles.seriSayi,
-            seri.count === 0 && { color: COLORS.textMuted },
+            seriSayi === 0 && { color: COLORS.textMuted },
             seriRiskte && { color: COLORS.cta },
           ]}
         >
-          {seri.count}
+          {seriSayi}
         </Text>
       </View>
     </View>

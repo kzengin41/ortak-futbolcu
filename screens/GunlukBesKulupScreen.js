@@ -9,6 +9,8 @@ import BackButton from "../components/BackButton";
 import { PLAYERS } from "../lib/players";
 import { findMatchedPlayer, suggestPlayers, buildSuggestIndex } from "../lib/gameEngine";
 import { gununBesKulubu, besKulupPuani, besKulupPaylasim, gunlukDurumOku, gunlukDurumYaz, BES_KULUP_HAK } from "../lib/gunlukOyunlar";
+import { gunlukOyunBitti } from "../lib/gunlukKayit";
+import { gorevOlayi } from "../lib/dailyGoals";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -60,6 +62,9 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
     recordRound("gunluk5", puan > 0);
     if (puan) { unlockPlayer(p.name); playCorrect(); } else playWrong();
     gunlukDurumYaz("5kulup", { tahminler: yeni });
+    if (puan >= 4) gorevOlayi("besKulup4").catch(() => {});
+    // Tek seri kuralı (.29585): günlük oyunu bitirmek seriyi sürdürür.
+    if (yeni.length >= BES_KULUP_HAK) gunlukOyunBitti("5kulup").catch(() => {});
   }
 
   async function paylas() {

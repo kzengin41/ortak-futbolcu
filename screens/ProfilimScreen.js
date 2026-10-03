@@ -7,7 +7,7 @@ import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import PlayerPhoto from "../components/PlayerPhoto";
 import { getProfile, xpProgress } from "../lib/profile";
-import { getStreak } from "../lib/streak";
+import { getStreak, seriDurumu } from "../lib/streak";
 import { getStats, MODE_LABELS } from "../lib/stats";
 import { getUnlockedPlayers, POKEDEX_LIMIT } from "../lib/pokedex";
 import { getCurrentUser } from "../lib/auth";
@@ -22,10 +22,6 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 // ayarlar en altta. Eski İstatistikler ekranı (StatsScreen) rotada duruyor
 // ama buradan artık açılmıyor — içeriği bu sayfada.
 // ============================================================================
-const bugun = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 const kisaAd = (ad) => {
   const p = String(ad).split(" ");
   return p.length > 1 ? p[p.length - 1] : ad;
@@ -52,8 +48,9 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
   );
 
   const progress = xpProgress(profile);
-  const seri = streak.count || 0;
-  const bugunOynadi = streak.lastPlayedDate === bugun();
+  // 4 Ekim 2026 (.29585) — tek seri kuralı + haftalık dondurma.
+  const sd = seriDurumu(streak);
+  const seri = sd.gosterilen;
   const sonBes = acilanlar.slice(-5).reverse();
   const modlar = stats ? Object.entries(stats.modes || {}).sort((a, b) => (b[1].wins + b[1].losses) - (a[1].wins + a[1].losses)) : [];
   const gorunenModlar = tumModlar ? modlar : modlar.slice(0, 3);
@@ -71,9 +68,12 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           <Ionicons name="flame" size={30} color={seri > 0 ? COLORS.cta : COLORS.textFaint} />
           <Text style={[styles.buyukSayi, seri > 0 && { color: COLORS.cta }]} accessibilityLabel={`${seri} günlük seri`}>{seri}</Text>
           <Text style={styles.buyukEtiket}>GÜNLÜK SERİ</Text>
-          <Text style={styles.buyukAlt}>
-            {bugunOynadi ? "Bugün oynadın ✓ Yarın da gel, seri sürsün." : seri > 0 ? "Bugün bir tur oyna, seri bozulmasın." : "Bir tur oyna, serin başlasın."}
-          </Text>
+          <Text style={styles.buyukAlt}>{sd.mesaj}</Text>
+          <View style={styles.seriBilgi}>
+            <Text style={styles.seriBilgiYazi}>❄️ Dondurma {sd.dondurmaHakki}/1 bu hafta</Text>
+            <Text style={styles.seriBilgiYazi}>🏆 En iyi {sd.enIyi} gün</Text>
+          </View>
+          <Text style={styles.seriKural}>Seri, günlük oyunlardan birini bitirince sürer: Günün Bulmacası, Günlük 5 Kulüp, Günlük Izgara ya da günlük görevlerin üçü. Haftada kaçırdığın bir gün kendiliğinden dondurulur.</Text>
         </View>
 
         {/* --- seviye --- */}
@@ -198,6 +198,9 @@ const styles = StyleSheet.create({
   },
   buyukSayi: { fontSize: 72, lineHeight: 80, fontWeight: "900", color: COLORS.text },
   buyukEtiket: { fontSize: 12, fontWeight: "900", letterSpacing: 2, color: COLORS.textMuted },
+  seriBilgi: { flexDirection: "row", gap: SPACING.md, marginTop: SPACING.sm },
+  seriBilgiYazi: { ...TYPE.caption, fontWeight: "800", color: COLORS.text },
+  seriKural: { ...TYPE.caption, fontSize: 11, textAlign: "center", marginTop: SPACING.sm, paddingHorizontal: SPACING.md, lineHeight: 16 },
   buyukAlt: { ...TYPE.caption, marginTop: 6, textAlign: "center", paddingHorizontal: SPACING.md },
 
   playerCard: {

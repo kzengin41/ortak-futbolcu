@@ -95,7 +95,7 @@ export default function DailyGoalsCard() {
           ? kayit?.odulAlindi
             ? `Tamamlandı — +${GOREV_ODULU} XP aldın`
             : `Tamamlandı! +${GOREV_ODULU} XP`
-          : `Üçünü de bitir: +${GOREV_ODULU} XP`}
+          : `Üçünü de bitir: +${GOREV_ODULU} XP · günlük seriyi korur 🔥`}
       </Text>
       )}
     </View>

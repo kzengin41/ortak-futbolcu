@@ -28,6 +28,7 @@ import {
 } from "../lib/gameEngine";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
+import { gorevOlayi } from "../lib/dailyGoals";
 import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
 import { useVoiceInput } from "../lib/useVoiceInput";
 import VoiceConfirm from "../components/VoiceConfirm";
@@ -345,6 +346,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
       const cpuHamlesi = vsCpu && who === "p2";
       if (player && !cpuHamlesi) unlockPlayer(player.name);
       if (!cpuHamlesi) recordRound(vsCpu ? "fiveClubsCpu" : "fiveClubs", true);
+      if (!cpuHamlesi && (matchedClubs || []).length >= 4) gorevOlayi("besKulup4").catch(() => {});
       if (cpuHamlesi) playCpuCorrect(); else playCorrect();
       setFeedback({ correct: true, player });
     } else {

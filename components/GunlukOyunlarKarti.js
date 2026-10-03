@@ -23,12 +23,12 @@ export default function GunlukOyunlarKarti({ onBesKulup, onIzgara }) {
 
   const besT = bes?.tahminler || [];
   const besBitti = besT.length >= BES_KULUP_HAK;
-  const besAlt = !bes ? "…" : besBitti ? `Bugün ${besT.reduce((t, x) => t + x.puan, 0)} / 15 ✓` : besT.length ? `${BES_KULUP_HAK - besT.length} hak kaldı` : "3 hak, en fazla 15 puan";
+  const besAlt = !bes ? "…" : besBitti ? `Bugün ${besT.reduce((t, x) => t + x.puan, 0)} / 15 ✓` : besT.length ? `${BES_KULUP_HAK - besT.length} hak kaldı` : "3 hak · seriyi korur 🔥";
 
   const izgK = izg?.kareler || [];
   const izgDolu = izgK.filter(Boolean).length;
   const izgBitti = (izg?.kullanilan || 0) >= IZGARA_HAK || izgDolu === 9;
-  const izgAlt = !izg ? "…" : izgBitti ? `Bugün ${izgDolu} / 9 ✓` : izg?.kullanilan ? `${IZGARA_HAK - izg.kullanilan} hak kaldı` : "9 hak, 9 kare";
+  const izgAlt = !izg ? "…" : izgBitti ? `Bugün ${izgDolu} / 9 ✓` : izg?.kullanilan ? `${IZGARA_HAK - izg.kullanilan} hak kaldı` : "9 hak · seriyi korur 🔥";
 
   return (
     <View style={s.satir}>

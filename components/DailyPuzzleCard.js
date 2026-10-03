@@ -48,7 +48,7 @@ export default function DailyPuzzleCard({ onPress }) {
               : "Bugünü bilemedin — yarın yeni soru"
             : durum.denemeler.length
             ? `${kalan} deneme hakkın kaldı`
-            : "Herkese aynı soru, 3 deneme hakkı"}
+            : "Herkese aynı soru, 3 hak · seriyi korur 🔥"}
         </Text>
       </View>
       {!bitti && <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />}
