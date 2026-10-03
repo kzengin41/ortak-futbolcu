@@ -195,7 +195,13 @@ function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {
       <View style={{ flex: 1 }}>
         {/* 3 Ekim 2026: rota parametreleri de ekrana geçiyor (ana sayfadaki OYNA →
             Ortak Kulüp'e hemenBasla + ilkCift). */}
-        <Screen onExit={handleExit} onExitSilent={() => goHome(navigation)} {...(ekstraProps || {})} {...(route?.params || {})} />
+        <Screen
+          onExit={handleExit}
+          onExitSilent={() => goHome(navigation)}
+          onModaGit={(id, params) => navigation.replace(id, params)}
+          {...(ekstraProps || {})}
+          {...(route?.params || {})}
+        />
         {rehber.varMi && <ModeGuideButton onPress={rehber.ac} />}
         {rehber.varMi && (
           <ModeGuide mod={mod} gorunur={rehber.gorunur} onClose={rehber.kapat} />
@@ -208,10 +214,13 @@ function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {
 // Ağır ekranlar: getComponent içindeki require() ilk navigasyona kadar ÇALIŞMAZ.
 // (React Navigation resmi lazy-screen deseni: component yerine getComponent.)
 const getLocalRoute = () => withExit(require("./screens/LocalGameScreen").default, { mod: "local" });
-const getCpuRoute = () => withExit(require("./screens/CpuGameScreen").default, { mod: "cpu" });
+// 4 Ekim 2026 — Ortak Kulüp birleşti: üç rota da aynı ekrana, farklı türle açılıyor
+// (Kulüp × Kulüp / Kulüp × Ülke / Takımı sen seç). Eski CpuGame, CountryTeamCpu ve
+// DraftGameCpu ekranları artık kullanılmıyor.
+const getCpuRoute = () => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "kulup" } });
 const getQuickCpuRoute = () => withExit(require("./screens/QuickGameCpuScreen").default, { mod: "quickCpu" });
-const getDraftCpuRoute = () => withExit(require("./screens/DraftGameCpuScreen").default, { mod: "draftCpu" });
-const getCountryTeamCpuRoute = () => withExit(require("./screens/CountryTeamCpuScreen").default, { mod: "countryTeamCpu" });
+const getDraftCpuRoute = () => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "secim" } });
+const getCountryTeamCpuRoute = () => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "ulke" } });
 const getWhoAmICpuRoute = () => withExit(require("./screens/WhoAmICpuScreen").default, { mod: "whoAmICpu" });
 const getLetterCpuRoute = () => withExit(require("./screens/LetterCpuScreen").default, { mod: "letterCpu" });
 const getFiveClubsRoute = () => withExit(require("./screens/FiveClubsScreen").default, { mod: "fiveClubs" });

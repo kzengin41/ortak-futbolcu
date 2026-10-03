@@ -535,7 +535,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         style={styles.buzzBtn}
       >
         <Text style={styles.buzzBtnText}>{label}</Text>
-        <Text style={styles.buzzBtnSub}>Buzz'la</Text>
+        <Text style={styles.buzzBtnSub}>BİLİYORUM!</Text>
       </SoundPressable>
     );
   }
@@ -760,7 +760,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
             <>
               <TimerBar current={timeLeft} total={roundSeconds} />
               <Text style={styles.hintText}>
-                {p1Answered || p2Answered ? "Sırada diğer oyuncu var — buzz'lasın!" : "En az 2 kulüpte oynamış bir futbolcu söyle!"}
+                {p1Answered || p2Answered ? "Sırada diğer oyuncu var — BİLİYORUM'a bassın!" : "En az 2 kulüpte oynamış bir futbolcu söyle!"}
               </Text>
               <View style={styles.buzzRow}>
                 <View style={{ flex: 1 }}>{renderPlayerButtons("p1")}</View>

@@ -44,6 +44,7 @@ function Kok() {
               accentDark: ayarlar.customAccentDark,
               cta: ayarlar.customCta,
               ctaDark: ayarlar.customCtaDark,
+              palet: ayarlar.customPalet,
             });
           }
         }

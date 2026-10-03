@@ -376,9 +376,12 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           onPress={() => (inputMode === "voice" ? handleBuzzAndSpeak(who) : handleBuzz(who))}
           style={[styles.buzzBtn, locked && styles.buzzBtnDisabled]}
         >
+          {/* 4 Ekim 2026 (benchmark: "iki kişilikte buzz yerine anlaşılır bir ad
+              ve hareket") — düğme ne yaptığını söylüyor: BİLİYORUM! */}
           <Text style={[styles.buzzBtnText, locked && styles.buzzBtnTextDisabled]}>
-            {label}
+            {locked ? `${label} · kilitli` : "BİLİYORUM!"}
           </Text>
+          {!locked ? <Text style={styles.buzzBtnAlt}>{label}</Text> : null}
         </SoundPressable>
         <SoundPressable disabled={locked} onPress={() => handlePass(who)} style={styles.passBtn}>
           <Text style={styles.passBtnText}>{locked ? "Bilemedi" : "Bilemedim"}</Text>
@@ -401,7 +404,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text style={styles.answeringText}>
-          {buzzedBy === "p1" ? "Oyuncu 1" : "Oyuncu 2"} buzz'ladı — {answerTimeLeft} sn
+          {buzzedBy === "p1" ? "Oyuncu 1" : "Oyuncu 2"} biliyor — {answerTimeLeft} sn
         </Text>
         {inputMode === "voice" ? (
           <>
@@ -588,7 +591,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       {phase === "answering" && viewMode !== "mirror" && (
         <View style={[{ marginTop: 20, flex: 1, justifyContent: "center" }, viewMode === "mirror" && buzzedBy === "p1" && { transform: [{ rotate: "180deg" }] }]}>
           <Text style={styles.answeringText}>
-            {buzzedBy === "p1" ? "Oyuncu 1" : "Oyuncu 2"} buzz'ladı — {answerTimeLeft} sn
+            {buzzedBy === "p1" ? "Oyuncu 1" : "Oyuncu 2"} biliyor — {answerTimeLeft} sn
           </Text>
           {inputMode === "voice" ? (
             <>
@@ -764,7 +767,8 @@ const styles = StyleSheet.create({
   buzzRow: { flexDirection: "row", gap: 12, marginTop: 16 },
   buzzBtn: { flex: 1, borderColor: "#7CFF5C", borderWidth: 2, borderRadius: 18, paddingVertical: 36, alignItems: "center" },
   buzzBtnDisabled: { borderColor: "#28394B" },
-  buzzBtnText: { color: "#7CFF5C", fontWeight: "900", fontSize: 14 },
+  buzzBtnText: { color: "#7CFF5C", fontWeight: "900", fontSize: 16, letterSpacing: 0.5 },
+  buzzBtnAlt: { color: "#8CA0B3", fontWeight: "700", fontSize: 12, marginTop: 4 },
   buzzBtnTextDisabled: { color: "#8CA0B3" },
   passBtn: { 
     marginTop: 12, 

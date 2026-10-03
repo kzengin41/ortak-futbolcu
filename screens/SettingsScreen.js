@@ -18,7 +18,8 @@ import {
   HATIRLATMA_SAATI, expoGodaMiyiz,
 } from "../lib/notifications";
 
-import { COLORS, PALETLER, OZEL_VURGULAR, OZEL_IKINCILLER } from "../lib/theme";
+import { COLORS, PALETLER } from "../lib/theme";
+import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
 const ITEMS = [
   { key: "background", label: "Arka Plan Sesi", desc: "Durmadan çalan tribün uğultusu" },
@@ -39,6 +40,22 @@ export default function SettingsScreen({ onBack }) {
   // seçimi kaybettireceği için `await setSetting(...)` şart (bkz.
   // lib/SettingsContext.js ve lib/temaYenile.js).
   const [temaYenileniyor, setTemaYenileniyor] = useState(false);
+  const [olusturucuAcik, setOlusturucuAcik] = useState(false);
+
+  // 4 Ekim 2026 — tema oluşturucudan gelen tam palet. Eski "Özel" ayar
+  // anahtarları (customAccent...) da aynı değerlerle yazılıyor ki index.js
+  // ikisini birlikte uyguladığında çelişmesin.
+  async function ozelTemaKaydet(secim, palet) {
+    if (temaYenileniyor) return;
+    setOlusturucuAcik(false);
+    await setSetting("customTemaSecimi", secim);
+    await setSetting("customPalet", palet);
+    await setSetting("customAccent", palet.accent);
+    await setSetting("customAccentDark", palet.accentDark);
+    await setSetting("customCta", palet.cta);
+    await setSetting("customCtaDark", palet.ctaDark);
+    await temaSec("ozel");
+  }
 
   async function temaSec(id) {
     if (temaYenileniyor) return;
@@ -190,7 +207,7 @@ export default function SettingsScreen({ onBack }) {
             return (
               <SoundPressable
                 key={p.id}
-                onPress={() => temaSec(p.id)}
+                onPress={() => (p.id === "ozel" ? setOlusturucuAcik(true) : temaSec(p.id))}
                 style={[styles.temaKart, secili && styles.temaKartAktif]}
               >
                 {/* Örnek renkler paletin KENDİ değerlerinden geliyor, aktif
@@ -200,12 +217,15 @@ export default function SettingsScreen({ onBack }) {
                       gibi gösteriyordu (GS = Belçika, FB = Ukrayna). Artık ilk
                       renk (zemin) geniş, vurgular dar: bayrak değil, gerçek
                       arayüzdeki oran — geniş bir yüzey üstünde iki vurgu. */}
-                  {p.onizleme.map((renk, i) => (
+                  {(p.id === "ozel" && settings.customPalet
+                    ? [settings.customPalet.card, settings.customPalet.accent, settings.customPalet.cta]
+                    : p.onizleme
+                  ).map((renk, i) => (
                     <View key={i} style={[styles.temaSerit, { backgroundColor: renk, flex: i === 0 ? 3 : 1 }]} />
                   ))}
                 </View>
                 <Text style={[styles.temaAd, secili && styles.temaAdAktif]} numberOfLines={1}>{p.ad}</Text>
-                <Text style={styles.temaAciklama} numberOfLines={2}>{p.aciklama}</Text>
+                <Text style={styles.temaAciklama} numberOfLines={2}>{p.id === "ozel" ? "Kendi renklerini seç, önizle" : p.aciklama}</Text>
                 {secili ? (
                   <View style={styles.temaTik}>
                     <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} />
@@ -216,55 +236,22 @@ export default function SettingsScreen({ onBack }) {
           })}
         </View>
 
-        {(settings.themeId === "ozel") && (
-          <View style={styles.ozelKap}>
-            <Text style={styles.rowLabel}>Ana vurgu rengi</Text>
-            <Text style={styles.rowDesc}>Butonlar, aktif durumlar, ikonlar</Text>
-            <View style={styles.renkIzgara}>
-              {OZEL_VURGULAR.map((r) => (
-                <SoundPressable
-                  key={r.renk}
-                  onPress={() => {
-                    setSetting("customAccent", r.renk);
-                    setSetting("customAccentDark", r.koyu);
-                  }}
-                  style={[
-                    styles.renkKutu,
-                    { backgroundColor: r.renk },
-                    settings.customAccent === r.renk && styles.renkKutuAktif,
-                  ]}
-                >
-                  {settings.customAccent === r.renk ? (
-                    <Ionicons name="checkmark" size={16} color={r.koyu} />
-                  ) : null}
-                </SoundPressable>
-              ))}
-            </View>
-
-            <Text style={[styles.rowLabel, { marginTop: 16 }]}>İkincil renk</Text>
-            <Text style={styles.rowDesc}>Öne çıkan butonlar, kupa/ödül vurguları</Text>
-            <View style={styles.renkIzgara}>
-              {OZEL_IKINCILLER.map((r) => (
-                <SoundPressable
-                  key={r.renk}
-                  onPress={() => {
-                    setSetting("customCta", r.renk);
-                    setSetting("customCtaDark", r.koyu);
-                  }}
-                  style={[
-                    styles.renkKutu,
-                    { backgroundColor: r.renk },
-                    settings.customCta === r.renk && styles.renkKutuAktif,
-                  ]}
-                >
-                  {settings.customCta === r.renk ? (
-                    <Ionicons name="checkmark" size={16} color={r.koyu} />
-                  ) : null}
-                </SoundPressable>
-              ))}
-            </View>
+        {/* 4 Ekim 2026 (Kerem: "kişi kendi renklerini seçip tema oluşturabilsin,
+            önizlenebilsin") — eski renk ızgaraları yerine tam ekran oluşturucu. */}
+        <SoundPressable style={styles.profilKart} onPress={() => setOlusturucuAcik(true)}>
+          <Ionicons name="color-palette" size={22} color={COLORS.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.presetLabelActive}>{settings.customPalet ? "Kendi temanı düzenle" : "Kendi temanı oluştur"}</Text>
+            <Text style={styles.sectionDesc}>Zemin, ana vurgu ve ikincil renk · canlı önizleme</Text>
           </View>
-        )}
+          <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
+        </SoundPressable>
+        <TemaOlusturucu
+          visible={olusturucuAcik}
+          baslangic={settings.customTemaSecimi}
+          onKapat={() => setOlusturucuAcik(false)}
+          onKaydet={ozelTemaKaydet}
+        />
 
         <View style={styles.temaNot}>
           <Ionicons

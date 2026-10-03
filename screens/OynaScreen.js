@@ -21,26 +21,16 @@ import DailyPuzzleCard from "../components/DailyPuzzleCard";
 // gerek yok, içine girince çıkar o seçenekleri").
 const MODES = [
   {
+    // 4 Ekim 2026 — Ortak Kulüp birleşti: Kulüp × Kulüp, Kulüp × Ülke, Takımı sen
+    // seç ve Çoktan seçmeli artık tek kartın içinde, kurulumda "Tür" olarak seçiliyor
+    // (eski "Kulüp & Ülke" ve "Hızlı Antrenman" kartları kaldırıldı).
     key: "teamTeam",
     grup: "klasik",
     title: "Ortak Kulüp",
-    desc: "İki takımda da oynamış ortak futbolcuyu bul",
+    desc: "İki kulüpte (ya da kulüp + ülke) oynamış futbolcuyu rakibinden önce bul",
     icon: "shield-checkmark",
     colorKey: "teamTeam",
-    // id yok — dokununca açılan modal içinde draftCpu/cpu seçilecek.
-    options: [
-      { id: "draftCpu", label: "Takımı Sen Seç" },
-      { id: "cpu", label: "CPU Rastgele Atar" },
-    ],
-  },
-  {
-    key: "teamCountry",
-    grup: "klasik",
-    title: "Kulüp & Ülke",
-    desc: "Bir ülke + bir kulüpte oynamış futbolcuyu bul",
-    icon: "earth",
-    colorKey: "teamCountry",
-    id: "countryTeamCpu",
+    id: "cpu",
   },
   {
     key: "letters",
@@ -59,15 +49,6 @@ const MODES = [
     icon: "help-circle",
     colorKey: "whoAmI",
     id: "whoAmICpu",
-  },
-  {
-    key: "training",
-    grup: "bilgi",
-    title: "Hızlı Antrenman",
-    desc: "4 şıklı, seri cevaplamaca (sadece offline)",
-    icon: "flash",
-    colorKey: "training",
-    id: "quickCpu",
   },
   {
     key: "hotSeat",
