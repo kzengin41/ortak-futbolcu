@@ -62,7 +62,12 @@ export default function ModKurulum({
 
         <SoundPressable
           style={[styles.basla, (baslaDevreDisi || baslaYukleniyor) && { opacity: 0.6 }]}
-          onPress={onBasla}
+          onPress={async () => {
+            // 4 Ekim 2026 — "son seçimler hatırlanır": BAŞLA seçimleri bu modun
+            // varsayılanı yapar; bir dahaki sefere oyun kurulumsuz bu ayarlarla başlar.
+            try { if (onVarsayilanKaydet) await onVarsayilanKaydet(); } catch (e) {}
+            onBasla && onBasla();
+          }}
           disabled={baslaDevreDisi || baslaYukleniyor}
         >
           {baslaYukleniyor ? (
@@ -72,19 +77,12 @@ export default function ModKurulum({
           )}
         </SoundPressable>
         {onVarsayilanKaydet ? (
-          <SoundPressable
-            style={styles.varsayilanLink}
-            onPress={async () => {
-              await onVarsayilanKaydet();
-              setKaydedildi(true);
-              setTimeout(() => setKaydedildi(false), 2500);
-            }}
-          >
-            <Ionicons name={kaydedildi ? "checkmark-circle" : "bookmark-outline"} size={15} color={COLORS.textMuted} />
+          <View style={styles.varsayilanLink}>
+            <Ionicons name="bookmark-outline" size={15} color={COLORS.textMuted} />
             <Text style={styles.varsayilanYazi}>
-              {kaydedildi ? "Kaydedildi — bu mod artık böyle açılacak" : "Bu ayarları bu modun varsayılanı yap"}
+              Seçimlerin hatırlanır: bu mod bir dahaki sefere kurulum sormadan başlar. Oyun sırasında sol alttaki ⚙ ile buraya dönersin.
             </Text>
-          </SoundPressable>
+          </View>
         ) : null}
       </ScrollView>
     </GameBackground>

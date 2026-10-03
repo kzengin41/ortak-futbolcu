@@ -1,367 +1,375 @@
-﻿import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
-import { MODE_COLORS } from "../lib/theme";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import GameBackground from "../components/GameBackground";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
-import { PLAYERS } from "../lib/players";
-import { CLUB_INFO } from "../lib/clubs";
+import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
+import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
+import GameBackground from "../components/GameBackground";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
-import { generateQuickRound, computeRoundPool } from "../lib/gameEngine";
+import { soruUret, havuzOnbellegi, seviyeGuncelle, carpan, BASLANGIC_SURESI, DOGRU_BONUSU } from "../lib/coktanSecmeli";
+import { countryTr } from "../lib/countryNamesTr";
+import { flagForCountry } from "../lib/countryFlags";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
+import { unlockPlayer } from "../lib/pokedex";
+import { recordRound } from "../lib/stats";
+import { addXP } from "../lib/profile";
 import ReportModal from "../components/ReportModal";
-import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto, { prefetchPlayerPhoto } from "../components/PlayerPhoto";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
-import BackButton from "../components/BackButton";
 import TimerBar from "../components/TimerBar";
-import { unlockPlayer } from "../lib/pokedex";
-import { recordRound } from "../lib/stats";
+import MacSonuKarti from "../components/MacSonuKarti";
 
 const count3Source = require("../assets/sounds/count-3.mp3");
 const count2Source = require("../assets/sounds/count-2.mp3");
 const count1Source = require("../assets/sounds/count-1.mp3");
 
-const CHOICE_SECONDS = 6;
+// ============================================================================
+// ÇOKTAN SEÇMELİ (eski "Hızlı Antrenman") — 4 Ekim 2026, baştan yazıldı
+//
+// Benchmark kararı: "60 sn varsayılan (değiştirilebilir), doğru +2 sn, seri
+// çarpanı ×2/×3, soru çeşitleri, tek çıkış butonu, tema renkleri, kurulumsuz
+// başlangıç, kendiliğinden ayarlanan zorluk." Artık Ortak Kulüp'ün bir türü
+// (kurulumda "Çoktan seçmeli"), Tüm Modlar'da ayrı kartı yok.
+//  • Tek saat: 60 sn (30/60/90/120). Her doğru +2 sn. Yanlışın süre cezası yok
+//    ama seri sıfırlanır.
+//  • Puan: doğru başına 1 × seri çarpanı (3 doğru → ×2, 6 doğru → ×3).
+//  • Dört soru türü (lib/coktanSecmeli.js). Zorluk kendiliğinden: art arda 3
+//    doğru → seviye +1, art arda 2 yanlış → −1.
+//  • Rekor AsyncStorage'da; bitişte maç sonu kartı (Paylaş + Tekrar).
+// ============================================================================
+const REKOR = "coktan-secmeli-rekor";
 
 export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
-  const [difficulty, setDifficulty] = useState(5); // 1-10 (bkz. lib/modAyarlari.js)
-  // 28 Eylül 2026 — lig/kapsam yerine Eşleşme Profili (bkz. lib/eslesmeProfili.js)
+  const [difficulty, setDifficulty] = useState(5);
+  const [oyunSuresi, setOyunSuresi] = useState(BASLANGIC_SURESI);
   const eslesme = useEslesmeProfili();
-  const { settings: appSettings, loaded: appSettingsLoaded } = useAppSettings();
-  const [leagueModalOpen, setLeagueModalOpen] = useState(false);
+  const { loaded: ayarlarYuklendi } = useAppSettings();
+  const [profilAcik, setProfilAcik] = useState(false);
   const [started, setStarted] = useState(false);
 
-  const [usedPairs, setUsedPairs] = useState(new Set());
-  const [round, setRound] = useState(null);
-  const [phase, setPhase] = useState("countdown"); // countdown | choosing | feedback
-  const [secimSuresi, setSecimSuresi] = useState(CHOICE_SECONDS);
-  const [choiceTimeLeft, setChoiceTimeLeft] = useState(CHOICE_SECONDS);
-  const [selected, setSelected] = useState(null);
-  const [feedback, setFeedback] = useState(null);
+  const [phase, setPhase] = useState("countdown"); // countdown | oyun | bitti
+  const [soru, setSoru] = useState(null);
+  const [secilen, setSecilen] = useState(null);
+  const [kalan, setKalan] = useState(BASLANGIC_SURESI);
+  const [puan, setPuan] = useState(0);
+  const [seri, setSeri] = useState(0);
+  const [enUzunSeri, setEnUzunSeri] = useState(0);
+  const [dogruSayisi, setDogruSayisi] = useState(0);
+  const [soruSayisi, setSoruSayisi] = useState(0);
+  const [yanlisSerisi, setYanlisSerisi] = useState(0);
+  const [seviye, setSeviye] = useState(5);
+  const [kareler, setKareler] = useState([]);
+  const [rekor, setRekor] = useState(0);
+  const [yeniRekor, setYeniRekor] = useState(false);
+  const [bonus, setBonus] = useState(null); // "+2 sn ×2"
   const [showReport, setShowReport] = useState(false);
-  const [lastPlayer, setLastPlayer] = useState(""); // "correct" | "wrong" | null
-  const [scoreP1, setScoreP1] = useState(0);
-  const [roundCount, setRoundCount] = useState(0);
+  const kullanilan = useRef(new Set());
+  const bonusAnim = useRef(new Animated.Value(0)).current;
 
+  const toplamSure = oyunSuresi >= 20 ? oyunSuresi : BASLANGIC_SURESI; // eski 4–10 sn kayıtları
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
   const countPlayer3 = useAudioPlayer(count3Source);
   const countPlayer2 = useAudioPlayer(count2Source);
   const countPlayer1 = useAudioPlayer(count1Source);
-
-  const allowedClubs = eslesme.derlenmis.kapsam;
+  const havuz = useMemo(() => havuzOnbellegi(eslesme.derlenmis), [eslesme.derlenmis]);
   const presetLabel = eslesme.derlenmis.etiket;
 
-  const pool = useMemo(
-    () => computeRoundPool(PLAYERS, eslesme.derlenmis, difficulty),
-    [eslesme.derlenmis, difficulty]
-  );
-
-  const startNewRound = useCallback(() => {
-    setUsedPairs((prev) => {
-      const r = generateQuickRound(pool, PLAYERS, prev, allowedClubs);
-      setRound(r);
-      if (r && r.correctPlayer) { prefetchPlayerPhoto(r.correctPlayer.name); }
-      if (!r) return prev;
-      const next = new Set(prev);
-      next.add(r.key);
-      return next;
-    });
-    setPhase("countdown");
-    setSelected(null);
-    setFeedback(null);
-    setChoiceTimeLeft(secimSuresi);
-    setRoundCount((c) => c + 1);
-  }, [pool, allowedClubs, secimSuresi]);
-
   useEffect(() => {
-    if (started) startNewRound();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started]);
+    AsyncStorage.getItem(REKOR).then((v) => v && setRekor(Number(v) || 0)).catch(() => {});
+  }, []);
 
-  function handleCountdownComplete() {
-    setPhase("choosing");
+  const yeniSoru = useCallback((sev) => {
+    const s = soruUret(havuz, sev, kullanilan.current);
+    if (s) {
+      kullanilan.current.add(s.key);
+      if (s.siklar[0]?.tip === "oyuncu") s.siklar.forEach((x) => prefetchPlayerPhoto(x.ad));
+      else if (s.ust.oyuncu) prefetchPlayerPhoto(s.ust.oyuncu);
+    }
+    setSoru(s);
+    setSecilen(null);
+  }, [havuz]);
+
+  function oyunuBaslat() {
+    kullanilan.current = new Set();
+    setPuan(0); setSeri(0); setEnUzunSeri(0); setDogruSayisi(0); setSoruSayisi(0); setYanlisSerisi(0);
+    setKareler([]); setYeniRekor(false); setBonus(null);
+    setSeviye(difficulty);
+    setKalan(toplamSure);
+    setPhase("countdown");
+    yeniSoru(difficulty);
+    setStarted(true);
   }
 
+  // Saat
   useEffect(() => {
-    if (phase !== "choosing") return;
-    if (choiceTimeLeft <= 0) {
-      resolveChoice(null);
-      return;
-    }
-    const t = setTimeout(() => setChoiceTimeLeft((s) => s - 1), 1000);
+    if (phase !== "oyun") return;
+    if (kalan <= 0) { bitir(); return; }
+    const t = setTimeout(() => setKalan((k) => k - 1), 1000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, choiceTimeLeft]);
+  }, [phase, kalan]);
 
-  function resolveChoice(option) {
-    if (phase !== "choosing" || !round) return;
-    setSelected(option);
-    const isCorrect = option && option.name === round.correctPlayer.name;
-    setScoreP1((s) => s + (isCorrect ? 1 : -1));
-
-    recordRound("quickCpu", !!isCorrect);
-    if (isCorrect) {
-      unlockPlayer(round.correctPlayer.name); // Ansiklopedi: oyun içinde ismi geçen herkes açılmaya aday
-      playCorrect();
-      setFeedback("correct");
-    } else {
-      playWrong();
-      setFeedback("wrong");
-    }
-    setPhase("feedback");
-    setTimeout(() => startNewRound(), 1400);
+  function bitir() {
+    setPhase("bitti");
+    const yeni = puan > rekor;
+    setYeniRekor(yeni);
+    if (yeni) { setRekor(puan); AsyncStorage.setItem(REKOR, String(puan)).catch(() => {}); }
+    Promise.resolve(addXP(Math.min(150, 10 * dogruSayisi))).catch(() => {});
   }
 
-  // 27 Eylül 2026 — merkezî mod ayarları (lib/modAyarlari.js): varsayılanlar
-  // Ayarlar'dan gelir, kurulumda değiştirilebilir, oyun içinde "?" ile görülür.
-  const modVarsayilanKaydet = useModVarsayilanlari("quickCpu", { zorluk: setDifficulty, sure: setSecimSuresi });
-  useEffect(() => {
-    oyunBilgisiniYaz("quickCpu", { satirlar: ayarSatirlari({ zorluk: difficulty, sure: secimSuresi, lig: presetLabel }) });
-  }, [difficulty, secimSuresi, presetLabel]);
+  function sec(sik) {
+    if (phase !== "oyun" || !soru || secilen) return;
+    const dogru = sik.ad === soru.dogru;
+    setSecilen(sik.ad);
+    setSoruSayisi((n) => n + 1);
+    recordRound("quickCpu", dogru);
+    let yeniSeviye = seviye;
+    if (dogru) {
+      const s = seri + 1;
+      const c = carpan(s);
+      setSeri(s);
+      setEnUzunSeri((e) => Math.max(e, s));
+      setPuan((p) => p + c);
+      setDogruSayisi((d) => d + 1);
+      setYanlisSerisi(0);
+      setKalan((k) => k + DOGRU_BONUSU);
+      setKareler((l) => [...l, "sen"]);
+      setBonus(`+${DOGRU_BONUSU} sn${c > 1 ? `  ×${c}` : ""}`);
+      bonusAnim.setValue(0);
+      Animated.timing(bonusAnim, { toValue: 1, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+      if (soru.acilacak) unlockPlayer(soru.acilacak);
+      playCorrect();
+      yeniSeviye = seviyeGuncelle(seviye, s, 0);
+    } else {
+      const y = yanlisSerisi + 1;
+      setSeri(0);
+      setYanlisSerisi(y);
+      setKareler((l) => [...l, "rakip"]);
+      setBonus(null);
+      playWrong();
+      yeniSeviye = seviyeGuncelle(seviye, 0, y);
+      if (yeniSeviye !== seviye) setYanlisSerisi(0);
+    }
+    setSeviye(yeniSeviye);
+    setTimeout(() => yeniSoru(yeniSeviye), dogru ? 450 : 1100);
+  }
 
+  // ------------------------------------------------------------------ ayarlar
+  const modVarsayilanKaydet = useModVarsayilanlari("quickCpu", { zorluk: setDifficulty, sure: setOyunSuresi });
+  useKurulumKapisi("quickCpu", {
+    hazir: ayarlarYuklendi,
+    kurulumda: !started,
+    baslat: () => oyunuBaslat(),
+    kurulumaDon: () => { setStarted(false); setPhase("countdown"); },
+  });
+  useEffect(() => {
+    oyunBilgisiniYaz("quickCpu", {
+      satirlar: ayarSatirlari({ zorluk: difficulty, sure: toplamSure, lig: presetLabel, ekstra: [["Doğru cevap", `+${DOGRU_BONUSU} sn`], ["Seri çarpanı", "3 doğru ×2 · 6 doğru ×3"], ["Zorluk", "oynadıkça kendiliğinden ayarlanır"]] }),
+    });
+  }, [difficulty, toplamSure, presetLabel]);
+
+  // ================================================================== KURULUM
   if (!started) {
-    // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı
-    // olmalı. her moddaki mimari dizayn aynı olmalı.") — kurulum ekranı artık
-    // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
-        baslik="Hızlı Antrenman"
-        aciklama="3-2-1 sonrası 4 seçenek çıkar. Doğru +1, yanlış -1. Cevap verince hemen sıradaki tur başlar."
+        baslik="Çoktan Seçmeli"
+        aciklama={`Süre ${toplamSure} sn. Her doğru +${DOGRU_BONUSU} sn ve puan; art arda doğrular çarpanı ×2, ×3'e çıkarır. Sorular kolaydan başlar, sen bildikçe zorlaşır.`}
         vurgu={MODE_COLORS.training}
         onGeri={onExitSilent || onExit}
-        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: secimSuresi })}
-        onBasla={() => setStarted(true)}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: toplamSure })}
+        onBasla={oyunuBaslat}
       >
-        <KurulumBolum baslik="ZORLUK">
-          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Sadece efsaneler ve süper yıldızlar sorulur." : z <= 7 ? "Büyük liglerin bilinen oyuncuları sorulur." : "Az bilinen oyuncular da sorulur.")} />
+        <KurulumBolum baslik="BAŞLANGIÇ ZORLUĞU" not="Oyun sırasında kendiliğinden ayarlanır.">
+          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Ünlü isimlerle başlar." : z <= 7 ? "Bilinen oyuncularla başlar." : "Az bilinenlerle başlar.")} />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP SÜRESİ">
+        <KurulumBolum baslik={MOD_TANIMLARI.quickCpu.sure.etiket}>
           <SureSecici
             secenekler={MOD_TANIMLARI.quickCpu.sure.secenekler}
-            deger={secimSuresi}
-            onDegis={setSecimSuresi}
+            deger={toplamSure}
+            onDegis={setOyunSuresi}
             asgari={MOD_TANIMLARI.quickCpu.sure.asgari}
             azami={MOD_TANIMLARI.quickCpu.sure.azami}
             aciklama={MOD_TANIMLARI.quickCpu.sure.aciklama}
           />
         </KurulumBolum>
         <KurulumBolum baslik="EŞLEŞME PROFİLİ">
-          <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
+          <KapsamDugmesi etiket={presetLabel} onPress={() => setProfilAcik(true)} />
         </KurulumBolum>
         <EslesmeProfiliPenceresi
-          visible={leagueModalOpen}
+          visible={profilAcik}
           profil={eslesme.profil}
-          onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
-          onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
-          onClose={() => setLeagueModalOpen(false)}
+          onUygula={(p) => { eslesme.setMacProfili(p); setProfilAcik(false); }}
+          onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setProfilAcik(false); }}
+          onClose={() => setProfilAcik(false)}
         />
       </ModKurulum>
     );
   }
 
-  if (!round) {
-    return (
-      <View style={styles.container}>
-        <BackButton text="Menüye Dön" onPress={onExit} />
-        <Text style={styles.title}>Bu seçimle yeni eşleşme kalmadı.</Text>
-        <Text style={styles.hint}>Popülerlik seviyesini "Normal"e almayı ya da lig kapsamını genişletmeyi dene.</Text>
-        <SoundPressable
-          style={styles.primaryBtn}
-          onPress={() => {
-            setUsedPairs(new Set());
-            startNewRound();
-          }}
-        >
-          <Text style={styles.primaryBtnText}>Baştan Başla</Text>
-        </SoundPressable>
-      </View>
-    );
-  }
-
+  // ================================================================== OYUN
+  const c = carpan(seri);
   return (
-    <GameBackground style={styles.container}>
-      {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || "Bilinmiyor"} />}
-      {/* GLOBAL TOP HEADER — 31 Ağustos 2026 (Kerem: "üstteki butonların
-          konumlandırması çirkin"): artık absolute/top:40 ile içerikle
-          çakışmıyor, normal akışta kendi satırını alıyor. */}
-      <View style={{ width: "100%", paddingHorizontal: 16, paddingTop: 6, marginBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+    <GameBackground style={s.kap}>
+      {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={soru?.dogru || "Bilinmiyor"} />}
+      <View style={s.ust}>
         <SoundPressable onPress={() => setShowReport(true)} hitSlop={20}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,100,100,0.2)", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}>
-            <Ionicons name="flag" size={13} color="#FFB020" />
-            <Text style={{ color: "#FFB020", fontSize: 12, fontWeight: "800" }}>BİLDİR</Text>
+          <View style={s.bildir}>
+            <Ionicons name="flag" size={13} color={COLORS.cta} />
+            <Text style={s.bildirYazi}>BİLDİR</Text>
           </View>
         </SoundPressable>
-        <SoundPressable onPress={onExit} hitSlop={20}>
-          <View style={{ backgroundColor: "rgba(255,93,93,0.15)", borderRadius: 16, padding: 6 }}>
-            <Ionicons name="close" size={22} color="#FF5D5D" />
-          </View>
+        {/* Tek çıkış düğmesi */}
+        <SoundPressable onPress={phase === "bitti" ? (onExitSilent || onExit) : onExit} hitSlop={20} accessibilityLabel="Çık">
+          <View style={s.kapat}><Ionicons name="close" size={22} color={COLORS.danger} /></View>
         </SoundPressable>
       </View>
 
       {phase === "countdown" && (
-        <CountdownOverlay onComplete={handleCountdownComplete} countPlayers={[countPlayer3, countPlayer2, countPlayer1]} />
+        <CountdownOverlay onComplete={() => setPhase("oyun")} countPlayers={[countPlayer3, countPlayer2, countPlayer1]} />
       )}
-      {feedback && (
-        <AnswerFeedback 
-          correct={feedback === "correct"} 
-          player={feedback === "correct" ? round.correctPlayer : null} 
-          onDone={() => {}} 
+
+      {phase !== "bitti" && (
+        <>
+          <View style={s.panel}>
+            <View>
+              <Text style={s.panelEtiket}>PUAN</Text>
+              <Text style={s.panelSayi}>{puan}</Text>
+            </View>
+            <View style={[s.carpanHap, c > 1 && { backgroundColor: COLORS.cta, borderColor: COLORS.cta }]}>
+              <Ionicons name="flame" size={14} color={c > 1 ? COLORS.ctaDark : COLORS.textMuted} />
+              <Text style={[s.carpanYazi, c > 1 && { color: COLORS.ctaDark }]}>{c > 1 ? `×${c}` : `seri ${seri}`}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={s.panelEtiket}>SÜRE</Text>
+              <Text style={[s.panelSayi, kalan <= 10 && { color: COLORS.danger }]}>{Math.max(0, kalan)}</Text>
+            </View>
+          </View>
+          <View style={{ marginTop: SPACING.sm }}><TimerBar current={Math.max(0, kalan)} total={Math.max(toplamSure, kalan)} /></View>
+          {bonus ? (
+            <Animated.Text
+              style={[s.bonus, { opacity: bonusAnim.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0] }), transform: [{ translateY: bonusAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -18] }) }] }]}
+            >
+              {bonus}
+            </Animated.Text>
+          ) : <View style={{ height: 22 }} />}
+        </>
+      )}
+
+      {phase !== "bitti" && soru ? (
+        <View style={{ flex: 1 }}>
+          {/* Soru üstü: tür kartı */}
+          {soru.ust.a ? (
+            <View style={s.ikiliKart}>
+              {[soru.ust.a, soru.ust.b].map((x, i) => (
+                <React.Fragment key={i}>
+                  {i === 1 ? <Text style={s.carpi}>×</Text> : null}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    {x.tip === "ulke" ? <Text style={s.bayrak}>{flagForCountry(x.ad)}</Text> : <TeamBadge name={x.ad} size={46} />}
+                    <Text style={s.ikiliAd} numberOfLines={2}>{x.tip === "ulke" ? countryTr(x.ad) : x.ad}</Text>
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          ) : soru.ust.oyuncu ? (
+            <View style={s.tekKart}>
+              <PlayerPhoto name={soru.ust.oyuncu} size={64} showProfileOnPress={false} />
+            </View>
+          ) : soru.ust.kulup ? (
+            <View style={s.tekKart}>
+              <TeamBadge name={soru.ust.kulup} size={56} />
+              <Text style={s.ikiliAd}>{soru.ust.kulup}</Text>
+            </View>
+          ) : null}
+
+          <Text style={s.soru}>{soru.soru}</Text>
+
+          <View style={s.siklar}>
+            {soru.siklar.map((sik) => {
+              const cevaplandi = !!secilen;
+              const buDogru = sik.ad === soru.dogru;
+              const buSecilen = sik.ad === secilen;
+              return (
+                <SoundPressable
+                  key={sik.ad}
+                  disabled={cevaplandi}
+                  onPress={() => sec(sik)}
+                  style={[s.sik, cevaplandi && buDogru && s.sikDogru, cevaplandi && buSecilen && !buDogru && s.sikYanlis]}
+                >
+                  {sik.tip === "oyuncu" ? <PlayerPhoto name={sik.ad} size={34} showProfileOnPress={false} /> : <TeamBadge name={sik.ad} size={30} />}
+                  <Text style={s.sikYazi} numberOfLines={2}>{sik.ad}</Text>
+                  {cevaplandi && buDogru ? <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} /> : null}
+                  {cevaplandi && buSecilen && !buDogru ? <Ionicons name="close-circle" size={20} color={COLORS.danger} /> : null}
+                </SoundPressable>
+              );
+            })}
+          </View>
+          <Text style={s.seviye}>Seviye {seviye} · {soruSayisi} soru</Text>
+        </View>
+      ) : null}
+
+      {phase !== "bitti" && !soru ? (
+        <Text style={s.soru}>Bu ayarlarla yeni soru üretilemedi. Eşleşme profilini genişletmeyi dene.</Text>
+      ) : null}
+
+      {phase === "bitti" && (
+        <MacSonuKarti
+          modAdi="Çoktan Seçmeli"
+          modeId="quickCpu"
+          turlar={kareler}
+          solo={{
+            puan,
+            rekor,
+            yeniRekor,
+            satirlar: [
+              ["Doğru", `${dogruSayisi} / ${soruSayisi}`],
+              ["En uzun seri", String(enUzunSeri)],
+              ["Ulaştığın seviye", `${seviye} / 10`],
+            ],
+          }}
+          kazanilanXp={Math.min(150, 10 * dogruSayisi)}
+          rovansEtiketi="TEKRAR"
+          onRovans={oyunuBaslat}
+          onMenu={onExitSilent || onExit}
         />
       )}
-
-      
-      {!round ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={{ color: "#F3F7FA", fontSize: 20, textAlign: "center" }}>Uygun soru kalmadı!</Text>
-          <Text style={{ color: "#F3F7FA", fontSize: 24, fontWeight: "bold", marginTop: 20 }}>Skor: {scoreP1}</Text>
-          <SoundPressable onPress={onExit} style={[styles.primaryBtn, { marginTop: 40 }]}>
-            <Text style={styles.primaryBtnText}>Menüye Dön</Text>
-          </SoundPressable>
-        </View>
-      ) : (
-        <>
-      <View style={styles.topRow}>
-        <SoundPressable onPress={onExit} style={[styles.exitBtn, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
-          <Ionicons name="close" size={14} color="#FF5D5D" />
-          <Text style={styles.exitBtnText}>Bitir</Text>
-        </SoundPressable>
-        <Text style={styles.roundCounter}>Tur {roundCount}</Text>
-      </View>
-
-      <View style={styles.scoreRow}>
-        <Text style={styles.scoreText}>Skor: {scoreP1}</Text>
-      </View>
-
-      <View style={styles.teamsCard}>
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <TeamBadge name={round.teamA} />
-          <Text style={styles.teamName}>{round.teamA}</Text>
-        </View>
-        <Text style={styles.plus}>+</Text>
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <TeamBadge name={round.teamB} />
-          <Text style={styles.teamName}>{round.teamB}</Text>
-        </View>
-      </View>
-
-      {phase === "choosing" && (
-        <View style={{ marginTop: 14 }}>
-          <TimerBar current={choiceTimeLeft} total={secimSuresi} />
-        </View>
-      )}
-
-      <View style={styles.optionsGrid}>
-        {round.options.map((opt) => {
-          const isSelected = selected && selected.name === opt.name;
-          const isCorrectOpt = phase === "feedback" && opt.name === round.correctPlayer.name;
-          const isWrongSelected = phase === "feedback" && isSelected && !isCorrectOpt;
-          return (
-            <SoundPressable
-              key={opt.name}
-              disabled={phase !== "choosing"}
-              onPress={() => resolveChoice(opt)}
-              style={[
-                styles.optionBtn,
-                isCorrectOpt && styles.optionBtnCorrect,
-                isWrongSelected && styles.optionBtnWrong,
-              ]}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <PlayerPhoto name={opt.name} size={32} showProfileOnPress={false} />
-                <Text style={styles.optionBtnText} numberOfLines={2}>{opt.name}</Text>
-              </View>
-            </SoundPressable>
-          );
-        })}
-      </View>
-            </>
-      )
-      }
     </GameBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0B1620", padding: 20, paddingBottom: 40 },
-  scrollContainer: { flex: 1, backgroundColor: "#0B1620", paddingHorizontal: 20 },
-  title: { color: "#F3F7FA", fontSize: 22, fontWeight: "900" },
-  subtitle: { color: "#8CA0B3", fontSize: 13, marginTop: 8, lineHeight: 19 },
-  hint: { color: "#8CA0B3", fontSize: 12, marginTop: 4 },
-  popRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderColor: "#28394B",
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+const s = StyleSheet.create({
+  kap: { flex: 1, backgroundColor: COLORS.bg, padding: 20, paddingBottom: 40 },
+  ust: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 6, marginBottom: 10 },
+  bildir: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,100,100,0.2)", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 },
+  bildirYazi: { color: COLORS.cta, fontSize: 12, fontWeight: "800" },
+  kapat: { backgroundColor: "rgba(255,93,93,0.15)", borderRadius: 16, padding: 6 },
+
+  panel: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  panelEtiket: { fontSize: 12, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted },
+  panelSayi: { fontSize: 34, fontWeight: "900", color: COLORS.text, lineHeight: 38 },
+  carpanHap: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  carpanYazi: { fontSize: 15, fontWeight: "900", color: COLORS.textMuted },
+  bonus: { height: 22, textAlign: "center", fontSize: 16, fontWeight: "900", color: COLORS.accent, marginTop: 2 },
+
+  ikiliKart: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 18, padding: 14 },
+  carpi: { color: MODE_COLORS.training.main, fontSize: 20, fontWeight: "900", marginHorizontal: 8 },
+  bayrak: { fontSize: 42 },
+  ikiliAd: { color: COLORS.text, fontSize: 13, fontWeight: "900", textAlign: "center", marginTop: 6 },
+  tekKart: { alignItems: "center", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 18, padding: 14, gap: 4 },
+  soru: { color: COLORS.text, fontSize: 18, fontWeight: "900", textAlign: "center", marginTop: SPACING.md, lineHeight: 24 },
+  siklar: { marginTop: SPACING.md, gap: 10 },
+  sik: {
+    flexDirection: "row", alignItems: "center", gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1.5, borderRadius: 14,
   },
-  popRowActive: { borderColor: "#7CFF5C", backgroundColor: "#16222E" },
-  popRowTitle: { color: "#F3F7FA", fontWeight: "800", fontSize: 14 },
-  popRowTitleActive: { color: "#7CFF5C" },
-  popRowDesc: { color: "#8CA0B3", fontSize: 12, marginTop: 2 },
-  checkmark: { color: "#7CFF5C", fontSize: 16, fontWeight: "900" },
-  leagueSelectBtn: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#16222E",
-    borderColor: "#28394B",
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginTop: 12,
-  },
-  leagueSelectText: { color: "#F3F7FA", fontSize: 14, fontWeight: "700" },
-  leagueSelectChevron: { color: "#7CFF5C", fontSize: 12, fontWeight: "700" },
-  primaryBtn: { backgroundColor: "#7CFF5C", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 28, marginBottom: 24 },
-  primaryBtnText: { color: "#0B1620", fontWeight: "900", textTransform: "uppercase", fontSize: 13 },
-  backLink: { color: "#8CA0B3", fontSize: 13 },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  exitBtn: { borderColor: "#FF5D5D", borderWidth: 1, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 12 },
-  exitBtnText: { color: "#FF5D5D", fontSize: 12, fontWeight: "800" },
-  scoreRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginBottom: 16, marginTop: 12 },
-  scoreText: { color: "#F3F7FA", fontWeight: "800", fontSize: 14 },
-  roundCounter: { color: "#8CA0B3", fontSize: 12 },
-  teamsCard: {
-    flexDirection: "row",
-    backgroundColor: "#16222E",
-    borderColor: "#28394B",
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  teamName: { color: "#F3F7FA", fontSize: 13, fontWeight: "900", textAlign: "center", marginTop: 6 },
-  plus: { color: "#7CFF5C", fontSize: 20, fontWeight: "900", marginHorizontal: 12 },
-  timerText: { color: "#7CFF5C", fontSize: 20, fontWeight: "900", textAlign: "center", marginTop: 14 },
-  // 12 Eylül 2026 (Kerem: "hızlı antrenman modunda şıklar çok büyük, kötü
-  // görünüyor") — dört şık flex:1 ile boş alanı paylaşıp devasa kutulara
-  // dönüşüyordu. Artık içerik kadar yer kaplıyorlar.
-  optionsGrid: { marginTop: 16, gap: 10 },
-  optionBtn: {
-    backgroundColor: "#16222E",
-    borderColor: "#28394B",
-    borderWidth: 1.5,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 56,
-  },
-  optionBtnCorrect: { borderColor: "#7CFF5C", backgroundColor: "#1F5C36" },
-  optionBtnWrong: { borderColor: "#FF5D5D", backgroundColor: "#4A2323" },
-  optionBtnText: { color: "#F3F7FA", fontSize: 15, fontWeight: "800", textAlign: "center", flexShrink: 1 },
+  sikDogru: { borderColor: COLORS.accent, backgroundColor: "rgba(124,255,92,0.12)" },
+  sikYanlis: { borderColor: COLORS.danger, backgroundColor: "rgba(255,93,93,0.12)" },
+  sikYazi: { flex: 1, color: COLORS.text, fontSize: 15, fontWeight: "800" },
+  seviye: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: SPACING.md },
 });

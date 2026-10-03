@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-
 import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
 import { COLORS, MODE_COLORS } from "../lib/theme";
 import GameBackground from "../components/GameBackground";
 import { PLAYERS } from "../lib/players";
@@ -360,6 +360,17 @@ export default function OrtakKulupScreen({
 
   // ------------------------------------------------------------------ ayarlar
   const modVarsayilanKaydet = useModVarsayilanlari("cpu", { zorluk: setDifficulty, sure: setRoundSeconds, galibiyet: setTargetScore, yontem: setInputMode });
+  // 4 Ekim 2026 — kurulumsuz başlangıç (.27319): mod son ayarlarla hemen başlar;
+  // kurulum sol alttaki ⚙ ya da mod rehberindeki "Ayarları değiştir" ile açılır.
+  useKurulumKapisi("cpu", {
+    kurulumda: !started,
+    devreDisi: hemenBasla,
+    baslat: () => setStarted(true),
+    kurulumaDon: () => {
+      setStarted(false); setPhase("countdown"); setRound(null); setUsedPairs(new Set());
+      setScoreP1(0); setScoreCpu(0); setTurlar([]); setDogrularim([]); setXpVerildi(false);
+    },
+  });
   useEffect(() => {
     if (hemenBasla && appSettingsLoaded && !started) { setTur("kulup"); setTargetScore(3); setStarted(true); }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -18,15 +18,28 @@ import { COLORS, SPACING, RADIUS } from "../lib/theme";
 // ============================================================================
 export default function MacSonuKarti({
   modAdi, modeId, skorSen, skorRakip, rakip, turlar = [], enIyi, kazanilanXp,
-  onRovans, onMenu, ekSatir,
+  onRovans, onMenu, ekSatir, solo, rovansEtiketi = "RÖVANŞ", kazanan, kareSatir, skorEtiketi,
 }) {
-  const kazandin = skorSen > skorRakip;
-  const berabere = skorSen === skorRakip;
-  const baslik = berabere ? "BERABERE" : kazandin ? "KAZANDIN!" : `${(rakip?.ad || "RAKİP").toLocaleUpperCase("tr")} KAZANDI`;
-  const kareler = turlar.map((t) => (t === "sen" ? "🟩" : t === "rakip" ? "🟥" : "⬜")).join("");
+  // kazanan: "sen" | "rakip" | "berabere" — skordan çıkmayan sonuçlar için (XOX: üçlü sıra).
+  // kareSatir: kareleri satırlara böl (XOX tahtası 3×3).
+  // solo: { puan, rekor, yeniRekor, satirlar: [[etiket, değer], ...] } — tek
+  // kişilik modlar (Çoktan seçmeli, İlk Harf zinciri) skor yerine puan + rekor gösterir.
+  const kazandin = kazanan ? kazanan === "sen" : skorSen > skorRakip;
+  const berabere = kazanan ? kazanan === "berabere" : skorSen === skorRakip;
+  const baslik = solo ? (solo.yeniRekor ? "YENİ REKOR!" : "SÜRE DOLDU") : berabere ? "BERABERE" : kazandin ? "KAZANDIN!" : `${(rakip?.ad || "RAKİP").toLocaleUpperCase("tr")} KAZANDI`;
+  const kareDizi = turlar.map((t) => (t === "sen" ? "🟩" : t === "rakip" ? "🟥" : "⬜"));
+  const kareler = kareSatir
+    ? Array.from({ length: Math.ceil(kareDizi.length / kareSatir) }, (_, i) => kareDizi.slice(i * kareSatir, (i + 1) * kareSatir).join("")).join("\n")
+    : kareDizi.join("");
 
   async function paylas() {
-    const satirlar = [
+    const satirlar = solo ? [
+      `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
+      `${solo.puan} puan${solo.yeniRekor ? " — yeni rekorum!" : ""}`,
+      kareler,
+      ...(solo.satirlar || []).map(([a, b]) => `${a}: ${b}`),
+      "Sen kaç yaparsın?",
+    ] : [
       `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
       kazandin
         ? `${rakip?.ad || "Rakibimi"} ${skorSen}-${skorRakip} yendim!`
@@ -42,14 +55,29 @@ export default function MacSonuKarti({
 
   return (
     <View style={s.kap}>
-      <Text style={[s.baslik, { color: berabere ? COLORS.text : kazandin ? COLORS.accent : COLORS.danger }]}>{baslik}</Text>
+      <Text style={[s.baslik, { color: solo ? (solo.yeniRekor ? COLORS.cta : COLORS.text) : berabere ? COLORS.text : kazandin ? COLORS.accent : COLORS.danger }]}>{baslik}</Text>
 
+      {solo ? (
+        <View style={s.soloKutu}>
+          <Text style={s.soloPuan}>{solo.puan}</Text>
+          <Text style={s.soloEtiket}>PUAN · rekor {Math.max(solo.rekor || 0, solo.puan)}</Text>
+          {(solo.satirlar || []).map(([a, b]) => (
+            <View key={a} style={s.soloSatir}>
+              <Text style={s.soloSatirAd}>{a}</Text>
+              <Text style={s.soloSatirDeger}>{b}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
       <View style={s.skorSatir}>
         <View style={s.taraf}>
           <View style={[s.avatar, { borderColor: COLORS.accent }]}><Ionicons name="person" size={24} color={COLORS.text} /></View>
           <Text style={s.tarafAd}>Sen</Text>
         </View>
-        <Text style={s.skor}>{skorSen} – {skorRakip}</Text>
+        <View style={{ alignItems: "center" }}>
+          <Text style={s.skor}>{skorSen} – {skorRakip}</Text>
+          {skorEtiketi ? <Text style={s.skorEtiketi}>{skorEtiketi}</Text> : null}
+        </View>
         <View style={s.taraf}>
           <View style={[s.avatar, { borderColor: rakip?.renk || COLORS.cardBorder }]}>
             {rakip?.avatar ? <Text style={s.avatarEmoji}>{rakip.avatar}</Text> : <Ionicons name="person" size={24} color={COLORS.text} />}
@@ -57,6 +85,7 @@ export default function MacSonuKarti({
           <Text style={s.tarafAd} numberOfLines={1}>{rakip?.ad || "Rakip"}</Text>
         </View>
       </View>
+      )}
 
       {kareler ? <Text style={s.kareler}>{kareler}</Text> : null}
       {rakip?.tepki ? <Text style={s.tepki}>{rakip.ad}: “{rakip.tepki}”</Text> : null}
@@ -79,7 +108,7 @@ export default function MacSonuKarti({
       <View style={s.dugmeler}>
         <SoundPressable style={s.rovans} onPress={onRovans}>
           <Ionicons name="refresh" size={18} color={COLORS.accentDark} />
-          <Text style={s.rovansYazi}>RÖVANŞ</Text>
+          <Text style={s.rovansYazi}>{rovansEtiketi}</Text>
         </SoundPressable>
         <SoundPressable style={s.paylas} onPress={paylas} accessibilityLabel="Sonucu paylaş">
           <Ionicons name="share-social" size={18} color={COLORS.text} />
@@ -102,7 +131,14 @@ const s = StyleSheet.create({
   avatarEmoji: { fontSize: 26 },
   tarafAd: { fontSize: 13, fontWeight: "800", color: COLORS.text },
   skor: { fontSize: 48, fontWeight: "900", color: COLORS.text },
-  kareler: { fontSize: 20, letterSpacing: 2, marginTop: SPACING.md },
+  soloKutu: { alignItems: "center", alignSelf: "stretch", marginTop: SPACING.md },
+  soloPuan: { fontSize: 64, fontWeight: "900", color: COLORS.text, lineHeight: 70 },
+  soloEtiket: { fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted },
+  soloSatir: { flexDirection: "row", justifyContent: "space-between", alignSelf: "stretch", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  soloSatirAd: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted },
+  soloSatirDeger: { fontSize: 14, fontWeight: "900", color: COLORS.text },
+  skorEtiketi: { fontSize: 12, fontWeight: "700", color: COLORS.textMuted, marginTop: -4 },
+  kareler: { fontSize: 20, letterSpacing: 2, marginTop: SPACING.md, textAlign: "center", lineHeight: 26 },
   tepki: { fontSize: 14, fontWeight: "600", fontStyle: "italic", color: COLORS.textMuted, marginTop: SPACING.sm, textAlign: "center" },
   enIyi: {
     flexDirection: "row", alignItems: "center", gap: SPACING.md, alignSelf: "stretch", marginTop: SPACING.lg,

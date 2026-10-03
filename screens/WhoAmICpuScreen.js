@@ -28,7 +28,7 @@ import TimerBar from "../components/TimerBar";
 import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici, SecimCipleri, CokluSecim } from "../components/ModKurulum";
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { oyuncuBasarilari } from "../lib/basarilar";
 import {
   masaKur, unluTakimArkadasi, simdiBilirsen, carpan, turPuani, karsilastir, ortakKartlariAc,
@@ -227,6 +227,17 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   }
 
   const modVarsayilanKaydet = useModVarsayilanlari("whoAmICpu", { zorluk: setZorlukId, sure: setSoruSuresi, yontem: setInputMode });
+
+  // 4 Ekim 2026 — kurulumsuz başlangıç (.27319): mod son ayarlarla hemen başlar;
+
+  // kurulum sol alttaki ⚙ ya da mod rehberindeki "Ayarları değiştir" ile açılır.
+
+  useKurulumKapisi("whoAmICpu", {
+    hazir: sortedPlayers.length > 0,
+    kurulumda: phase === "setup",
+    baslat: () => oyunuBaslat(),
+    kurulumaDon: () => setPhase("setup"),
+  });
   const donemYuklendi = useRef(false);
   useEffect(() => {
     if (!ayarlarYuklendi || donemYuklendi.current) return;

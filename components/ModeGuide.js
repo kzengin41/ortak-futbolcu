@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MODE_GUIDES } from "../lib/modeGuides";
-import { useOyunBilgisi } from "../lib/modAyarlari";
+import { useOyunBilgisi, useKurulumDestegi, kurulumIste } from "../lib/modAyarlari";
 import { COLORS, SPACING, RADIUS, TYPE, SHADOW } from "../lib/theme";
 
 // ============================================================================
@@ -71,11 +71,24 @@ export function ModeGuideButton({ onPress }) {
   );
 }
 
+// 4 Ekim 2026 — kurulumsuz başlangıç: modlar ayarsız başlıyor, kurulum bu ⚙
+// düğmesinin arkasında (bkz. lib/modAyarlari.js useKurulumKapisi).
+export function KurulumButonu({ mod }) {
+  const var_ = useKurulumDestegi(mod);
+  if (!var_) return null;
+  return (
+    <Pressable onPress={() => kurulumIste(mod)} hitSlop={16} style={[styles.infoBtn, { left: SPACING.lg + 42 }]} accessibilityLabel="Bu modun ayarları">
+      <Ionicons name="settings-outline" size={18} color={COLORS.textMuted} />
+    </Pressable>
+  );
+}
+
 export default function ModeGuide({ mod, gorunur, onClose }) {
   // 27 Eylül 2026 (Kerem: "bilemedim/pes et butonları, süre kısıtları, lig
   // kısıtları her yerden bakılabilsin") — ekranlar güncel ayarlarını
   // lib/modAyarlari.js'e yazıyor; bu pencere her modda aynı yerden gösteriyor.
   const bilgi = useOyunBilgisi(mod === "fiveClubsCpu" ? "fiveClubs" : mod);
+  const kurulumVar = useKurulumDestegi(mod);
   const rehber = MODE_GUIDES[mod];
   if (!rehber) return null;
 
@@ -99,7 +112,14 @@ export default function ModeGuide({ mod, gorunur, onClose }) {
                     <Text style={styles.ayarDeger} numberOfLines={2}>{deger}</Text>
                   </View>
                 ))}
-                <Text style={styles.ayarNot}>Varsayılanları Ayarlar &gt; Mod Varsayılanları'ndan değiştirebilirsin.</Text>
+                {kurulumVar ? (
+                  <Pressable onPress={() => { onClose(); kurulumIste(mod); }} style={styles.ayarDugme}>
+                    <Ionicons name="settings-outline" size={15} color={COLORS.accent} />
+                    <Text style={styles.ayarDugmeYazi}>Ayarları değiştir (yeni maç başlar)</Text>
+                  </Pressable>
+                ) : (
+                  <Text style={styles.ayarNot}>Varsayılanları Ayarlar &gt; Mod Varsayılanları'ndan değiştirebilirsin.</Text>
+                )}
               </View>
             ) : null}
             {rehber.points.map((madde, i) => (
@@ -187,6 +207,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     fontSize: 12,
   },
+  ayarDugme: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: SPACING.sm, paddingVertical: 8 },
+  ayarDugmeYazi: { fontSize: 14, fontWeight: "800", color: COLORS.accent },
   infoBtn: {
     position: "absolute",
     left: SPACING.lg,

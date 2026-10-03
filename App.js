@@ -40,7 +40,7 @@ import OnlineDraftScreen from "./screens/OnlineDraftScreen";
 // deseniyle bir Tab.Screen içinde tanımlanıyor, aşağıda bkz. getAnsiklopediRoute.
 import { useWhistleSound, useBackgroundAmbience, useTapKickSound } from "./lib/useGameSounds";
 import { SettingsProvider } from "./lib/SettingsContext";
-import ModeGuide, { ModeGuideButton, useModeGuide } from "./components/ModeGuide";
+import ModeGuide, { ModeGuideButton, KurulumButonu, useModeGuide } from "./components/ModeGuide";
 import UnlockToast from "./components/UnlockToast";
 import { COLORS } from "./lib/theme";
 
@@ -203,6 +203,7 @@ function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {
           {...(route?.params || {})}
         />
         {rehber.varMi && <ModeGuideButton onPress={rehber.ac} />}
+        {mod ? <KurulumButonu mod={mod} /> : null}
         {rehber.varMi && (
           <ModeGuide mod={mod} gorunur={rehber.gorunur} onClose={rehber.kapat} />
         )}

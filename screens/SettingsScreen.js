@@ -170,6 +170,19 @@ export default function SettingsScreen({ onBack }) {
           Her modun zorluğu (10 üzerinden), süresi ve diğer ayarları. Mod açılınca bunlar hazır gelir; oynamadan önce istersen değiştirirsin.
         </Text>
         <ModVarsayilanlariPaneli />
+        {/* 4 Ekim 2026 — kurulumsuz başlangıç (bkz. lib/modAyarlari.js useKurulumKapisi) */}
+        <View style={[styles.row, { marginTop: 12, marginBottom: 26 }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowLabel}>Modlar kurulum sormadan başlasın</Text>
+            <Text style={styles.rowDesc}>Son seçtiğin ayarlarla doğrudan oyuna girer. Ayarlara oyunda sol alttaki ⚙ ile dönersin.</Text>
+          </View>
+          <Switch
+            value={settings.kurulumAtla !== false}
+            onValueChange={(val) => setSetting("kurulumAtla", val)}
+            trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
+            thumbColor={COLORS.text}
+          />
+        </View>
 
         <Text style={styles.sectionTitle}>Hatırlatma</Text>
         <Text style={styles.sectionDesc}>

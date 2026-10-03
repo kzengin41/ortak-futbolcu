@@ -2,12 +2,12 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, Animated, Easing, Modal, ScrollView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
-import { cpuCevabiSec, taninmisMi } from "../lib/taninirlik";
+import { cpuCevabiSec, taninmisMi, taninirlik } from "../lib/taninirlik";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
@@ -15,6 +15,8 @@ import { useVoiceInput } from "../lib/useVoiceInput";
 import CountdownOverlay from "../components/CountdownOverlay";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PlayerPhoto from "../components/PlayerPhoto";
+import MacSonuKarti from "../components/MacSonuKarti";
+import { karakterSec, tepki } from "../lib/cpuKarakterleri";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import { calculatePlayerPopularity } from "../lib/clubWeights";
@@ -82,10 +84,16 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   const [subMode, setSubMode] = useState("classic");
   // 27 Eylül 2026 (Kerem: "her mod için zorluk ayarı olmalı. süre ayarı olmalı")
   const [zorlukId, setZorlukId] = useState(5); // 1-10
+  // 4 Ekim 2026 — CPU gerçek rakip: zorluğa göre karakter (lib/cpuKarakterleri.js)
+  const karakter = useMemo(() => karakterSec(zorlukId), [zorlukId]);
   const [harfSuresi, setHarfSuresi] = useState(15);
   
   // Game State
   const [scores, setScores] = useState({ p1: 0, cpu: 0 });
+  // 4 Ekim 2026 — maç sonu kartı için tur kareleri ve doğru cevapların
+  const [turlar, setTurlar] = useState([]);
+  const [dogrularim, setDogrularim] = useState([]);
+  const [macSonuSozu, setMacSonuSozu] = useState("");
   const [userLetter, setUserLetter] = useState(null);
   const [cpuLetter, setCpuLetter] = useState(null);
   const [chainHistory, setChainHistory] = useState([]); // Zincir modundaki oyuncular
@@ -243,6 +251,21 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   }, [filteredPlayers, subMode]);
 
   const modVarsayilanKaydet = useModVarsayilanlari("letterCpu", { zorluk: setZorlukId, sure: setHarfSuresi, yontem: setInputMode });
+
+  // 4 Ekim 2026 — kurulumsuz başlangıç (.27319): mod son ayarlarla hemen başlar;
+
+  // kurulum sol alttaki ⚙ ya da mod rehberindeki "Ayarları değiştir" ile açılır.
+
+  useKurulumKapisi("letterCpu", {
+    kurulumda: phase === "setup",
+    baslat: () => startGame(),
+    kurulumaDon: () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (cpuTimerRef.current) clearTimeout(cpuTimerRef.current);
+      if (harfGosterimRef.current) clearTimeout(harfGosterimRef.current);
+      setPhase("setup");
+    },
+  });
   useEffect(() => {
     oyunBilgisiniYaz("letterCpu", { satirlar: ayarSatirlari({ zorluk: zorlukId, sure: harfSuresi, yontem: inputMode, ekstra: [["Hedef", "3 puan"]] }) });
   }, [zorlukId, harfSuresi, inputMode]);
@@ -257,6 +280,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   // --- GAME LOGIC ---
   const startGame = () => {
     setScores({ p1: 0, cpu: 0 });
+    setTurlar([]);
+    setDogrularim([]);
     nextRound();
   };
 
@@ -401,10 +426,10 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       const isPlayerTurn = chainHistory.length % 2 === 0;
       if (isPlayerTurn) {
         // Oyuncu cevaplayamadı, CPU puan alır
-        awardPoint("cpu", "Süren Bitti! CPU Kazandı.");
+        awardPoint("cpu", `Süren bitti! ${karakter.ad} kazandı.`);
       } else {
         // CPU cevaplayamadı (Gerçekte CPU'nun timeoutu ayrı çalışır ama fallback)
-        awardPoint("p1", "CPU Cevap Bulamadı! Sen Kazandın.");
+        awardPoint("p1", `${karakter.ad} cevap bulamadı! Sen kazandın.`);
       }
     }
   };
@@ -450,13 +475,16 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
         } else {
           // CPU bulamadı! Player kazandı!
           if (timerRef.current) clearInterval(timerRef.current);
-          awardPoint("p1", "CPU kelime bulamadı, Sen Kazandın!");
+          awardPoint("p1", `${karakter.ad} isim bulamadı, sen kazandın!`);
         }
       }
     }, delay);
   };
 
   const processGuess = (playerObj, who) => {
+    if (who === "p1" && playerObj && isPairMode) {
+      setDogrularim((l) => [...l, { oyuncu: playerObj, etiket: `${userLetter} + ${cpuLetter}` }]);
+    }
     if (timerRef.current) clearInterval(timerRef.current);
     if (cpuTimerRef.current) clearTimeout(cpuTimerRef.current);
     if (who === "p1" && playerObj) unlockPlayer(playerObj.name); // Ansiklopedi: oyun içinde ismi geçen herkes açılmaya aday
@@ -500,6 +528,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
   };
 
   const awardPoint = (who, reasonText) => {
+    setTurlar((l) => [...l, who === "p1" ? "sen" : "rakip"]);
     if (who === "p1" || who === "cpu") recordRound("letterCpu", who === "p1");
 
     if (timerRef.current) clearInterval(timerRef.current);
@@ -518,6 +547,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
     setScores(prev => {
       const next = { ...prev, [who]: prev[who] + 1 };
       if (next[who] >= 3) {
+        setMacSonuSozu(tepki(karakter, who === "p1" ? "kaybetti" : "kazandi"));
         setPhase("gameOver");
         if (who === "p1") addXP(XP_MAC_GALIBIYETI);
       } else {
@@ -651,7 +681,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
           <View style={styles.scoreRow}>
             <Text style={styles.scoreText}>Sen: {scores.p1}</Text>
             <Text style={styles.scoreText}>Hedef: 3</Text>
-            <Text style={styles.scoreText}>CPU: {scores.cpu}</Text>
+            <Text style={styles.scoreText}>{karakter.avatar} {karakter.ad}: {scores.cpu}</Text>
           </View>
         )}
       </View>
@@ -743,7 +773,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
               </View>
               <Text style={styles.letterPlus}>+</Text>
               <View style={styles.letterBox}>
-                <Text style={styles.letterLabel}>CPU Harfi</Text>
+                <Text style={styles.letterLabel}>Rakibin harfi</Text>
                 <Text style={styles.letterValue}>{phase === "countdown" ? "?" : cpuLetter}</Text>
               </View>
               {/* 4 Ekim 2026 — Ç/C kuralı her turda görünür */}
@@ -757,7 +787,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
                 <View style={styles.chainHistoryBox}>
                   {chainHistory.map((ch, i) => (
                     <Text key={i} style={styles.chainHistoryText}>
-                      {i % 2 === 0 ? "Sen" : "CPU"}: {ch.name}
+                      {i % 2 === 0 ? "Sen" : karakter.ad}: {ch.name}
                     </Text>
                   ))}
                 </View>
@@ -818,7 +848,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10 }}>
                 <Ionicons name={subMode === "chain" && chainHistory.length % 2 !== 0 ? "time" : "pencil"} size={16} color="#FFD93D" />
                 <Text style={[styles.turnIndicator, { marginTop: 0 }]}>
-                  {subMode === "chain" && chainHistory.length % 2 !== 0 ? "CPU'NUN SIRASI..." : "SENİN SIRAN!"}
+                  {subMode === "chain" && chainHistory.length % 2 !== 0 ? `${karakter.ad.toLocaleUpperCase("tr")} DÜŞÜNÜYOR…` : "SENİN SIRAN!"}
                 </Text>
               </View>
             </View>
@@ -833,7 +863,25 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
       )}
 
       {/* RESULT & GAME OVER */}
-      {(phase === "result" || phase === "gameOver") && (
+      {phase === "gameOver" && (
+        <MacSonuKarti
+          modAdi={subMode === "chain" ? "İlk Harf — Zincir" : "İlk Harften Bul"}
+          modeId="letterCpu"
+          skorSen={scores.p1}
+          skorRakip={scores.cpu}
+          rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: macSonuSozu }}
+          turlar={turlar}
+          enIyi={(() => {
+            if (!dogrularim.length) return null;
+            const en = [...dogrularim].sort((a, b) => taninirlik(a.oyuncu) - taninirlik(b.oyuncu))[0];
+            return { ad: en.oyuncu.name, alt: `Harfler: ${en.etiket}` };
+          })()}
+          kazanilanXp={scores.p1 > scores.cpu ? XP_MAC_GALIBIYETI : 0}
+          onRovans={startGame}
+          onMenu={onExitSilent || onExit}
+        />
+      )}
+      {phase === "result" && (
         <View style={styles.resultPanel}>
           {winningPlayer && <PlayerPhoto name={winningPlayer.name} size={100} />}
           <Text style={styles.resultText}>{resultText}</Text>
@@ -849,11 +897,6 @@ export default function LetterCpuScreen({ onExit, onExitSilent }) {
               <Text style={[styles.primaryBtnText, { color: "#3D2600" }]}>Doğru Cevapları Gör</Text>
             </Pressable>
           
-          {phase === "gameOver" && (
-            <Pressable style={styles.primaryBtn} onPress={startGame}>
-              <Text style={styles.primaryBtnText}>YENİ OYUN</Text>
-            </Pressable>
-          )}
         </View>
       )}
 

@@ -6,6 +6,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
+import MacSonuKarti from "../components/MacSonuKarti";
+import { karakterSec, tepki } from "../lib/cpuKarakterleri";
+import { taninirlik } from "../lib/taninirlik";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
@@ -22,7 +25,7 @@ import { buildSuggestIndex, suggestPlayers, sesIpuclari } from "../lib/gameEngin
 import { useVoiceInput } from "../lib/useVoiceInput";
 import VoiceConfirm from "../components/VoiceConfirm";
 import { useAppSettings } from "../lib/SettingsContext";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
 import { useCorrectSound, useWrongSound, useCpuCorrectSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -99,6 +102,8 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const [rakipTipi, setRakipTipi] = useState("cpu");   // "cpu" | "iki"
   // 27 Eylül 2026: zorluk 1-10 (bkz. lib/modAyarlari.js, gridGame zorlukAyari10)
   const [zorluk, setZorluk] = useState(4);
+  // 4 Ekim 2026 — CPU gerçek rakip (lib/cpuKarakterleri.js)
+  const karakter = useMemo(() => karakterSec(zorluk), [zorluk]);
   // 27 Eylül 2026 — ızgara türü: sadece kulüp / kulüp+ülke / kulüp+başarı / karma
   const [izgaraTuru, setIzgaraTuru] = useState("kulup");
   const xoxAyar = useMemo(() => zorlukAyari10(zorluk), [zorluk]);
@@ -260,23 +265,23 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: cpuHamlesi ? `CPU: ${h.ad}` : h.ad });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: cpuHamlesi ? `${karakter.ad}: ${h.ad}` : h.ad });
     } else if (h.tip === "yanlis") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
-        message: cpuHamlesi ? `CPU bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
+        message: cpuHamlesi ? `${karakter.ad} bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
       });
     } else if (h.tip === "pas") {
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? "CPU pas geçti" : "Pas geçtin" });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? `${karakter.ad} pas geçti` : "Pas geçtin" });
     } else if (h.tip === "sure") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
-        message: cpuyaKarsi ? "Süre doldu, sıra CPU'da" : `Süre doldu, sıra ${h.kimden === X ? "2." : "1."} oyuncuda`,
+        message: cpuyaKarsi ? `Süre doldu, sıra ${karakter.ad}'da` : `Süre doldu, sıra ${h.kimden === X ? "2." : "1."} oyuncuda`,
       });
     }
-  }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong, playCpuCorrect]);
+  }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong, playCpuCorrect, karakter]);
 
   // --- Maç sonu: istatistik + XP (bir kez) ---------------------------------
   const macIslendiRef = useRef(false);
@@ -347,6 +352,16 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   }, [durum?.secili]);
 
   const modVarsayilanKaydet = useModVarsayilanlari("xox", { zorluk: setZorluk, sure: setCevapSuresi, yontem: setInputMode });
+
+  // 4 Ekim 2026 — kurulumsuz başlangıç (.27319): mod son ayarlarla hemen başlar;
+
+  // kurulum sol alttaki ⚙ ya da mod rehberindeki "Ayarları değiştir" ile açılır.
+
+  useKurulumKapisi("xox", {
+    kurulumda: !basladi,
+    baslat: () => yeniOyun(),
+    kurulumaDon: () => setBasladi(false),
+  });
   useEffect(() => {
     oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"]] }) });
   }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru]);
@@ -441,7 +456,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
   const siraEtiketi = durum.bitti
     ? sonucMetni(durum, cpuyaKarsi)
     : cpuyaKarsi
-    ? (durum.sira === X ? "Sıra sende" : cpuDusunuyor ? "CPU düşünüyor..." : "CPU oynuyor")
+    ? (durum.sira === X ? "Sıra sende" : cpuDusunuyor ? `${karakter.avatar} ${karakter.ad} düşünüyor…` : `${karakter.avatar} ${karakter.ad} oynuyor`)
     : (durum.sira === X ? "1. Oyuncu (X)" : "2. Oyuncu (O)");
 
   return (
@@ -621,7 +636,30 @@ export default function XoxScreen({ onExit, onExitSilent }) {
           </View>
 
           {/* --- MAÇ SONU --- */}
-          {durum.bitti && (
+          {durum.bitti && cpuyaKarsi && (
+            <MacSonuKarti
+              modAdi="Futbolcu XOX"
+              modeId="xoxCpu"
+              kazanan={durum.kazanan === "berabere" ? "berabere" : durum.kazanan === X ? "sen" : "rakip"}
+              skorSen={durum.tahta.filter((t) => t === X).length}
+              skorRakip={durum.tahta.filter((t) => t === O).length}
+              skorEtiketi="kare"
+              rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: tepki(karakter, durum.kazanan === X ? "kaybetti" : "kazandi", () => (durum.hamleNo % 7) / 7) }}
+              turlar={durum.tahta.map((t) => (t === X ? "sen" : t === O ? "rakip" : "yok"))}
+              kareSatir={3}
+              enIyi={(() => {
+                const benim = Object.values(durum.hucreSahipleri || {}).filter((h) => h.oyuncu === X && h.ad).map((h) => h.ad);
+                if (!benim.length) return null;
+                const en = [...benim].sort((a, b) => taninirlik(a) - taninirlik(b))[0];
+                return { ad: en, alt: "Izgarada verdiğin en nadir isim" };
+              })()}
+              kazanilanXp={0}
+              rovansEtiketi="YENİ IZGARA"
+              onRovans={yeniOyun}
+              onMenu={onExitSilent || onExit}
+            />
+          )}
+          {durum.bitti && !cpuyaKarsi && (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>{sonucMetni(durum, cpuyaKarsi)}</Text>
               <Text style={styles.sonucAlt}>

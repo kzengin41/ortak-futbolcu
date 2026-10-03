@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -291,6 +291,13 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
   // 27 Eylül 2026 — merkezî mod ayarları (lib/modAyarlari.js): varsayılanlar
   // Ayarlar'dan gelir, kurulumda değiştirilebilir, oyun içinde "?" ile görülür.
   const modVarsayilanKaydet = useModVarsayilanlari("local", { zorluk: setDifficulty, sure: setRoundSeconds, galibiyet: setTargetScore, yontem: setInputMode });
+  // 4 Ekim 2026 — kurulumsuz başlangıç (.27319): mod son ayarlarla hemen başlar;
+  // kurulum sol alttaki ⚙ ya da mod rehberindeki "Ayarları değiştir" ile açılır.
+  useKurulumKapisi("local", {
+    kurulumda: !started,
+    baslat: () => setStarted(true),
+    kurulumaDon: () => { setStarted(false); setScoreP1(0); setScoreP2(0); },
+  });
   useEffect(() => {
     oyunBilgisiniYaz("local", { satirlar: ayarSatirlari({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, lig: presetLabel, yontem: inputMode }) });
   }, [difficulty, roundSeconds, targetScore, presetLabel, inputMode]);

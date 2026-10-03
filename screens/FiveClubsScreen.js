@@ -3,7 +3,7 @@ import { MODE_COLORS } from "../lib/theme";
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
-import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
+import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -37,6 +37,8 @@ import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto from "../components/PlayerPhoto";
+import MacSonuKarti from "../components/MacSonuKarti";
+import { karakterSec, tepki } from "../lib/cpuKarakterleri";
 import SoundPressable from "../components/SoundPressable";
 import TimerBar from "../components/TimerBar";
 
@@ -64,7 +66,6 @@ const OTHER = { p1: "p2", p2: "p1" };
 // bir futbolcu "söylüyor" ve aynı recordTurnResult'tan geçiyor. Böylece iki
 // oyun modu tek bir ekran ve tek bir kural setiyle yaşıyor.
 export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false }) {
-  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: "CPU" } : PLAYER_LABEL;
   const [started, setStarted] = useState(false);
   const [roundSeconds, setRoundSeconds] = useState(FIVE_CLUB_TIME_OPTIONS[1]);
   const [inputMode, setInputMode] = useState("voice"); // "keyboard" | "voice"
@@ -72,6 +73,12 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   // 3 kademe: 1-3 normal, 4-7 zor, 8-10 çok zor; CPU'nun pas geçme ihtimali
   // ise 10 kademenin her birinde ayrı.
   const [zorluk10, setZorluk10] = useState(5);
+  // 4 Ekim 2026 — CPU gerçek rakip (lib/cpuKarakterleri.js) + maç sonu kartı verisi
+  const karakter = useMemo(() => karakterSec(zorluk10), [zorluk10]);
+  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: karakter.ad } : PLAYER_LABEL;
+  const [turlar, setTurlar] = useState([]);
+  const [dogrularim, setDogrularim] = useState([]);
+  const [macSonuSozu, setMacSonuSozu] = useState("");
   const difficulty = zorluk10 <= 3 ? "normal" : zorluk10 <= 7 ? "zor" : "cokZor";
 
   const [usedClubKeys, setUsedClubKeys] = useState(new Set());
@@ -317,6 +324,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     setRoundResults((prev) => ({ ...prev, [who]: { gained, player: player || null, matchedClubs: matchedClubs || [] } }));
     if (who === "p1") setScoreP1((s) => s + gained);
     else setScoreP2((s) => s + gained);
+    if (who === "p1" && gained > 0 && player) {
+      setDogrularim((l) => [...l, { oyuncu: player, etiket: `${gained} kulüp: ${(matchedClubs || []).join(", ")}` }]);
+    }
     if (gained > 0) {
       // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
       // CPU'ya karşı oyunda CPU "p2" olarak oynuyor. Eskiden CPU'nun bulduğu
@@ -412,7 +422,10 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   }
 
   function goToNextRound() {
+    const a = roundResults.p1?.gained || 0, b = roundResults.p2?.gained || 0;
+    setTurlar((l) => [...l, a > b ? "sen" : b > a ? "rakip" : "yok"]);
     if (roundNumber >= FIVE_CLUB_TOTAL_ROUNDS) {
+      setMacSonuSozu(tepki(karakter, scoreP1 > scoreP2 ? "kaybetti" : "kazandi"));
       setPhase("gameOver");
     } else {
       setRoundNumber((n) => n + 1);
@@ -421,6 +434,8 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   }
 
   function restartGame() {
+    setTurlar([]);
+    setDogrularim([]);
     setScoreP1(0);
     setScoreP2(0);
     setRoundNumber(1);
@@ -429,8 +444,18 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   }
 
   const modVarsayilanKaydet = useModVarsayilanlari("fiveClubs", { zorluk: setZorluk10, sure: setRoundSeconds, yontem: setInputMode });
+
+  // 4 Ekim 2026 — kurulumsuz başlangıç (.27319): mod son ayarlarla hemen başlar;
+
+  // kurulum sol alttaki ⚙ ya da mod rehberindeki "Ayarları değiştir" ile açılır.
+
+  useKurulumKapisi("fiveClubs", {
+    kurulumda: !started,
+    baslat: () => setStarted(true),
+    kurulumaDon: () => { setStarted(false); setScoreP1(0); setScoreP2(0); setRoundNumber(1); },
+  });
   useEffect(() => {
-    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? "CPU" : "2 kişi"], ["Tur sayısı", "3"]] }) });
+    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? `${karakter.avatar} ${karakter.ad}` : "2 kişi"], ["Tur sayısı", "3"]] }) });
   }, [zorluk10, roundSeconds, inputMode, vsCpu]);
 
   if (!started) {
@@ -715,8 +740,8 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               {/* Renk kodu, kulüp rozetlerindeki 1/2 göstergeleriyle AYNI:
                   Oyuncu 1 yeşil, Oyuncu 2 altın — kimin neyi bulduğu tek
                   bakışta anlaşılsın diye. */}
-              <Text style={[styles.scoreText, { color: "#7CFF5C" }]}>Oyuncu 1: {scoreP1}</Text>
-              <Text style={[styles.scoreText, { color: "#FFB020" }]}>Oyuncu 2: {scoreP2}</Text>
+              <Text style={[styles.scoreText, { color: "#7CFF5C" }]}>{oyuncuEtiketi.p1}: {scoreP1}</Text>
+              <Text style={[styles.scoreText, { color: "#FFB020" }]}>{vsCpu ? `${karakter.avatar} ${karakter.ad}` : oyuncuEtiketi.p2}: {scoreP2}</Text>
             </View>
           </View>
 
@@ -827,7 +852,25 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         </KlavyeScroll>
       )}
 
-      {phase === "gameOver" && (
+      {phase === "gameOver" && vsCpu && (
+        <MacSonuKarti
+          modAdi="5 Kulüp"
+          modeId="fiveClubsCpu"
+          skorSen={scoreP1}
+          skorRakip={scoreP2}
+          rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: macSonuSozu }}
+          turlar={turlar}
+          enIyi={(() => {
+            if (!dogrularim.length) return null;
+            const en = [...dogrularim].sort((x, y) => taninirlik(x.oyuncu) - taninirlik(y.oyuncu))[0];
+            return { ad: en.oyuncu.name, alt: en.etiket };
+          })()}
+          kazanilanXp={0}
+          onRovans={restartGame}
+          onMenu={onExitSilent || onExit}
+        />
+      )}
+      {phase === "gameOver" && !vsCpu && (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 }}>
           <Ionicons name="trophy" size={48} color="#FFB020" style={{ marginBottom: 12 }} />
           <Text style={[styles.title, { fontSize: 26, color: "#7CFF5C" }]}>
