@@ -17,7 +17,8 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
-import { useOnlineRoom } from "../lib/onlineRoom";
+import { useOnlineRoom, rovansli } from "../lib/onlineRoom";
+import OnlineMacSonu from "../components/OnlineMacSonu";
 import {
   baslangicDurumu, aksiyonuIsle, kurHarfHaritasi, ALFABE,
   HEDEF_PUAN, TUR_ARASI_MS, HARF_GOSTERIM_MS,
@@ -61,7 +62,8 @@ export default function OnlineLetterScreen({ room, onExit }) {
   useEffect(() => { baglamRef.current = { harita }; }, [harita]);
 
   const aksiyonIsle = useCallback(
-    (durum, aksiyon, kimden) => aksiyonuIsle(durum, aksiyon, kimden, baglamRef.current),
+    // 5 Ekim 2026 — rövanş iki taraftan tek dokunuş (lib/onlineRoom.js rovansli)
+    rovansli((durum, aksiyon, kimden) => aksiyonuIsle(durum, aksiyon, kimden, baglamRef.current)),
     []
   );
 
@@ -298,23 +300,24 @@ export default function OnlineLetterScreen({ room, onExit }) {
                   <Text style={styles.sonucAd}>{durum.sonCevap.ad}</Text>
                 </>
               ) : null}
-              {faz === "macSonu" ? (
-                <>
-                  <Text style={styles.macSonuText}>
-                    {benimSkor > rakipSkor ? "MAÇI KAZANDIN" : "MAÇI KAYBETTİN"}
-                  </Text>
-                  {hostMuyum ? (
-                    <SoundPressable style={styles.anaBtn} onPress={() => gonder({ tip: "rovans" })}>
-                      <Text style={styles.anaBtnText}>RÖVANŞ</Text>
-                    </SoundPressable>
-                  ) : (
-                    <Text style={styles.bekleme}>Rövanşı ev sahibi başlatabilir</Text>
-                  )}
-                </>
-              ) : (
+              {faz === "macSonu" ? null : (
                 <Text style={styles.bekleme}>Sıradaki tur birazdan...</Text>
               )}
             </View>
+          )}
+          {faz === "macSonu" && (
+            <OnlineMacSonu
+              modAdi="Online — İlk Harften Bul"
+              durum={durum}
+              benKimim={benKimim}
+              rakipVar={rakipVar}
+              gonder={gonder}
+              onExit={onExit}
+              skorSen={benimSkor}
+              skorRakip={rakipSkor}
+              skorEtiketi="puan"
+              kazanan={benimSkor > rakipSkor ? "sen" : benimSkor < rakipSkor ? "rakip" : "berabere"}
+            />
           )}
         </ScrollView>
 
@@ -363,9 +366,11 @@ export default function OnlineLetterScreen({ room, onExit }) {
           </View>
         )}
 
-        <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-          <Text style={styles.cikisText}>Odadan çık</Text>
-        </SoundPressable>
+        {faz !== "macSonu" && (
+          <SoundPressable onPress={onExit} style={styles.cikisBtn}>
+            <Text style={styles.cikisText}>Odadan çık</Text>
+          </SoundPressable>
+        )}
       </KlavyeAlani>
     </GameBackground>
   );

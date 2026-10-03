@@ -106,7 +106,7 @@ function TumModlarRoute({ navigation }) {
       onSelect={(mode, params) => navigation.navigate(mode, params)}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
       onGunlukOyun={(id) => navigation.navigate(id)}
-      onSekme={(id) => navigation.navigate(id)}
+      onSekme={(id, params) => navigation.navigate(id, params)}
     />
   );
 }
@@ -249,18 +249,28 @@ const getSunucuRoute = () => withExit(require("./screens/SunucuScreen").default,
 // stack rotası değil, sekmenin kendisi). Bir oda hazır olduğunda ROOT stack'teki
 // ilgili maç ekranına navigate ediliyor — nested navigator'dan üst stack'e
 // navigate etmek React Navigation'da otomatik olarak yukarı doğru aranır.
-function OnlineRoute({ navigation }) {
+function OnlineRoute({ navigation, route }) {
   return (
     <OnlineLobbyScreen
+      modIstegi={route?.params}
       onRoomReady={(room) => {
         const target =
           room.gameMode === "whoami" ? "onlineWhoAmI" :
           room.gameMode === "draft" ? "onlineDraft" :
+          // 5 Ekim 2026 (.29379) — Online XOX
+          room.gameMode === "xox" ? "onlineXox" :
           // 12 Eylül 2026: "letter2" burada hiç yoktu — o modu seçen oyuncu
           // varsayılana düşüp TAMAMEN FARKLI bir oyuna (Düello) gidiyordu.
           (room.gameMode === "letter" || room.gameMode === "letter2") ? "onlineLetter" : "onlineDuel";
         navigation.navigate(target, { room });
       }}
+      // 5 Ekim 2026 (.29682) — rastgele aramada 30 sn sonra "bu arada CPU'ya karşı oyna"
+      onCpu={(mod) => {
+        if (mod === "xox") navigation.navigate("xox", { rakip: "cpu" });
+        else navigation.navigate(mod === "whoami" ? "whoAmICpu" : mod === "draft" ? "draftCpu" : (mod === "letter" || mod === "letter2") ? "letterCpu" : "cpu");
+      }}
+      // 5 Ekim 2026 (.29648) — asenkron meydan okuma
+      onMeydanOkuma={(kod) => navigation.navigate("meydanOkuma", kod ? { kod } : {})}
     />
   );
 }
@@ -284,7 +294,12 @@ function RehberliOyun({ mod, children }) {
 function OnlineDuelRoute({ navigation, route }) {
   return (
     <RehberliOyun mod="onlineDuel">
-      <OnlineDuelScreen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+      {/* 5 Ekim 2026 (.29750) — rövanş yeni odada: aynı rotayı yeni odayla değiştir. */}
+      <OnlineDuelScreen
+        room={route.params?.room}
+        onExit={() => confirmedExit(navigation)}
+        onRovansOda={(room) => navigation.replace("onlineDuel", { room })}
+      />
     </RehberliOyun>
   );
 }
@@ -312,6 +327,20 @@ function getOnlineLetterRoute() {
     );
   };
 }
+
+// 5 Ekim 2026 (.29379) — Online XOX (aynı oda/protokol katmanı, lib/onlineXox.js)
+function getOnlineXoxRoute() {
+  const Screen = require("./screens/OnlineXoxScreen").default;
+  return function OnlineXoxRoute({ navigation, route }) {
+    return (
+      <RehberliOyun mod="onlineXox">
+        <Screen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+      </RehberliOyun>
+    );
+  };
+}
+// 5 Ekim 2026 (.29648) — asenkron meydan okuma (sunucusuz, kodla)
+const getMeydanOkumaRoute = () => withExit(require("./screens/MeydanOkumaScreen").default, { mod: "meydanOkuma" });
 
 const TAB_ICONS = {
   oyna: "home",
@@ -399,6 +428,8 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="onlineWhoAmI" component={OnlineWhoAmIRoute} />
       <Stack.Screen name="onlineDraft" component={OnlineDraftRoute} />
       <Stack.Screen name="onlineLetter" getComponent={getOnlineLetterRoute} />
+      <Stack.Screen name="onlineXox" getComponent={getOnlineXoxRoute} />
+      <Stack.Screen name="meydanOkuma" getComponent={getMeydanOkumaRoute} />
       <Stack.Screen name="dailyPuzzle" getComponent={getDailyPuzzleRoute} />
       <Stack.Screen name="xox" getComponent={getXoxRoute} />
       <Stack.Screen name="gunluk5" getComponent={getGunluk5Route} />

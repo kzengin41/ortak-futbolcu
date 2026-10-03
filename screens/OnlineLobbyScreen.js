@@ -1,527 +1,509 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase, getDeviceId } from "../lib/supabaseClient";
 import GameBackground from "../components/GameBackground";
 import { KlavyeScroll } from "../components/Klavye";
 import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
-import { CLUB_INFO } from "../lib/clubs";
-import { useAppSettings } from "../lib/SettingsContext";
+import {
+  odaKur, odaAktifOlunca, odayiKapat, koduylaKatil, rastgeleOdaBul, kulupKimlikleri, odaNesnesi,
+} from "../lib/onlineLobi";
+import { gecmis as meydanGecmisi } from "../lib/meydanOkuma";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 
-function randomCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
-
-// Oyun modu kartları — 31 Ağustos 2026 (Faz 4) yeniden tasarımından önce
-// düz metin satırlarıydı, şimdi Oyna sekmesindeki mod kartlarıyla aynı dilde
-// (ikon + başlık + açıklama) gösteriliyor.
-// 12 Eylül 2026 — YAYIN ENGELİ TEMİZLİĞİ. Bu listede çalışmayan üç giriş vardı:
-//   "whoami" ve "draft"  -> OnlineWhoAmIScreen / OnlineDraftScreen sadece
-//                           "Çok Yakında" yazan boş taslak. Oyuncu oda kurup
-//                           rakip bekliyor, eşleşiyor ve boş ekrana düşüyordu.
-//   "letter2"            -> App.js'teki rota eşlemesinde hiç karşılığı yoktu,
-//                           seçen oyuncu TAMAMEN FARKLI bir oyuna (Düello)
-//                           düşüyordu.
-// Mağaza incelemecisinin buna denk gelmesi App Store'da Guideline 2.1
-// (eksik işlevsellik) reddi demek. Üçü de geçici olarak `yakinda: true` ile
-// kilitlenmişti.
+// ============================================================================
+// ONLINE LOBİ — 5 Ekim 2026 yeniden tasarım (benchmark .29772 / .29682 / .29648)
 //
-// 12 Eylül 2026 (aynı gün, ikinci tur) — ÜÇÜ DE TAMAMLANDI, kilit kalktı:
-//   whoami  -> screens/OnlineWhoAmIScreen.js + lib/onlineWhoAmI.js
-//   draft   -> screens/OnlineDraftScreen.js  + lib/onlineDraft.js
-//   letter2 -> screens/OnlineLetterScreen.js + lib/onlineLetter.js ("letter"
-//              ile aynı ekran, harfleri oyuncular seçiyor)
-// Üçünün de oyun kuralları saf modüllerde ve Node testleriyle doğrulandı;
-// ağ katmanı ortak (lib/onlineRoom.js).
-const GAME_MODES = [
-  { id: "classic", label: "Ortak Kulüp", desc: "Rastgele iki takım, ortak oyuncuyu bul", icon: "shield-checkmark" },
-  { id: "letter", label: "İlk Harften Bul", desc: "Rastgele harfle başlayan futbolcuyu bul", icon: "text" },
-  { id: "draft", label: "Ortak Kulüp (Sen Seç)", desc: "Takımı sen söyle, rakip diğerini bulsun", icon: "create" },
-  { id: "whoami", label: "Kim Bu Futbolcu?", desc: "İpuçlarıyla gizli futbolcuyu tahmin et", icon: "help-circle" },
-  { id: "letter2", label: "İlk Harften Bul (Sen Seç)", desc: "Harfi sen belirle, yarış başlasın", icon: "create-outline" },
+// Eski lobi: mod listesi + "Oda Kur" + "Kodla Katıl". "Rastgele rakip"
+// fonksiyonu yazılmıştı ama hiçbir düğmeye bağlı değildi; olsa da bekleyen
+// HER odaya (arkadaşına kod göndermiş birininkine bile) girerdi.
+//
+// Yeni lobi üç yol sunuyor:
+//   1) RASTGELE RAKİP — bekleyen rastgele odaya gir, yoksa kur ve bekle.
+//      30 sn sonra kimse gelmediyse öneri: "kodu arkadaşına gönder" ya da
+//      "bu arada CPU'ya karşı oyna" (benchmark .29682: boş lobi riski).
+//   2) ARKADAŞINLA — 5 haneli kodla oda kur / katıl (eski akış).
+//   3) MEYDAN OKUMA — arkadaşın çevrimiçi olmasa da: 10 soruluk asenkron
+//      düello, sonuç 6 harfli bir kodla paylaşılır (lib/meydanOkuma.js).
+// Oda işlemleri lib/onlineLobi.js'te (maç sonu rövanşı da aynısını kullanıyor).
+// ============================================================================
+export const GAME_MODES = [
+  { id: "classic", label: "Ortak Kulüp", desc: "İki takım, ortak oyuncuyu ilk bulan alır", icon: "shield-checkmark" },
+  { id: "xox", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid" },
+  { id: "letter", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text" },
+  { id: "draft", label: "Takımı Sen Seç", desc: "Takımı sen söyle, rakip ortağı bulsun", icon: "create" },
+  { id: "whoami", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle" },
+  { id: "letter2", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline" },
 ];
+export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
+const YOKLAMA_MS = 6000;             // beklerken daha eski bir rastgele oda var mı?
 
-// 31 Ağustos 2026: "Online" artık kendi sekmesi (bottom tab) — üst ekrana
-// "çıkış" kavramı yok, bu yüzden BackButton kaldırıldı. Oda kurup rakip
-// beklerken "İptal Et" ise App.js'e çıkmak yerine artık ekranı kendi içinde
-// başa (mod seçim ekranına) sıfırlıyor.
-//
-// FAZ 4 (31 Ağustos 2026): Kerem "Online sekmesinin içerik tasarımı çok
-// çirkin, mükemmel ötesi bir UI tasarla" dedi. Bu turda TÜM state/network
-// mantığı (handleCreate/handleJoin/handleAutoMatch/vb.) AYNEN korunarak
-// sadece görünüm katmanı Oyna/Profilim sekmeleriyle aynı görsel dile
-// (GameBackground, lib/theme tokenleri, ikonlu kartlar, gölgeli butonlar)
-// taşındı — hiçbir fonksiyon/prop imzası değişmedi.
-export default function OnlineLobbyScreen({ onRoomReady }) {
-  const [mode, setMode] = useState(null); // null | 'create' | 'join'
-  // 28 Eylül 2026 — Eşleşme Profili. Online'da sunucu sadece izinli kulüp
-  // listesini uyguluyor (ağırlıklar tek kişilik modlarda geçerli).
+export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, modIstegi }) {
+  const baslangicModu = modIstegi && modIstegi.mod;
   const eslesme = useEslesmeProfili();
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
-  const [gameMode, setGameMode] = useState("classic");
-  const [isRanked, setIsRanked] = useState(false); // classic | whoami | draft
-  const [code, setCode] = useState("");
+  const [gameMode, setGameMode] = useState(baslangicModu && GAME_MODES.some((m) => m.id === baslangicModu) ? baslangicModu : "classic");
+  const [isRanked, setIsRanked] = useState(false);
+  // ekran: ana | arama (rastgele) | oda (arkadaş odası bekliyor) | katil | meydan
+  const [ekran, setEkran] = useState("ana");
+  const [oda, setOda] = useState(null);           // bekleyen odanın satırı
   const [joinCode, setJoinCode] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | working | waiting | error
-  const [errorMsg, setErrorMsg] = useState("");
-  const deviceIdRef = useRef(null);
-  const channelRef = useRef(null);
+  const [meydanKod, setMeydanKod] = useState("");
+  const [calisiyor, setCalisiyor] = useState(false);
+  const [hata, setHata] = useState("");
+  const [gecen, setGecen] = useState(0);
+  const [sonMeydan, setSonMeydan] = useState(null);
+  const birakRef = useRef(null);
+  const odaRef = useRef(null);
+  const canliRef = useRef(true);
+
+  // Tüm Modlar → "XOX Online" gibi girişler modu önceden seçili getirir.
+  // (modIstegi her girişte yeni bir nesne: aynı mod ikinci kez istense de uygulanır.)
+  useEffect(() => {
+    if (baslangicModu && GAME_MODES.some((m) => m.id === baslangicModu)) setGameMode(baslangicModu);
+  }, [modIstegi]);
 
   useEffect(() => {
-    getDeviceId().then((id) => (deviceIdRef.current = id));
-    return () => channelRef.current?.unsubscribe();
+    meydanGecmisi().then((g) => canliRef.current && setSonMeydan(g[0] || null)).catch(() => {});
+    return () => {
+      canliRef.current = false;
+      birakRef.current?.();
+      if (odaRef.current) odayiKapat(odaRef.current.id);
+    };
   }, []);
 
-
-  async function handleAutoMatch() {
-    setMode("join");
-    setStatus("working");
-    setErrorMsg("");
-    const id = deviceIdRef.current || (await getDeviceId());
-
-    const { data: rooms, error: errFind } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("status", "waiting")
-      .eq("game_mode", gameMode)
-      .eq("is_ranked", isRanked)
-      .neq("player1_id", id)
-      .limit(1);
-
-    if (rooms && rooms.length > 0) {
-      const r = rooms[0];
-      const { data, error } = await supabase
-        .from("rooms")
-        // 12 Eylül 2026: burası "playing" yazıyordu ama oda kurucunun realtime
-        // dinleyicisi (aşağıda) "active" bekliyor — otomatik eşleşmede katılan
-        // oyuncu oyuna giriyor, KURUCU sonsuza kadar "Rakip bekleniyor..."
-        // ekranında kalıyordu. handleJoin zaten "active" yazıyor.
-        .update({ player2_id: id, status: "active" })
-        .eq("id", r.id)
-        .select()
-        .single();
-
-      if (!error && data) {
-        setStatus("idle");
-        // Eşleşme sağlandı! Oda hazır.
-        onRoomReady({ id: data.id, code: data.code, playerNumber: 2, allowedClubs: data.allowed_club_ids, gameMode: data.game_mode });
-        return;
-      }
-    }
-    // Eşleşme bulunamadıysa kendisi kursun
-    handleCreate();
+  function hazir(room) {
+    birakRef.current?.();
+    birakRef.current = null;
+    odaRef.current = null;
+    setOda(null);
+    setEkran("ana");
+    setCalisiyor(false);
+    onRoomReady(room);
   }
 
-  async function handleCreate() {
-    setMode("create");
-    setStatus("working");
-    const id = deviceIdRef.current || (await getDeviceId());
-    const roomCode = randomCode();
-
-    // 27 Eylül 2026 — ESKİDEN bütün "clubs" tablosu çekilip telefonda
-    // süzülüyordu. Supabase bir istekte en fazla 1000 satır döndürdüğü için
-    // (26 bin kulüp var) seçilen ligin kulüplerinin çoğu listede hiç
-    // yoktu. Artık izinli kulüp ADLARI telefonda hesaplanıyor (tek modlarla
-    // aynı kaynak: CLUB_INFO + lig ön ayarı) ve sunucudan sadece onların
-    // kimlikleri isteniyor.
-    let allowedClubIds = null;
-    const izinliKume = eslesme.derlenmis.onlineKapsam();
-    const izinliAdlar = izinliKume ? [...izinliKume] : null;
-    if (izinliAdlar) {
-      allowedClubIds = [];
-      for (let i = 0; i < izinliAdlar.length; i += 150) {
-        const { data: satirlar, error: kulupHatasi } = await supabase
-          .from("clubs")
-          .select("id")
-          .in("name", izinliAdlar.slice(i, i + 150));
-        if (kulupHatasi) { setErrorMsg(kulupHatasi.message); setStatus("error"); return; }
-        for (const s of satirlar || []) allowedClubIds.push(s.id);
-      }
-      if (allowedClubIds.length < 2) allowedClubIds = null; // güvenlik ağı: filtre boş kaldıysa hepsi
-    }
-
-    const { data, error } = await supabase
-      .from("rooms")
-      .insert({ code: roomCode, player1_id: id, status: "waiting", allowed_club_ids: allowedClubIds, game_mode: gameMode, is_ranked: isRanked })
-      .select()
-      .single();
-    if (error) {
-      setErrorMsg(error.message);
-      setStatus("error");
-      return;
-    }
-    setCode(roomCode);
-    setStatus("waiting");
-
-    channelRef.current = supabase
-      .channel(`room-${data.id}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "rooms", filter: `id=eq.${data.id}` },
-        (payload) => {
-          if (payload.new.status === "active") {
-            onRoomReady({ id: data.id, code: roomCode, playerNumber: 1, gameMode: data.game_mode });
-          }
-        }
-      )
-      .subscribe();
+  function hataGoster(e) {
+    setHata(e?.message || String(e || "Bir şeyler ters gitti"));
+    setCalisiyor(false);
   }
 
-  async function handleJoin() {
+  async function odaKurVeBekle(rastgele) {
+    const allowedClubIds = gameMode === "xox" ? null : await kulupKimlikleri(eslesme.derlenmis.onlineKapsam());
+    const satir = await odaKur({ gameMode, isRanked, allowedClubIds, rastgele });
+    if (!canliRef.current) { odayiKapat(satir.id); return null; }
+    odaRef.current = satir;
+    setOda(satir);
+    birakRef.current = odaAktifOlunca(satir.id, (yeni) => hazir(odaNesnesi({ ...satir, ...yeni }, 1)));
+    return satir;
+  }
+
+  // --- 1) Rastgele rakip ------------------------------------------------------
+  async function rastgeleAra() {
+    setHata("");
+    setCalisiyor(true);
+    setEkran("arama");
+    setGecen(0);
+    try {
+      const bulunan = await rastgeleOdaBul({ gameMode, isRanked });
+      if (bulunan) { hazir(bulunan); return; }
+      await odaKurVeBekle(true);
+      setCalisiyor(false);
+    } catch (e) {
+      setEkran("ana");
+      hataGoster(e);
+    }
+  }
+
+  // Arama sürerken: sayaç + daha önce kurulmuş bir rastgele oda çıktı mı?
+  useEffect(() => {
+    if (ekran !== "arama" || !oda) return;
+    const t = setInterval(() => setGecen((g) => g + 1), 1000);
+    const y = setInterval(async () => {
+      try {
+        const eski = await rastgeleOdaBul({ gameMode, isRanked, oncesi: oda.created_at });
+        if (!eski || !canliRef.current) return;
+        birakRef.current?.();
+        await odayiKapat(oda.id);
+        hazir(eski);
+      } catch (e) {}
+    }, YOKLAMA_MS);
+    return () => { clearInterval(t); clearInterval(y); };
+  }, [ekran, oda, gameMode, isRanked]);
+
+  // --- 2) Arkadaşınla ---------------------------------------------------------
+  async function arkadasOdasiKur() {
+    setHata("");
+    setCalisiyor(true);
+    setEkran("oda");
+    try { await odaKurVeBekle(false); setCalisiyor(false); } catch (e) { setEkran("ana"); hataGoster(e); }
+  }
+
+  async function koduylaGir() {
     if (!joinCode.trim()) return;
-    setStatus("working");
-    const id = deviceIdRef.current || (await getDeviceId());
-
-    const { data: room, error } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("code", joinCode.trim().toUpperCase())
-      .eq("status", "waiting")
-      .single();
-
-    if (error || !room) {
-      setErrorMsg("Bu kodla bekleyen bir oda bulunamadı.");
-      setStatus("error");
-      return;
-    }
-
-    // .eq('status', 'waiting') koşulu: iki kişi aynı anda katılmaya çalışırsa
-    // sadece ilki başarılı olur, diğeri boş sonuç alır.
-    const { data: updated, error: updateError } = await supabase
-      .from("rooms")
-      .update({ player2_id: id, status: "active" })
-      .eq("id", room.id)
-      .eq("status", "waiting")
-      .select()
-      .single();
-
-    if (updateError || !updated) {
-      setErrorMsg("Bu oda az önce doldu, başka bir kod dene.");
-      setStatus("error");
-      return;
-    }
-
-    // 27 Eylül 2026: ilk turu artık bu taraf ÜRETMİYOR — OnlineDuelScreen'de
-    // odayı kuran (1 numara) üretiyor. Eskiden sadece kodla katılınca üretiliyordu,
-    // "otomatik eşleş" ile girilince hiç tur üretilmiyor ve maç "Yükleniyor"da
-    // kalıyordu; ayrıca diğer modlarda (Kim Bu, Draft, Harf) gereksizdi.
-    onRoomReady({ id: room.id, code: room.code, playerNumber: 2, allowedClubs: room.allowed_club_ids, gameMode: room.game_mode });
+    setHata("");
+    setCalisiyor(true);
+    try { hazir(await koduylaKatil(joinCode)); } catch (e) { hataGoster(e); }
   }
 
-  function cancelWaiting() {
-    channelRef.current?.unsubscribe();
-    setMode(null);
-    setStatus("idle");
-    setCode("");
+  function bekleyiIptal() {
+    birakRef.current?.();
+    birakRef.current = null;
+    if (odaRef.current) odayiKapat(odaRef.current.id);
+    odaRef.current = null;
+    setOda(null);
+    setEkran("ana");
+    setCalisiyor(false);
   }
 
-  const presetLabel = eslesme.derlenmis.etiket;
+  function koduPaylas() {
+    if (!oda) return;
+    const mod = GAME_MODES.find((m) => m.id === gameMode);
+    Share.share({ message: `⚽ 3-2-1: Bitir İşi — benimle online ${mod ? mod.label : ""} oyna!\nUygulamada Online → Arkadaşınla → Kodla Katıl: ${oda.code}` }).catch(() => {});
+  }
 
+  function cpuyaGec() {
+    const m = gameMode;
+    bekleyiIptal();
+    onCpu && onCpu(m);
+  }
+
+  const seciliMod = GAME_MODES.find((m) => m.id === gameMode) || GAME_MODES[0];
+
+  // ---------------------------------------------------------------- bekleme ekranları
+  if (ekran === "arama" || ekran === "oda") {
+    const rastgele = ekran === "arama";
+    const oneri = rastgele && gecen >= ONERI_SN;
+    return (
+      <GameBackground style={styles.container}>
+        <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <TabHeader compact />
+          <View style={styles.waitCard}>
+            <View style={styles.modRozet}>
+              <Ionicons name={seciliMod.icon} size={14} color={COLORS.accent} />
+              <Text style={styles.modRozetYazi}>{seciliMod.label} · {isRanked ? "Ranked" : "Casual"}</Text>
+            </View>
+            {rastgele ? (
+              <>
+                <ActivityIndicator color={COLORS.accent} size="large" style={{ marginTop: SPACING.lg }} />
+                <Text style={styles.waitTitle}>{oda ? "Rakip aranıyor…" : "Bağlanılıyor…"}</Text>
+                {oda ? <Text style={styles.sayac}>{`${Math.floor(gecen / 60)}:${String(gecen % 60).padStart(2, "0")}`}</Text> : null}
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>Bu kodu arkadaşına gönder</Text>
+                <Text style={styles.codeText} selectable>{oda ? oda.code : "·····"}</Text>
+                <SoundPressable style={[styles.primaryBtn, { alignSelf: "stretch", marginTop: SPACING.md }]} onPress={koduPaylas} disabled={!oda}>
+                  <Ionicons name="share-social" size={20} color={COLORS.accentDark} />
+                  <Text style={styles.primaryBtnText}>Kodu Paylaş</Text>
+                </SoundPressable>
+                <ActivityIndicator color={COLORS.accent} style={{ marginTop: SPACING.lg }} />
+                <Text style={styles.waitingText}>Arkadaşın bekleniyor...</Text>
+              </>
+            )}
+          </View>
+
+          {oneri ? (
+            <View style={styles.oneriKart}>
+              <Ionicons name="people" size={22} color={COLORS.cta} />
+              <Text style={styles.oneriBaslik}>Şu an çevrimiçi rakip az</Text>
+              <Text style={styles.oneriYazi}>Arkadaşını çağır: aşağıdaki kodu gönder, o da Kodla Katıl'a yazsın. Ya da bu arada CPU'ya karşı oyna.</Text>
+              <Text style={styles.oneriKod} selectable>{oda?.code}</Text>
+              <SoundPressable style={[styles.primaryBtn, { alignSelf: "stretch" }]} onPress={koduPaylas}>
+                <Ionicons name="share-social" size={20} color={COLORS.accentDark} />
+                <Text style={styles.primaryBtnText}>Arkadaşına Gönder</Text>
+              </SoundPressable>
+              <SoundPressable style={[styles.secondaryBtn, { alignSelf: "stretch" }]} onPress={cpuyaGec}>
+                <Ionicons name="hardware-chip" size={18} color={COLORS.text} />
+                <Text style={styles.secondaryBtnText}>Bu arada CPU'ya karşı oyna</Text>
+              </SoundPressable>
+            </View>
+          ) : null}
+
+          <SoundPressable onPress={bekleyiIptal} style={styles.cancelPill}>
+            <Text style={styles.cancelPillText}>{rastgele ? "Aramayı İptal Et" : "İptal Et"}</Text>
+          </SoundPressable>
+        </KlavyeScroll>
+      </GameBackground>
+    );
+  }
+
+  // ---------------------------------------------------------------- ana ekran
   return (
     <GameBackground style={styles.container} klavye="pay">
       <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TabHeader compact />
         <Text style={styles.title}>Online 1v1</Text>
 
-        {!mode && (
-          <>
-            <SectionLabel icon="game-controller" text="Oyun Modu" />
-            <View style={{ gap: SPACING.sm, marginBottom: SPACING.xl }}>
-              {GAME_MODES.map((gm) => {
-                const active = gameMode === gm.id;
-                // Henüz tamamlanmamış modlar görünür ama seçilemez.
-                const yakinda = Boolean(gm.yakinda);
-                return (
-                  <SoundPressable
-                    key={gm.id}
-                    disabled={yakinda}
-                    onPress={() => { if (!yakinda) setGameMode(gm.id); }}
-                    style={[styles.modeCard, active && styles.modeCardActive, yakinda && styles.modeCardSoon]}
-                  >
-                    <View style={[styles.modeIconWrap, active && styles.modeIconWrapActive]}>
-                      <Ionicons
-                        name={gm.icon}
-                        size={20}
-                        color={active ? COLORS.accentDark : yakinda ? COLORS.textFaint : COLORS.accent}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.modeCardTitle, active && styles.modeCardTitleActive, yakinda && { color: COLORS.textMuted }]}>
-                        {gm.label}
-                      </Text>
-                      <Text style={styles.modeCardDesc}>{gm.desc}</Text>
-                    </View>
-                    {yakinda ? (
-                      <View style={styles.yakindaRozet}>
-                        <Text style={styles.yakindaRozetText}>YAKINDA</Text>
-                      </View>
-                    ) : active ? (
-                      <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />
-                    ) : null}
-                  </SoundPressable>
-                );
-              })}
-            </View>
-
-            <SectionLabel icon="earth" text="Eşleşme Profili" hint="oda kurarken geçerli" />
-            <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
-              <Ionicons name="filter" size={18} color={COLORS.accent} />
-              <Text style={styles.presetRowText}>{presetLabel}</Text>
-              <View style={{ flex: 1 }} />
-              <Text style={styles.presetChangeText}>Değiştir</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.accent} />
-            </SoundPressable>
-            <EslesmeProfiliPenceresi
-              visible={leagueModalOpen}
-              profil={eslesme.profil}
-              online
-              onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
-              onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
-              onClose={() => setLeagueModalOpen(false)}
-            />
-
-            <SectionLabel icon="trophy" text="Maç Türü" />
-            <View style={{ flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.xl }}>
+        <SectionLabel icon="game-controller" text="Oyun Modu" />
+        <View style={styles.modIzgara}>
+          {GAME_MODES.map((gm) => {
+            const active = gameMode === gm.id;
+            return (
               <SoundPressable
-                onPress={() => setIsRanked(false)}
-                style={[styles.pillToggle, !isRanked && styles.pillToggleActiveGreen]}
+                key={gm.id}
+                onPress={() => setGameMode(gm.id)}
+                style={[styles.modeCard, active && styles.modeCardActive]}
+                accessibilityLabel={gm.label}
+                accessibilityState={{ selected: active }}
               >
-                <Ionicons name="happy-outline" size={18} color={!isRanked ? COLORS.accentDark : COLORS.textMuted} />
-                <Text style={[styles.pillToggleText, !isRanked && styles.pillToggleTextActiveGreen]}>Casual</Text>
+                <View style={[styles.modeIconWrap, active && styles.modeIconWrapActive]}>
+                  <Ionicons name={gm.icon} size={18} color={active ? COLORS.accentDark : COLORS.accent} />
+                </View>
+                <Text style={[styles.modeCardTitle, active && styles.modeCardTitleActive]} numberOfLines={1}>{gm.label}</Text>
+                <Text style={styles.modeCardDesc} numberOfLines={2}>{gm.desc}</Text>
               </SoundPressable>
-              <SoundPressable
-                onPress={() => setIsRanked(true)}
-                style={[styles.pillToggle, isRanked && styles.pillToggleActiveRed]}
-              >
-                <Ionicons name="trophy" size={18} color={isRanked ? COLORS.text : COLORS.textMuted} />
-                <Text style={[styles.pillToggleText, isRanked && styles.pillToggleTextActiveRed]}>Ranked</Text>
+            );
+          })}
+        </View>
+
+        <View style={styles.ayarSatir}>
+          <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
+            <Ionicons name="filter" size={16} color={COLORS.accent} />
+            <Text style={styles.presetRowText} numberOfLines={1}>{eslesme.derlenmis.etiket}</Text>
+          </SoundPressable>
+          <SoundPressable onPress={() => setIsRanked((r) => !r)} style={[styles.turCip, isRanked && styles.turCipRanked]} accessibilityLabel={isRanked ? "Ranked" : "Casual"}>
+            <Ionicons name={isRanked ? "trophy" : "happy-outline"} size={16} color={isRanked ? COLORS.text : COLORS.accent} />
+            <Text style={[styles.turCipYazi, isRanked && { color: COLORS.text }]}>{isRanked ? "Ranked" : "Casual"}</Text>
+          </SoundPressable>
+        </View>
+        <EslesmeProfiliPenceresi
+          visible={leagueModalOpen}
+          profil={eslesme.profil}
+          online
+          onUygula={(p) => { eslesme.setMacProfili(p); setLeagueModalOpen(false); }}
+          onVarsayilanYap={(p) => { eslesme.genelKaydet(p); setLeagueModalOpen(false); }}
+          onClose={() => setLeagueModalOpen(false)}
+        />
+
+        {/* 1) Rastgele rakip */}
+        <SoundPressable style={styles.anaKart} onPress={rastgeleAra} disabled={calisiyor} accessibilityLabel="Rastgele Rakip Bul">
+          <View style={styles.anaKartIkon}><Ionicons name="flash" size={26} color={COLORS.accentDark} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.anaKartBaslik}>Rastgele Rakip Bul</Text>
+            <Text style={styles.anaKartAlt}>{seciliMod.label} · hemen eşleş</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={COLORS.accentDark} />
+        </SoundPressable>
+
+        {/* 2) Arkadaşınla */}
+        <View style={styles.kart}>
+          <View style={styles.kartBaslikSatir}>
+            <Ionicons name="people" size={18} color={COLORS.accent} />
+            <Text style={styles.kartBaslik}>Arkadaşınla</Text>
+          </View>
+          {ekran === "katil" ? (
+            <>
+              <TextInput
+                value={joinCode}
+                onChangeText={(t) => { setJoinCode(t); setHata(""); }}
+                placeholder="ODA KODU"
+                placeholderTextColor={COLORS.textFaint}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={styles.input}
+                onSubmitEditing={koduylaGir}
+              />
+              <View style={styles.ikiliSatir}>
+                <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => { setEkran("ana"); setHata(""); }}>
+                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
+                </SoundPressable>
+                <SoundPressable style={[styles.primaryBtn, styles.yarim]} onPress={koduylaGir} disabled={calisiyor}>
+                  <Ionicons name="enter" size={18} color={COLORS.accentDark} />
+                  <Text style={styles.primaryBtnText}>{calisiyor ? "Katılıyor..." : "Katıl"}</Text>
+                </SoundPressable>
+              </View>
+            </>
+          ) : (
+            <View style={styles.ikiliSatir}>
+              <SoundPressable style={[styles.primaryBtn, styles.yarim]} onPress={arkadasOdasiKur} disabled={calisiyor}>
+                <Ionicons name="add-circle" size={18} color={COLORS.accentDark} />
+                <Text style={styles.primaryBtnText}>Oda Kur</Text>
+              </SoundPressable>
+              <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => { setEkran("katil"); setHata(""); }}>
+                <Ionicons name="key" size={16} color={COLORS.text} />
+                <Text style={styles.secondaryBtnText}>Kodla Katıl</Text>
               </SoundPressable>
             </View>
+          )}
+        </View>
 
-            <SoundPressable style={styles.primaryBtn} onPress={handleCreate}>
-              <Ionicons name="add-circle" size={20} color={COLORS.accentDark} />
-              <Text style={styles.primaryBtnText}>Oda Kur</Text>
-            </SoundPressable>
-            <SoundPressable style={styles.secondaryBtn} onPress={() => setMode("join")}>
-              <Ionicons name="key" size={18} color={COLORS.text} />
-              <Text style={styles.secondaryBtnText}>Kodla Katıl</Text>
-            </SoundPressable>
-          </>
-        )}
-
-        {mode === "create" && status === "waiting" && (
-          <View style={styles.waitCard}>
-            <Ionicons name="hourglass-outline" size={28} color={COLORS.accent} />
-            <Text style={styles.label}>Bu kodu arkadaşına gönder</Text>
-            <Text style={styles.codeText}>{code}</Text>
-            <ActivityIndicator color={COLORS.accent} style={{ marginTop: SPACING.lg }} />
-            <Text style={styles.waitingText}>Rakip bekleniyor...</Text>
-            <SoundPressable onPress={cancelWaiting} style={styles.cancelPill}>
-              <Text style={styles.cancelPillText}>İptal Et</Text>
-            </SoundPressable>
+        {/* 3) Meydan okuma (asenkron) */}
+        <View style={styles.kart}>
+          <View style={styles.kartBaslikSatir}>
+            <Ionicons name="paper-plane" size={18} color={COLORS.cta} />
+            <Text style={styles.kartBaslik}>Meydan Okuma</Text>
+            <View style={styles.yeniRozet}><Text style={styles.yeniRozetYazi}>ÇEVRİMDIŞI DA OLUR</Text></View>
           </View>
-        )}
+          <Text style={styles.kartAciklama}>10 ortak futbolcu sorusunu çöz, kodunu gönder. Arkadaşın müsait olunca aynı soruları çözsün.</Text>
+          {ekran === "meydan" ? (
+            <>
+              <TextInput
+                value={meydanKod}
+                onChangeText={(t) => { setMeydanKod(t); setHata(""); }}
+                placeholder="MEYDAN OKUMA KODU"
+                placeholderTextColor={COLORS.textFaint}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={styles.input}
+                onSubmitEditing={() => meydanKod.trim() && onMeydanOkuma && onMeydanOkuma(meydanKod.trim())}
+              />
+              <View style={styles.ikiliSatir}>
+                <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => setEkran("ana")}>
+                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
+                </SoundPressable>
+                <SoundPressable style={[styles.ctaBtn, styles.yarim]} onPress={() => meydanKod.trim() && onMeydanOkuma && onMeydanOkuma(meydanKod.trim())}>
+                  <Text style={styles.ctaBtnText}>Kabul Et</Text>
+                </SoundPressable>
+              </View>
+            </>
+          ) : (
+            <View style={styles.ikiliSatir}>
+              <SoundPressable style={[styles.ctaBtn, styles.yarim]} onPress={() => onMeydanOkuma && onMeydanOkuma()}>
+                <Ionicons name="paper-plane" size={16} color={COLORS.ctaDark} />
+                <Text style={styles.ctaBtnText}>Meydan Oku</Text>
+              </SoundPressable>
+              <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => setEkran("meydan")}>
+                <Ionicons name="mail-open" size={16} color={COLORS.text} />
+                <Text style={styles.secondaryBtnText}>Kodu Gir</Text>
+              </SoundPressable>
+            </View>
+          )}
+          {sonMeydan ? (
+            <Text style={styles.sonMeydan}>
+              Son: {sonMeydan.rakip ? `${sonMeydan.ben.dogru}-${sonMeydan.rakip.dogru}` : `${sonMeydan.ben.dogru}/10 gönderildi`}
+            </Text>
+          ) : null}
+        </View>
 
-        {mode === "join" && (
-          <View style={styles.joinCard}>
-            <Ionicons name="key" size={28} color={COLORS.accent} style={{ alignSelf: "center", marginBottom: SPACING.md }} />
-            <TextInput
-              value={joinCode}
-              onChangeText={setJoinCode}
-              placeholder="ODA KODU"
-              placeholderTextColor={COLORS.textFaint}
-              autoCapitalize="characters"
-              style={styles.input}
-            />
-            <SoundPressable style={[styles.primaryBtn, { marginTop: SPACING.lg }]} onPress={handleJoin} disabled={status === "working"}>
-              <Ionicons name="enter" size={20} color={COLORS.accentDark} />
-              <Text style={styles.primaryBtnText}>{status === "working" ? "Katılıyor..." : "Katıl"}</Text>
-            </SoundPressable>
-          </View>
-        )}
-
-        {status === "error" && (
+        {hata ? (
           <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={22} color={COLORS.danger} />
-            <Text style={styles.errorText}>{errorMsg}</Text>
-            <SoundPressable onPress={() => { setStatus(null); setErrorMsg(""); }} style={{ marginTop: SPACING.md }}>
-              <Text style={styles.retryText}>Tekrar Dene</Text>
-            </SoundPressable>
+            <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
+            <Text style={styles.errorText}>{hata}</Text>
           </View>
-        )}
+        ) : null}
       </KlavyeScroll>
     </GameBackground>
   );
 }
 
-function SectionLabel({ icon, text, hint }) {
+function SectionLabel({ icon, text }) {
   return (
     <View style={styles.sectionLabelRow}>
       <Ionicons name={icon} size={14} color={COLORS.accent} />
       <Text style={styles.sectionLabel}>{text}</Text>
-      {hint ? <Text style={styles.sectionLabelHint}>{hint}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 50 },
-  scrollContent: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
-  title: { ...TYPE.h1, textAlign: "center", marginBottom: SPACING.xl },
+  scrollContent: { paddingHorizontal: SPACING.lg, paddingBottom: 60 },
+  title: { ...TYPE.h1, textAlign: "center", marginBottom: SPACING.lg },
 
-  sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.sm, marginTop: 2 },
+  sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.sm },
   sectionLabel: { ...TYPE.caption, textTransform: "uppercase", letterSpacing: 1, fontWeight: "800" },
-  sectionLabelHint: { ...TYPE.caption, fontSize: 12, color: COLORS.textMuted },
 
+  modIzgara: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginBottom: SPACING.md },
   modeCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.md,
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1.5,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    ...SHADOW.card,
+    width: "48.5%", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1.5,
+    borderRadius: RADIUS.lg, padding: SPACING.md, gap: 4,
   },
-  modeCardSoon: { opacity: 0.45 },
-  yakindaRozet: {
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1,
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  yakindaRozetText: { color: COLORS.textMuted, fontSize: 12, fontWeight: "900", letterSpacing: 0.5 },
   modeCardActive: { borderColor: COLORS.accent, backgroundColor: "#1F5E3B" },
   modeIconWrap: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: "rgba(140,255,107,0.12)",
+    width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(140,255,107,0.12)",
     alignItems: "center", justifyContent: "center",
   },
   modeIconWrapActive: { backgroundColor: COLORS.accent },
   modeCardTitle: { ...TYPE.h3, fontSize: 14 },
   modeCardTitleActive: { color: COLORS.accent },
-  modeCardDesc: { ...TYPE.caption, fontSize: 12, marginTop: 2 },
+  modeCardDesc: { ...TYPE.caption, fontSize: 12 },
 
+  ayarSatir: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.lg },
   presetRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.xl,
-    ...SHADOW.card,
+    flex: 1, flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: COLORS.card,
+    borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 10, paddingHorizontal: SPACING.md,
   },
-  presetRowText: { ...TYPE.body, fontWeight: "700" },
-  presetChangeText: { color: COLORS.accent, fontWeight: "800", fontSize: 12 },
+  presetRowText: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flex: 1 },
+  turCip: {
+    flexDirection: "row", alignItems: "center", gap: 6, borderRadius: RADIUS.pill, paddingVertical: 10, paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.accent,
+  },
+  turCipRanked: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  turCipYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.accent },
 
-  pillToggle: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1.5,
-    borderRadius: RADIUS.md,
-    paddingVertical: 12,
-    backgroundColor: COLORS.card,
+  anaKart: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.card,
   },
-  pillToggleActiveGreen: { borderColor: COLORS.accent, backgroundColor: COLORS.accent },
-  pillToggleActiveRed: { borderColor: COLORS.danger, backgroundColor: COLORS.danger },
-  pillToggleText: { ...TYPE.body, fontWeight: "800", color: COLORS.textMuted, fontSize: 13 },
-  pillToggleTextActiveGreen: { color: COLORS.accentDark },
-  pillToggleTextActiveRed: { color: COLORS.text },
+  anaKartIkon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.12)" },
+  anaKartBaslik: { fontSize: 19, fontWeight: "900", color: COLORS.accentDark },
+  anaKartAlt: { fontSize: 13, fontWeight: "700", color: COLORS.accentDark, opacity: 0.8, marginTop: 2 },
+
+  kart: {
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.xl,
+    padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.card,
+  },
+  kartBaslikSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: SPACING.sm },
+  kartBaslik: { ...TYPE.h3, fontSize: 16, flex: 1 },
+  kartAciklama: { ...TYPE.caption, marginBottom: SPACING.sm },
+  yeniRozet: { borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: COLORS.ctaDark, borderWidth: 1, borderColor: COLORS.cta },
+  yeniRozetYazi: { color: COLORS.cta, fontSize: 10, fontWeight: "900", letterSpacing: 0.5 },
+  sonMeydan: { ...TYPE.caption, fontSize: 12, marginTop: SPACING.sm, textAlign: "center" },
+  ikiliSatir: { flexDirection: "row", gap: SPACING.sm, marginTop: SPACING.sm },
+  yarim: { flex: 1, marginTop: 0 },
 
   primaryBtn: {
-    flexDirection: "row",
-    gap: SPACING.sm,
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    ...SHADOW.card,
+    flexDirection: "row", gap: SPACING.sm, backgroundColor: COLORS.accent, borderRadius: RADIUS.lg,
+    paddingVertical: 14, alignItems: "center", justifyContent: "center", ...SHADOW.card,
   },
-  primaryBtnText: { color: COLORS.accentDark, fontWeight: "900", textTransform: "uppercase", fontSize: 14 },
+  primaryBtnText: { color: COLORS.accentDark, fontWeight: "900", textTransform: "uppercase", fontSize: 13 },
   secondaryBtn: {
-    flexDirection: "row",
-    gap: SPACING.sm,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1.5,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: SPACING.sm,
+    flexDirection: "row", gap: SPACING.sm, borderColor: COLORS.cardBorder, borderWidth: 1.5, borderRadius: RADIUS.lg,
+    paddingVertical: 14, alignItems: "center", justifyContent: "center", marginTop: SPACING.sm,
   },
-  secondaryBtnText: { ...TYPE.body, fontWeight: "800", fontSize: 14 },
+  secondaryBtnText: { ...TYPE.body, fontWeight: "800", fontSize: 13 },
+  ctaBtn: {
+    flexDirection: "row", gap: SPACING.sm, backgroundColor: COLORS.cta, borderRadius: RADIUS.lg,
+    paddingVertical: 14, alignItems: "center", justifyContent: "center", ...SHADOW.card,
+  },
+  ctaBtnText: { color: COLORS.ctaDark, fontWeight: "900", textTransform: "uppercase", fontSize: 13 },
+  input: {
+    backgroundColor: COLORS.bg, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.lg,
+    padding: SPACING.md, color: COLORS.text, fontSize: 20, fontWeight: "800", textAlign: "center", letterSpacing: 4,
+  },
 
   waitCard: {
-    alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xxl,
-    gap: 4,
-    ...SHADOW.card,
+    alignItems: "center", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.xl, padding: SPACING.xl, marginTop: SPACING.lg, gap: 4, ...SHADOW.card,
   },
-  label: { ...TYPE.caption, textTransform: "uppercase", letterSpacing: 1, marginTop: SPACING.sm },
+  modRozet: {
+    flexDirection: "row", alignItems: "center", gap: 6, borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 4,
+    backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.cardBorder,
+  },
+  modRozetYazi: { ...TYPE.caption, fontSize: 12, fontWeight: "800", color: COLORS.text },
+  waitTitle: { ...TYPE.h2, marginTop: SPACING.md, textAlign: "center" },
+  sayac: { fontSize: 28, fontWeight: "900", color: COLORS.accent, marginTop: 4 },
+  label: { ...TYPE.caption, textTransform: "uppercase", letterSpacing: 1, marginTop: SPACING.md },
   codeText: { color: COLORS.accent, fontSize: 44, fontWeight: "900", letterSpacing: 8, marginTop: SPACING.sm },
   waitingText: { ...TYPE.caption, marginTop: SPACING.sm },
+  oneriKart: {
+    alignItems: "center", gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.lg, borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.card, borderWidth: 2, borderColor: COLORS.cta,
+  },
+  oneriBaslik: { ...TYPE.h3, color: COLORS.cta },
+  oneriYazi: { ...TYPE.caption, textAlign: "center" },
+  oneriKod: { fontSize: 30, fontWeight: "900", letterSpacing: 6, color: COLORS.text },
   cancelPill: {
-    marginTop: SPACING.xl,
-    borderColor: COLORS.danger,
-    borderWidth: 1.5,
-    borderRadius: RADIUS.pill,
-    paddingVertical: 10,
-    paddingHorizontal: SPACING.xl,
+    alignSelf: "center", marginTop: SPACING.xl, borderColor: COLORS.danger, borderWidth: 1.5, borderRadius: RADIUS.pill,
+    paddingVertical: 10, paddingHorizontal: SPACING.xl,
   },
   cancelPillText: { color: COLORS.danger, fontSize: 13, fontWeight: "800" },
 
-  joinCard: {
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    ...SHADOW.card,
-  },
-  input: {
-    backgroundColor: COLORS.bg,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: "800",
-    textAlign: "center",
-    letterSpacing: 4,
-  },
-
   errorCard: {
-    alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.danger,
-    borderWidth: 1,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    marginTop: SPACING.lg,
-    gap: 4,
+    flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: COLORS.card, borderColor: COLORS.danger,
+    borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, marginTop: SPACING.sm,
   },
-  errorText: { color: COLORS.danger, textAlign: "center", fontSize: 13, marginTop: 4 },
-  retryText: { color: COLORS.accent, fontSize: 14, fontWeight: "800" },
+  errorText: { color: COLORS.danger, fontSize: 13, flex: 1 },
 });

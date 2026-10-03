@@ -73,7 +73,8 @@ const ASGARI_SURE = 15;
 const AZAMI_SURE = 300;
 
 // Izgara başlığı: kulüpse logo, ülkeyse bayrak, başarıysa ikon + Türkçe ad.
-function BaslikRozeti({ baslik, boyut }) {
+// 5 Ekim 2026: Online XOX da kullanıyor (screens/OnlineXoxScreen.js).
+export function BaslikRozeti({ baslik, boyut }) {
   const tur = kosulTuru(baslik);
   return (
     <>

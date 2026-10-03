@@ -37,7 +37,7 @@ const MODES = [
       { id: "cpu", rakip: "cpu", label: "CPU'ya karşı" },
       { id: "local", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Ekran ikiye bölünür, ilk basan cevaplar" },
       { id: "sunucu", rakip: "yanimdaki", label: "Yanımdakiler — Sunucu modu", alt: "2–6 kişi; sen okursun, onlar bağırır" },
-      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true },
+      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true, params: { mod: "classic" } },
     ],
   },
   {
@@ -113,7 +113,8 @@ const MODES = [
     options: [
       { id: "xox", params: { rakip: "cpu" }, rakip: "cpu", label: "CPU'ya karşı" },
       { id: "xox", params: { rakip: "iki" }, rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Aynı telefon, sırayla" },
-      { id: "onlineXox", rakip: "online", label: "Online", alt: "Yakında", kapali: true },
+      // 5 Ekim 2026 (.29379) — Online XOX açıldı: Online sekmesine XOX seçili gider.
+      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da arkadaşınla kodla", sekme: true, params: { mod: "xox" } },
     ],
   },
 ];
@@ -242,7 +243,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
                           disabled={!!opt.kapali}
                           onPress={() => {
                             if (opt.kapali) return;
-                            if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id); return; }
+                            if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id, { ...(opt.params || {}), t: Date.now() }); return; }
                             handleSelect(opt.id, opt.params);
                           }}
                         >

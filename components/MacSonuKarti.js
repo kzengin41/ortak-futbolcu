@@ -20,6 +20,8 @@ import { gorevOlayi } from "../lib/dailyGoals";
 export default function MacSonuKarti({
   modAdi, modeId, skorSen, skorRakip, rakip, turlar = [], enIyi, kazanilanXp,
   onRovans, onMenu, ekSatir, solo, rovansEtiketi = "RÖVANŞ", kazanan, kareSatir, skorEtiketi,
+  // 5 Ekim 2026 — online maç sonu: rövanş beklerken düğme pasif; "Menüye dön" yerine "Lobiye dön".
+  rovansPasif = false, menuEtiketi = "Menüye dön",
 }) {
   // kazanan: "sen" | "rakip" | "berabere" — skordan çıkmayan sonuçlar için (XOX: üçlü sıra).
   // kareSatir: kareleri satırlara böl (XOX tahtası 3×3).
@@ -114,9 +116,9 @@ export default function MacSonuKarti({
       {modeId ? <MatchSummary modeId={modeId} kazanildi={kazandin} kazanilanXp={kazanilanXp} /> : null}
 
       <View style={s.dugmeler}>
-        <SoundPressable style={s.rovans} onPress={onRovans}>
-          <Ionicons name="refresh" size={18} color={COLORS.accentDark} />
-          <Text style={s.rovansYazi}>{rovansEtiketi}</Text>
+        <SoundPressable style={[s.rovans, rovansPasif && s.rovansPasif]} onPress={rovansPasif ? undefined : onRovans} disabled={rovansPasif}>
+          <Ionicons name={rovansPasif ? "hourglass-outline" : "refresh"} size={18} color={rovansPasif ? COLORS.textMuted : COLORS.accentDark} />
+          <Text style={[s.rovansYazi, rovansPasif && { color: COLORS.textMuted, fontSize: 14 }]} numberOfLines={1} adjustsFontSizeToFit>{rovansEtiketi}</Text>
         </SoundPressable>
         <SoundPressable style={s.paylas} onPress={paylas} accessibilityLabel="Sonucu paylaş">
           <Ionicons name="share-social" size={18} color={COLORS.text} />
@@ -124,7 +126,7 @@ export default function MacSonuKarti({
         </SoundPressable>
       </View>
       <SoundPressable onPress={onMenu} style={s.menu}>
-        <Text style={s.menuYazi}>Menüye dön</Text>
+        <Text style={s.menuYazi}>{menuEtiketi}</Text>
       </SoundPressable>
     </View>
   );
@@ -157,6 +159,7 @@ const s = StyleSheet.create({
   enIyiAlt: { fontSize: 12, fontWeight: "600", color: "#C9D4DF" },
   dugmeler: { flexDirection: "row", gap: SPACING.sm, alignSelf: "stretch", marginTop: SPACING.xl },
   rovans: { flex: 1.4, height: 54, borderRadius: 16, backgroundColor: COLORS.accent, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  rovansPasif: { backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.cardBorder },
   rovansYazi: { fontSize: 17, fontWeight: "900", letterSpacing: 1, color: COLORS.accentDark },
   paylas: { flex: 1, height: 54, borderRadius: 16, borderWidth: 1.5, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   paylasYazi: { fontSize: 16, fontWeight: "800", color: COLORS.text },

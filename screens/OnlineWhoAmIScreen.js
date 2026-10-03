@@ -18,7 +18,8 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
-import { useOnlineRoom, benimSkorum, rakipSkoru } from "../lib/onlineRoom";
+import { useOnlineRoom, benimSkorum, rakipSkoru, rovansli } from "../lib/onlineRoom";
+import OnlineMacSonu from "../components/OnlineMacSonu";
 import {
   baslangicDurumu, aksiyonuIsle,
   IPUCU_ARALIGI_MS, TUR_ARASI_MS, HEDEF_TUR, turPuani,
@@ -65,7 +66,8 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   useEffect(() => { havuzRef.current = havuz; }, [havuz]);
 
   const aksiyonIsle = useCallback(
-    (durum, aksiyon, kimden) => aksiyonuIsle(durum, aksiyon, kimden, havuzRef.current),
+    // 5 Ekim 2026 — rövanş iki taraftan tek dokunuş (lib/onlineRoom.js rovansli)
+    rovansli((durum, aksiyon, kimden) => aksiyonuIsle(durum, aksiyon, kimden, havuzRef.current)),
     []
   );
 
@@ -273,23 +275,24 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
                 <PlayerPhoto name={durum.gizliOyuncu?.name} size={96} />
               </View>
               <Text style={styles.sonucAd}>{durum.gizliOyuncu?.name}</Text>
-              {faz === "macSonu" ? (
-                <>
-                  <Text style={styles.macSonuText}>
-                    {benimTur > rakipTur ? "MAÇI KAZANDIN" : "MAÇI KAYBETTİN"}
-                  </Text>
-                  {hostMuyum ? (
-                    <SoundPressable style={styles.anaBtn} onPress={() => gonder({ tip: "rovans" })}>
-                      <Text style={styles.anaBtnText}>RÖVANŞ</Text>
-                    </SoundPressable>
-                  ) : (
-                    <Text style={styles.bekleme}>Rövanşı ev sahibi başlatabilir</Text>
-                  )}
-                </>
-              ) : (
+              {faz === "macSonu" ? null : (
                 <Text style={styles.bekleme}>Sıradaki tur birazdan...</Text>
               )}
             </View>
+          )}
+          {faz === "macSonu" && (
+            <OnlineMacSonu
+              modAdi="Online — Kim Bu Futbolcu?"
+              durum={durum}
+              benKimim={benKimim}
+              rakipVar={rakipVar}
+              gonder={gonder}
+              onExit={onExit}
+              skorSen={benimTur}
+              skorRakip={rakipTur}
+              skorEtiketi="tur"
+              kazanan={benimTur > rakipTur ? "sen" : benimTur < rakipTur ? "rakip" : "berabere"}
+            />
           )}
         </ScrollView>
 
@@ -350,9 +353,11 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
           </View>
         )}
 
-        <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-          <Text style={styles.cikisText}>Odadan çık</Text>
-        </SoundPressable>
+        {faz !== "macSonu" && (
+          <SoundPressable onPress={onExit} style={styles.cikisBtn}>
+            <Text style={styles.cikisText}>Odadan çık</Text>
+          </SoundPressable>
+        )}
       </KlavyeAlani>
     </GameBackground>
   );
