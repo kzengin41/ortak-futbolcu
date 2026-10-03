@@ -102,9 +102,10 @@ function OynaRoute({ navigation }) {
 function TumModlarRoute({ navigation }) {
   return (
     <OynaScreen
-      onSelect={(mode) => navigation.navigate(mode)}
+      onSelect={(mode, params) => navigation.navigate(mode, params)}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
       onGunlukOyun={(id) => navigation.navigate(id)}
+      onSekme={(id) => navigation.navigate(id)}
     />
   );
 }
@@ -236,6 +237,8 @@ const getXoxRoute = () => withExit(require("./screens/XoxScreen").default, { mod
 const getGunluk5Route = () => withExit(require("./screens/GunlukBesKulupScreen").default, { confirm: false });
 const getGunlukIzgaraRoute = () => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false });
 const getHarfZinciriRoute = () => withExit(require("./screens/HarfZinciriScreen").default);
+// 4 Ekim 2026 (.28709) — Sunucu modu: 2–6 kişi, tek telefon, sunucu okur.
+const getSunucuRoute = () => withExit(require("./screens/SunucuScreen").default, { mod: "sunucu" });
 
 // Online sekmesi: doğrudan lobi ekranını gösterir (artık ayrı bir "onlineLobby"
 // stack rotası değil, sekmenin kendisi). Bir oda hazır olduğunda ROOT stack'teki
@@ -396,6 +399,7 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="gunluk5" getComponent={getGunluk5Route} />
       <Stack.Screen name="gunlukIzgara" getComponent={getGunlukIzgaraRoute} />
       <Stack.Screen name="letterZincir" getComponent={getHarfZinciriRoute} />
+      <Stack.Screen name="sunucu" getComponent={getSunucuRoute} />
     </Stack.Navigator>
   );
 }

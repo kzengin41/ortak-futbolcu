@@ -26,6 +26,7 @@ import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TimerBar from "../components/TimerBar";
+import { useOyuncuAdlari, OyuncuAdlariBolumu, IsimliSkorTablosu } from "../components/OyuncuAdlari";
 
 const count3Source = require("../assets/sounds/count-3.mp3");
 const count2Source = require("../assets/sounds/count-2.mp3");
@@ -44,6 +45,9 @@ const WIN_LIMIT_OPTIONS = [
 ];
 
 export default function LocalGameScreen({ onExit, onExitSilent }) {
+  // 4 Ekim 2026 (.28810) — oyuncu adları (Ayarlar'da saklanır), isimli skor + rövanş.
+  const { adlar } = useOyuncuAdlari(2);
+  const adi = (w) => (w === "p1" ? adlar[0] : adlar[1]);
   const [started, setStarted] = useState(false);
   const [roundSeconds, setRoundSeconds] = useState(ROUND_TIME_OPTIONS[1]);
   const [targetScore, setTargetScore] = useState(5);
@@ -308,7 +312,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
-        baslik="Tek Telefon 2 Kişi"
+        baslik="Ortak Kulüp — Yanımdaki"
         aciklama="İki kulüp çıkar. İkisinde de oynamış futbolcuyu ilk söyleyen turu alır."
         vurgu={MODE_COLORS.hotSeat}
         onGeri={onExitSilent || onExit}
@@ -335,6 +339,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
             onSec={setTargetScore}
           />
         </KurulumBolum>
+        <OyuncuAdlariBolumu adet={2} />
         <KurulumBolum baslik="CEVAP YÖNTEMİ">
           <SecimCipleri
             secenekler={[
@@ -375,7 +380,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 
   function renderPlayerButtons(who) {
     const locked = who === "p1" ? p1Locked : p2Locked;
-    const label = who === "p1" ? "Oyuncu 1" : "Oyuncu 2";
+    const label = adi(who);
     return (
       <>
         <SoundPressable
@@ -411,7 +416,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text style={styles.answeringText}>
-          {buzzedBy === "p1" ? "Oyuncu 1" : "Oyuncu 2"} biliyor — {answerTimeLeft} sn
+          {adi(buzzedBy)} biliyor — {answerTimeLeft} sn
         </Text>
         {inputMode === "voice" ? (
           <>
@@ -513,8 +518,8 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       {viewMode === "side" && (
         <>
           <View style={styles.scoreRow}>
-            <Text style={styles.scoreText}>Oyuncu 1: {scoreP1}</Text>
-            <Text style={styles.scoreText}>Oyuncu 2: {scoreP2}</Text>
+            <Text style={styles.scoreText}>{adlar[0]}: {scoreP1}</Text>
+            <Text style={styles.scoreText}>{adlar[1]}: {scoreP2}</Text>
           </View>
 
           <View style={styles.teamsCard}>
@@ -598,7 +603,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       {phase === "answering" && viewMode !== "mirror" && (
         <View style={[{ marginTop: 20, flex: 1, justifyContent: "center" }, viewMode === "mirror" && buzzedBy === "p1" && { transform: [{ rotate: "180deg" }] }]}>
           <Text style={styles.answeringText}>
-            {buzzedBy === "p1" ? "Oyuncu 1" : "Oyuncu 2"} biliyor — {answerTimeLeft} sn
+            {adi(buzzedBy)} biliyor — {answerTimeLeft} sn
           </Text>
           {inputMode === "voice" ? (
             <>
@@ -724,25 +729,18 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       )}
 
       {phase === "gameOver" && (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 }}>
-          <Text style={[styles.title, { fontSize: 28, color: "#7CFF5C" }]}>
-            {scoreP1 > scoreP2 ? "Oyuncu 1 Kazandı!" : "Oyuncu 2 Kazandı!"}
-          </Text>
-          <Text style={[styles.title, { fontSize: 16, marginTop: 12 }]}>Oyuncu 1: {scoreP1}  —  Oyuncu 2: {scoreP2}</Text>
-          <Pressable
-            style={[styles.primaryBtn, { marginTop: 32, width: "100%" }]}
-            onPress={() => {
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 4 }}>
+          <IsimliSkorTablosu
+            modAdi="Ortak Kulüp — Yanımdaki"
+            oyuncular={[{ ad: adlar[0], puan: scoreP1 }, { ad: adlar[1], puan: scoreP2 }]}
+            onRovans={() => {
               setScoreP1(0);
               setScoreP2(0);
               setUsedPairs(new Set());
               startNewRound();
             }}
-          >
-            <Text style={styles.primaryBtnText}>Tekrar Oyna</Text>
-          </Pressable>
-          <Pressable onPress={onExitSilent || onExit} style={{ marginTop: 16 }}>
-            <Text style={styles.backLink}>Menüye dön</Text>
-          </Pressable>
+            onMenu={onExitSilent || onExit}
+          />
         </View>
       )}
 

@@ -38,6 +38,7 @@ import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto from "../components/PlayerPhoto";
 import MacSonuKarti from "../components/MacSonuKarti";
+import { useOyuncuAdlari, OyuncuAdlariBolumu, IsimliSkorTablosu } from "../components/OyuncuAdlari";
 import { karakterSec, tepki } from "../lib/cpuKarakterleri";
 import SoundPressable from "../components/SoundPressable";
 import TimerBar from "../components/TimerBar";
@@ -46,7 +47,6 @@ const count3Source = require("../assets/sounds/count-3.mp3");
 const count2Source = require("../assets/sounds/count-2.mp3");
 const count1Source = require("../assets/sounds/count-1.mp3");
 
-const PLAYER_LABEL = { p1: "Oyuncu 1", p2: "Oyuncu 2" };
 const OTHER = { p1: "p2", p2: "p1" };
 
 // 4 Eylül 2026 (Kerem'in yeni mod isteği, + aynı gün geri bildirimlerine göre
@@ -80,7 +80,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   const [altinTur, setAltinTur] = useState(false);
   // 4 Ekim 2026 — CPU gerçek rakip (lib/cpuKarakterleri.js) + maç sonu kartı verisi
   const karakter = useMemo(() => karakterSec(zorluk10), [zorluk10]);
-  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: karakter.ad } : PLAYER_LABEL;
+  // 4 Ekim 2026 (.28810) — 2 kişilikte Ayarlar'daki oyuncu adları.
+  const { adlar } = useOyuncuAdlari(2);
+  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: karakter.ad } : { p1: adlar[0], p2: adlar[1] };
   const [turlar, setTurlar] = useState([]);
   const [dogrularim, setDogrularim] = useState([]);
   const [macSonuSozu, setMacSonuSozu] = useState("");
@@ -520,6 +522,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
             onSec={setInputMode}
           />
         </KurulumBolum>
+        {!vsCpu ? <OyuncuAdlariBolumu adet={2} /> : null}
         <KurulumBolum baslik="TUR SAYISI">
           <SecimCipleri secenekler={[{ deger: 3, etiket: "3 tur" }, { deger: 5, etiket: "5 tur" }]} secili={turSayisi} onSec={setTurSayisi} />
         </KurulumBolum>
@@ -896,18 +899,14 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         />
       )}
       {phase === "gameOver" && !vsCpu && (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 }}>
-          <Ionicons name="trophy" size={48} color="#FFB020" style={{ marginBottom: 12 }} />
-          <Text style={[styles.title, { fontSize: 26, color: "#7CFF5C" }]}>
-            {scoreP1 === scoreP2 ? "Berabere!" : scoreP1 > scoreP2 ? "Oyuncu 1 Kazandı!" : "Oyuncu 2 Kazandı!"}
-          </Text>
-          <Text style={[styles.title, { fontSize: 16, marginTop: 12 }]}>Oyuncu 1: {scoreP1}  —  Oyuncu 2: {scoreP2}</Text>
-          <Pressable style={[styles.primaryBtn, { marginTop: 32, width: "100%" }]} onPress={restartGame}>
-            <Text style={styles.primaryBtnText}>Tekrar Oyna</Text>
-          </Pressable>
-          <Pressable onPress={onExitSilent || onExit} style={{ marginTop: 16 }}>
-            <Text style={styles.backLink}>Menüye dön</Text>
-          </Pressable>
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 4 }}>
+          <IsimliSkorTablosu
+            modAdi="5 Kulüp"
+            oyuncular={[{ ad: adlar[0], puan: scoreP1 }, { ad: adlar[1], puan: scoreP2 }]}
+            altYazi={`${turSayisi} tur${altinTur ? " · son tur altın" : ""}`}
+            onRovans={restartGame}
+            onMenu={onExitSilent || onExit}
+          />
         </View>
       )}
       </KlavyeAlani>

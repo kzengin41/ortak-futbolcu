@@ -32,6 +32,13 @@ const MODES = [
     icon: "shield-checkmark",
     colorKey: "teamTeam",
     id: "cpu",
+    // 4 Ekim 2026 (.28743) — "Tek telefon" artık mod değil RAKİP SEÇENEĞİ.
+    options: [
+      { id: "cpu", rakip: "cpu", label: "CPU'ya karşı" },
+      { id: "local", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Ekran ikiye bölünür, ilk basan cevaplar" },
+      { id: "sunucu", rakip: "yanimdaki", label: "Yanımdakiler — Sunucu modu", alt: "2–6 kişi; sen okursun, onlar bağırır" },
+      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true },
+    ],
   },
   {
     key: "letters",
@@ -62,13 +69,15 @@ const MODES = [
     id: "whoAmICpu",
   },
   {
-    key: "hotSeat",
+    // 4 Ekim 2026 (.28709) — eski "Tek Telefon 2 Kişi" kartının yerine. 2 kişilik
+    // bölünmüş ekran artık Ortak Kulüp → "Yanımdaki" seçeneğinde.
+    key: "sunucu",
     grup: "arkadas",
-    title: "Tek Telefon 2 Kişi",
-    desc: "Ekran ikiye bölünür, tek telefonda 2 oyuncu",
-    icon: "phone-portrait",
+    title: "Sunucu Modu",
+    desc: "2–6 kişi, tek telefon. Sen kulüpleri okursun, onlar bağırır",
+    icon: "mic",
     colorKey: "hotSeat",
-    id: "local",
+    id: "sunucu",
   },
   {
     // 4 Eylül 2026 (Kerem'in yeni mod isteği) — bkz. screens/FiveClubsScreen.js
@@ -82,8 +91,9 @@ const MODES = [
     // oynanabilmeli") — Ortak Kulüp'le aynı desen: tek kart, dokununca
     // seçenek modalı.
     options: [
-      { id: "fiveClubsCpu", label: "CPU'ya Karşı" },
-      { id: "fiveClubs", label: "Tek Telefon 2 Kişi" },
+      { id: "fiveClubsCpu", rakip: "cpu", label: "CPU'ya karşı" },
+      { id: "fiveClubs", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Aynı telefon, sırayla" },
+      { id: "online5", rakip: "online", label: "Online", alt: "Yakında", kapali: true },
     ],
   },
   {
@@ -100,12 +110,20 @@ const MODES = [
     // renkteydi ve iki kart ayırt edilemiyordu (bkz. lib/theme.js notu).
     colorKey: "xox",
     id: "xox",
+    options: [
+      { id: "xox", params: { rakip: "cpu" }, rakip: "cpu", label: "CPU'ya karşı" },
+      { id: "xox", params: { rakip: "iki" }, rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Aynı telefon, sırayla" },
+      { id: "onlineXox", rakip: "online", label: "Online", alt: "Yakında", kapali: true },
+    ],
   },
 ];
 
 // 28 Eylül 2026 — denetim bulgusu #7: "8 eşit ağırlıklı mod kartı, gruplama/öneri
 // yok". Kartlar üç başlık altında; en üstte tek dokunuşla oyuna sokan bir
 // "Hemen Oyna" kartı (Ortak Kulüp, CPU'ya karşı — ayarlar eşleşme profilinden).
+const RAKIP_BASLIK = { cpu: "CPU", yanimdaki: "YANIMDAKİLERLE", online: "ONLINE" };
+const RAKIP_IKON = { cpu: "hardware-chip", yanimdaki: "people", online: "globe" };
+
 const GRUPLAR = [
   { id: "klasik", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
   { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
@@ -120,12 +138,12 @@ const CARD_WIDTH = (width - SPACING.xl * 2 - SPACING.md) / 2;
 // "tuttuğun takım" sorusu ana sayfaya taşındı; burada geri düğmesi + modlar +
 // günün bulmacası / görevler kaldı (Kerem: "mevcut anasayfamızı yeni bir sayfa
 // olarak muhafaza edip...").
-export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onBack }) {
+export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSekme, onBack }) {
   const [pickerMode, setPickerMode] = useState(null); // seçenek modalı açık olan mod (options'lı olanlar için)
 
-  async function handleSelect(modeId) {
+  async function handleSelect(modeId, params) {
     setPickerMode(null);
-    onSelect(modeId);
+    onSelect(modeId, params);
     // 12 Eylül 2026: burada bumpStreak() çağrılıyordu — yani mod kartına
     // DOKUNMAK "bugün oynadım" saymaya yetiyordu. Seri artık gerçekten bir tur
     // tamamlanınca artıyor (lib/stats.js recordRound içinde), böylece online
@@ -210,13 +228,34 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onBa
                 </View>
                 <Text style={styles.modalTitle}>{pickerMode.title}</Text>
                 <Text style={styles.modalDesc}>{pickerMode.desc}</Text>
+                <Text style={styles.kiminle}>Kiminle oynuyorsun?</Text>
                 <View style={styles.modalOptions}>
-                  {pickerMode.options.map((opt) => (
-                    <PressScale key={opt.id} style={styles.modalOptionBtn} onPress={() => handleSelect(opt.id)}>
-                      <Text style={styles.modalOptionText}>{opt.label}</Text>
-                      <Ionicons name="chevron-forward" size={18} color={COLORS.accentDark} />
-                    </PressScale>
-                  ))}
+                  {/* 4 Ekim 2026 (.28743) — ilk soru "kiminle?": CPU / Yanımdaki / Online */}
+                  {pickerMode.options.map((opt, i) => {
+                    const ikon = RAKIP_IKON[opt.rakip] || "play";
+                    const baslikGoster = opt.rakip && (i === 0 || pickerMode.options[i - 1].rakip !== opt.rakip);
+                    return (
+                      <View key={`${opt.id}-${i}`}>
+                        {baslikGoster ? <Text style={styles.rakipBaslik}>{RAKIP_BASLIK[opt.rakip]}</Text> : null}
+                        <PressScale
+                          style={[styles.modalOptionBtn, opt.kapali && styles.modalOptionKapali]}
+                          disabled={!!opt.kapali}
+                          onPress={() => {
+                            if (opt.kapali) return;
+                            if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id); return; }
+                            handleSelect(opt.id, opt.params);
+                          }}
+                        >
+                          <Ionicons name={ikon} size={20} color={opt.kapali ? COLORS.textMuted : COLORS.accentDark} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.modalOptionText, opt.kapali && { color: COLORS.textMuted }]}>{opt.label}</Text>
+                            {opt.alt ? <Text style={[styles.modalOptionAlt, opt.kapali && { color: COLORS.textMuted }]}>{opt.alt}</Text> : null}
+                          </View>
+                          {!opt.kapali ? <Ionicons name="chevron-forward" size={18} color={COLORS.accentDark} /> : null}
+                        </PressScale>
+                      </View>
+                    );
+                  })}
                 </View>
                 <Pressable style={styles.modalCancel} onPress={() => setPickerMode(null)}>
                   <Text style={styles.modalCancelText}>Vazgeç</Text>
@@ -296,13 +335,17 @@ const styles = StyleSheet.create({
   modalOptionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 10,
     backgroundColor: COLORS.accent,
     borderRadius: RADIUS.md,
     paddingVertical: 14,
     paddingHorizontal: SPACING.lg,
   },
   modalOptionText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 14 },
+  modalOptionAlt: { color: COLORS.accentDark, fontWeight: "600", fontSize: 12, opacity: 0.8, marginTop: 2 },
+  modalOptionKapali: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
+  kiminle: { ...TYPE.h3, alignSelf: "flex-start", marginBottom: 2 },
+  rakipBaslik: { color: COLORS.textMuted, fontWeight: "900", fontSize: 11, letterSpacing: 1.5, marginTop: 6, marginBottom: 6 },
   modalCancel: { marginTop: SPACING.lg },
   modalCancelText: { color: COLORS.textMuted, fontWeight: "700", fontSize: 13 },
 });

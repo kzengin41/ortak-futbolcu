@@ -77,10 +77,12 @@ const SECTIONS = [
   {
     key: "hotSeat",
     icon: "phone-portrait",
-    title: "Tek Telefon 2 Kişi",
-    summary: "Ekran ikiye bölünür, ilk buzz'layan kazanır",
+    title: "Yanımdakilerle (aynı telefon)",
+    summary: "Ortak Kulüp, 5 Kulüp ve XOX'ta rakip olarak \"Yanımdaki\"yi seç",
     points: [
-      "CPU iki takım atar, telefon ortadan ikiye bölünür — her oyuncu kendi tarafından oynar.",
+      "Tüm Modlar'da Ortak Kulüp, 5 Kulüp ya da XOX'a dokununca önce rakibini seçersin: CPU, Yanımdaki ya da Online.",
+      "Ortak Kulüp'te 2 kişide telefon ortadan ikiye bölünür — her oyuncu kendi tarafından oynar.",
+      "Sunucu Modu: 2–6 kişi. Telefonu tutan kulüpleri okur, ilk bağıranın adına dokunur, ekrandaki cevaplara bakıp ✓/✗ der.",
       "Cevabı ilk bilen tarafa \"buzz\" basar ve sesli söyler; doğruysa puanı alır.",
       "Sesli mod desteklenir: cevabını mikrofonla da söyleyebilirsin.",
     ],

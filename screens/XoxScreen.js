@@ -7,6 +7,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import MacSonuKarti from "../components/MacSonuKarti";
+import { useOyuncuAdlari, OyuncuAdlariBolumu, IsimliSkorTablosu } from "../components/OyuncuAdlari";
 import { karakterSec, tepki } from "../lib/cpuKarakterleri";
 import { taninirlik } from "../lib/taninirlik";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
@@ -94,12 +95,14 @@ function BaslikRozeti({ baslik, boyut }) {
   );
 }
 
-export default function XoxScreen({ onExit, onExitSilent }) {
+export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
   const playCpuCorrect = useCpuCorrectSound();
 
-  const [rakipTipi, setRakipTipi] = useState("cpu");   // "cpu" | "iki"
+  // 4 Ekim 2026 (.28743) — Tüm Modlar'daki rakip seçimi (CPU / Yanımdaki) rota parametresiyle gelir.
+  const [rakipTipi, setRakipTipi] = useState(rakip === "iki" ? "iki" : "cpu");   // "cpu" | "iki"
+  const { adlar } = useOyuncuAdlari(2);
   // 27 Eylül 2026: zorluk 1-10 (bkz. lib/modAyarlari.js, gridGame zorlukAyari10)
   const [zorluk, setZorluk] = useState(4);
   // 4 Ekim 2026 — CPU gerçek rakip (lib/cpuKarakterleri.js)
@@ -291,7 +294,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
-        message: cpuyaKarsi ? `Süre doldu, sıra ${karakter.ad}'da` : `Süre doldu, sıra ${h.kimden === X ? "2." : "1."} oyuncuda`,
+        message: cpuyaKarsi ? `Süre doldu, sıra ${karakter.ad}'da` : `Süre doldu, sıra ${h.kimden === X ? adlar[1] : adlar[0]} oyuncusunda`,
       });
     }
   }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong, playCpuCorrect, karakter]);
@@ -414,6 +417,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             onSec={setRakipTipi}
           />
         </KurulumBolum>
+        {!cpuyaKarsi ? <OyuncuAdlariBolumu adet={2} /> : null}
         <KurulumBolum
           baslik="ZORLUK"
           not={cpuyaKarsi
@@ -473,7 +477,7 @@ export default function XoxScreen({ onExit, onExitSilent }) {
     ? sonucMetni(durum, cpuyaKarsi)
     : cpuyaKarsi
     ? (durum.sira === X ? "Sıra sende" : cpuDusunuyor ? `${karakter.avatar} ${karakter.ad} düşünüyor…` : `${karakter.avatar} ${karakter.ad} oynuyor`)
-    : (durum.sira === X ? "1. Oyuncu (X)" : "2. Oyuncu (O)");
+    : (durum.sira === X ? `${adlar[0]} (X)` : `${adlar[1]} (O)`);
 
   return (
     <GameBackground style={styles.kap}>
@@ -691,19 +695,24 @@ export default function XoxScreen({ onExit, onExitSilent }) {
             />
           )}
           {durum.bitti && !cpuyaKarsi && (
-            <View style={styles.sonucKart}>
-              <Text style={styles.sonucBaslik}>{sonucMetni(durum, cpuyaKarsi)}</Text>
-              <Text style={styles.sonucAlt}>
-                {durum.kullanilanlar.length} doğru cevap
-              </Text>
-              <View style={styles.sonucBtnSatir}>
-                <SoundPressable style={styles.anaBtnKucuk} onPress={yeniOyun}>
-                  <Text style={styles.anaBtnText}>YENİ IZGARA</Text>
-                </SoundPressable>
-                <SoundPressable style={styles.ikincilBtn} onPress={() => setBasladi(false)}>
-                  <Text style={styles.ikincilBtnText}>Ayarlar</Text>
-                </SoundPressable>
-              </View>
+            <View>
+              <IsimliSkorTablosu
+                modAdi="Futbolcu XOX"
+                oyuncular={[
+                  { ad: adlar[0], puan: durum.tahta.filter((t) => t === X).length },
+                  { ad: adlar[1], puan: durum.tahta.filter((t) => t === O).length },
+                ]}
+                // Üçlü sıra yapan, kare sayısı az olsa da kazanır.
+                kazanan={durum.kazanan === "berabere" ? "berabere" : durum.kazanan === X ? 0 : 1}
+                skorEtiketi="kare"
+                altYazi={`${durum.kullanilanlar.length} doğru cevap`}
+                rovansEtiketi="RÖVANŞ — YENİ IZGARA"
+                onRovans={yeniOyun}
+                onMenu={onExitSilent || onExit}
+              />
+              <SoundPressable style={{ alignSelf: "center", marginTop: 4 }} onPress={() => setBasladi(false)}>
+                <Text style={styles.ikincilBtnText}>Ayarlar</Text>
+              </SoundPressable>
             </View>
           )}
 
