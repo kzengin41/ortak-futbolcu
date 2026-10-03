@@ -322,6 +322,130 @@ def mac_sayilari(wikitext):
     return sayilar
 
 
+# ---------------------------------------------------------------- sezon v2 (4 Ekim 2026)
+# İLK ÇALIŞTIRMADA 337 sezonun ancak 128'i okunabildi: çoğu sezon makalesi
+# {{Fs player}} kullanmıyor. Gerçekte kullanılan biçimler:
+#   {{Efs player|no=1|name=[[X]]|pos=GK|nat=ITA|30|0|1|0|...}}       (maç, gol, maç, gol...)
+#   {{fb ss player 3|p=[[X|Y]]|n=1|pos=GK|c1a=11|c2a=31|...}}         (cNa = maç)
+#   {{fb si player|p=[[X]]|n=4|pos=MF|...}}                           (kadro bilgisi, sezon maçı yok)
+#   wikitable: |1||GK||{{flagicon|ESP}} [[David de Gea]] / |28||0||...||41||0   (Total = en büyük)
+# Hepsi okunup isimle birleştiriliyor; sezon maç sayısı varsa ilk 11 ona göre seçilir.
+def _ap(deger):
+    # '30' / '7+1' / '24(1)' / '20 (22)' / kalın '37' -> toplam maç (int) ya da None
+    d = duz_metin(deger).replace("'", "").strip()
+    m = re.match(r"^(\d{1,3})\s*(?:\(\s*\+?\s*(\d{1,3})\s*\)|\+\s*(\d{1,3}))?$", d)
+    if not m:
+        return None
+    return int(m.group(1)) + int(m.group(2) or m.group(3) or 0)
+
+
+def _sortname(h):
+    m = re.search(r"\{\{\s*sortname\s*\|([^|}]*)\|([^|}]*)(?:\|([^|}]*))?", h, re.I)
+    if not m:
+        return None, None
+    gorunen = (m.group(1).strip() + " " + m.group(2).strip()).strip()
+    hedef = (m.group(3) or "").strip()
+    if not hedef or "=" in hedef:
+        hedef = gorunen
+    return hedef, gorunen
+
+
+def _ad_al(h):
+    hedef, gorunen = _sortname(h or "")
+    if not hedef:
+        hedef, gorunen = link_hedefi(h or "")
+    if hedef and re.match(r"(File|Image|Dosya|Category):", hedef, re.I):
+        return None, None
+    return (ad_temizle(hedef), gorunen) if hedef else (None, None)
+
+
+def _ekle(havuz, ad, gorunen=None, poz=None, no=None, mac=None):
+    if not ad:
+        return
+    o = havuz.setdefault(ad, {"ad": ad, "gorunen": gorunen or ad, "poz": "", "no": None})
+    if poz and not o["poz"]:
+        o["poz"] = poz
+    if no is not None and o["no"] is None:
+        o["no"] = no
+    if mac is not None:
+        o["mac"] = max(o.get("mac", 0), mac)
+
+
+def _no(v):
+    n = re.sub(r"[^0-9]", "", duz_metin(v or ""))
+    return int(n) if n and len(n) <= 2 else None
+
+
+def _konumsal(t):
+    ic = t[2:-2]
+    parcalar, derin, bas, i = [], 0, 0, 0
+    while i < len(ic):
+        if ic.startswith("{{", i) or ic.startswith("[[", i):
+            derin += 1; i += 2; continue
+        if ic.startswith("}}", i) or ic.startswith("]]", i):
+            derin -= 1; i += 2; continue
+        if ic[i] == "|" and derin == 0:
+            parcalar.append(ic[bas:i]); bas = i + 1
+        i += 1
+    parcalar.append(ic[bas:])
+    return [x for x in parcalar[1:] if not re.match(r"^\s*[A-Za-z_][\w ]*=", x)]
+
+
+def sezon_kadrosu_v2(wikitext):
+    metin = wikitext or ""
+    havuz = {}
+    # A) Efs player
+    for _, t in sablon_parcalari(metin, [r"efs\s*player"]):
+        p = sablon_parametreleri(t)
+        maclar = [_ap(x) for x in _konumsal(t)[0::2]]
+        toplam = sum(x for x in maclar if x) if any(x is not None for x in maclar) else None
+        ad, gorunen = _ad_al(p.get("name", ""))
+        _ekle(havuz, ad, gorunen, duz_metin(p.get("pos", "")).upper()[:3], _no(p.get("no")), toplam)
+    # B) fb ss player
+    for _, t in sablon_parcalari(metin, [r"fb\s*ss\s*player(?:\s*\d)?"]):
+        p = sablon_parametreleri(t)
+        mac = [_ap(v) for k, v in p.items() if re.match(r"^c\d+a$", k)]
+        toplam = sum(x for x in mac if x) if any(x is not None for x in mac) else None
+        ad, gorunen = _ad_al(p.get("p", ""))
+        _ekle(havuz, ad, gorunen, duz_metin(p.get("pos", "")).upper()[:3], _no(p.get("n")), toplam)
+    # C) wikitable istatistik satırları
+    for bolum in re.finditer(r"==+\s*(Squad statistics|Statistics|Player statistics|Appearances(?: and goals)?|Squad stats)\s*==+", metin, re.I):
+        son = re.search(r"\n==[^=]", metin[bolum.end():])
+        govde = metin[bolum.end(): bolum.end() + (son.start() if son else len(metin))]
+        for satir_blok in re.split(r"\n\|-[^\n]*", govde):
+            hucreler = []
+            for line in satir_blok.split("\n"):
+                line = line.strip()
+                if not line.startswith("|") or line.startswith("|}") or line.startswith("{|"):
+                    continue
+                for h in re.split(r"\|\|", line[1:]):
+                    if re.match(r'^\s*(align|style|class|rowspan|colspan|bgcolor|data-sort-value)\s*=\s*[^|\[{]*\|', h):
+                        h = h.split("|", 1)[1]
+                    hucreler.append(h.strip())
+            if len(hucreler) < 4:
+                continue
+            poz_i = next((i for i, h in enumerate(hucreler[:5]) if re.fullmatch(POZ, duz_metin(h).upper())), None)
+            if poz_i is None:
+                continue
+            ad_i = next((i for i in range(poz_i + 1, min(len(hucreler), poz_i + 4)) if _ad_al(hucreler[i])[0]), None)
+            if ad_i is None:
+                continue
+            ad, gorunen = _ad_al(hucreler[ad_i])
+            # 75'ten büyük sayılar dakika/yaş sütunudur (bir sezonda en çok ~65 maç).
+            maclar = [x for x in (_ap(h) for h in hucreler[ad_i + 1:]) if x is not None and x <= 75]
+            no = _no(hucreler[poz_i - 1]) if poz_i > 0 else None
+            _ekle(havuz, ad, gorunen, duz_metin(hucreler[poz_i]).upper(), no, max(maclar) if maclar else None)
+    # D) fb si player (kadro bilgisi; 'a' kariyer maçı olduğu için kullanılmıyor)
+    for _, t in sablon_parcalari(metin, [r"fb\s*si\s*player"]):
+        p = sablon_parametreleri(t)
+        ad, gorunen = _ad_al(p.get("p", ""))
+        _ekle(havuz, ad, gorunen, duz_metin(p.get("pos", "")).upper()[:3], _no(p.get("n")))
+    # E) Fs player (eski yöntem)
+    for o in sezon_kadrosu(metin):
+        _ekle(havuz, o["ad"], o["gorunen"], o["poz"], o["no"])
+    return list(havuz.values())
+
+
 def sezon_basligi(kulup_kalibi, sezon):
     return kulup_kalibi.replace("{sezon}", sezon)
 
@@ -335,15 +459,11 @@ def sezon_isle(oturum, kulup, kalip, sezon):
             gercek, metin = wikitext_getir(oturum, bulunan)
     if not metin:
         return None, "sayfa bulunamadı: %s" % baslik
-    kadro = sezon_kadrosu(metin)
-    if not kadro:
-        return None, "kadro şablonu yok: %s" % (gercek or baslik)
-    maclar = mac_sayilari(metin)
-    for o in kadro:
-        if o["ad"] in maclar:
-            o["mac"] = maclar[o["ad"]]
+    kadro = sezon_kadrosu_v2(metin)
+    if len(kadro) < 14:
+        return None, "kadro okunamadı (%d oyuncu): %s" % (len(kadro), gercek or baslik)
     return {"kulup": kulup, "sezon": sezon, "baslik": gercek, "oyuncular": kadro,
-            "macSayisiVar": any("mac" in o for o in kadro)}, None
+            "macSayisiVar": sum(1 for o in kadro if o.get("mac")) >= 11}, None
 
 
 # ---------------------------------------------------------------- ana akış

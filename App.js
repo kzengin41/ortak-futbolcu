@@ -49,7 +49,7 @@ const ONBOARDING_KEY = "ortak-futbolcu-onboarding-done";
 // Bu ekranlarda hardware-back basınca onay istemeden direkt ana menüye dönülür.
 // Not: 4 sekme (oyna/online/ansiklopedi/profilim) hepsi "ana menü seviyesi" —
 // hiçbirinde kaybedilecek bir oyun ilerlemesi yok, o yüzden hepsi burada.
-const NO_CONFIRM_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding", "settings", "help", "stats", "account", "sources"]);
+const NO_CONFIRM_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding", "settings", "help", "stats", "account", "sources", "kadro"]);
 // Bu isimlerde hardware-back'e basınca (uygulamanın en üst seviyesindeyken)
 // varsayılan davranış uygulanır (Android'de genelde uygulamadan çıkış).
 const APP_EXIT_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding"]);
@@ -93,6 +93,7 @@ function OynaRoute({ navigation }) {
       onCustomize={() => navigation.navigate("cpu")}
       onAllModes={() => navigation.navigate("tumModlar")}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
+      onGunlukKadro={() => navigation.navigate("gunlukKadro")}
     />
   );
 }
@@ -238,6 +239,10 @@ const getGunluk5Route = () => withExit(require("./screens/GunlukBesKulupScreen")
 const getGunlukIzgaraRoute = () => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false });
 const getHarfZinciriRoute = () => withExit(require("./screens/HarfZinciriScreen").default);
 // 4 Ekim 2026 (.28709) — Sunucu modu: 2–6 kişi, tek telefon, sunucu okur.
+// 4 Ekim 2026 (.29452/.29833) — Günün Kadrosu (günlük, ilerleme kaydedilir) ve
+// Ansiklopedi → Takımlar'dan açılan kadro sayfası.
+const getGunlukKadroRoute = () => withExit(require("./screens/GunlukKadroScreen").default, { confirm: false });
+const getKadroRoute = () => require("./screens/KadroScreen").default;
 const getSunucuRoute = () => withExit(require("./screens/SunucuScreen").default, { mod: "sunucu" });
 
 // Online sekmesi: doğrudan lobi ekranını gösterir (artık ayrı bir "onlineLobby"
@@ -400,6 +405,8 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="gunlukIzgara" getComponent={getGunlukIzgaraRoute} />
       <Stack.Screen name="letterZincir" getComponent={getHarfZinciriRoute} />
       <Stack.Screen name="sunucu" getComponent={getSunucuRoute} />
+      <Stack.Screen name="gunlukKadro" getComponent={getGunlukKadroRoute} />
+      <Stack.Screen name="kadro" getComponent={getKadroRoute} />
     </Stack.Navigator>
   );
 }

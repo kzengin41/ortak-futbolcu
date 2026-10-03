@@ -9,7 +9,8 @@ import PlayerPhoto from "../components/PlayerPhoto";
 import { getProfile, xpProgress } from "../lib/profile";
 import { getStreak, seriDurumu } from "../lib/streak";
 import { getStats, MODE_LABELS } from "../lib/stats";
-import { getUnlockedPlayers, POKEDEX_LIMIT } from "../lib/pokedex";
+import { getUnlockedPlayers } from "../lib/pokedex";
+import { tamamlananlar } from "../lib/kadroKoleksiyon";
 import { getCurrentUser } from "../lib/auth";
 import { pushFullProgressToCloud } from "../lib/cloudProfile";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
@@ -33,6 +34,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
   const [stats, setStats] = useState(null);
   const [acilanlar, setAcilanlar] = useState([]);
   const [tumModlar, setTumModlar] = useState(false);
+  const [kadroSayi, setKadroSayi] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,6 +43,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
       getStreak().then((s) => aktif && setStreak(s));
       getStats().then((s) => aktif && setStats(s));
       getUnlockedPlayers().then((l) => aktif && setAcilanlar(Array.isArray(l) ? l : []));
+      tamamlananlar().then((t) => aktif && setKadroSayi(t.size)).catch(() => {});
       // Hesabı olan kullanıcı için sessiz arka plan yedeklemesi.
       getCurrentUser().then((u) => { if (u) pushFullProgressToCloud(u.id); });
       return () => { aktif = false; };
@@ -84,7 +87,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           <View style={{ flex: 1 }}>
             <View style={styles.playerRow}>
               <Text style={styles.playerName} numberOfLines={1}>{profile.name}</Text>
-              <Text style={styles.playerXpLabel}>{progress.into} / {progress.needed} XP</Text>
+              <Text style={styles.playerXpLabel}>{progress.level + 1}. seviyeye {progress.kalan} futbolcu</Text>
             </View>
             <View style={styles.xpTrack}>
               <View style={[styles.xpFill, { width: `${progress.fraction * 100}%` }]} />
@@ -109,10 +112,8 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           )}
           <View style={styles.koleksiyonSatir}>
             <Ionicons name="book" size={16} color={COLORS.accent} />
-            <Text style={styles.koleksiyonYazi}>Ansiklopedi {acilanlar.length} / {POKEDEX_LIMIT}</Text>
-          </View>
-          <View style={styles.xpTrack}>
-            <View style={[styles.xpFill, { width: `${Math.min(100, (acilanlar.length / POKEDEX_LIMIT) * 100)}%` }]} />
+            <Text style={styles.koleksiyonYazi}>Ansiklopedi: {acilanlar.length} futbolcu</Text>
+            <Text style={[styles.koleksiyonYazi, { marginLeft: "auto" }]}>🏅 {kadroSayi} kadro tamam</Text>
           </View>
         </View>
 

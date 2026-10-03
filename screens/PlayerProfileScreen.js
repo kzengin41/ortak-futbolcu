@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import TabHeader from "../components/TabHeader";
 import { getPokedexPool, getUnlockedPlayers } from "../lib/pokedex";
-import { getProfile } from "../lib/profile";
+import { getProfile, xpProgress } from "../lib/profile";
 import PlayerPhoto from "../components/PlayerPhoto";
 import PlayerMiniProfile from "../components/PlayerMiniProfile";
+import TakimlarListesi from "../components/TakimlarListesi";
+import SoundPressable from "../components/SoundPressable";
 
 import { COLORS } from "../lib/theme";
 // 30 Ağustos 2026: Ansiklopedi artık kendi sekmesi (bottom tab) — bir üst
@@ -14,19 +17,36 @@ import { COLORS } from "../lib/theme";
 // yüzden onExit prop'u ve alttaki "Menüye Dön" butonu kaldırıldı (Kerem:
 // "geri butonuna basınca uyarı çıkmasın, direkt menüye dönsün" — en temiz
 // çözüm, gereksiz onay isteyen bir geri butonunu hiç bulundurmamak).
-export default function PlayerProfileScreen() {
+// 4 Ekim 2026 (Kerem: "Ansiklopedi: Oyuncular | Takımlar") — üstte iki sekme.
+// Takımlar: kulüp × sezon kadroları + efsane finaller (components/TakimlarListesi.js).
+function Sekmeler({ sekme, setSekme }) {
+  return (
+    <View style={styles.sekmeler}>
+      {[["oyuncular", "Oyuncular", "person"], ["takimlar", "Takımlar", "shirt"]].map(([id, ad, ikon]) => (
+        <SoundPressable key={id} style={[styles.sekme, sekme === id && styles.sekmeAktif]} onPress={() => setSekme(id)} accessibilityRole="tab" accessibilityState={{ selected: sekme === id }}>
+          <Ionicons name={ikon} size={15} color={sekme === id ? COLORS.bg : COLORS.textMuted} />
+          <Text style={[styles.sekmeYazi, sekme === id && { color: COLORS.bg }]}>{ad}</Text>
+        </SoundPressable>
+      ))}
+    </View>
+  );
+}
+
+export default function PlayerProfileScreen({ navigation }) {
+  const [sekme, setSekme] = useState("oyuncular");
   const [unlockedNames, setUnlockedNames] = useState(new Set());
   const [profile, setProfile] = useState({ level: 1 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedPlayer, setSelectedPlayer] = useState(null); // Detaylar için
-  const [onlyUnlocked, setOnlyUnlocked] = useState(false); // Kerem: "sadece açılanları göster" butonu
 
   const pool = useMemo(() => getPokedexPool(), []);
+  const seviye = xpProgress({ acilan: unlockedNames.size });
   // Koleksiyon numarası — her kart için pool.findIndex (3000 x 3000) yerine bir kez.
   const sira = useMemo(() => new Map(pool.map((p, i) => [p.name, i + 1])), [pool]);
 
-  useEffect(() => {
+  // Sekmeye her dönüşte tazele (oyunda yeni açılanlar hemen görünsün).
+  useFocusEffect(useCallback(() => {
     getUnlockedPlayers().then(arr => {
       // 12 Eylül 2026: burada hiç oynamamış kullanıcıya havuzun ilk 15 oyuncusu
       // "açılmış" gibi gösteriliyordu. Aynı anda İstatistikler ekranı "0 / 2000
@@ -36,17 +56,20 @@ export default function PlayerProfileScreen() {
       setLoading(false);
     });
     getProfile().then(p => setProfile(p));
-  }, []);
+  }, []));
 
+  // 4 Ekim 2026 (Kerem: "söylenen oyuncular açılan oyunculara gelsin, sırası kaç
+  // olursa olsun, 3000 limit koymayalım") — liste artık AÇILAN futbolcular
+  // (popülerlik sırasıyla); kilitli 3000'lik ızgara kalktı. Kart üstündeki #
+  // numarası bütün veri setindeki tanınırlık sırası.
   const filteredPool = useMemo(() => {
-    let list = pool;
-    if (onlyUnlocked) list = list.filter(p => unlockedNames.has(p.name));
+    let list = pool.filter(p => unlockedNames.has(p.name));
     if (search.trim()) {
       const lower = search.trim().toLowerCase();
       list = list.filter(p => p.name.toLowerCase().includes(lower));
     }
     return list;
-  }, [pool, search, onlyUnlocked, unlockedNames]);
+  }, [pool, search, unlockedNames]);
 
   // 31 Ağustos 2026 (Kerem: "direkt açılsın") — açma artık seviyeye bağlı
   // DEĞİL (bkz. lib/pokedex.js unlockPlayer): havuzdaki (top 2000) bir
@@ -95,21 +118,35 @@ export default function PlayerProfileScreen() {
   // oyuncu kartı (PlayerMiniProfile: kulüpler, yıllar, başarılar) açılıyor;
   // geri tuşu sadece kartı kapatıyor.
 
+  if (sekme === "takimlar") {
+    return (
+      <GameBackground style={styles.container}>
+        <View style={styles.header}>
+          <TabHeader compact />
+          <Sekmeler sekme={sekme} setSekme={setSekme} />
+        </View>
+        <TakimlarListesi onKadro={(id) => navigation && navigation.navigate("kadro", { id })} />
+      </GameBackground>
+    );
+  }
+
   // KOLEKSİYON LİSTESİ (POKEDEX)
   return (
     <GameBackground style={styles.container}>
       <View style={styles.header}>
         <TabHeader compact />
+        <Sekmeler sekme={sekme} setSekme={setSekme} />
         <Text style={styles.title}>EFSANELER KOLEKSİYONU</Text>
         <Text style={styles.subtitle}>Oyun içinde açtığın karakterler bunlar!</Text>
 
         <View style={styles.statsBox}>
           <Text style={styles.statsText}>
-            Seviye {profile.level} - Açılan: <Text style={{color:COLORS.accent}}>{unlockedNames.size}</Text> / {pool.length} Futbolcu
+            Seviye {seviye.level} · <Text style={{color:COLORS.accent}}>{unlockedNames.size}</Text> futbolcu açıldı
           </Text>
           <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: `${Math.min(100, (unlockedNames.size / pool.length) * 100)}%` }]} />
+            <View style={[styles.progressBarFill, { width: `${Math.round(seviye.fraction * 100)}%` }]} />
           </View>
+          <Text style={styles.seviyeNot}>{seviye.level + 1}. seviye için {seviye.kalan} futbolcu daha aç</Text>
         </View>
 
         <TextInput
@@ -117,21 +154,12 @@ export default function PlayerProfileScreen() {
           autoCapitalize="words"
           spellCheck={false}
           style={styles.searchInput}
-          placeholder="Futbolcu ara..."
+          placeholder="Açtığın futbolcularda ara..."
           placeholderTextColor={COLORS.textMuted}
           value={search}
           onChangeText={setSearch}
         />
 
-        <Pressable
-          style={[styles.filterToggle, onlyUnlocked && styles.filterToggleActive, { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }]}
-          onPress={() => setOnlyUnlocked(v => !v)}
-        >
-          {onlyUnlocked && <Ionicons name="checkmark" size={14} color={COLORS.bg} />}
-          <Text style={[styles.filterToggleText, onlyUnlocked && styles.filterToggleTextActive]}>
-            {onlyUnlocked ? "Sadece Açılanlar" : "Sadece Açılanları Göster"}
-          </Text>
-        </Pressable>
       </View>
 
       <PlayerMiniProfile
@@ -143,11 +171,11 @@ export default function PlayerProfileScreen() {
         data={filteredPool}
         ListEmptyComponent={
           <View style={styles.bos}>
-            <Ionicons name={onlyUnlocked ? "lock-closed-outline" : "search-outline"} size={28} color={COLORS.textMuted} />
+            <Ionicons name={!search.trim() ? "lock-closed-outline" : "search-outline"} size={28} color={COLORS.textMuted} />
             <Text style={styles.bosYazi}>
-              {onlyUnlocked && !search.trim()
-                ? "Henüz açılmış futbolcu yok. Oyunlarda doğru bildiğin her futbolcu buraya eklenir."
-                : "Aramana uyan futbolcu yok."}
+              {!search.trim()
+                ? "Henüz açılmış futbolcu yok. Oyunlarda doğru bildiğin her futbolcu buraya eklenir — kim olursa olsun."
+                : "Açtığın futbolcular arasında bu isim yok."}
             </Text>
           </View>
         }
@@ -165,6 +193,10 @@ export default function PlayerProfileScreen() {
 
 const styles = StyleSheet.create({
   bos: { alignItems: "center", gap: 10, paddingVertical: 40, paddingHorizontal: 30 },
+  sekmeler: { flexDirection: "row", gap: 6, padding: 4, borderRadius: 14, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, marginVertical: 10, alignSelf: "stretch" },
+  sekme: { flex: 1, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center", height: 38, borderRadius: 10 },
+  sekmeAktif: { backgroundColor: COLORS.accent },
+  sekmeYazi: { color: COLORS.textMuted, fontWeight: "900", fontSize: 14 },
   bosYazi: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", lineHeight: 19 },
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 40 },
   header: { paddingHorizontal: 20, marginBottom: 10, alignItems: "center" },
@@ -172,6 +204,7 @@ const styles = StyleSheet.create({
   subtitle: { color: COLORS.textMuted, fontSize: 12, marginTop: 4, fontStyle: "italic", textAlign: "center" },
 
   statsBox: { width: "100%", backgroundColor: COLORS.card, padding: 12, borderRadius: 12, marginTop: 12, borderColor: COLORS.cardBorder, borderWidth: 1 },
+  seviyeNot: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 6 },
   statsText: { color: COLORS.text, fontSize: 14, fontWeight: "900", textAlign: "center", marginBottom: 8 },
   progressBarBg: { height: 10, backgroundColor: COLORS.bg, borderRadius: 5, overflow: "hidden" },
   progressBarFill: { height: "100%", backgroundColor: COLORS.accent },

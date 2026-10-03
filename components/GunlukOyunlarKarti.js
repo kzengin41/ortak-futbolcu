@@ -8,14 +8,16 @@ import { gunlukDurumOku, BES_KULUP_HAK, IZGARA_HAK } from "../lib/gunlukKayit";
 
 // Tüm Modlar'daki "Günlük 5 Kulüp" + "Günlük Izgara" girişleri (4 Ekim 2026).
 // Bulmacaların KENDİSİ burada üretilmiyor; sadece bugünün kaydına bakılıyor.
-export default function GunlukOyunlarKarti({ onBesKulup, onIzgara }) {
+export default function GunlukOyunlarKarti({ onBesKulup, onIzgara, onKadro }) {
   const [bes, setBes] = useState(null);
   const [izg, setIzg] = useState(null);
+  const [kdr, setKdr] = useState(null);
 
   const yukle = useCallback(() => {
     let iptal = false;
     gunlukDurumOku("5kulup").then((d) => { if (!iptal) setBes(d || {}); }).catch(() => {});
     gunlukDurumOku("izgara").then((d) => { if (!iptal) setIzg(d || {}); }).catch(() => {});
+    gunlukDurumOku("kadro").then((d) => { if (!iptal) setKdr(d || {}); }).catch(() => {});
     return () => { iptal = true; };
   }, []);
   useEffect(yukle, [yukle]);
@@ -30,10 +32,20 @@ export default function GunlukOyunlarKarti({ onBesKulup, onIzgara }) {
   const izgBitti = (izg?.kullanilan || 0) >= IZGARA_HAK || izgDolu === 9;
   const izgAlt = !izg ? "…" : izgBitti ? `Bugün ${izgDolu} / 9 ✓` : izg?.kullanilan ? `${IZGARA_HAK - izg.kullanilan} hak kaldı` : "9 hak · seriyi korur 🔥";
 
+  const kdrB = (kdr?.bulunan || []).length;
+  const kdrAlt = !kdr ? "…" : kdr.bitti ? `Bugün ${kdrB}/11 ✓` : kdrB ? `${kdrB}/11 · devam et` : "Efsane maçın ilk 11'i · seriyi korur 🔥";
+
   return (
+    <View style={{ gap: SPACING.sm }}>
+    {onKadro ? (
+      <View style={[s.satir]}>
+        <Kutu baslik="Günün Kadrosu" alt={kdrAlt} ikon="shirt" renk={MODE_COLORS.teamTeam.main} bitti={!!kdr?.bitti} onPress={onKadro} />
+      </View>
+    ) : null}
     <View style={s.satir}>
       <Kutu baslik="Günlük 5 Kulüp" alt={besAlt} ikon="podium" renk={MODE_COLORS.fiveClubs.main} bitti={besBitti} onPress={onBesKulup} />
       <Kutu baslik="Günlük Izgara" alt={izgAlt} ikon="grid" renk={MODE_COLORS.xox.main} bitti={izgBitti} onPress={onIzgara} />
+    </View>
     </View>
   );
 }

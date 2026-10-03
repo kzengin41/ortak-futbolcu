@@ -198,7 +198,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
           <DailyPuzzleCard onPress={onDailyPuzzle} />
           {/* 4 Ekim 2026 — Günlük 5 Kulüp + Günlük Izgara (.29283, .29364) */}
           {onGunlukOyun ? (
-            <GunlukOyunlarKarti onBesKulup={() => onGunlukOyun("gunluk5")} onIzgara={() => onGunlukOyun("gunlukIzgara")} />
+            <GunlukOyunlarKarti onKadro={() => onGunlukOyun("gunlukKadro")} onBesKulup={() => onGunlukOyun("gunluk5")} onIzgara={() => onGunlukOyun("gunlukIzgara")} />
           ) : null}
           <DailyGoalsCard />
         </View>

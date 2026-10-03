@@ -12,6 +12,7 @@ import { ayarlardanProfil, profilEtiketi, etkinAyar } from "../lib/eslesmeProfil
 import { getProfile, xpProgress } from "../lib/profile";
 import { getStreak, seriDurumu } from "../lib/streak";
 import { getBulmacaDurumu } from "../lib/dailyPuzzleStore";
+import { gunlukDurumOku } from "../lib/gunlukKayit";
 import { DENEME_HAKKI, gunNumarasi } from "../lib/dailyPuzzle";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 
@@ -93,7 +94,7 @@ export function rastgeleArma(rastgele = Math.random) {
   return { ana: ters ? b : a, ikinci: ters ? a : b, desen: DESENLER[Math.floor(rastgele() * DESENLER.length)] };
 }
 
-export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDailyPuzzle }) {
+export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDailyPuzzle, onGunlukKadro }) {
   const { settings } = useAppSettings();
   const profil = ayarlardanProfil(settings);
   const [cift, setCift] = useState(null);
@@ -101,6 +102,7 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
   const [seviye, setSeviye] = useState(null);
   const [seri, setSeri] = useState({ count: 0, lastPlayedDate: null });
   const [bulmaca, setBulmaca] = useState(null);
+  const [kadro, setKadro] = useState(undefined); // Günün Kadrosu bugünkü kaydı
 
   // Ekrana her dönüşte: yeni vitrin çifti, güncel XP / seri / bulmaca durumu.
   useFocusEffect(
@@ -113,6 +115,7 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
       getProfile().then((p) => !iptal && setSeviye(xpProgress(p))).catch(() => {});
       getStreak().then((s) => !iptal && setSeri(s)).catch(() => {});
       getBulmacaDurumu().then((d) => !iptal && setBulmaca(d)).catch(() => {});
+      gunlukDurumOku("kadro").then((d) => !iptal && setKadro(d || null)).catch(() => {});
       return () => { iptal = true; };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [settings?.eslesmeProfili])
@@ -150,7 +153,7 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
             <View>
               <Text style={styles.seviyeBaslik}>Seviye {seviye ? seviye.level : "–"}</Text>
               <Text style={styles.seviyeAlt}>
-                {seviye ? `${seviye.into} / ${seviye.needed} XP` : " "}
+                {seviye ? `${seviye.acilan} futbolcu · ${seviye.level + 1}. seviyeye ${seviye.kalan}` : " "}
               </Text>
             </View>
           </View>
@@ -186,7 +189,22 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
           </SoundPressable>
         </View>
 
-        {/* Tek günlük satırı (Günün Kadrosu gelene kadar Günün Bulmacası) */}
+        {/* 4 Ekim 2026 (.29452) — tek günlük satırı artık GÜNÜN KADROSU (günlük vitrin).
+            Günün Bulmacası Tüm Modlar'da. onGunlukKadro verilmemişse eski bulmaca satırı. */}
+        {onGunlukKadro ? (
+        <SoundPressable style={styles.gunluk} onPress={onGunlukKadro} accessibilityLabel="Günün Kadrosu">
+          <View style={styles.gunlukIkon}>
+            <Ionicons name={kadro?.bitti ? "checkmark" : "shirt"} size={22} color={COLORS.cta} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.gunlukBaslik}>Günün Kadrosu #{gunNumarasi()}</Text>
+            <Text style={styles.gunlukAlt}>
+              {kadro?.bitti ? `Bugün ${(kadro.bulunan || []).length}/11 buldun` : (kadro?.bulunan || []).length ? `${kadro.bulunan.length}/11 · devam et` : "Efsane bir maçın ilk 11'ini bul · seriyi korur 🔥"}
+            </Text>
+          </View>
+          {!kadro?.bitti && <Ionicons name="chevron-forward" size={18} color={COLORS.cta} />}
+        </SoundPressable>
+        ) : (
         <SoundPressable style={styles.gunluk} onPress={onDailyPuzzle}>
           <View style={styles.gunlukIkon}>
             <Ionicons
@@ -201,6 +219,7 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
           </View>
           {!bulmacaBitti && <Ionicons name="chevron-forward" size={18} color={COLORS.cta} />}
         </SoundPressable>
+        )}
 
         {/* 4 Ekim 2026 (Kerem: "anasayfadaki tüm modlar butonu da belli
             olmuyor") — artık günlük satırıyla aynı ağırlıkta bir kart. */}

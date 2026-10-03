@@ -27,7 +27,8 @@ export default function UnlockToast() {
   const kaydir = useRef(new Animated.Value(-120)).current;
   const zamanlayici = useRef(null);
 
-  useEffect(() => acilisDinle((ad) => setKuyruk((k) => (k.includes(ad) ? k : [...k, ad]))), []);
+  // 4 Ekim 2026: kuyrukta { ad, seviye } — seviye atlandıysa şerit "SEVİYE N!" der.
+  useEffect(() => acilisDinle((ad, ek) => setKuyruk((k) => (k.some((x) => x.ad === ad) ? k : [...k, { ad, seviye: ek?.seviye || null }]))), []);
 
   // Kuyrukta bir şey varsa ve ekranda gösterilen yoksa sıradakini al.
   useEffect(() => {
@@ -67,13 +68,13 @@ export default function UnlockToast() {
       pointerEvents="none"
       style={[styles.serit, { transform: [{ translateY: kaydir }] }]}
     >
-      <PlayerPhoto name={aktif} size={38} showProfileOnPress={false} />
+      <PlayerPhoto name={aktif.ad} size={38} showProfileOnPress={false} />
       <View style={{ flex: 1 }}>
         <View style={styles.baslikSatiri}>
-          <Ionicons name="sparkles" size={12} color={COLORS.cta} />
-          <Text style={styles.baslik}>ANSİKLOPEDİNE EKLENDİ</Text>
+          <Ionicons name={aktif.seviye ? "trending-up" : "sparkles"} size={12} color={COLORS.cta} />
+          <Text style={styles.baslik}>{aktif.seviye ? `SEVİYE ${aktif.seviye}! · ANSİKLOPEDİYE EKLENDİ` : "ANSİKLOPEDİNE EKLENDİ"}</Text>
         </View>
-        <Text style={styles.ad} numberOfLines={1}>{aktif}</Text>
+        <Text style={styles.ad} numberOfLines={1}>{aktif.ad}</Text>
       </View>
     </Animated.View>
   );

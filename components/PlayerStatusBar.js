@@ -54,7 +54,7 @@ export default function PlayerStatusBar() {
         <View style={styles.ustSatir}>
           <Text style={styles.etiket}>SEVİYE {ilerleme.level}</Text>
           <Text style={styles.xpYazi}>
-            {ilerleme.into} / {ilerleme.needed} XP
+            {ilerleme.acilan} futbolcu · {ilerleme.kalan} kaldı
           </Text>
         </View>
         <View style={styles.barZemin}>
