@@ -1,0 +1,746 @@
+{
+ "_aciklama": "scripts/kadro_cek.py girdisi. maclar: Wikipedia final makaleleri (Günün Kadrosu havuzu). sezonlar: kulüp × sezon kadroları (Ansiklopedi Takımlar sekmesi). Yeni maç/sezon eklemek için buraya yaz, script'i tekrar çalıştır.",
+ "maclar": [
+  {
+   "baslik": "1999 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2000 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2001 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2002 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2003 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2004 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2005 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2006 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2007 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2008 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2009 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2010 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2011 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2012 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2013 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2014 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2015 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2016 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2017 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2018 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2019 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2020 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2021 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2022 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2023 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2024 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2025 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali"
+  },
+  {
+   "baslik": "2000 UEFA Cup final",
+   "tur": "UEFA Kupası finali"
+  },
+  {
+   "baslik": "2001 UEFA Cup final",
+   "tur": "UEFA Kupası finali"
+  },
+  {
+   "baslik": "2003 UEFA Cup final",
+   "tur": "UEFA Kupası finali"
+  },
+  {
+   "baslik": "2004 UEFA Cup final",
+   "tur": "UEFA Kupası finali"
+  },
+  {
+   "baslik": "2006 UEFA Cup final",
+   "tur": "UEFA Kupası finali"
+  },
+  {
+   "baslik": "2009 UEFA Cup final",
+   "tur": "UEFA Kupası finali"
+  },
+  {
+   "baslik": "2010 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2011 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2012 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2013 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2014 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2015 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2016 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2017 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2018 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2019 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2020 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2021 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2022 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2023 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2024 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2025 UEFA Europa League final",
+   "tur": "Avrupa Ligi finali"
+  },
+  {
+   "baslik": "2000 UEFA Super Cup",
+   "tur": "UEFA Süper Kupa"
+  },
+  {
+   "baslik": "1998 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "2002 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "2006 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "2010 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "2014 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "2018 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "2022 FIFA World Cup final",
+   "tur": "Dünya Kupası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2000 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2004 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2008 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2012 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2016 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2020 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "UEFA Euro 2024 final",
+   "tur": "Avrupa Şampiyonası finali"
+  },
+  {
+   "baslik": "2021 UEFA Europa Conference League final",
+   "tur": "Konferans Ligi finali"
+  },
+  {
+   "baslik": "2022 UEFA Europa Conference League final",
+   "tur": "Konferans Ligi finali"
+  },
+  {
+   "baslik": "2023 UEFA Europa Conference League final",
+   "tur": "Konferans Ligi finali"
+  },
+  {
+   "baslik": "2024 UEFA Europa Conference League final",
+   "tur": "Konferans Ligi finali"
+  },
+  {
+   "baslik": "2025 UEFA Conference League final",
+   "tur": "Konferans Ligi finali"
+  }
+ ],
+ "sezonlar": [
+  {
+   "kulup": "Galatasaray",
+   "kalip": "{sezon} Galatasaray S.K. season",
+   "grup": "turkiye",
+   "sezonlar": [
+    "1999–2000",
+    "2000–01",
+    "2001–02",
+    "2002–03",
+    "2003–04",
+    "2004–05",
+    "2005–06",
+    "2006–07",
+    "2007–08",
+    "2008–09",
+    "2009–10",
+    "2010–11",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Fenerbahçe",
+   "kalip": "{sezon} Fenerbahçe S.K. season",
+   "grup": "turkiye",
+   "sezonlar": [
+    "2000–01",
+    "2001–02",
+    "2002–03",
+    "2003–04",
+    "2004–05",
+    "2005–06",
+    "2006–07",
+    "2007–08",
+    "2008–09",
+    "2009–10",
+    "2010–11",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Beşiktaş",
+   "kalip": "{sezon} Beşiktaş J.K. season",
+   "grup": "turkiye",
+   "sezonlar": [
+    "2000–01",
+    "2001–02",
+    "2002–03",
+    "2003–04",
+    "2004–05",
+    "2005–06",
+    "2006–07",
+    "2007–08",
+    "2008–09",
+    "2009–10",
+    "2010–11",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Trabzonspor",
+   "kalip": "{sezon} Trabzonspor season",
+   "grup": "turkiye",
+   "sezonlar": [
+    "2000–01",
+    "2001–02",
+    "2002–03",
+    "2003–04",
+    "2004–05",
+    "2005–06",
+    "2006–07",
+    "2007–08",
+    "2008–09",
+    "2009–10",
+    "2010–11",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Real Madrid",
+   "kalip": "{sezon} Real Madrid CF season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2001–02",
+    "2002–03",
+    "2003–04",
+    "2004–05",
+    "2005–06",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Barcelona",
+   "kalip": "{sezon} FC Barcelona season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2005–06",
+    "2008–09",
+    "2009–10",
+    "2010–11",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Manchester United",
+   "kalip": "{sezon} Manchester United F.C. season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "1998–99",
+    "2007–08",
+    "2008–09",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Liverpool",
+   "kalip": "{sezon} Liverpool F.C. season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2004–05",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Manchester City",
+   "kalip": "{sezon} Manchester City F.C. season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Chelsea",
+   "kalip": "{sezon} Chelsea F.C. season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2004–05",
+    "2009–10",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Arsenal",
+   "kalip": "{sezon} Arsenal F.C. season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2003–04",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Bayern Munich",
+   "kalip": "{sezon} FC Bayern Munich season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2000–01",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Juventus",
+   "kalip": "{sezon} Juventus FC season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2002–03",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "AC Milan",
+   "kalip": "{sezon} AC Milan season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2002–03",
+    "2004–05",
+    "2006–07",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Inter Milan",
+   "kalip": "{sezon} Inter Milan season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2009–10",
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Paris Saint-Germain",
+   "kalip": "{sezon} Paris Saint-Germain FC season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Atlético Madrid",
+   "kalip": "{sezon} Atlético Madrid season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  },
+  {
+   "kulup": "Borussia Dortmund",
+   "kalip": "{sezon} Borussia Dortmund season",
+   "grup": "avrupa",
+   "sezonlar": [
+    "2011–12",
+    "2012–13",
+    "2013–14",
+    "2014–15",
+    "2015–16",
+    "2016–17",
+    "2017–18",
+    "2018–19",
+    "2019–20",
+    "2020–21",
+    "2021–22",
+    "2022–23",
+    "2023–24",
+    "2024–25",
+    "2025–26"
+   ]
+  }
+ ]
+}
