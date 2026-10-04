@@ -11,12 +11,13 @@ import Saha, { Kulube } from "../components/Saha";
 import { bulunanKumesi } from "../components/TakimlarListesi";
 import { PLAYERS } from "../lib/players";
 import { findMatchedPlayer, suggestPlayers, buildSuggestIndex } from "../lib/gameEngine";
-import { kadroGetir, sahaSatirlari, tamamlanma } from "../lib/kadrolar";
+import { kadroGetir, sahaSatirlari, tamamlanma, HAT_ETIKET } from "../lib/kadrolar";
 import { bulunanEkle, tamamlandiKaydet } from "../lib/kadroKoleksiyon";
 import { hedefler as avHedefleri } from "../lib/kadroAvi";
 import { oyuncuGetir } from "../lib/kimBuVeri";
 import { unlockPlayer } from "../lib/pokedex";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
+import { useVoiceInput } from "../lib/useVoiceInput";
 import { flagForCountry } from "../lib/countryFlags";
 import { countryTr } from "../lib/countryNamesTr";
 import { COLORS, SPACING, RADIUS, MODE_COLORS } from "../lib/theme";
@@ -26,6 +27,12 @@ import { COLORS, SPACING, RADIUS, MODE_COLORS } from "../lib/theme";
 // Saha görünümünde ilk 11 + 7 yedek. Bulunan futbolcular açık, diğerleri
 // forma numarası ve mevkiyle kapalı. Alttaki kutuya bu kadrodan bir isim yaz:
 // doğruysa açılır. Hepsi açılınca rozet ("KADRO TAMAMLANDI").
+//
+// Paket 18 (Kerem: "kadrodaki numaraya tıklayınca o oyuncuyu tahmin edebilsin.
+// bu modda sesli giriş de yapabilsin") — kapalı bir forma numarasına dokununca
+// o oyuncu HEDEF olur (turuncu halka); kutuya yazılan/söylenen isim o formayla
+// karşılaştırılır. Hedef yokken eskisi gibi kadrodaki herhangi biri açılır.
+// Mikrofon: konuşurken yazı ekranın üstünde canlı görünür (lib/useVoiceInput.js).
 // ============================================================================
 export default function KadroScreen({ route, navigation, id: idProp }) {
   const id = idProp || route?.params?.id;
@@ -34,6 +41,11 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
   const [girdi, setGirdi] = useState("");
   const [uyari, setUyari] = useState(null);
   const [profil, setProfil] = useState(null);
+  const [hedef, setHedef] = useState(null);     // tahmin için seçilen kapalı oyuncu
+  const [sesHata, setSesHata] = useState(null);
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(() =>
+    kadro ? [...kadro.ilk11, ...kadro.yedek].filter((o) => !bulunan.has(o.a)).map((o) => o.a) : []
+  );
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
@@ -67,14 +79,39 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
       setUyari(findMatchedPlayer(yazi, [...kadro.ilk11, ...kadro.yedek].map((o) => ({ name: o.a }))) ? "Onu zaten açtın" : "Bu kadroda yok");
       return;
     }
+    // Hedefli tahmin: doğru forma mı? Değilse yine açılır (kadroda var) ama söylenir.
+    if (hedef && m.o.a !== hedef.a) {
+      setUyari(`${hedef.n != null ? `#${hedef.n}` : "O forma"} değil — ama ${m.o.a} de bu kadroda, açıldı`);
+    } else {
+      setUyari(null);
+      setHedef(null);
+    }
     const yeni = new Set(bulunan);
     yeni.add(m.o.a);
     setBulunan(yeni);
-    setUyari(null);
     playCorrect();
     if (m.o.v) unlockPlayer(m.o.a);
     bulunanEkle(m.o.a);
     if (tamamlanma(kadro, yeni).tamam) tamamlandiKaydet(kadro.id).catch(() => {});
+  }
+
+  function oyuncuyaDokun(o) {
+    if (bulundu(o)) { if (o.v) setProfil(o.a); return; }
+    setHedef((h) => (h && h.a === o.a ? null : o));   // aynı formaya tekrar dokun: seçim kalkar
+    setUyari(null);
+  }
+
+  async function mikrofon() {
+    setSesHata(null);
+    if (isRecording) {
+      try {
+        const metin = await stopRecording();
+        if (!metin) { setSesHata("Sesi anlayamadım, tekrar dener misin?"); return; }
+        gonder(metin);
+      } catch (e) { setSesHata(e.message || "Ses tanıma başarısız oldu"); }
+    } else {
+      try { await startRecording(); } catch (e) { setSesHata(e.message || "Mikrofona erişilemedi"); }
+    }
   }
 
   const m = kadro.mac;
@@ -110,8 +147,8 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
         </SoundPressable>
       ) : null}
 
-      <Saha satirlar={satirlar} bulundu={bulundu} onPress={(o) => (bulundu(o) && o.v ? setProfil(o.a) : null)} />
-      <Kulube yedek={kadro.yedek} bulundu={bulundu} onPress={(o) => (bulundu(o) && o.v ? setProfil(o.a) : null)} />
+      <Saha satirlar={satirlar} bulundu={bulundu} onPress={oyuncuyaDokun} secili={(o) => !!hedef && o.a === hedef.a} />
+      <Kulube yedek={kadro.yedek} bulundu={bulundu} onPress={oyuncuyaDokun} secili={(o) => !!hedef && o.a === hedef.a} />
       {kadro.tip === "sezon" ? (
         <Text style={s.not}>
           {kadro.sezon.kaynak === "diyagram"
@@ -124,19 +161,38 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
 
       {!t.tamam ? (
         <>
+          {hedef ? (
+            <View style={s.hedefSatir}>
+              <View style={s.hedefNo}><Text style={s.hedefNoYazi}>{hedef.n != null ? hedef.n : "?"}</Text></View>
+              <Text style={s.hedefYazi} numberOfLines={1}>{HAT_ETIKET[hedef.p] || hedef.p} — bu oyuncu kim?</Text>
+              <SoundPressable onPress={() => setHedef(null)} hitSlop={10} accessibilityLabel="Seçimi kaldır">
+                <Ionicons name="close-circle" size={22} color={COLORS.textMuted} />
+              </SoundPressable>
+            </View>
+          ) : (
+            <Text style={s.ipucu}>Bir forma numarasına dokun ve o oyuncuyu tahmin et — ya da kadrodan herhangi bir isim yaz.</Text>
+          )}
           <View style={s.girdiSatir}>
             <TextInput
               style={s.girdi}
               value={girdi}
               onChangeText={(x) => { setGirdi(x); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder="Bu kadrodan bir isim yaz"
+              placeholder={hedef ? `#${hedef.n ?? "?"} kim?` : "Bu kadrodan bir isim yaz"}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
               returnKeyType="send"
               blurOnSubmit={false}
             />
+            <SoundPressable
+              style={[s.mic, isRecording && s.micAktif]}
+              onPress={mikrofon}
+              disabled={isProcessing}
+              accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle söyle"}
+            >
+              <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#FFFFFF" : COLORS.text} />
+            </SoundPressable>
             <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
@@ -148,6 +204,7 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
             </Pressable>
           ))}
           {uyari ? <Text style={s.uyari}>{uyari}</Text> : null}
+          {sesHata ? <Text style={s.uyari}>{sesHata}</Text> : null}
         </>
       ) : null}
 
@@ -172,6 +229,13 @@ const s = StyleSheet.create({
   girdiSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 2, borderColor: COLORS.accent, paddingHorizontal: 6, height: 54 },
   girdi: { flex: 1, color: COLORS.text, fontSize: 16, fontWeight: "600", paddingHorizontal: 6 },
   gonder: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.accent },
+  mic: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.cardBorder },
+  micAktif: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  ipucu: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted, textAlign: "center", marginTop: 12 },
+  hedefSatir: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cta },
+  hedefNo: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.cta },
+  hedefNoYazi: { fontSize: 13, fontWeight: "900", color: COLORS.ctaDark },
+  hedefYazi: { flex: 1, fontSize: 14, fontWeight: "800", color: COLORS.text },
   oneri: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, paddingHorizontal: 12 },
   oneriYazi: { flex: 1, fontSize: 15, fontWeight: "600", color: COLORS.text },
   uyari: { fontSize: 13, fontWeight: "700", color: COLORS.cta, textAlign: "center", marginTop: 8 },

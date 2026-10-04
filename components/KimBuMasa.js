@@ -201,7 +201,9 @@ export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd
           {/* 4 Ekim 2026: bulanık foto (silüet tintColor ile opak JPG'lerde düz daire veriyordu). */}
           {siluetAcik && fotoUrl && !fotoBozuk && !durumGetir ? (
             <View style={s.siluetKutu}>
-              <HizliResim source={{ uri: fotoUrl }} style={s.siluet} blurRadius={24} contentFit="cover" cachePolicy="memory-disk" transition={150} onError={() => setFotoBozuk(true)} />
+              {/* Paket 18 (Kerem: "bulanık foto aşırı aşırı bulanık... en net halinden
+                  bir tık bulanık olsa yeter") — 24 → 4 */}
+              <HizliResim source={{ uri: fotoUrl }} style={s.siluet} blurRadius={4} contentFit="cover" cachePolicy="memory-disk" transition={150} onError={() => setFotoBozuk(true)} />
             </View>
           ) : null}
         </>

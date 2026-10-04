@@ -55,6 +55,8 @@ const NO_CONFIRM_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi",
 const APP_EXIT_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding"]);
 
 const Stack = createNativeStackNavigator();
+import SekmeKaydirma from "./components/SekmeKaydirma";
+import CanliSesBalonu from "./components/CanliSesBalonu";
 const Tab = createBottomTabNavigator();
 
 function goHome(navigation) {
@@ -373,8 +375,12 @@ const TAB_ICONS = {
 function MainTabsRoute() {
   return (
     <Tab.Navigator
+      // Paket 18 — sekmeler arası sağa-sola kaydırma (components/SekmeKaydirma.js)
+      // ve geçişte yana kayma animasyonu.
+      screenLayout={(p) => <SekmeKaydirma {...p} />}
       screenOptions={({ route }) => ({
         headerShown: false,
+        animation: "shift",
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarStyle: { backgroundColor: COLORS.card, borderTopColor: COLORS.cardBorder, borderTopWidth: 1 },
@@ -581,6 +587,8 @@ function App() {
               {/* 12 Eylül 2026 — yeni futbolcu açılışı bildirimi. Tek yerde
                   monte; oyun ekranlarının haberi olmasına gerek yok. */}
               <UnlockToast />
+              {/* Paket 18 — konuşurken telefonun duyduğu yazı (lib/sesCanli.js) */}
+              <CanliSesBalonu />
             </DokunmaSesiKatmani>
           </HataSiniri>
         </SafeAreaView>

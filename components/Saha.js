@@ -19,7 +19,7 @@ const soyad = (ad) => {
   return p.length > 1 ? p.slice(-1)[0] : ad;
 };
 
-export function OyuncuNoktasi({ o, acikMi, kirmizi, boyut = 46, onPress }) {
+export function OyuncuNoktasi({ o, acikMi, kirmizi, secili, boyut = 46, onPress }) {
   const ic = acikMi && o.v ? (
     <PlayerPhoto name={o.a} size={boyut - 4} showProfileOnPress={false} />
   ) : acikMi ? (
@@ -30,10 +30,10 @@ export function OyuncuNoktasi({ o, acikMi, kirmizi, boyut = 46, onPress }) {
   const govde = (
     <View style={s.nokta}>
       <View style={[s.daire, { width: boyut, height: boyut, borderRadius: boyut / 2 },
-        acikMi && s.daireAcik, kirmizi && s.daireKirmizi]}>
+        acikMi && s.daireAcik, kirmizi && s.daireKirmizi, secili && s.daireSecili]}>
         {ic}
       </View>
-      <Text style={[s.ad, !acikMi && !kirmizi && s.adKapali]} numberOfLines={1}>
+      <Text style={[s.ad, !acikMi && !kirmizi && s.adKapali, secili && s.adSecili]} numberOfLines={1}>
         {acikMi || kirmizi ? soyad(o.a) : HAT_ETIKET[o.p] || o.p}
       </Text>
     </View>
@@ -46,7 +46,8 @@ export function OyuncuNoktasi({ o, acikMi, kirmizi, boyut = 46, onPress }) {
   );
 }
 
-export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut = 46 }) {
+// Paket 18: `secili(o)` — tahmin için seçilmiş (dokunulmuş) kapalı oyuncu vurgulanır.
+export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut = 46, secili }) {
   return (
     <View style={s.saha}>
       <View style={s.ortaCizgi} />
@@ -57,7 +58,7 @@ export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut =
         <View key={r} style={s.satir}>
           {satir.map((o) => {
             const b = bulundu(o);
-            return <OyuncuNoktasi key={o.i ?? o.a} o={o} acikMi={b} kirmizi={acik && !b} boyut={boyut} onPress={onPress} />;
+            return <OyuncuNoktasi key={o.i ?? o.a} o={o} acikMi={b} kirmizi={acik && !b} secili={!!(secili && secili(o))} boyut={boyut} onPress={onPress} />;
           })}
         </View>
       ))}
@@ -66,7 +67,7 @@ export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut =
 }
 
 // Yedek kulübesi
-export function Kulube({ yedek, bulundu, acik = false, onPress }) {
+export function Kulube({ yedek, bulundu, acik = false, onPress, secili }) {
   if (!yedek || !yedek.length) return null;
   return (
     <View style={s.kulube}>
@@ -77,7 +78,7 @@ export function Kulube({ yedek, bulundu, acik = false, onPress }) {
       <View style={s.kulubeSatir}>
         {yedek.map((o, i) => {
           const b = bulundu(o);
-          return <OyuncuNoktasi key={o.a + i} o={o} acikMi={b} kirmizi={acik && !b} boyut={38} onPress={onPress} />;
+          return <OyuncuNoktasi key={o.a + i} o={o} acikMi={b} kirmizi={acik && !b} secili={!!(secili && secili(o))} boyut={38} onPress={onPress} />;
         })}
       </View>
     </View>
@@ -94,6 +95,8 @@ const s = StyleSheet.create({
   daire: { alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.35)", borderWidth: 2, borderColor: "rgba(255,255,255,0.6)", overflow: "hidden" },
   daireAcik: { backgroundColor: "#FFFFFF", borderColor: COLORS.accent },
   daireKirmizi: { backgroundColor: "rgba(255,93,93,0.85)", borderColor: "#FF5D5D" },
+  daireSecili: { backgroundColor: COLORS.cta, borderColor: "#FFFFFF", borderWidth: 3, transform: [{ scale: 1.12 }] },
+  adSecili: { color: "#FFFFFF" },
   no: { color: "#FFFFFF", fontWeight: "900" },
   harf: { color: "#1E6B3A", fontWeight: "900" },
   ad: { marginTop: 3, fontSize: 11, fontWeight: "900", color: "#FFFFFF", textAlign: "center", textShadowColor: "rgba(0,0,0,0.6)", textShadowRadius: 3 },

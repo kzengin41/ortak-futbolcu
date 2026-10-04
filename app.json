@@ -52,6 +52,14 @@
         }
       ],
       "expo-audio",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Sesle cevap verebilmen için mikrofonuna erişmemiz gerekiyor.",
+          "speechRecognitionPermission": "Söylediğin futbolcu adını anında yazıya çevirmek için konuşma tanıma kullanıyoruz.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox", "com.google.android.as"]
+        }
+      ],
       "expo-image",
       "expo-notifications",
       [

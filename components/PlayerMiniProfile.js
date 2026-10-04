@@ -202,25 +202,31 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
             <Ionicons name="close" size={20} color={COLORS.textMuted} />
           </Pressable>
 
-          <View style={styles.header}>
-            <ProfileAvatar name={name} size={84} />
-            <Text style={styles.name} numberOfLines={2}>{name}</Text>
-          </View>
-
-          {chips.length > 0 && (
-            <View style={styles.chipRow}>
-              {chips.map((c, i) => (
-                <View key={i} style={styles.chip}>
-                  <Ionicons name={c.icon} size={12} color={COLORS.accent} />
-                  <Text style={styles.chipText} numberOfLines={1}>{c.text}</Text>
-                </View>
-              ))}
+          {/* Paket 18 (Kerem: "mini profilde en aşağıdaki şeyleri görecek şekilde
+              kaymıyor") — KÖK NEDEN: başlık, rozetler ve durum kartı kaydırma
+              alanının DIŞINDAYDI, ScrollView de `flexGrow: 0` ile küçülemiyordu;
+              kart %82 yüksekliğe takılınca alttaki kupalar kartın dışında kalıp
+              kesiliyordu. Artık bütün içerik tek kaydırma alanında ve alan
+              kartın içine sığacak kadar küçülebiliyor (flexShrink). */}
+          <ScrollView style={styles.body} contentContainerStyle={{ paddingBottom: 16 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            <View style={styles.header}>
+              <ProfileAvatar name={name} size={84} />
+              <Text style={styles.name} numberOfLines={2}>{name}</Text>
             </View>
-          )}
 
-          <DurumKarti pr={pr} active={active} lastYear={info?.lastYear} olumYili={olumYili} age={age} />
+            {chips.length > 0 && (
+              <View style={styles.chipRow}>
+                {chips.map((c, i) => (
+                  <View key={i} style={styles.chip}>
+                    <Ionicons name={c.icon} size={12} color={COLORS.accent} />
+                    <Text style={styles.chipText} numberOfLines={1}>{c.text}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
-          <ScrollView style={styles.body} contentContainerStyle={{ paddingBottom: 8 }} nestedScrollEnabled>
+            <DurumKarti pr={pr} active={active} lastYear={info?.lastYear} olumYili={olumYili} age={age} />
+
             <BasariRozetleri kodlar={info?.basarilar} sayilar={pr?.bs} />
             {info?.basarilar?.length ? <View style={{ height: 14 }} /> : null}
             {info?.clubs?.length > 0 && (
@@ -307,7 +313,7 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 },
   chip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.bg, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 5, paddingHorizontal: 9 },
   chipText: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
-  body: { flexGrow: 0 },
+  body: { flexGrow: 0, flexShrink: 1 },
   sectionTitle: { color: COLORS.cta, fontSize: 12, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   clubRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
   clubName: { color: COLORS.text, fontSize: 13, fontWeight: "600", flex: 1 },
