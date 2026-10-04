@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { Image } from "expo-image";
 import { kulupGrubu } from "../lib/clubAliases";
-import { clubLogo } from "../lib/clubLogos";
+import { clubLogo, ATLAS_HUCRE, ATLAS_GENISLIK, ATLAS_YUKSEKLIK } from "../lib/clubLogos";
 
 // Gerçek kulüp amblemleri telifli/markalı görsellerdir, lisanssız kullanmak
 // risk taşır. Bunun yerine gerçek takım RENKLERİYLE (renk kendisi telifli
@@ -247,14 +247,20 @@ export default function TeamBadge({ name, size = 56 }) {
   // harf DEGIL, armanin kendisi cikiyor. Gorseli olmayan kulup (alt lig,
   // rezerv takim) eskisi gibi uretilmis kalkana duser — yani bu degisiklik
   // HICBIR kulubu bozmaz, sadece bilinenleri iyilestirir.
+  //
+  // Paket 17 (5 Ekim 2026) — logolar artık tek tek dosya değil, 10×10'luk
+  // atlasların hücreleri (1127 ayrı asset `eas update`in 1000 sınırını
+  // aşıyordu; bkz. scripts/logo_atlas.py). Atlas, hücre `size` boyutuna
+  // gelecek şekilde ölçeklenip kaydırılıyor; dış View yalnız o hücreyi gösteriyor.
   const logo = clubLogo(name);
   if (logo) {
+    const k = size / ATLAS_HUCRE;
     return (
-      <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ width: size, height: size, overflow: "hidden" }}>
         <Image
-          source={logo}
-          style={{ width: size, height: size }}
-          contentFit="contain"
+          source={logo.kaynak}
+          style={{ position: "absolute", left: -logo.x * k, top: -logo.y * k, width: ATLAS_GENISLIK * k, height: ATLAS_YUKSEKLIK * k }}
+          contentFit="fill"
           cachePolicy="memory-disk"
           transition={0}
         />

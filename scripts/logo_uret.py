@@ -7,7 +7,7 @@ Kullanim (proje kokunden):
 Girdi : C:\\Users\\Monster\\Desktop\\clubs\\<id>.png
         scripts/logo_haritasi.json   (kulup adi -> FM id)
 Cikti : assets/club_logos/<id>.webp
-        lib/clubLogos.js
+        assets/club_atlas/atlas_NN.webp + lib/clubLogos.js  (scripts/logo_atlas.py)
 """
 import json, os, sys, io, re
 from PIL import Image
@@ -46,33 +46,8 @@ if hata:
     print(f"Hata         : {len(hata)}")
     for h in hata[:10]: print("   ", h)
 
-var = sorted(set(harita.values()) - {h[0] for h in hata})
-satir_req = "\n".join(f'  "{cid}": require("../assets/club_logos/{cid}.webp"),' for cid in var)
-satir_map = "\n".join(f'  {json.dumps(ad, ensure_ascii=False)}: "{cid}",'
-                      for ad, cid in sorted(harita.items()) if cid in set(var))
-
-js = f"""// OTOMATIK URETILDI - elle duzenleme. Kaynak: scripts/logo_uret.py
-// {len(var)} logo, {len(harita)} kulup adi.
-import {{ canonicalClub }} from "./clubAliases";
-
-const GORSELLER = {{
-{satir_req}
-}};
-
-const KULUP_LOGO = {{
-{satir_map}
-}};
-
-// Bir kulup adi icin logo dondurur; yoksa null.
-export function clubLogo(club) {{
-  if (!club) return null;
-  const id = KULUP_LOGO[club] || KULUP_LOGO[canonicalClub(club)];
-  return id ? GORSELLER[id] : null;
-}}
-
-export function hasClubLogo(club) {{
-  return clubLogo(club) != null;
-}}
-"""
-open(JS, "w", encoding="utf-8").write(js)
-print(f"Yazildi      : {os.path.relpath(JS, KOK)}  ({len(var)} logo / {len(harita)} kulup adi)")
+# Paket 17 (5 Ekim 2026): lib/clubLogos.js artik tek tek require() uretmiyor
+# (1127 asset `eas update` 1000 sinirini asiyordu). Logolar atlasa paketlenir.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import logo_atlas
+logo_atlas.main()

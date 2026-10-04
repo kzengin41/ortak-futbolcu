@@ -58,3 +58,8 @@ bulunanlar/
 # saymaya devam etsin: yerel native klasörler yüklenmesin, sunucu kendisi üretsin.
 android/
 ios/
+
+# Paket 17 (5 Ekim 2026) — tek tek logo dosyaları artık uygulamada kullanılmıyor;
+# uygulama assets/club_atlas/ içindeki atlasları kullanıyor. Bunlar sadece
+# scripts/logo_atlas.py'nin girdisi.
+assets/club_logos/
