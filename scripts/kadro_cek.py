@@ -452,7 +452,22 @@ def sezon_basligi(kulup_kalibi, sezon):
     return kulup_kalibi.replace("{sezon}", sezon)
 
 
-def sezon_isle(oturum, kulup, kalip, sezon):
+def guncel_kadro_bolumu(metin):
+    """Ana makaleden yalnız 'Current squad' bölümü (kiralıktakiler, emekli
+    numaralar vb. dahil olmasın)."""
+    m = re.search(r"\n(=+)\s*(Current squad|First[- ]team squad|Squad)\s*=+", metin, re.I)
+    if not m:
+        return ""
+    son = re.search(r"\n=+[^=\n]+=+", metin[m.end():])
+    return metin[m.end(): m.end() + (son.start() if son else len(metin))]
+
+
+def kulup_ana_makalesi(kalip):
+    """'{sezon} Beşiktaş J.K. season' -> 'Beşiktaş J.K.'"""
+    return re.sub(r"\s*season\s*$", "", kalip.replace("{sezon}", "")).strip()
+
+
+def sezon_isle(oturum, kulup, kalip, sezon, guncel=False):
     baslik = sezon_basligi(kalip, sezon)
     gercek, metin = wikitext_getir(oturum, baslik)
     if not metin:
@@ -462,6 +477,22 @@ def sezon_isle(oturum, kulup, kalip, sezon):
     if not metin:
         return None, "sayfa bulunamadı: %s" % baslik
     kadro = sezon_kadrosu_v2(metin)
+    if len(kadro) < 14 and guncel:
+        # 5 Ekim 2026 (Kerem: "bjk de eksik olmasın 26-27") — yeni sezonun sayfası
+        # açılmış ama kadro tablosu henüz yoksa kulübün ana makalesindeki
+        # "Current squad" (güncel kadro) okunur. Yalnız EN YENİ sezonda: eski
+        # sezonlara bugünün kadrosunu yazmak yanlış olur. Maç sayısı olmadığı
+        # için ilk 11 mevkiye + tanınırlığa göre dizilir. Ana makale her
+        # çalıştırmada tazelenir (önbellek silinir), kadro değiştikçe güncellensin.
+        ana = kulup_ana_makalesi(kalip)
+        yol = os.path.join(CACHE, hashlib.md5(ana.encode("utf-8")).hexdigest() + ".json")
+        if os.path.exists(yol):
+            os.remove(yol)
+        g2, m2 = wikitext_getir(oturum, ana)
+        k2 = sezon_kadrosu_v2(guncel_kadro_bolumu(m2)) if m2 else []
+        if len(k2) >= 14:
+            return {"kulup": kulup, "sezon": sezon, "baslik": gercek or baslik, "oyuncular": k2,
+                    "macSayisiVar": False, "kaynakSayfa": g2}, None
     if len(kadro) < 14:
         return None, "kadro okunamadı (%d oyuncu): %s" % (len(kadro), gercek or baslik)
     return {"kulup": kulup, "sezon": sezon, "baslik": gercek, "oyuncular": kadro,
@@ -507,8 +538,11 @@ def main():
         for grup in liste["sezonlar"]:
             for sezon in grup["sezonlar"]:
                 isler.append((grup["kulup"], grup["kalip"], sezon))
+        son_sezon = {}
+        for kulup, kalip, sezon in isler:
+            son_sezon[kulup] = max(son_sezon.get(kulup, sezon), sezon)
         for i, (kulup, kalip, sezon) in enumerate(isler, 1):
-            kayit, hata = sezon_isle(oturum, kulup, kalip, sezon)
+            kayit, hata = sezon_isle(oturum, kulup, kalip, sezon, guncel=(sezon == son_sezon[kulup]))
             if kayit:
                 cikti["sezonlar"].append(kayit)
                 print("[sezon %d/%d] %s %s  ✓ %d oyuncu%s" % (i, len(isler), kulup, sezon, len(kayit["oyuncular"]),
