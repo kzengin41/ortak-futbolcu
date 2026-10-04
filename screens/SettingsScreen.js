@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Switch } from "react-native";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
@@ -28,6 +28,21 @@ const ITEMS = [
   { key: "whistle", label: "Açılış Düdüğü", desc: "Uygulama açıldığında bir kez çalar" },
 ];
 
+// 5 Ekim 2026 (Kerem: "ayarlar ekranında yukarıda hızlıca açabilmek için ses
+// ayarları / eşleştirme ayarları vb. ikon ile kısayol düğmeleri olsun.")
+// Kısayol: ilgili sekmeye geçer ve o bölüme kaydırır; pencere açılan
+// ayarlarda (eşleşme profili, takım) doğrudan pencereyi açar.
+const KISAYOLLAR = [
+  { id: "ses", ad: "Ses", ikon: "volume-high", sekme: "sen" },
+  { id: "eslesme", ad: "Eşleşme", ikon: "options", sekme: "oyun", pencere: "profil" },
+  { id: "takim", ad: "Takımın", ikon: "shield", sekme: "sen", pencere: "takim" },
+  { id: "tema", ad: "Tema", ikon: "color-palette", sekme: "sen" },
+  { id: "hatirlatma", ad: "Hatırlatma", ikon: "notifications", sekme: "sen" },
+  { id: "bilgi", ad: "Bilgi testi", ikon: "school", sekme: "oyun" },
+  { id: "sesli", ad: "Sesli cevap", ikon: "mic", sekme: "oyun" },
+  { id: "mod", ad: "Modlar", ikon: "game-controller", sekme: "gelismis" },
+];
+
 const SEKMELER = [
   { id: "sen", ad: "Sen", ikon: "person" },
   { id: "oyun", ad: "Oyun", ikon: "football" },
@@ -41,6 +56,23 @@ export default function SettingsScreen({ onBack }) {
   const [takimAcik, setTakimAcik] = useState(false);
   const [testAcik, setTestAcik] = useState(false);
   const [sekme, setSekme] = useState("sen");
+  const kaydirRef = useRef(null);
+  const konumlar = useRef({});
+  const hedefRef = useRef(null);
+  const kaydir = (y) => kaydirRef.current?.scrollTo?.({ y: Math.max(0, y - 12), animated: true });
+  // Bölüm başlığı yerleşince konumunu kaydet; kısayolla bekleniyorsa oraya kaydır.
+  const yer = (id) => (e) => {
+    const y = e.nativeEvent.layout.y;
+    konumlar.current[id] = y;
+    if (hedefRef.current === id) { hedefRef.current = null; setTimeout(() => kaydir(y), 30); }
+  };
+  function kisayol(k) {
+    if (k.pencere === "profil") { setProfilAcik(true); return; }
+    if (k.pencere === "takim") setTakimAcik(true);
+    if (sekme === k.sekme && konumlar.current[k.id] != null) { kaydir(konumlar.current[k.id]); return; }
+    hedefRef.current = k.id;
+    setSekme(k.sekme);
+  }
 
   // 26 Eylül 2026 — tema seçilince uygulamayı kendisi yeniden yüklüyor,
   // kullanıcıdan "kapat aç" beklemiyoruz. Yazma BİTMEDEN yeniden yüklemek
@@ -107,9 +139,18 @@ export default function SettingsScreen({ onBack }) {
 
   return (
     <GameBackground style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingVertical: 24 }}>
+      <ScrollView ref={kaydirRef} contentContainerStyle={{ paddingVertical: 24 }}>
         <BackButton onPress={onBack} confirm={false} />
         <Text style={styles.title}>Ayarlar</Text>
+
+        <View style={styles.kisayollar}>
+          {KISAYOLLAR.map((k) => (
+            <SoundPressable key={k.id} style={styles.kisayol} onPress={() => kisayol(k)} accessibilityLabel={`${k.ad} ayarlarına git`}>
+              <View style={styles.kisayolIkon}><Ionicons name={k.ikon} size={20} color={COLORS.accent} /></View>
+              <Text style={styles.kisayolYazi} numberOfLines={1}>{k.ad}</Text>
+            </SoundPressable>
+          ))}
+        </View>
 
         {/* 4 Ekim 2026 (benchmark .29994) — ayarlar üç başlıkta: Sen (takım, tema,
             ses, hatırlatma), Oyun (bilgi seviyesi, eşleşme profili, sesli cevap),
@@ -131,7 +172,7 @@ export default function SettingsScreen({ onBack }) {
 
         {sekme === "sen" ? (
           <>
-          <Text style={styles.sectionTitle}>Tuttuğun Takım</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("takim")}>Tuttuğun Takım</Text>
           <Text style={styles.sectionDesc}>
             Takımın turlarda daha sık çıkar. Ne sıklıkla çıkacağını eşleşme profilinden ayarlarsın.
           </Text>
@@ -149,7 +190,7 @@ export default function SettingsScreen({ onBack }) {
               />
             </View>
           ) : <View style={{ height: 14 }} />}
-          <Text style={styles.sectionTitle}>Tema</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("tema")}>Tema</Text>
           <Text style={styles.sectionDesc}>
             Tema seçtiğinde uygulama kendini bir saniyede yeniler ve yeni renklerle
             açılır. Oyun ilerlemen, istatistiklerin ve ayarların korunur.
@@ -214,7 +255,7 @@ export default function SettingsScreen({ onBack }) {
             </Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Ses Ayarları</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("ses")}>Ses Ayarları</Text>
           {ITEMS.map((item) => (
             <View key={item.key} style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -238,7 +279,7 @@ export default function SettingsScreen({ onBack }) {
               </View>
             </View>
           ))}
-          <Text style={styles.sectionTitle}>Hatırlatma</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("hatirlatma")}>Hatırlatma</Text>
           <Text style={styles.sectionDesc}>
             {bildirimVar
               ? `Günün bulmacasını ve görevlerini kaçırmamak için akşam ${HATIRLATMA_SAATI}:00'de tek bir hatırlatma.`
@@ -272,7 +313,7 @@ export default function SettingsScreen({ onBack }) {
               BÜTÜN modların varsayılanı; mod kurulumunda sadece o maç için
               değiştirilebilir. */}
           {/* 4 Ekim 2026 — futbol bilgisi testi: seviye bütün modların varsayılan zorluğu */}
-          <Text style={styles.sectionTitle}>Futbol Bilgin</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("bilgi")}>Futbol Bilgin</Text>
           <Text style={styles.sectionDesc}>
             Kısa testin sonucu. Elle değiştirmediğin her mod bu zorlukla başlar; oynadıkça kendiliğinden ince ayarlanır.
           </Text>
@@ -288,7 +329,7 @@ export default function SettingsScreen({ onBack }) {
           </SoundPressable>
           <View style={{ height: 14 }} />
 
-          <Text style={styles.sectionTitle}>Eşleşme Profili</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("eslesme")}>Eşleşme Profili</Text>
           <Text style={styles.sectionDesc}>
             Hangi kulüplerin ve oyuncuların çıkacağını belirler. Bütün modlar bununla başlar; istersen mod kurulumunda o maç için değiştirirsin.
           </Text>
@@ -301,7 +342,7 @@ export default function SettingsScreen({ onBack }) {
             <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
           </SoundPressable>
 
-          <Text style={styles.sectionTitle}>Sesli Cevap</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("sesli")}>Sesli Cevap</Text>
           <Text style={styles.sectionDesc}>
             Mikrofonla cevap verdiğinde anlaşılan ismi önce ekranda gösterip onayını
             ister. Kapatırsan cevap doğrudan gönderilir (eski davranış).
@@ -324,7 +365,7 @@ export default function SettingsScreen({ onBack }) {
 
         {sekme === "gelismis" ? (
           <>
-          <Text style={styles.sectionTitle}>Mod Varsayılanları</Text>
+          <Text style={styles.sectionTitle} onLayout={yer("mod")}>Mod Varsayılanları</Text>
           <Text style={styles.sectionDesc}>
             Her modun zorluğu (10 üzerinden), süresi ve diğer ayarları. Mod açılınca bunlar hazır gelir; oynamadan önce istersen değiştirirsin.
           </Text>
@@ -367,6 +408,10 @@ export default function SettingsScreen({ onBack }) {
 }
 
 const styles = StyleSheet.create({
+  kisayollar: { flexDirection: "row", flexWrap: "wrap", rowGap: 10, marginBottom: 18 },
+  kisayol: { width: "25%", alignItems: "center", gap: 4 },
+  kisayolIkon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
+  kisayolYazi: { fontSize: 11, fontWeight: "800", color: COLORS.textMuted },
   sekmeler: { flexDirection: "row", gap: 6, padding: 4, borderRadius: 14, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 22 },
   sekme: { flex: 1, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center", height: 40, borderRadius: 10 },
   sekmeAktif: { backgroundColor: COLORS.accent },

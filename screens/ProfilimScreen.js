@@ -6,6 +6,7 @@ import GameBackground from "../components/GameBackground";
 import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import PlayerPhoto from "../components/PlayerPhoto";
+import AcilirBolum from "../components/AcilirBolum";
 import { getProfile, xpProgress } from "../lib/profile";
 import { getStreak, seriDurumu } from "../lib/streak";
 import { getStats, MODE_LABELS } from "../lib/stats";
@@ -66,7 +67,9 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           <Text style={styles.title}>Profilim</Text>
         </View>
 
+        {/* 5 Ekim 2026 — bütün başlıklar açılıp kapanabilir (components/AcilirBolum.js) */}
         {/* --- TEK BÜYÜK SAYI: günlük seri --- */}
+        <AcilirBolum kimlik="profil-seri" baslik="Günlük Seri" ikon="flame" ozet={`🔥 ${seri} gün`}>
         <View style={styles.buyukKart}>
           <Ionicons name="flame" size={30} color={seri > 0 ? COLORS.cta : COLORS.textFaint} />
           <Text style={[styles.buyukSayi, seri > 0 && { color: COLORS.cta }]} accessibilityLabel={`${seri} günlük seri`}>{seri}</Text>
@@ -76,10 +79,12 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
             <Text style={styles.seriBilgiYazi}>❄️ Dondurma {sd.dondurmaHakki}/1 bu hafta</Text>
             <Text style={styles.seriBilgiYazi}>🏆 En iyi {sd.enIyi} gün</Text>
           </View>
-          <Text style={styles.seriKural}>Seri, günlük oyunlardan birini bitirince sürer: Günün Bulmacası, Günlük 5 Kulüp, Günlük Izgara ya da günlük görevlerin üçü. Haftada kaçırdığın bir gün kendiliğinden dondurulur.</Text>
+          <Text style={styles.seriKural}>Seri, günlük oyunlardan birini bitirince sürer: Günün Kadrosu, Günlük Kim Bu, Günün Bulmacası, Günlük 5 Kulüp, Günlük Izgara ya da günlük görevlerin üçü. Haftada kaçırdığın bir gün kendiliğinden dondurulur.</Text>
         </View>
+        </AcilirBolum>
 
         {/* --- seviye --- */}
+        <AcilirBolum kimlik="profil-seviye" baslik="Seviye" ikon="trending-up" ozet={`${progress.level}. seviye`}>
         <View style={styles.playerCard}>
           <View style={styles.levelBadge}>
             <Text style={styles.levelBadgeText}>{progress.level}</Text>
@@ -95,8 +100,10 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           </View>
         </View>
 
+        </AcilirBolum>
+
         {/* --- son açılan 5 futbolcu + koleksiyon --- */}
-        <Text style={styles.sectionTitle}>Son açılan futbolcular</Text>
+        <AcilirBolum kimlik="profil-acilanlar" baslik="Son açılan futbolcular" ikon="book" ozet={`${acilanlar.length} futbolcu`}>
         <View style={styles.card}>
           {sonBes.length ? (
             <View style={styles.sonBes}>
@@ -117,8 +124,10 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           </View>
         </View>
 
+        </AcilirBolum>
+
         {/* --- istatistikler (eski İstatistikler ekranı) --- */}
-        <Text style={styles.sectionTitle}>İstatistikler</Text>
+        <AcilirBolum kimlik="profil-istatistik" baslik="İstatistikler" ikon="stats-chart" ozet={stats ? `${stats.totalCorrect || 0} doğru` : null}>
         {!stats ? (
           <Text style={styles.bodyMuted}>Yükleniyor...</Text>
         ) : (
@@ -155,6 +164,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
             )}
           </>
         )}
+        </AcilirBolum>
 
         {/* --- menü --- */}
         <View style={styles.menuList}>

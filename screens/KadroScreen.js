@@ -114,7 +114,11 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
       <Kulube yedek={kadro.yedek} bulundu={bulundu} onPress={(o) => (bulundu(o) && o.v ? setProfil(o.a) : null)} />
       {kadro.tip === "sezon" ? (
         <Text style={s.not}>
-          {kadro.sezon.macli ? "İlk 11: sezonda en çok maça çıkanlar (mevkiye göre)." : "İlk 11: kadronun mevkiye göre en bilinen oyuncuları."}
+          {kadro.sezon.kaynak === "diyagram"
+            ? "İlk 11: sezon sayfasındaki en çok kullanılan ilk 11 (Wikipedia)."
+            : kadro.sezon.kaynak === "mac"
+            ? "İlk 11: mevkilerine göre sezonda en çok forma giyenler."
+            : "İlk 11: mevkilerine göre kadronun en bilinen oyuncuları."}
         </Text>
       ) : null}
 

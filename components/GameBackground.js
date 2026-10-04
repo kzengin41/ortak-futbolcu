@@ -3,6 +3,7 @@ import { ImageBackground, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import backgrounds from "../assets/backgrounds";
 import { KlavyeAlani, KlavyeScroll } from "./Klavye";
+import { useAltBosluk } from "../lib/altBosluk";
 
 const randomBg = backgrounds.length > 0
   ? backgrounds[Math.floor(Math.random() * backgrounds.length)]
@@ -40,7 +41,17 @@ function kaydirmaStili(style) {
   return [{ flexGrow: 1 }, kalan];
 }
 
+// 5 Ekim 2026 — Android gezinme çubuğu içeriğin üstüne binmesin: alt kenara
+// cihazın gerçek alt boşluğu eklenir (lib/altBosluk.js; sekme ekranlarında 0).
+function altPayli(style, alt) {
+  if (!alt) return style;
+  const duz = StyleSheet.flatten(style) || {};
+  const mevcut = duz.paddingBottom ?? duz.paddingVertical ?? duz.padding ?? 0;
+  return [style, { paddingBottom: mevcut + alt }];
+}
+
 export default function GameBackground({ children, style, klavye }) {
+  const alt = useAltBosluk();
   return (
     <ImageBackground
       source={randomBg}
@@ -61,14 +72,14 @@ export default function GameBackground({ children, style, klavye }) {
       />
       {klavye === "kaydir" ? (
         <KlavyeAlani>
-          <KlavyeScroll style={{ flex: 1 }} contentContainerStyle={kaydirmaStili(style)} showsVerticalScrollIndicator={false}>
+          <KlavyeScroll style={{ flex: 1 }} contentContainerStyle={altPayli(kaydirmaStili(style), alt)} showsVerticalScrollIndicator={false}>
             {children}
           </KlavyeScroll>
         </KlavyeAlani>
       ) : klavye === "pay" ? (
-        <KlavyeAlani style={[style, styles.forceTransparent]}>{children}</KlavyeAlani>
+        <KlavyeAlani style={[altPayli(style, alt), styles.forceTransparent]}>{children}</KlavyeAlani>
       ) : (
-        <View style={[style, styles.forceTransparent]}>{children}</View>
+        <View style={[altPayli(style, alt), styles.forceTransparent]}>{children}</View>
       )}
     </ImageBackground>
   );

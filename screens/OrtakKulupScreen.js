@@ -69,6 +69,7 @@ const MOD_ID = { kulup: "cpu", ulke: "countryTeamCpu", secim: "draftCpu" };
 const GALIBIYET = [3, 5, 7, 10];
 const SURELER = [15, 20, 30, 45];
 const YANLIS_HAKKI = 3;
+const kisaAd = (ad) => String(ad).split(" ").slice(-1)[0];   // "Kahveci Kenan" → "Kenan"
 
 export default function OrtakKulupScreen({
   onExit, onExitSilent, onModaGit, hemenBasla = false, ilkCift = null, tur: baslangicTuru = "kulup",
@@ -492,12 +493,13 @@ export default function OrtakKulupScreen({
             <Text style={styles.skorSayi}>{scoreP1}</Text>
           </View>
           <Text style={styles.skorHedef}>{targetScore}'te biter</Text>
+          {/* 5 Ekim 2026 (Kerem: "kahveci kısmı tam oturmamış, gereksiz kalabalık") —
+              rakip artık skor şeridinde tek satır: emoji + kısa ad. Oyun sırasındaki
+              konuşma balonu ve tur sonundaki laf kalktı; karakter sadece maç sonunda
+              bir cümle söylüyor. */}
           <View style={[styles.skorTaraf, { flexDirection: "row-reverse" }]}>
-            <View style={[styles.cpuAvatar, { borderColor: karakter.renk }]}><Text style={styles.cpuEmoji}>{karakter.avatar}</Text></View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.skorEtiket} numberOfLines={1}>{karakter.ad.toLocaleUpperCase("tr")}</Text>
-              <Text style={styles.skorSayi}>{scoreCpu}</Text>
-            </View>
+            <Text style={styles.skorEtiket} numberOfLines={1}>{karakter.avatar} {kisaAd(karakter.ad).toLocaleUpperCase("tr")}</Text>
+            <Text style={styles.skorSayi}>{scoreCpu}</Text>
           </View>
         </View>
       )}
@@ -567,13 +569,9 @@ export default function OrtakKulupScreen({
             <Text style={[styles.sureYazi, timeLeft <= 5 && { color: COLORS.danger }]}>{timeLeft} sn</Text>
           </View>
 
-          <View style={[styles.cpuBalon, cpuKilitli && { opacity: 0.7 }]}>
-            <Text style={styles.cpuEmojiKucuk}>{karakter.avatar}</Text>
-            <Text style={styles.cpuBalonYazi} numberOfLines={2}>
-              <Text style={{ fontWeight: "900", color: karakter.renk }}>{karakter.ad}: </Text>
-              {cpuKilitli ? `“${cpuSoz}”` : cpuSoz || "düşünüyor…"}
-            </Text>
-          </View>
+          <Text style={styles.cpuDurum} numberOfLines={1}>
+            {karakter.avatar} {kisaAd(karakter.ad)} {cpuKilitli ? "pas geçti" : "düşünüyor…"}
+          </Text>
 
           {p1Kilitli ? (
             <Text style={styles.kilitYazi}>Hakkın bitti — {karakter.ad}'ın cevabı bekleniyor…</Text>
@@ -655,9 +653,6 @@ export default function OrtakKulupScreen({
         <View style={{ marginTop: 16, alignItems: "center", width: "100%" }}>
           {winningPlayer && <PlayerPhoto name={winningPlayer.name} size={84} />}
           <Text style={[styles.resultText, winningPlayer && { marginTop: 12 }]}>{resultText}</Text>
-          {cpuSoz && lastWinner !== null ? (
-            <Text style={styles.tepki}>{karakter.avatar} “{cpuSoz}”</Text>
-          ) : null}
           {!showAnswers && (
             <Pressable style={styles.showAnswersBtn} hitSlop={10} onPress={() => setShowAnswers(true)}>
               <Text style={styles.showAnswersBtnText}>{lastWinner === "p1" ? "Diğer doğru cevapları göster" : "Doğru cevapları göster"}</Text>
@@ -729,6 +724,7 @@ const styles = StyleSheet.create({
 
   sureSatir: { flexDirection: "row", alignItems: "center", gap: 8 },
   sureYazi: { color: COLORS.textMuted, fontSize: 13, fontWeight: "800", width: 44, textAlign: "right" },
+  cpuDurum: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 6 },
   cpuBalon: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, padding: 10, borderRadius: 14, backgroundColor: "#121C27", borderWidth: 1, borderColor: "#28394B" },
   cpuBalonYazi: { flex: 1, color: COLORS.textMuted, fontSize: 13, fontWeight: "600" },
 

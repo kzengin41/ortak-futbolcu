@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MODE_GUIDES } from "../lib/modeGuides";
 import { useOyunBilgisi, useKurulumDestegi, kurulumIste } from "../lib/modAyarlari";
 import { COLORS, SPACING, RADIUS, TYPE, SHADOW } from "../lib/theme";
+import { useAltBosluk } from "../lib/altBosluk";
 
 // ============================================================================
 // 11 Eylül 2026 (Kerem: "her bir modun ilk defa oynandığında rehber gibi
@@ -64,8 +65,9 @@ export function useModeGuide(mod) {
 }
 
 export function ModeGuideButton({ onPress }) {
+  const alt = useAltBosluk();   // 5 Ekim 2026: gezinme çubuğunun üstünde dursun
   return (
-    <Pressable onPress={onPress} hitSlop={16} style={styles.infoBtn}>
+    <Pressable onPress={onPress} hitSlop={16} style={[styles.infoBtn, { bottom: SPACING.lg + alt }]}>
       <Ionicons name="information-circle-outline" size={20} color={COLORS.textMuted} />
     </Pressable>
   );
@@ -75,9 +77,10 @@ export function ModeGuideButton({ onPress }) {
 // düğmesinin arkasında (bkz. lib/modAyarlari.js useKurulumKapisi).
 export function KurulumButonu({ mod }) {
   const var_ = useKurulumDestegi(mod);
+  const alt = useAltBosluk();
   if (!var_) return null;
   return (
-    <Pressable onPress={() => kurulumIste(mod)} hitSlop={16} style={[styles.infoBtn, { left: SPACING.lg + 42 }]} accessibilityLabel="Bu modun ayarları">
+    <Pressable onPress={() => kurulumIste(mod)} hitSlop={16} style={[styles.infoBtn, { left: SPACING.lg + 42, bottom: SPACING.lg + alt }]} accessibilityLabel="Bu modun ayarları">
       <Ionicons name="settings-outline" size={18} color={COLORS.textMuted} />
     </Pressable>
   );
