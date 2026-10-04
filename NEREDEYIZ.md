@@ -1,59 +1,65 @@
-# Neredeyiz? (7 Eylül 2026)
+# Neredeyiz? (5 Ekim 2026)
 
-## Tek yapman gereken
-
-```
-python scripts/CALISTIR.py
-```
-
-Bu komut her şeyi doğru sırayla yapar: önce yedek alır, sonra kadroları
-günceller, sonra fotoğrafları çeker, sonra kontrol sayfasını üretir.
-Ctrl+C ile istediğin an durdurabilirsin — hepsi kaldığı yerden devam eder.
-
-Fotoğrafları kendi Supabase'ine taşımak istersen (isteğe bağlı, sona bırak):
-
-```
-python scripts/CALISTIR.py --adim 4 --key <service_role anahtarının TAMAMI>
-```
+**Sürüm:** v3 (Android versionCode 3) — preview APK cihazda test edildi.
+Bildirimler, ilk açılış, sesli cevap, günlük oyunlar ve EAS Update (OTA) çalışıyor.
+Yayın öncesi tam liste: [`store/MAGAZA_PAKETI.md`](store/MAGAZA_PAKETI.md) → bölüm 6.
 
 ---
 
-## Uygulamada BİTEN işler (test etmen yeterli)
+## Uygulamada neler var
 
-| Konu | Durum |
+| Bölüm | İçerik |
 |---|---|
-| 5 Kulüp: hangi takımı kimin bulduğu (1/2 rozetleri) | bitti, test bekliyor |
-| Geri sayım artık tam ekran; takımlar 3-2-1'den SONRA görünüyor | bitti, test bekliyor |
-| Geri sayım sesi (İngilizce okuma yerine temiz bip tonları) | bitti, test bekliyor |
-| Oyuncu fotoğrafına dokununca mini profil kartı | bitti, test bekliyor |
-| İsim eşleştirme ("sosa" → José Sosa, artık en popüler eşleşme kazanıyor) | bitti, test bekliyor |
-| Kulüp takma adları (Inter Milan = Internazionale, Barcelona = FC Barcelona) | bitti, test bekliyor |
-| 27 klon oyuncunun birleştirilmesi (Gökhan İnler/Inler) | bitti |
-| crypto.getRandomValues hatası | bitti |
-| Arkaplan/butonların ekran kenarına değmemesi | bitti, doğrulandı |
-| Cevap kutusunun kaydırılamaması | bitti, doğrulandı |
+| Ana sayfa | Hemen Oyna, günlük oyunlar, seri, seviye |
+| Tüm Modlar | Ortak Kulüp (kulüp×kulüp / kulüp×ülke / sen seç / çoktan seçmeli), 5 Kulüp, Futbolcu XOX, İlk Harften Bul, Harf Zinciri, Kim Bu Futbolcu? (Seri, Kadro Avı), Sunucu Modu (2–6 kişi) |
+| Günlük | Günün Bulmacası, Günün Kadrosu, Günlük Kim Bu, Günlük 5 Kulüp, Günlük Izgara |
+| Online | 7 mod: Ortak Kulüp, Takımı Sen Seç, **5 Kulüp (yeni)**, Futbolcu XOX, Kim Bu, İlk Harften Bul, Harfi Sen Seç — rastgele rakip / arkadaşla oda kodu / meydan okuma (çevrimdışı) |
+| Ansiklopedi | ~46.000 futbolcu, takımlar ve sezon kadroları (307 sezonun ilk 11'i) |
+| Profilim | Seri, seviye, son açılanlar, istatistikler (açılır-kapanır), hesap |
+| Ayarlar | Ses, tema, eşleşme profili, sesli cevap, mod varsayılanları (üstte kısayollar) |
 
-## AÇIK kalan tek uygulama sorunu
+## Sırada ne var
 
-**Mikrofon.** Dört farklı yaklaşım denendi, sonuncusu (XMLHttpRequest) henüz
-test edilmedi. Eğer o da olmazsa sıradaki adım kör deneme değil, Supabase'deki
-`functions/v1/transcribe` fonksiyonunun kodunu birlikte incelemek.
+**Kerem'in yapacakları**
 
-## Bekleyen kararlar (acele yok)
+1. Online'ı iki cihazda dene (özellikle yeni 5 Kulüp ve yeni lobi düzeni).
+2. Sesli cevap fonksiyonunun boyut sınırını yükle: `supabase functions deploy transcribe`
+3. Sentry → Project Settings → Security & Privacy → **Prevent Storing of IP Addresses** aç.
+4. 9–10 Ekim: Supabase → Usage'da depolama 1 GB'ın altına indi mi bak (ayrıntı aşağıda).
+5. Kapalı test kullanıcılarını topla; Play Console mağaza formlarını doldur (MAGAZA_PAKETI bölüm 6).
+6. İlk 11'lerde hata görürsen kulüp + sezon yaz.
 
-- `sportsdb_dusuk_guven.csv` — emin olunamayan foto eşleşmeleri, senin onayın
-- `resmi_olmayan_isimler.csv` — garip görünen oyuncu isimleri
-- "5 Kulüp" modunun online sürümü — henüz yok
-- Yayın öncesi cilalama listesi (gizlilik politikası, e-posta onayı vb.)
+**Benim tarafımda açık kalanlar**
 
----
+- Cihaz testinden gelecek geri bildirimler (online, kadrolar).
+- Mağaza ekran görüntüleri için ekran listesi (istenirse).
 
-## Script'ler ne işe yarıyor (merak edersen)
+## Supabase depolama notu
+
+Panelde görünen "Storage Size" o fatura döneminin **ortalaması** (GB-saat). Eylül
+sonunda silinen eski PNG'ler (~2,3 GB) bu dönemin ortalamasını şişirdi; gerçek
+kullanım ~270 MB. Kontrol için SQL Editor'da:
+
+```sql
+select bucket_id, (sum((metadata->>'size')::int)/1048576.0)::numeric(10,2) as mb
+from storage.objects group by bucket_id order by mb desc;
+```
+
+Toplam 1 GB'ın altındaysa yeni dönemde (9 Ekim) uyarı kendiliğinden kalkar; Pro gerekmez.
+
+## Gizli bilgiler — kurallar
+
+- Supabase **service_role** anahtarı uygulamaya ASLA gömülmez; scriptlere yalnızca
+  `--key` ya da `SUPABASE_SERVICE_KEY` ortam değişkeniyle verilir.
+- OpenAI anahtarı yalnızca `supabase secrets` içinde; `.env`'e konmaz
+  (`EXPO_PUBLIC_` ile başlayan her şey APK'ya gömülür).
+- `.env` ve `veri/` depoya girmez (.gitignore). `SENTRY_AUTH_TOKEN` sadece expo.dev'de.
+
+## Script'ler
 
 | Dosya | İşi |
 |---|---|
-| `CALISTIR.py` | **Bunu çalıştır.** Aşağıdakileri sırayla yönetir. |
-| `kadro_guncelle.py` | Wikipedia'dan güncel kadrolar → eksik transferler ve yeni oyuncular |
-| `sportsdb_foto_cek.py` | TheSportsDB'den eksik fotoğraflar (kimlik doğrulamalı) |
-| `foto_kontrol_sayfasi.py` | `foto_kontrol.html` — fotoğrafları gözle kontrol ızgarası |
-| `supabase_foto_tasi.py` | Dış adreslerdeki fotoğrafları kendi Supabase'ine taşır |
+| `scripts/repo_toparla.py` | Depodaki eski yedek/rapor dosyalarını depo dışındaki arşive taşır (önce listeler, `--uygula` ile taşır) |
+| `scripts/CALISTIR.py` | Eylül'deki fotoğraf/kadro hattı (yedek → kadro → foto → kontrol sayfası). Hat tamamlandı; yeniden gerekirse kullanılır |
+| `scripts/kadro_guncelle.py` | Wikipedia'dan güncel kadrolar |
+| `scripts/kadro_cek.py` | Sezon kadroları (Günün Kadrosu / Ansiklopedi → Takımlar) |

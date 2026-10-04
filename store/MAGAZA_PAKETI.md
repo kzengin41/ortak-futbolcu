@@ -237,8 +237,9 @@ cihazlar arasında taşımak içindir ve hiçbir oyun modunu kilitlemez.
   E-posta: review@<kendi-alan-adin>.com
   Şifre:   <buraya bir şifre yaz>
 
-Online modlar iki cihaz gerektirir: bir cihazda "Oda Kur", çıkan 5 haneli kodu
-diğer cihazda "Odaya Katıl" ekranına girin. Tek cihazla test için "Oyna"
+Online modlar iki cihaz gerektirir: bir cihazda Online sekmesinde bir moda
+dokunup "Oda Kur" seçin, çıkan 5 haneli kodu diğer cihazda "Kodla Katıl"
+kartına girin. Tek cihazla test için "Oyna"
 sekmesindeki CPU'ya karşı modlar kullanılabilir.
 
 Sesli cevap özelliği mikrofon izni ister; izin verilmezse klavyeyle cevap
@@ -253,31 +254,40 @@ verilebilir, özellik isteğe bağlıdır.
 
 ## 6. Sürüm öncesi kontrol listesi
 
+_Son güncelleme: 5 Ekim 2026 (Paket 16). Kerem v3 APK'yı cihazda test etti._
+
 Kod tarafı:
-- [ ] `npx expo install expo-notifications` (paket kurulu değil; bildirim
-      anahtarı şu an "kurulu değil" diyor)
-- [ ] Sızan Supabase service_role anahtarı döndürüldü ✔ (yapıldı)
-- [ ] Silinen ekranlar kaldırıldı ✔ (yapıldı)
-- [ ] `eas build --profile preview --platform android` → gerçek cihazda test
-- [ ] **Mikrofon gerçek derlemede doğrulandı mı?** Henüz hiç test edilmedi;
-      Expo Go'da çalışmıyor, preview build şart
-- [ ] Online modlar iki cihazda test edildi
-- [ ] Günün Bulmacası: bugün oyna, yarın tekrar aç, sorunun değiştiğini gör
-- [ ] Uygulama ilk kez kurulduğunda (temiz veri) açılıyor mu
+- [x] expo-notifications kurulu, bildirimler cihazda çalışıyor
+- [x] Sızan Supabase service_role anahtarı döndürüldü
+- [x] Silinen ekranlar kaldırıldı; depo toparlandı (`scripts/repo_toparla.py`)
+- [x] `eas build --profile preview --platform android` → gerçek cihazda test (v1–v3)
+- [x] Mikrofon (sesli cevap) gerçek derlemede doğrulandı
+- [x] Günlük oyunlar: gün değişince yenileniyor
+- [x] İlk kurulum (temiz veri) akışı açılıyor
+- [x] EAS Update (OTA) çalışıyor
+- [ ] **Online modlar iki cihazda test edildi** (7 mod; 5 Kulüp online Paket 16'da eklendi)
+- [ ] Sesli cevap fonksiyonunun boyut sınırı deploy edildi:
+      `supabase functions deploy transcribe`
+- [ ] Sentry → Project Settings → Security & Privacy → "Prevent Storing of IP Addresses" açık
+- [x] OpenAI hesabında aylık harcama sınırı (5 $)
+- [ ] Supabase depolama: 9 Ekim'de yeni dönem başlayınca kullanım 1 GB'ın altında mı?
 
 Mağaza tarafı:
-- [ ] Gizlilik politikası yayında, URL kayda eklendi
+- [x] Gizlilik politikası yayında: https://kzengin41.github.io/ortak-futbolcu/
+- [ ] Gizlilik politikası URL'si Play Console'a girildi
 - [x] İletişim e-postası politikada güncellendi (KontStudioApps@gmail.com) — Play Console kaydına da girilecek
-- [ ] Hesap silme talebi için web adresi eklendi
+- [ ] Hesap silme web adresi Play Console'a girildi (aynı sayfa, "Saklama süresi ve
+      verilerini silme" bölümü: uygulama içi silme + e-posta ile talep)
 - [ ] 512×512 ikon dışa aktarıldı
-- [ ] Feature graphic yüklendi ✔ (bu pakette)
+- [x] Feature graphic hazır (`store/feature_graphic_1024x500.png`)
 - [ ] 8 ekran görüntüsü çekildi ve yüklendi
 - [ ] İçerik derecelendirme anketi dolduruldu
 - [ ] Veri Güvenliği formu dolduruldu
 - [ ] İnceleme test hesabı oluşturuldu ve denendi
-- [ ] Önce **kapalı test** (closed testing) sürümü açıldı — Play artık yeni
-      geliştirici hesaplarında üretime geçmeden önce belirli bir süre test
-      isteyebiliyor; bunu en baştan planla
+- [ ] **Kapalı test** (closed testing) — test kullanıcıları toplanıyor (5 Ekim'de başladı).
+      Yeni kişisel geliştirici hesaplarında Play, üretime geçmeden önce kapalı
+      testte yeterli sayıda kullanıcıyla belirli bir süre test şartı koyabiliyor;
+      güncel sayıyı/süreyi Play Console → Yayın → Kapalı test sayfasında gör.
 
 Son adım:
 - [ ] `eas build --profile production --platform android` (app-bundle)

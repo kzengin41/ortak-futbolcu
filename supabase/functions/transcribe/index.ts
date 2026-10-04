@@ -5,6 +5,14 @@
 // gömülmez, ters mühendislikle çalınamaz.
 // ============================================================================
 
+// Paket 16 (5 Ekim 2026) — kötüye kullanım sınırı. Bu fonksiyonu APK'daki
+// herkese açık anon anahtarla herkes çağırabiliyor; büyük bir dosya ya da
+// uzun bir "ipucu" metni OpenAI faturasını şişirebilir. Uygulama sesi 32 kbps
+// kaydediyor (~4 KB/sn) ve bir cevap birkaç saniye: 400 KB (~100 sn) fazlasıyla
+// yeter. (Ek güvence: OpenAI hesabında aylık 5 $ harcama sınırı var.)
+const AZAMI_BAYT = 400 * 1024;
+const AZAMI_IPUCU = 1500;   // karakter
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -24,6 +32,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Gövdeyi okumadan önce: istemci boyutu bildiriyorsa büyük isteği hemen reddet.
+    const bildirilen = Number(req.headers.get("content-length") || 0);
+    if (bildirilen > AZAMI_BAYT + 64 * 1024) {
+      return new Response(JSON.stringify({ error: "Ses kaydı çok uzun" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const incomingForm = await req.formData();
     const audioFile = incomingForm.get("audio");
     if (!audioFile || typeof audioFile === "string") {
@@ -39,7 +56,8 @@ Deno.serve(async (req) => {
     // 26 Eylül 2026: istemci artık SADECE doğru cevapları değil, turdaki
     // kulüplerin tanınmış oyuncularını karışık gönderiyor (bkz. gameEngine
     // sesIpuclari) — ipucu listesi cevabı ele vermesin diye.
-    const namesHint = incomingForm.get("names"); // "Ronaldo, Messi, Olaitan Ojo, ..."
+    const hamIpucu = incomingForm.get("names"); // "Ronaldo, Messi, Olaitan Ojo, ..."
+    const namesHint = typeof hamIpucu === "string" ? hamIpucu.slice(0, AZAMI_IPUCU) : null;
     const prompt = namesHint
       ? `Futbolcu isimleri: ${namesHint}.`
       : "Futbolcu ismi: Ronaldo, Messi, Drogba, Okocha, Iniesta, Zidane, Ballack.";
@@ -69,6 +87,12 @@ Deno.serve(async (req) => {
     const gelenAd = (audioFile as File).name || "answer.m4a";
     const uzanti = (gelenAd.match(/\.(m4a|mp4|mp3|wav|webm|ogg|flac|mpga|mpeg)$/i)?.[1] || "m4a").toLowerCase();
     const baytlar = new Uint8Array(await audioFile.arrayBuffer());
+    if (baytlar.byteLength > AZAMI_BAYT) {
+      return new Response(JSON.stringify({ error: "Ses kaydı çok uzun" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (baytlar.byteLength < 1000) {
       return new Response(JSON.stringify({ error: "Ses kaydı boş ya da çok kısa" }), {
         status: 400,

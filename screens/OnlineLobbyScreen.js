@@ -6,6 +6,7 @@ import { KlavyeScroll } from "../components/Klavye";
 import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
+import { ModKarti, ModBolumu, ModSecimPenceresi, modStilleri } from "../components/ModKarti";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import {
   odaKur, odaAktifOlunca, odayiKapat, koduylaKatil, rastgeleOdaBul, kulupKimlikleri, odaNesnesi,
@@ -28,15 +29,31 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 //   3) MEYDAN OKUMA — arkadaşın çevrimiçi olmasa da: 10 soruluk asenkron
 //      düello, sonuç 6 harfli bir kodla paylaşılır (lib/meydanOkuma.js).
 // Oda işlemleri lib/onlineLobi.js'te (maç sonu rövanşı da aynısını kullanıyor).
+//
+// Paket 16 (5 Ekim 2026, Kerem: "Online alanındaki tasarımı da tıpkı Tüm Modlar
+// alanındaki gibi yapalım") — ana ekran artık Tüm Modlar'ın birebir aynısı:
+// başlıklı bölümler + renkli mod kartları (components/ModKarti.js). Karta
+// dokununca aynı pencere açılıyor: "Rastgele Rakip Bul / Oda Kur / Kodla Katıl".
+// Kodla Katıl ve Meydan Okuma "Arkadaşınla" bölümünde kendi kartlarında.
+// Yeni mod: Online 5 Kulüp (gameMode "five", screens/OnlineFiveScreen.js).
 // ============================================================================
 export const GAME_MODES = [
-  { id: "classic", label: "Ortak Kulüp", desc: "İki takım, ortak oyuncuyu ilk bulan alır", icon: "shield-checkmark" },
-  { id: "xox", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid" },
-  { id: "letter", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text" },
-  { id: "draft", label: "Takımı Sen Seç", desc: "Takımı sen söyle, rakip ortağı bulsun", icon: "create" },
-  { id: "whoami", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle" },
-  { id: "letter2", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline" },
+  { id: "classic", grup: "ortak", label: "Ortak Kulüp", desc: "İki takım, ortak oyuncuyu ilk bulan alır", icon: "shield-checkmark", colorKey: "teamTeam" },
+  { id: "draft", grup: "ortak", label: "Takımı Sen Seç", desc: "Takımı sen söyle, rakip ortağı bulsun", icon: "create", colorKey: "teamCountry" },
+  { id: "five", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
+  { id: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
+  { id: "whoami", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
+  { id: "letter", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
+  { id: "letter2", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
+].map((m) => ({ ...m, title: m.label }));
+const GRUPLAR = [
+  { id: "ortak", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
+  { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
 ];
+// Kulüp kimliği (allowedClubIds) gerektirmeyen modlar: kendi üreticileri var.
+const KULUPSUZ = new Set(["xox", "five"]);
+const KODLA_KATIL = { title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
+const MEYDAN = { title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
 const YOKLAMA_MS = 6000;             // beklerken daha eski bir rastgele oda var mı?
 
@@ -46,8 +63,10 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [gameMode, setGameMode] = useState(baslangicModu && GAME_MODES.some((m) => m.id === baslangicModu) ? baslangicModu : "classic");
   const [isRanked, setIsRanked] = useState(false);
-  // ekran: ana | arama (rastgele) | oda (arkadaş odası bekliyor) | katil | meydan
+  // ekran: ana | arama (rastgele) | oda (arkadaş odası bekliyor)
   const [ekran, setEkran] = useState("ana");
+  // açık pencere: { tip: "mod", mod } | { tip: "katil" } | { tip: "meydan", kodGir }
+  const [pencere, setPencere] = useState(null);
   const [oda, setOda] = useState(null);           // bekleyen odanın satırı
   const [joinCode, setJoinCode] = useState("");
   const [meydanKod, setMeydanKod] = useState("");
@@ -59,10 +78,11 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   const odaRef = useRef(null);
   const canliRef = useRef(true);
 
-  // Tüm Modlar → "XOX Online" gibi girişler modu önceden seçili getirir.
+  // Tüm Modlar → "XOX Online" gibi girişler o modun penceresini açık getirir.
   // (modIstegi her girişte yeni bir nesne: aynı mod ikinci kez istense de uygulanır.)
   useEffect(() => {
-    if (baslangicModu && GAME_MODES.some((m) => m.id === baslangicModu)) setGameMode(baslangicModu);
+    const m = baslangicModu && GAME_MODES.find((x) => x.id === baslangicModu);
+    if (m) { setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }
   }, [modIstegi]);
 
   useEffect(() => {
@@ -80,6 +100,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     odaRef.current = null;
     setOda(null);
     setEkran("ana");
+    setPencere(null);
     setCalisiyor(false);
     onRoomReady(room);
   }
@@ -89,9 +110,9 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     setCalisiyor(false);
   }
 
-  async function odaKurVeBekle(rastgele) {
-    const allowedClubIds = gameMode === "xox" ? null : await kulupKimlikleri(eslesme.derlenmis.onlineKapsam());
-    const satir = await odaKur({ gameMode, isRanked, allowedClubIds, rastgele });
+  async function odaKurVeBekle(rastgele, mod) {
+    const allowedClubIds = KULUPSUZ.has(mod) ? null : await kulupKimlikleri(eslesme.derlenmis.onlineKapsam());
+    const satir = await odaKur({ gameMode: mod, isRanked, allowedClubIds, rastgele });
     if (!canliRef.current) { odayiKapat(satir.id); return null; }
     odaRef.current = satir;
     setOda(satir);
@@ -100,15 +121,17 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }
 
   // --- 1) Rastgele rakip ------------------------------------------------------
-  async function rastgeleAra() {
+  async function rastgeleAra(mod) {
+    setGameMode(mod);
+    setPencere(null);
     setHata("");
     setCalisiyor(true);
     setEkran("arama");
     setGecen(0);
     try {
-      const bulunan = await rastgeleOdaBul({ gameMode, isRanked });
+      const bulunan = await rastgeleOdaBul({ gameMode: mod, isRanked });
       if (bulunan) { hazir(bulunan); return; }
-      await odaKurVeBekle(true);
+      await odaKurVeBekle(true, mod);
       setCalisiyor(false);
     } catch (e) {
       setEkran("ana");
@@ -133,11 +156,13 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }, [ekran, oda, gameMode, isRanked]);
 
   // --- 2) Arkadaşınla ---------------------------------------------------------
-  async function arkadasOdasiKur() {
+  async function arkadasOdasiKur(mod) {
+    setGameMode(mod);
+    setPencere(null);
     setHata("");
     setCalisiyor(true);
     setEkran("oda");
-    try { await odaKurVeBekle(false); setCalisiyor(false); } catch (e) { setEkran("ana"); hataGoster(e); }
+    try { await odaKurVeBekle(false, mod); setCalisiyor(false); } catch (e) { setEkran("ana"); hataGoster(e); }
   }
 
   async function koduylaGir() {
@@ -160,7 +185,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   function koduPaylas() {
     if (!oda) return;
     const mod = GAME_MODES.find((m) => m.id === gameMode);
-    Share.share({ message: `⚽ 3-2-1: Bitir İşi — benimle online ${mod ? mod.label : ""} oyna!\nUygulamada Online → Arkadaşınla → Kodla Katıl: ${oda.code}` }).catch(() => {});
+    Share.share({ message: `⚽ 3-2-1: Bitir İşi — benimle online ${mod ? mod.label : ""} oyna!\nUygulamada Online → Kodla Katıl: ${oda.code}` }).catch(() => {});
   }
 
   function cpuyaGec() {
@@ -177,7 +202,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     const oneri = rastgele && gecen >= ONERI_SN;
     return (
       <GameBackground style={styles.container}>
-        <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <KlavyeScroll contentContainerStyle={[styles.scrollContent, styles.beklemePay]} showsVerticalScrollIndicator={false}>
           <TabHeader compact />
           <View style={styles.waitCard}>
             <View style={styles.modRozet}>
@@ -230,43 +255,71 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }
 
   // ---------------------------------------------------------------- ana ekran
+  const meydanBasla = (kod) => { setPencere(null); onMeydanOkuma && onMeydanOkuma(kod); };
+  const pencereMod = pencere?.tip === "mod" ? pencere.mod : pencere?.tip === "katil" ? KODLA_KATIL : pencere?.tip === "meydan" ? MEYDAN : null;
+  let pencereIcerik = null;
+  let secenekler = [];
+  if (pencere?.tip === "mod") {
+    const m = pencere.mod.id;
+    secenekler = [
+      { anahtar: "rastgele", grup: "RASTGELE RAKİP", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${isRanked ? "Ranked" : "Casual"} · hemen eşleş`, kapali: calisiyor, onPress: () => rastgeleAra(m) },
+      { anahtar: "oda", grup: "ARKADAŞINLA", ikon: "add-circle", label: "Oda Kur", alt: "Kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur(m) },
+      { anahtar: "katil", grup: "ARKADAŞINLA", ikon: "key", label: "Kodla Katıl", alt: "Arkadaşının kodu sende mi?", onPress: () => { setHata(""); setPencere({ tip: "katil" }); } },
+    ];
+  } else if (pencere?.tip === "meydan" && !pencere.kodGir) {
+    secenekler = [
+      { anahtar: "yeni", grup: "ÇEVRİMDIŞI DA OLUR", ikon: "paper-plane", label: "Meydan Oku", alt: "10 soru çöz, kodunu gönder", onPress: () => meydanBasla() },
+      { anahtar: "kod", grup: "ÇEVRİMDIŞI DA OLUR", ikon: "mail-open", label: "Kodu Gir", alt: "Sana gelen meydan okumayı kabul et", onPress: () => { setMeydanKod(""); setPencere({ tip: "meydan", kodGir: true }); } },
+    ];
+  } else if (pencere?.tip === "katil" || pencere?.tip === "meydan") {
+    const katil = pencere.tip === "katil";
+    const deger = katil ? joinCode : meydanKod;
+    const gonder = () => { if (!deger.trim()) return; if (katil) koduylaGir(); else meydanBasla(deger.trim()); };
+    pencereIcerik = (
+      <View style={modStilleri.modalOptions}>
+        <Text style={modStilleri.kiminle}>{katil ? "Oda kodu" : "Meydan okuma kodu"}</Text>
+        <TextInput
+          value={deger}
+          onChangeText={(t) => { (katil ? setJoinCode : setMeydanKod)(t); setHata(""); }}
+          placeholder={katil ? "ODA KODU" : "MEYDAN OKUMA KODU"}
+          placeholderTextColor={COLORS.textFaint}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          autoFocus
+          style={styles.input}
+          onSubmitEditing={gonder}
+        />
+        {hata ? <Text style={styles.pencereHata}>{hata}</Text> : null}
+        <SoundPressable style={modStilleri.modalOptionBtn} onPress={gonder} disabled={calisiyor}>
+          <Ionicons name={katil ? "enter" : "checkmark-circle"} size={20} color={COLORS.accentDark} />
+          <Text style={modStilleri.modalOptionText}>{katil ? (calisiyor ? "Katılıyor..." : "Katıl") : "Kabul Et"}</Text>
+        </SoundPressable>
+      </View>
+    );
+  }
+
   return (
     <GameBackground style={styles.container} klavye="pay">
       <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <TabHeader compact />
-        <Text style={styles.title}>Online 1v1</Text>
-
-        <SectionLabel icon="game-controller" text="Oyun Modu" />
-        <View style={styles.modIzgara}>
-          {GAME_MODES.map((gm) => {
-            const active = gameMode === gm.id;
-            return (
-              <SoundPressable
-                key={gm.id}
-                onPress={() => setGameMode(gm.id)}
-                style={[styles.modeCard, active && styles.modeCardActive]}
-                accessibilityLabel={gm.label}
-                accessibilityState={{ selected: active }}
-              >
-                <View style={[styles.modeIconWrap, active && styles.modeIconWrapActive]}>
-                  <Ionicons name={gm.icon} size={18} color={active ? COLORS.accentDark : COLORS.accent} />
-                </View>
-                <Text style={[styles.modeCardTitle, active && styles.modeCardTitleActive]} numberOfLines={1}>{gm.label}</Text>
-                <Text style={styles.modeCardDesc} numberOfLines={2}>{gm.desc}</Text>
-              </SoundPressable>
-            );
-          })}
-        </View>
-
-        <View style={styles.ayarSatir}>
-          <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
-            <Ionicons name="filter" size={16} color={COLORS.accent} />
-            <Text style={styles.presetRowText} numberOfLines={1}>{eslesme.derlenmis.etiket}</Text>
-          </SoundPressable>
-          <SoundPressable onPress={() => setIsRanked((r) => !r)} style={[styles.turCip, isRanked && styles.turCipRanked]} accessibilityLabel={isRanked ? "Ranked" : "Casual"}>
-            <Ionicons name={isRanked ? "trophy" : "happy-outline"} size={16} color={isRanked ? COLORS.text : COLORS.accent} />
-            <Text style={[styles.turCipYazi, isRanked && { color: COLORS.text }]}>{isRanked ? "Ranked" : "Casual"}</Text>
-          </SoundPressable>
+        <View style={styles.ustKisim}>
+          <TabHeader compact />
+          <Text style={styles.title}>Online 1v1</Text>
+          <View style={styles.ayarSatir}>
+            <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
+              <Ionicons name="filter" size={16} color={COLORS.accent} />
+              <Text style={styles.presetRowText} numberOfLines={1}>{eslesme.derlenmis.etiket}</Text>
+            </SoundPressable>
+            <SoundPressable onPress={() => setIsRanked((r) => !r)} style={[styles.turCip, isRanked && styles.turCipRanked]} accessibilityLabel={isRanked ? "Ranked" : "Casual"}>
+              <Ionicons name={isRanked ? "trophy" : "happy-outline"} size={16} color={isRanked ? COLORS.text : COLORS.accent} />
+              <Text style={[styles.turCipYazi, isRanked && { color: COLORS.text }]}>{isRanked ? "Ranked" : "Casual"}</Text>
+            </SoundPressable>
+          </View>
+          {hata && !pencere ? (
+            <View style={styles.errorCard}>
+              <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
+              <Text style={styles.errorText}>{hata}</Text>
+            </View>
+          ) : null}
         </View>
         <EslesmeProfiliPenceresi
           visible={leagueModalOpen}
@@ -277,148 +330,43 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           onClose={() => setLeagueModalOpen(false)}
         />
 
-        {/* 1) Rastgele rakip */}
-        <SoundPressable style={styles.anaKart} onPress={rastgeleAra} disabled={calisiyor} accessibilityLabel="Rastgele Rakip Bul">
-          <View style={styles.anaKartIkon}><Ionicons name="flash" size={26} color={COLORS.accentDark} /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.anaKartBaslik}>Rastgele Rakip Bul</Text>
-            <Text style={styles.anaKartAlt}>{seciliMod.label} · hemen eşleş</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color={COLORS.accentDark} />
-        </SoundPressable>
+        {GRUPLAR.map((g) => (
+          <ModBolumu key={g.id} baslik={g.baslik} ikon={g.ikon}>
+            {GAME_MODES.filter((m) => m.grup === g.id).map((m) => (
+              <ModKarti key={m.id} mod={m} rozet={m.rozet} onPress={() => { setHata(""); setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }} />
+            ))}
+          </ModBolumu>
+        ))}
 
-        {/* 2) Arkadaşınla */}
-        <View style={styles.kart}>
-          <View style={styles.kartBaslikSatir}>
-            <Ionicons name="people" size={18} color={COLORS.accent} />
-            <Text style={styles.kartBaslik}>Arkadaşınla</Text>
-          </View>
-          {ekran === "katil" ? (
-            <>
-              <TextInput
-                value={joinCode}
-                onChangeText={(t) => { setJoinCode(t); setHata(""); }}
-                placeholder="ODA KODU"
-                placeholderTextColor={COLORS.textFaint}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                style={styles.input}
-                onSubmitEditing={koduylaGir}
-              />
-              <View style={styles.ikiliSatir}>
-                <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => { setEkran("ana"); setHata(""); }}>
-                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
-                </SoundPressable>
-                <SoundPressable style={[styles.primaryBtn, styles.yarim]} onPress={koduylaGir} disabled={calisiyor}>
-                  <Ionicons name="enter" size={18} color={COLORS.accentDark} />
-                  <Text style={styles.primaryBtnText}>{calisiyor ? "Katılıyor..." : "Katıl"}</Text>
-                </SoundPressable>
-              </View>
-            </>
-          ) : (
-            <View style={styles.ikiliSatir}>
-              <SoundPressable style={[styles.primaryBtn, styles.yarim]} onPress={arkadasOdasiKur} disabled={calisiyor}>
-                <Ionicons name="add-circle" size={18} color={COLORS.accentDark} />
-                <Text style={styles.primaryBtnText}>Oda Kur</Text>
-              </SoundPressable>
-              <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => { setEkran("katil"); setHata(""); }}>
-                <Ionicons name="key" size={16} color={COLORS.text} />
-                <Text style={styles.secondaryBtnText}>Kodla Katıl</Text>
-              </SoundPressable>
-            </View>
-          )}
-        </View>
-
-        {/* 3) Meydan okuma (asenkron) */}
-        <View style={styles.kart}>
-          <View style={styles.kartBaslikSatir}>
-            <Ionicons name="paper-plane" size={18} color={COLORS.cta} />
-            <Text style={styles.kartBaslik}>Meydan Okuma</Text>
-            <View style={styles.yeniRozet}><Text style={styles.yeniRozetYazi}>ÇEVRİMDIŞI DA OLUR</Text></View>
-          </View>
-          <Text style={styles.kartAciklama}>10 ortak futbolcu sorusunu çöz, kodunu gönder. Arkadaşın müsait olunca aynı soruları çözsün.</Text>
-          {ekran === "meydan" ? (
-            <>
-              <TextInput
-                value={meydanKod}
-                onChangeText={(t) => { setMeydanKod(t); setHata(""); }}
-                placeholder="MEYDAN OKUMA KODU"
-                placeholderTextColor={COLORS.textFaint}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                style={styles.input}
-                onSubmitEditing={() => meydanKod.trim() && onMeydanOkuma && onMeydanOkuma(meydanKod.trim())}
-              />
-              <View style={styles.ikiliSatir}>
-                <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => setEkran("ana")}>
-                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
-                </SoundPressable>
-                <SoundPressable style={[styles.ctaBtn, styles.yarim]} onPress={() => meydanKod.trim() && onMeydanOkuma && onMeydanOkuma(meydanKod.trim())}>
-                  <Text style={styles.ctaBtnText}>Kabul Et</Text>
-                </SoundPressable>
-              </View>
-            </>
-          ) : (
-            <View style={styles.ikiliSatir}>
-              <SoundPressable style={[styles.ctaBtn, styles.yarim]} onPress={() => onMeydanOkuma && onMeydanOkuma()}>
-                <Ionicons name="paper-plane" size={16} color={COLORS.ctaDark} />
-                <Text style={styles.ctaBtnText}>Meydan Oku</Text>
-              </SoundPressable>
-              <SoundPressable style={[styles.secondaryBtn, styles.yarim]} onPress={() => setEkran("meydan")}>
-                <Ionicons name="mail-open" size={16} color={COLORS.text} />
-                <Text style={styles.secondaryBtnText}>Kodu Gir</Text>
-              </SoundPressable>
-            </View>
-          )}
-          {sonMeydan ? (
-            <Text style={styles.sonMeydan}>
-              Son: {sonMeydan.rakip ? `${sonMeydan.ben.dogru}-${sonMeydan.rakip.dogru}` : `${sonMeydan.ben.dogru}/10 gönderildi`}
-            </Text>
-          ) : null}
-        </View>
-
-        {hata ? (
-          <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
-            <Text style={styles.errorText}>{hata}</Text>
-          </View>
-        ) : null}
+        <ModBolumu baslik="Arkadaşınla" ikon="people">
+          <ModKarti mod={KODLA_KATIL} onPress={() => { setHata(""); setPencere({ tip: "katil" }); }} />
+          <ModKarti mod={MEYDAN} rozet="ÇEVRİMDIŞI" onPress={() => setPencere({ tip: "meydan" })} />
+        </ModBolumu>
       </KlavyeScroll>
-    </GameBackground>
-  );
-}
 
-function SectionLabel({ icon, text }) {
-  return (
-    <View style={styles.sectionLabelRow}>
-      <Ionicons name={icon} size={14} color={COLORS.accent} />
-      <Text style={styles.sectionLabel}>{text}</Text>
-    </View>
+      <ModSecimPenceresi
+        mod={pencereMod}
+        soru={pencere?.tip === "mod" ? "Nasıl eşleşmek istiyorsun?" : pencere?.tip === "meydan" ? "Ne yapmak istiyorsun?" : null}
+        secenekler={secenekler}
+        altYazi={pencere?.tip === "meydan" && sonMeydan ? `Son: ${sonMeydan.rakip ? `${sonMeydan.ben.dogru}-${sonMeydan.rakip.dogru}` : `${sonMeydan.ben.dogru}/10 gönderildi`}` : null}
+        onClose={() => { setPencere(null); setHata(""); }}
+      >
+        {pencereIcerik}
+      </ModSecimPenceresi>
+    </GameBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 50 },
-  scrollContent: { paddingHorizontal: SPACING.lg, paddingBottom: 60 },
-  title: { ...TYPE.h1, textAlign: "center", marginBottom: SPACING.lg },
+  // Bekleme ekranlarında yatay pay burada; ana ekranda bölümler (ModBolumu) kendi payını veriyor.
+  scrollContent: { paddingBottom: 60 },
+  ustKisim: { paddingHorizontal: SPACING.xl },
+  beklemePay: { paddingHorizontal: SPACING.lg },
+  title: { ...TYPE.h1, marginBottom: SPACING.md },
+  pencereHata: { color: COLORS.danger, fontSize: 13, textAlign: "center" },
 
-  sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.sm },
-  sectionLabel: { ...TYPE.caption, textTransform: "uppercase", letterSpacing: 1, fontWeight: "800" },
 
-  modIzgara: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginBottom: SPACING.md },
-  modeCard: {
-    width: "48.5%", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1.5,
-    borderRadius: RADIUS.lg, padding: SPACING.md, gap: 4,
-  },
-  modeCardActive: { borderColor: COLORS.accent, backgroundColor: "#1F5E3B" },
-  modeIconWrap: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(140,255,107,0.12)",
-    alignItems: "center", justifyContent: "center",
-  },
-  modeIconWrapActive: { backgroundColor: COLORS.accent },
-  modeCardTitle: { ...TYPE.h3, fontSize: 14 },
-  modeCardTitleActive: { color: COLORS.accent },
-  modeCardDesc: { ...TYPE.caption, fontSize: 12 },
 
   ayarSatir: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.lg },
   presetRow: {
@@ -433,26 +381,7 @@ const styles = StyleSheet.create({
   turCipRanked: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
   turCipYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.accent },
 
-  anaKart: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.card,
-  },
-  anaKartIkon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.12)" },
-  anaKartBaslik: { fontSize: 19, fontWeight: "900", color: COLORS.accentDark },
-  anaKartAlt: { fontSize: 13, fontWeight: "700", color: COLORS.accentDark, opacity: 0.8, marginTop: 2 },
 
-  kart: {
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.xl,
-    padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOW.card,
-  },
-  kartBaslikSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: SPACING.sm },
-  kartBaslik: { ...TYPE.h3, fontSize: 16, flex: 1 },
-  kartAciklama: { ...TYPE.caption, marginBottom: SPACING.sm },
-  yeniRozet: { borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: COLORS.ctaDark, borderWidth: 1, borderColor: COLORS.cta },
-  yeniRozetYazi: { color: COLORS.cta, fontSize: 10, fontWeight: "900", letterSpacing: 0.5 },
-  sonMeydan: { ...TYPE.caption, fontSize: 12, marginTop: SPACING.sm, textAlign: "center" },
-  ikiliSatir: { flexDirection: "row", gap: SPACING.sm, marginTop: SPACING.sm },
-  yarim: { flex: 1, marginTop: 0 },
 
   primaryBtn: {
     flexDirection: "row", gap: SPACING.sm, backgroundColor: COLORS.accent, borderRadius: RADIUS.lg,
@@ -464,11 +393,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14, alignItems: "center", justifyContent: "center", marginTop: SPACING.sm,
   },
   secondaryBtnText: { ...TYPE.body, fontWeight: "800", fontSize: 13 },
-  ctaBtn: {
-    flexDirection: "row", gap: SPACING.sm, backgroundColor: COLORS.cta, borderRadius: RADIUS.lg,
-    paddingVertical: 14, alignItems: "center", justifyContent: "center", ...SHADOW.card,
-  },
-  ctaBtnText: { color: COLORS.ctaDark, fontWeight: "900", textTransform: "uppercase", fontSize: 13 },
   input: {
     backgroundColor: COLORS.bg, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.lg,
     padding: SPACING.md, color: COLORS.text, fontSize: 20, fontWeight: "800", textAlign: "center", letterSpacing: 4,

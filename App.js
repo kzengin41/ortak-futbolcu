@@ -262,6 +262,8 @@ function OnlineRoute({ navigation, route }) {
           room.gameMode === "draft" ? "onlineDraft" :
           // 5 Ekim 2026 (.29379) — Online XOX
           room.gameMode === "xox" ? "onlineXox" :
+          // Paket 16 — Online 5 Kulüp
+          room.gameMode === "five" ? "onlineFive" :
           // 12 Eylül 2026: "letter2" burada hiç yoktu — o modu seçen oyuncu
           // varsayılana düşüp TAMAMEN FARKLI bir oyuna (Düello) gidiyordu.
           (room.gameMode === "letter" || room.gameMode === "letter2") ? "onlineLetter" : "onlineDuel";
@@ -270,6 +272,7 @@ function OnlineRoute({ navigation, route }) {
       // 5 Ekim 2026 (.29682) — rastgele aramada 30 sn sonra "bu arada CPU'ya karşı oyna"
       onCpu={(mod) => {
         if (mod === "xox") navigation.navigate("xox", { rakip: "cpu" });
+        else if (mod === "five") navigation.navigate("fiveClubsCpu");
         else navigation.navigate(mod === "whoami" ? "whoAmICpu" : mod === "draft" ? "draftCpu" : (mod === "letter" || mod === "letter2") ? "letterCpu" : "cpu");
       }}
       // 5 Ekim 2026 (.29648) — asenkron meydan okuma
@@ -337,6 +340,17 @@ function getOnlineXoxRoute() {
   return function OnlineXoxRoute({ navigation, route }) {
     return (
       <RehberliOyun mod="onlineXox">
+        <Screen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+      </RehberliOyun>
+    );
+  };
+}
+// Paket 16 (5 Ekim 2026) — Online 5 Kulüp (lib/onlineFive.js, aynı oda katmanı)
+function getOnlineFiveRoute() {
+  const Screen = require("./screens/OnlineFiveScreen").default;
+  return function OnlineFiveRoute({ navigation, route }) {
+    return (
+      <RehberliOyun mod="onlineFive">
         <Screen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
       </RehberliOyun>
     );
@@ -432,6 +446,7 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="onlineDraft" component={OnlineDraftRoute} />
       <Stack.Screen name="onlineLetter" getComponent={getOnlineLetterRoute} />
       <Stack.Screen name="onlineXox" getComponent={getOnlineXoxRoute} />
+      <Stack.Screen name="onlineFive" getComponent={getOnlineFiveRoute} />
       <Stack.Screen name="meydanOkuma" getComponent={getMeydanOkumaRoute} />
       <Stack.Screen name="dailyPuzzle" getComponent={getDailyPuzzleRoute} />
       <Stack.Screen name="xox" getComponent={getXoxRoute} />

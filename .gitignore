@@ -44,3 +44,13 @@ ortak-futbolcu-expo/
 
 # Özgeçmiş ham verisi (35 MB, gece scripti üretir; uygulama lib/ altındaki işlenmiş dosyaları kullanır)
 veri/
+
+# Paket 16 (5 Ekim 2026) — depo toparlandı (scripts/repo_toparla.py).
+# Scriptlerin köke yazdığı raporlar ve kontrol sayfaları depoya girmesin.
+/*.csv
+/foto_kontrol.html
+/kirik_foto_kontrolu.html
+yedek/
+yedekler/
+bulunanlar/
+silinen/

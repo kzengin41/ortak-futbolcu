@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useState } from "react";
-import { View, Text, StyleSheet, Animated, Dimensions, Modal, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, StyleSheet, Animated } from "react-native";
 import GameBackground from "../components/GameBackground";
-import PressScale from "../components/ui/PressScale";
 import BackButton from "../components/BackButton";
-import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+// Paket 16 — kart, bölüm ve "Kiminle oynuyorsun?" penceresi Online lobiyle ortak.
+import { ModKarti, ModBolumu, ModSecimPenceresi } from "../components/ModKarti";
+import { COLORS, SPACING, TYPE } from "../lib/theme";
 
 import DailyGoalsCard from "../components/DailyGoalsCard";
 import DailyPuzzleCard from "../components/DailyPuzzleCard";
@@ -100,7 +100,8 @@ const MODES = [
     options: [
       { id: "fiveClubsCpu", rakip: "cpu", label: "CPU'ya karşı" },
       { id: "fiveClubs", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Aynı telefon, sırayla" },
-      { id: "online5", rakip: "online", label: "Online", alt: "Yakında", kapali: true },
+      // Paket 16 (5 Ekim 2026) — Online 5 Kulüp açıldı: iki oyuncu aynı anda, gizli cevap.
+      { id: "online", rakip: "online", label: "Online", alt: "Aynı anda gizli cevap, 3 tur", sekme: true, params: { mod: "five" } },
     ],
   },
   {
@@ -137,9 +138,6 @@ const GRUPLAR = [
   { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
   { id: "arkadas", baslik: "Arkadaşınla Aynı Telefonda", ikon: "people" },
 ];
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - SPACING.xl * 2 - SPACING.md) / 2;
 
 // 3 Ekim 2026 — bu ekran artık ana sayfa DEĞİL, "Tüm Modlar" sayfası (yeni ana
 // sayfa: screens/AnaSayfaScreen.js). Seviye şeridi, "Hemen Oyna" kartı ve
@@ -212,81 +210,32 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
         </View>
 
         {GRUPLAR.map((g) => (
-          <View key={g.id} style={styles.section}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name={g.ikon} size={16} color={COLORS.accent} />
-              <Text style={styles.sectionTitle}>{g.baslik}</Text>
-            </View>
-            <View style={styles.grid}>
-              {MODES.filter((m) => m.grup === g.id).map((m) => (
-                <GridCard key={m.key} mode={m} onPress={() => handleCardPress(m)} />
-              ))}
-            </View>
-          </View>
+          <ModBolumu key={g.id} baslik={g.baslik} ikon={g.ikon}>
+            {MODES.filter((m) => m.grup === g.id).map((m) => (
+              <ModKarti key={m.key} mod={m} onPress={() => handleCardPress(m)} />
+            ))}
+          </ModBolumu>
         ))}
       </Animated.ScrollView>
 
-      <Modal visible={!!pickerMode} transparent animationType="fade" onRequestClose={() => setPickerMode(null)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setPickerMode(null)}>
-          <Pressable style={styles.modalCard} onPress={() => {}}>
-            {pickerMode && (
-              <>
-                <View style={[styles.modalIconWrap, { backgroundColor: MODE_COLORS[pickerMode.colorKey].main }]}>
-                  <Ionicons name={pickerMode.icon} size={26} color={COLORS.accentDark} />
-                </View>
-                <Text style={styles.modalTitle}>{pickerMode.title}</Text>
-                <Text style={styles.modalDesc}>{pickerMode.desc}</Text>
-                <Text style={styles.kiminle}>Kiminle oynuyorsun?</Text>
-                <View style={styles.modalOptions}>
-                  {/* 4 Ekim 2026 (.28743) — ilk soru "kiminle?": CPU / Yanımdaki / Online */}
-                  {pickerMode.options.map((opt, i) => {
-                    const ikon = RAKIP_IKON[opt.rakip] || "play";
-                    const baslikGoster = opt.rakip && (i === 0 || pickerMode.options[i - 1].rakip !== opt.rakip);
-                    return (
-                      <View key={`${opt.id}-${i}`}>
-                        {baslikGoster ? <Text style={styles.rakipBaslik}>{RAKIP_BASLIK[opt.rakip]}</Text> : null}
-                        <PressScale
-                          style={[styles.modalOptionBtn, opt.kapali && styles.modalOptionKapali]}
-                          disabled={!!opt.kapali}
-                          onPress={() => {
-                            if (opt.kapali) return;
-                            if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id, { ...(opt.params || {}), t: Date.now() }); return; }
-                            handleSelect(opt.id, opt.params);
-                          }}
-                        >
-                          <Ionicons name={ikon} size={20} color={opt.kapali ? COLORS.textMuted : COLORS.accentDark} />
-                          <View style={{ flex: 1 }}>
-                            <Text style={[styles.modalOptionText, opt.kapali && { color: COLORS.textMuted }]}>{opt.label}</Text>
-                            {opt.alt ? <Text style={[styles.modalOptionAlt, opt.kapali && { color: COLORS.textMuted }]}>{opt.alt}</Text> : null}
-                          </View>
-                          {!opt.kapali ? <Ionicons name="chevron-forward" size={18} color={COLORS.accentDark} /> : null}
-                        </PressScale>
-                      </View>
-                    );
-                  })}
-                </View>
-                <Pressable style={styles.modalCancel} onPress={() => setPickerMode(null)}>
-                  <Text style={styles.modalCancelText}>Vazgeç</Text>
-                </Pressable>
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* 4 Ekim 2026 (.28743) — ilk soru "kiminle?": CPU / Yanımdaki / Online */}
+      <ModSecimPenceresi
+        mod={pickerMode}
+        onClose={() => setPickerMode(null)}
+        secenekler={(pickerMode?.options || []).map((opt, i) => ({
+          anahtar: `${opt.id}-${i}`,
+          grup: RAKIP_BASLIK[opt.rakip],
+          ikon: RAKIP_IKON[opt.rakip] || "play",
+          label: opt.label,
+          alt: opt.alt,
+          kapali: opt.kapali,
+          onPress: () => {
+            if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id, { ...(opt.params || {}), t: Date.now() }); return; }
+            handleSelect(opt.id, opt.params);
+          },
+        }))}
+      />
     </GameBackground>
-  );
-}
-
-function GridCard({ mode, onPress }) {
-  const c = MODE_COLORS[mode.colorKey];
-  return (
-    <PressScale style={[styles.gridCard, { borderColor: c.main, backgroundColor: c.dark }]} onPress={onPress}>
-      <View style={[styles.gridIconWrap, { backgroundColor: c.main }]}>
-        <Ionicons name={mode.icon} size={22} color={COLORS.accentDark} />
-      </View>
-      <Text style={styles.cardTitle}>{mode.title}</Text>
-      <Text style={styles.cardDesc} numberOfLines={2}>{mode.desc}</Text>
-    </PressScale>
   );
 }
 
@@ -298,62 +247,4 @@ const styles = StyleSheet.create({
   // marka bloğu compact'e çekildiği için üst boşluk da ölçeğe döndü.
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl },
 
-  section: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl },
-  hemen: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md,
-    backgroundColor: COLORS.accent, borderRadius: RADIUS.lg, padding: SPACING.lg, ...SHADOW.card,
-  },
-  hemenIkon: {
-    width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.12)",
-  },
-  hemenBaslik: { ...TYPE.h2, color: COLORS.accentDark },
-  hemenAlt: { fontSize: 12, fontWeight: "700", color: COLORS.accentDark, opacity: 0.8, marginTop: 2 },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.md, marginLeft: 4 },
-  sectionTitle: { ...TYPE.h2 },
-
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: SPACING.md },
-  gridCard: {
-    width: CARD_WIDTH,
-    borderWidth: 2,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    ...SHADOW.card,
-  },
-  gridIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md },
-
-  cardTitle: { ...TYPE.h3, marginBottom: SPACING.xs },
-  cardDesc: { fontSize: 12, fontWeight: "500", color: COLORS.text, opacity: 0.85, lineHeight: 16 },
-
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: SPACING.xl },
-  modalCard: {
-    width: "100%",
-    maxWidth: 380,
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder,
-    borderWidth: 1,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.xl,
-    alignItems: "center",
-  },
-  modalIconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md },
-  modalTitle: { ...TYPE.h2, marginBottom: 4, textAlign: "center" },
-  modalDesc: { ...TYPE.bodyMuted, textAlign: "center", marginBottom: SPACING.lg },
-  modalOptions: { width: "100%", gap: SPACING.sm },
-  modalOptionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.md,
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.lg,
-  },
-  modalOptionText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 14 },
-  modalOptionAlt: { color: COLORS.accentDark, fontWeight: "600", fontSize: 12, opacity: 0.8, marginTop: 2 },
-  modalOptionKapali: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
-  kiminle: { ...TYPE.h3, alignSelf: "flex-start", marginBottom: 2 },
-  rakipBaslik: { color: COLORS.textMuted, fontWeight: "900", fontSize: 11, letterSpacing: 1.5, marginTop: 6, marginBottom: 6 },
-  modalCancel: { marginTop: SPACING.lg },
-  modalCancelText: { color: COLORS.textMuted, fontWeight: "700", fontSize: 13 },
 });
