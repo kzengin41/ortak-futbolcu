@@ -282,7 +282,8 @@ function GizliTakim({ ad, arma }) {
   );
 }
 
-const TUM_MODLAR_RENGI = "#5EC8FF";
+// Paket 18 — sabit açık mavi yerine temanın ikincil tonu (renk sadeleştirmesi).
+const TUM_MODLAR_RENGI = COLORS.cta;
 
 const styles = StyleSheet.create({
   kap: { flex: 1, backgroundColor: COLORS.bg },

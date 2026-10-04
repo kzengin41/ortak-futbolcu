@@ -26,6 +26,7 @@ const MODES = [
     // seç ve Çoktan seçmeli artık tek kartın içinde, kurulumda "Tür" olarak seçiliyor
     // (eski "Kulüp & Ülke" ve "Hızlı Antrenman" kartları kaldırıldı).
     key: "teamTeam",
+    ikon: "ortakKulup",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
     title: "Ortak Kulüp",
     desc: "İki kulüpte (ya da kulüp + ülke) oynamış futbolcuyu rakibinden önce bul",
@@ -42,6 +43,7 @@ const MODES = [
   },
   {
     key: "letters",
+    ikon: "ilkHarf",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
     title: "İlk Harften Bul",
     desc: "Verilen baş harflerle başlayan futbolcuyu bul",
@@ -52,6 +54,7 @@ const MODES = [
   {
     // 4 Ekim 2026 (benchmark .28548) — İlk Harf zincirinin tek kişilik hâli.
     key: "harfZinciri",
+    ikon: "harfZinciri",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
     title: "Harf Zinciri",
     desc: "Son harften devam et, 3 canla en uzun zinciri kur",
@@ -61,6 +64,7 @@ const MODES = [
   },
   {
     key: "whoAmI",
+    ikon: "kimBu",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
     title: "Kim Bu Futbolcu?",
     desc: "Kartları çevir, gizli futbolcuyu bil",
@@ -79,6 +83,7 @@ const MODES = [
     // 4 Ekim 2026 (.28709) — eski "Tek Telefon 2 Kişi" kartının yerine. 2 kişilik
     // bölünmüş ekran artık Ortak Kulüp → "Yanımdaki" seçeneğinde.
     key: "sunucu",
+    ikon: "sunucu",   // Paket 18 — components/ModIkon.js
     grup: "arkadas",
     title: "Sunucu Modu",
     desc: "2–6 kişi, tek telefon. Sen kulüpleri okursun, onlar bağırır",
@@ -89,6 +94,7 @@ const MODES = [
   {
     // 4 Eylül 2026 (Kerem'in yeni mod isteği) — bkz. screens/FiveClubsScreen.js
     key: "fiveClubs",
+    ikon: "besKulup",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
     title: "5 Kulüp",
     desc: "5 büyük kulüpten kaçında oynadığını bil, en çok puanı topla",
@@ -110,6 +116,7 @@ const MODES = [
     // Rakip tipi ve zorluk ekranın KENDİ kurulum adımında seçiliyor, bu yüzden
     // burada seçenek modalı yok.
     key: "xox",
+    ikon: "xox",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
     title: "Futbolcu XOX",
     desc: "3x3 ızgara, kareyi almak için ortak futbolcuyu söyle",

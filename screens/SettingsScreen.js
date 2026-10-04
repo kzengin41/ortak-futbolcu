@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Switch } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Switch, Image } from "react-native";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +18,8 @@ import {
   HATIRLATMA_SAATI, expoGodaMiyiz,
 } from "../lib/notifications";
 
-import { COLORS, PALETLER } from "../lib/theme";
+import { COLORS, PALETLER, saydam } from "../lib/theme";
+import { ARKAPLANLAR, ARKAPLAN_SECENEKLERI, arkaplanAnahtari } from "../components/GameBackground";
 import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
 const ITEMS = [
@@ -226,6 +227,32 @@ export default function SettingsScreen({ onBack }) {
                       <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} />
                     </View>
                   ) : null}
+                </SoundPressable>
+              );
+            })}
+          </View>
+
+          {/* Paket 18 (Kerem: "kişi arkaplanı kendi de değişebilsin") — tema
+              renkleri yeniden açılışta değişir ama arkaplan HEMEN değişir. */}
+          <Text style={styles.altBaslik}>Arkaplan</Text>
+          <View style={styles.arkaIzgara}>
+            {ARKAPLAN_SECENEKLERI.map((a) => {
+              const secili = (settings.arkaplan || "tema") === a.id;
+              const goster = a.id === "tema" ? arkaplanAnahtari(settings.themeId, "tema") : a.id;
+              return (
+                <SoundPressable
+                  key={a.id}
+                  onPress={() => setSetting("arkaplan", a.id)}
+                  style={[styles.arkaKart, secili && styles.arkaKartAktif]}
+                  accessibilityLabel={`Arkaplan: ${a.ad}`}
+                  accessibilityState={{ selected: secili }}
+                >
+                  <View style={[styles.arkaResim, { backgroundColor: COLORS.bg }]}>
+                    {goster !== "duz" ? <Image source={ARKAPLANLAR[goster]} style={StyleSheet.absoluteFillObject} resizeMode="cover" /> : null}
+                    {goster === "notr" ? <View style={[StyleSheet.absoluteFillObject, { backgroundColor: saydam(COLORS.bg, 0.6) }]} /> : null}
+                    {secili ? <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} style={styles.arkaTik} /> : null}
+                  </View>
+                  <Text style={[styles.arkaAd, secili && { color: COLORS.text }]} numberOfLines={1}>{a.ad}</Text>
                 </SoundPressable>
               );
             })}
@@ -458,6 +485,13 @@ const styles = StyleSheet.create({
   rowDesc: { color: COLORS.textMuted, fontSize: 12, marginTop: 3 },
 
   // --- tema secici ---
+  altBaslik: { color: COLORS.text, fontSize: 14, fontWeight: "900", marginTop: 4, marginBottom: 8 },
+  arkaIzgara: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
+  arkaKart: { width: "23%", flexGrow: 1, minWidth: 72, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.cardBorder, overflow: "hidden", backgroundColor: COLORS.card },
+  arkaKartAktif: { borderColor: COLORS.accent, borderWidth: 2 },
+  arkaResim: { height: 64, overflow: "hidden" },
+  arkaTik: { position: "absolute", top: 4, right: 4 },
+  arkaAd: { fontSize: 11, fontWeight: "800", color: COLORS.textMuted, paddingHorizontal: 6, paddingVertical: 5 },
   temaIzgara: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   temaKart: {
     width: "48%", backgroundColor: COLORS.card, borderWidth: 1,

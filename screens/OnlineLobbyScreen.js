@@ -36,15 +36,16 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 // dokununca aynı pencere açılıyor: "Rastgele Rakip Bul / Oda Kur / Kodla Katıl".
 // Kodla Katıl ve Meydan Okuma "Arkadaşınla" bölümünde kendi kartlarında.
 // Yeni mod: Online 5 Kulüp (gameMode "five", screens/OnlineFiveScreen.js).
+// Paket 18: kartlar yatay, ikonlar components/ModIkon.js (Tüm Modlar ile aynı).
 // ============================================================================
 export const GAME_MODES = [
-  { id: "classic", grup: "ortak", label: "Ortak Kulüp", desc: "İki takım, ortak oyuncuyu ilk bulan alır", icon: "shield-checkmark", colorKey: "teamTeam" },
-  { id: "draft", grup: "ortak", label: "Takımı Sen Seç", desc: "Takımı sen söyle, rakip ortağı bulsun", icon: "create", colorKey: "teamCountry" },
-  { id: "five", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
-  { id: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
-  { id: "whoami", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
-  { id: "letter", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
-  { id: "letter2", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
+  { id: "classic", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takım, ortak oyuncuyu ilk bulan alır", icon: "shield-checkmark", colorKey: "teamTeam" },
+  { id: "draft", ikon: "takimiSenSec", grup: "ortak", label: "Takımı Sen Seç", desc: "Takımı sen söyle, rakip ortağı bulsun", icon: "create", colorKey: "teamCountry" },
+  { id: "five", ikon: "besKulup", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
+  { id: "xox", ikon: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
+  { id: "whoami", ikon: "kimBu", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
+  { id: "letter", ikon: "ilkHarf", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
+  { id: "letter2", ikon: "harfiSenSec", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
 ].map((m) => ({ ...m, title: m.label }));
 const GRUPLAR = [
   { id: "ortak", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
@@ -52,8 +53,8 @@ const GRUPLAR = [
 ];
 // Kulüp kimliği (allowedClubIds) gerektirmeyen modlar: kendi üreticileri var.
 const KULUPSUZ = new Set(["xox", "five"]);
-const KODLA_KATIL = { title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
-const MEYDAN = { title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
+const KODLA_KATIL = { ikon: "kodlaKatil", title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
+const MEYDAN = { ikon: "meydanOkuma", title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
 const YOKLAMA_MS = 6000;             // beklerken daha eski bir rastgele oda var mı?
 

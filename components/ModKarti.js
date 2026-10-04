@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, Modal, Pressable } from "react-native";
+import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PressScale from "./ui/PressScale";
+import ModIkon from "./ModIkon";
 import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 
 // ============================================================================
@@ -16,29 +17,40 @@ import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme
 //   <ModSecimPenceresi mod soru secenekler onClose>{özel içerik}</ModSecimPenceresi>
 //     secenekler: [{ anahtar, grup?, ikon, label, alt?, kapali?, onPress }]
 //     grup: üstte gösterilen küçük başlık (ardışık aynı grup bir kez yazılır)
+//
+// Paket 18 (Kerem: "3 madde kare şeklinde değil de yatayda uzun dikdörtgen
+// halinde olsun. buradaki tüm modlar o şekilde olsun") — kart artık tam
+// genişlikte yatay satır: solda ikon karosu, ortada ad + açıklama, sağda ok.
+// Renk yalnız ikon karosunda (mod grubunun tonu, bkz. lib/theme.js MOD_GRUBU);
+// kart yüzeyi tüm modlarda aynı — göz yormasın.
+// `mod.ikon`: components/ModIkon.js'teki özel ikon; yoksa Ionicons `mod.icon`.
 // ============================================================================
-const { width } = Dimensions.get("window");
-export const KART_GENISLIK = (width - SPACING.xl * 2 - SPACING.md) / 2;
+export function ModIkonu({ mod, boyut = 26, renk }) {
+  return mod.ikon ? <ModIkon ad={mod.ikon} boyut={boyut} renk={renk} /> : <Ionicons name={mod.icon} size={boyut - 2} color={renk} />;
+}
 
 export function ModKarti({ mod, onPress, rozet, accessibilityLabel }) {
   const c = MODE_COLORS[mod.colorKey] || MODE_COLORS.online;
   return (
     <PressScale
-      style={[s.gridCard, { borderColor: c.main, backgroundColor: c.dark }]}
+      style={s.kart}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || mod.title}
     >
-      <View style={s.ustSatir}>
-        <View style={[s.gridIconWrap, { backgroundColor: c.main }]}>
-          <Ionicons name={mod.icon} size={22} color={COLORS.accentDark} />
-        </View>
-        {rozet ? (
-          <View style={[s.rozet, { borderColor: c.main }]}><Text style={[s.rozetYazi, { color: c.main }]}>{rozet}</Text></View>
-        ) : null}
+      <View style={[s.ikonKaro, { backgroundColor: c.main }]}>
+        <ModIkonu mod={mod} renk={c.ust || COLORS.accentDark} />
       </View>
-      <Text style={s.cardTitle}>{mod.title}</Text>
-      <Text style={s.cardDesc} numberOfLines={2}>{mod.desc}</Text>
+      <View style={s.metin}>
+        <View style={s.baslikSatir}>
+          <Text style={s.cardTitle} numberOfLines={1}>{mod.title}</Text>
+          {rozet ? (
+            <View style={[s.rozet, { borderColor: c.main }]}><Text style={[s.rozetYazi, { color: c.main }]}>{rozet}</Text></View>
+          ) : null}
+        </View>
+        <Text style={s.cardDesc} numberOfLines={2}>{mod.desc}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
     </PressScale>
   );
 }
@@ -64,7 +76,7 @@ export function ModSecimPenceresi({ mod, soru = "Kiminle oynuyorsun?", secenekle
           {mod && (
             <>
               <View style={[s.modalIconWrap, { backgroundColor: c.main }]}>
-                <Ionicons name={mod.icon} size={26} color={COLORS.accentDark} />
+                <ModIkonu mod={mod} boyut={28} renk={c.ust || COLORS.accentDark} />
               </View>
               <Text style={s.modalTitle}>{mod.title}</Text>
               <Text style={s.modalDesc}>{mod.desc}</Text>
@@ -124,21 +136,21 @@ const s = StyleSheet.create({
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.md, marginLeft: 4 },
   sectionTitle: { ...TYPE.h2 },
 
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: SPACING.md },
-  gridCard: {
-    width: KART_GENISLIK,
-    borderWidth: 2,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
+  grid: { gap: SPACING.sm },
+  kart: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.md,
     ...SHADOW.card,
   },
-  ustSatir: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
-  gridIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md },
+  ikonKaro: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  metin: { flex: 1, minWidth: 0 },
+  baslikSatir: { flexDirection: "row", alignItems: "center", gap: 6 },
   rozet: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 6, paddingVertical: 2 },
   rozetYazi: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
 
-  cardTitle: { ...TYPE.h3, marginBottom: SPACING.xs },
-  cardDesc: { fontSize: 12, fontWeight: "500", color: COLORS.text, opacity: 0.85, lineHeight: 16 },
+  cardTitle: { ...TYPE.h3, flexShrink: 1 },
+  cardDesc: { fontSize: 12, fontWeight: "500", color: COLORS.textMuted, lineHeight: 16, marginTop: 2 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: SPACING.xl },
   modalCard: {
@@ -151,7 +163,7 @@ const s = StyleSheet.create({
     padding: SPACING.xl,
     alignItems: "center",
   },
-  modalIconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md },
+  modalIconWrap: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md },
   modalTitle: { ...TYPE.h2, marginBottom: 4, textAlign: "center" },
   modalDesc: { ...TYPE.bodyMuted, textAlign: "center", marginBottom: SPACING.lg },
   modalOptions: { width: "100%", gap: SPACING.sm },
