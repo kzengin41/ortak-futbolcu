@@ -394,8 +394,10 @@ def _konumsal(t):
 def sezon_kadrosu_v2(wikitext):
     metin = wikitext or ""
     havuz = {}
-    # A) Efs player
-    for _, t in sablon_parcalari(metin, [r"efs\s*player"]):
+    # A) Efs player — 5 Ekim 2026: 2026–27 sayfalarında iki yeni yazım çıktı:
+    #    {{Efs player2|...}} (Real Madrid) ve uzun adı {{Extended football squad
+    #    player|...}} (AC Milan). Eski desen `\b` yüzünden "player2"yi kaçırıyordu.
+    for _, t in sablon_parcalari(metin, [r"(?:efs|extended\s*football\s*squad)\s*player\s*\d?"]):
         p = sablon_parametreleri(t)
         maclar = [_ap(x) for x in _konumsal(t)[0::2]]
         toplam = sum(x for x in maclar if x) if any(x is not None for x in maclar) else None
