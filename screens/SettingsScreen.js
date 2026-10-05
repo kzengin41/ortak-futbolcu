@@ -22,6 +22,7 @@ import { COLORS, PALETLER, saydam } from "../lib/theme";
 import { ARKAPLANLAR, ARKAPLAN_SECENEKLERI, arkaplanAnahtari } from "../components/GameBackground";
 import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
+import { guncellemeBilgisi, guncellemeDenetle, yenidenBaslat } from "../lib/guncelleme";
 const ITEMS = [
   { key: "background", label: "Arka Plan Sesi", desc: "Durmadan çalan tribün uğultusu" },
   { key: "correctWrong", label: "Doğru / Yanlış Sesi", desc: "Cevap verince çalan tepki sesi" },
@@ -411,6 +412,9 @@ export default function SettingsScreen({ onBack }) {
             />
           </View>
 
+          {/* 5 Ekim 2026 — OTA güncellemesinin gelip gelmediği buradan görülür (lib/guncelleme.js) */}
+          <Text style={styles.sectionTitle} onLayout={yer("surum")}>Sürüm</Text>
+          <SurumKutusu />
           </>
         ) : null}
 
@@ -517,3 +521,44 @@ const styles = StyleSheet.create({
   temaNot: { flexDirection: "row", gap: 6, alignItems: "center", marginBottom: 26 },
   temaNotYazi: { color: COLORS.textMuted, fontSize: 12, flex: 1 },
 });
+
+// 5 Ekim 2026 — sürüm/güncelleme bilgisi + elle denetleme.
+function SurumKutusu() {
+  const [durum, setDurum] = useState(null);
+  const b = guncellemeBilgisi();
+  const tarih = b.tarih ? `${b.tarih.toLocaleDateString("tr-TR")} ${b.tarih.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}` : null;
+  const satirlar = [
+    ["Sürüm", b.runtime || "—"],
+    ["Kanal", b.kanal || (b.etkin ? "—" : "güncelleme kapalı")],
+    ["Çalışan paket", b.gomulu ? "APK'nın kendi paketi" : `güncelleme · ${tarih || "?"}`],
+    ["Paket kimliği", b.kimlik ? b.kimlik.slice(0, 8) : "—"],
+  ];
+  async function denetle() {
+    setDurum("denetleniyor");
+    const r = await guncellemeDenetle();
+    setDurum(r.durum === "hata" ? `hata: ${r.mesaj}` : r.durum);
+  }
+  const yazi = { denetleniyor: "Denetleniyor…", guncel: "En yeni sürümdesin", hazir: "Yeni sürüm indirildi", kapali: "Bu kurulumda güncelleme kapalı" }[durum] || durum;
+  return (
+    <View style={{ marginBottom: 26 }}>
+      {b.acil ? (
+        <Text style={[styles.sectionDesc, { color: COLORS.danger }]}>
+          Son indirilen güncelleme açılırken hata verdi; APK'nın kendi paketiyle açıldı. (Hata raporu gönderildi.)
+        </Text>
+      ) : null}
+      {satirlar.map(([k, v]) => (
+        <View key={k} style={styles.row}>
+          <Text style={[styles.rowLabel, { flex: 1 }]}>{k}</Text>
+          <Text style={styles.rowDesc} selectable>{v}</Text>
+        </View>
+      ))}
+      <SoundPressable style={[styles.profilKart, { marginTop: 10 }]} onPress={durum === "hazir" ? yenidenBaslat : denetle} accessibilityLabel="Güncellemeleri denetle">
+        <Ionicons name={durum === "hazir" ? "refresh" : "cloud-download-outline"} size={20} color={COLORS.accent} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.presetLabelActive}>{durum === "hazir" ? "Şimdi yenile" : "Güncellemeleri denetle"}</Text>
+          {yazi ? <Text style={styles.sectionDesc}>{yazi}</Text> : null}
+        </View>
+      </SoundPressable>
+    </View>
+  );
+}

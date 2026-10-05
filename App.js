@@ -57,6 +57,7 @@ const APP_EXIT_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "
 const Stack = createNativeStackNavigator();
 import SekmeKaydirma from "./components/SekmeKaydirma";
 import CanliSesBalonu from "./components/CanliSesBalonu";
+import GuncellemeBandi from "./components/GuncellemeBandi";
 const Tab = createBottomTabNavigator();
 
 function goHome(navigation) {
@@ -589,6 +590,8 @@ function App() {
               <UnlockToast />
               {/* Paket 18 — konuşurken telefonun duyduğu yazı (lib/sesCanli.js) */}
               <CanliSesBalonu />
+              {/* 5 Ekim 2026 — yeni sürüm indirildiğinde "Yenile" bandı (lib/guncelleme.js) */}
+              <GuncellemeBandi />
             </DokunmaSesiKatmani>
           </HataSiniri>
         </SafeAreaView>
