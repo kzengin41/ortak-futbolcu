@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MacSonuKarti from "./MacSonuKarti";
-import { rovansHali } from "../lib/onlineRoom";
+import DereceSonucu from "./DereceSonucu";
+import { rovansHali, macSirasi as macSirasiBul } from "../lib/onlineRoom";
+import { rakipKarti } from "../lib/derece";
 import { COLORS, RADIUS, SPACING } from "../lib/theme";
 
 // ============================================================================
@@ -17,8 +19,20 @@ export default function OnlineMacSonu({
   skorSen, skorRakip, skorEtiketi, kazanan, turlar, kareSatir, enIyi, ekSatir,
   // Düello (RPC) gibi kendi rövanş mekanizması olan ekranlar hâli doğrudan verir.
   hal: halDisaridan, onRovans,
+  // Paket 23 — derece: oda (odaNesnesi) + odadaki maç sırası. Rakibin takma adı
+  // sunucudan okunur; dereceli maçta puan değişimi kartın altında görünür.
+  oda, macNo,
 }) {
   const hal = halDisaridan || rovansHali(durum, benKimim, rakipVar);
+  const [rakipAd, setRakipAd] = useState(null);
+  useEffect(() => {
+    let canli = true;
+    if (oda && oda.rakipId) rakipKarti(oda.rakipId).then((k) => { if (canli && k && k.takma_ad) setRakipAd(k.takma_ad); });
+    return () => { canli = false; };
+  }, [oda && oda.rakipId]);
+  const sonuc = kazanan || (skorSen > skorRakip ? "sen" : skorSen < skorRakip ? "rakip" : "berabere");
+  const kazananNo = sonuc === "berabere" ? 0 : sonuc === "sen" ? benKimim : benKimim === 1 ? 2 : 1;
+  const macSirasi = macNo || macSirasiBul(durum);
   return (
     <MacSonuKarti
       modAdi={modAdi}
@@ -29,7 +43,7 @@ export default function OnlineMacSonu({
       turlar={turlar}
       kareSatir={kareSatir}
       enIyi={enIyi}
-      rakip={{ ad: "Rakip", avatar: "🌐", renk: COLORS.cta }}
+      rakip={{ ad: rakipAd || "Rakip", avatar: "🌐", renk: COLORS.cta }}
       rovansEtiketi={hal.etiket}
       rovansPasif={hal.pasif}
       onRovans={onRovans || (() => gonder && gonder({ tip: "rovans" }))}
@@ -37,6 +51,7 @@ export default function OnlineMacSonu({
       menuEtiketi="Lobiye dön"
       ekSatir={
         <>
+          {oda && benKimim ? <DereceSonucu oda={oda} kazananNo={kazananNo} macNo={macSirasi} /> : null}
           {ekSatir}
           {hal.rakipIstiyor ? (
             <View style={s.istek}>

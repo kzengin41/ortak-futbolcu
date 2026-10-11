@@ -1,6 +1,6 @@
-# Neredeyiz? (5 Ekim 2026)
+# Neredeyiz? (11 Ekim 2026)
 
-**Sürüm:** v3 (Android versionCode 3) — preview APK cihazda test edildi.
+**Sürüm:** v5 (Android versionCode 5, yalnız arm64/armeabi) + OTA güncellemeleri.
 Bildirimler, ilk açılış, sesli cevap, günlük oyunlar ve EAS Update (OTA) çalışıyor.
 Yayın öncesi tam liste: [`store/MAGAZA_PAKETI.md`](store/MAGAZA_PAKETI.md) → bölüm 6.
 
@@ -13,7 +13,7 @@ Yayın öncesi tam liste: [`store/MAGAZA_PAKETI.md`](store/MAGAZA_PAKETI.md) →
 | Ana sayfa | Hemen Oyna, günlük oyunlar, seri, seviye |
 | Tüm Modlar | Ortak Kulüp (kulüp×kulüp / kulüp×ülke / sen seç / çoktan seçmeli), 5 Kulüp, Futbolcu XOX, İlk Harften Bul, Harf Zinciri, Kim Bu Futbolcu? (Seri, Kadro Avı), Sunucu Modu (2–6 kişi) |
 | Günlük | Günün Bulmacası, Günün Kadrosu, Günlük Kim Bu, Günlük 5 Kulüp, Günlük Izgara |
-| Online | 7 mod: Ortak Kulüp, Takımı Sen Seç, **5 Kulüp (yeni)**, Futbolcu XOX, Kim Bu, İlk Harften Bul, Harfi Sen Seç — rastgele rakip / arkadaşla oda kodu / meydan okuma (çevrimdışı) |
+| Online | 7 mod (Ortak Kulüp + Takımı Sen Seç, 5 Kulüp, Futbolcu XOX, Kim Bu, İlk Harften Bul, Harfi Sen Seç). **Hızlı Eşleş**, rastgele rakip = **dereceli** (online puan / ELO, lig rozetleri, liderlik tablosu), arkadaş odası = dostluk, meydan okuma (çevrimdışı) |
 | Ansiklopedi | ~46.000 futbolcu, takımlar ve sezon kadroları (307 sezonun ilk 11'i) |
 | Profilim | Seri, seviye, son açılanlar, istatistikler (açılır-kapanır), hesap |
 | Ayarlar | Ses, tema, eşleşme profili, sesli cevap, mod varsayılanları (üstte kısayollar) |
@@ -22,17 +22,15 @@ Yayın öncesi tam liste: [`store/MAGAZA_PAKETI.md`](store/MAGAZA_PAKETI.md) →
 
 **Kerem'in yapacakları**
 
-1. Online'ı iki cihazda dene (özellikle yeni 5 Kulüp ve yeni lobi düzeni).
-2. Sesli cevap fonksiyonunun boyut sınırını yükle: `supabase functions deploy transcribe`
-3. Sentry → Project Settings → Security & Privacy → **Prevent Storing of IP Addresses** aç.
-4. 9–10 Ekim: Supabase → Usage'da depolama 1 GB'ın altına indi mi bak (ayrıntı aşağıda).
-5. Kapalı test kullanıcılarını topla; Play Console mağaza formlarını doldur (MAGAZA_PAKETI bölüm 6).
-6. İlk 11'lerde hata görürsen kulüp + sezon yaz.
+1. Supabase → Authentication → **Allow anonymous sign-ins** aç, sonra SQL Editor'da `supabase/paket23_derece.sql` çalıştır, hemen ardından `eas update`.
+2. Online'ı iki telefonda dene: [`store/ONLINE_TEST_LISTESI.md`](store/ONLINE_TEST_LISTESI.md).
+3. `supabase functions deploy transcribe`; Sentry → **Prevent Storing of IP Addresses**; Supabase depolama kontrolü (aşağıda).
+4. Play Console formları (Veri Güvenliği satırları Paket 23'le değişti — MAGAZA_PAKETI bölüm 4), 8 ekran görüntüsü, production `.aab`, **kapalı test** (15–18 kişi, 14 gün).
 
 **Benim tarafımda açık kalanlar**
 
-- Cihaz testinden gelecek geri bildirimler (online, kadrolar).
-- Mağaza ekran görüntüleri için ekran listesi (istenirse).
+- Kapalı testten gelecek hatalar (OTA ile).
+- Ölçüm verisinden haftalık özet (`supabase/olcum_sorgulari.sql`).
 
 ## Supabase depolama notu
 

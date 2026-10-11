@@ -8,6 +8,7 @@ import AnswerFeedback from "../components/AnswerFeedback";
 import TimerBar from "../components/TimerBar";
 import TeamBadge from "../components/TeamBadge";
 import OnlineMacSonu from "../components/OnlineMacSonu";
+import RakipAyrildi from "../components/RakipAyrildi";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import {
@@ -20,7 +21,7 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import { taninirlik } from "../lib/taninirlik";
-import { useOnlineRoom, rovansli } from "../lib/onlineRoom";
+import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
 import { baslangicDurumu, aksiyonuIsle, sonuc, TUR_SURESI_SN, SONUC_SURESI_MS } from "../lib/onlineFive";
 
 // ============================================================================
@@ -65,6 +66,8 @@ export default function OnlineFiveScreen({ room, onExit }) {
   const oneriler = useMemo(() => (girdi.trim().length < 3 ? [] : suggestPlayers(suggestIndex, girdi)), [suggestIndex, girdi]);
 
   const faz = durum?.faz;
+  // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
+  const ayrildi = <RakipAyrildi oda={room} benKimim={benKimim} rakipVar={rakipVar} aktif={!!faz && !["hazirlik", "macSonu", "hata"].includes(faz)} macNo={macSirasi(durum)} onExit={onExit} />;
   const turNo = durum?.turNo;
   const macNo = durum?.macNo;
   const benimCevap = durum?.cevaplar?.[pk(benKimim)] || null;
@@ -180,6 +183,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
 
   return (
     <GameBackground style={styles.kap}>
+      {ayrildi}
       <KlavyeAlani style={{ flex: 1 }}>
         <KlavyeScroll contentContainerStyle={{ paddingBottom: SPACING.xl }} keyboardShouldPersistTaps="handled">
           {/* Skor şeridi */}
@@ -288,6 +292,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
 
           {bitti ? (
             <OnlineMacSonu
+              oda={room}
               modAdi="Online 5 Kulüp"
               durum={durum}
               benKimim={benKimim}

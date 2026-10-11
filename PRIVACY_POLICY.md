@@ -1,6 +1,6 @@
 # Gizlilik Politikası — 3-2-1: Bitir İşi
 
-**Son güncelleme:** 29 Eylül 2026
+**Son güncelleme:** 11 Ekim 2026
 
 Bu politika, **3-2-1: Bitir İşi** mobil uygulamasının hangi verileri topladığını,
 neden topladığını ve kimlerle paylaştığını anlatır. Uygulamayı kullanarak burada
@@ -25,18 +25,32 @@ Ayrıntılar aşağıda.
 
 ## Topladığımız veriler
 
-### 1. Cihaz kimliği (hesapsız da toplanır)
+### 1. Anonim kullanıcı kimliği ve kullanım verisi (hesapsız da toplanır)
 
-Uygulama ilk açılışta cihazına rastgele bir kimlik üretir. Bu kimlik senin adın,
-telefon numaran veya reklam kimliğinle ilgisi olmayan, yalnızca bu uygulamaya
-özel bir numaradır.
+Uygulama, hesap açmasan da sunucumuzda sana **anonim** bir kullanıcı kimliği
+oluşturur (Supabase "anonim oturum"). Bu kimlik adın, e-postan, telefon numaran
+veya reklam kimliğinle ilgisi olmayan rastgele bir numaradır. Ayrıca cihazında
+yalnızca bu uygulamaya özel rastgele bir cihaz kimliği tutulur.
 
-Ne için kullanılıyor: hangi oyun modlarının ne sıklıkta oynandığını görmek
-(oyunu geliştirebilmek için), online odalarda iki oyuncuyu birbirinden ayırmak,
-ve bir hatayı bildirdiğinde bildirimi kaynağıyla eşleştirmek.
+Ne için kullanılıyor: online odalarda iki oyuncuyu güvenli şekilde birbirinden
+ayırmak (kimse başkası adına skor yazamasın), online puanını (aşağıda) tutmak,
+ve hangi oyun modlarının ne sıklıkta oynandığını görmek (oyunu geliştirebilmek
+için).
 
-Bir mod açtığında — o mod internetsiz oynanıyor olsa bile — bu kimlik ve mod adı
-sunucumuza yazılır.
+Kullanım verisi: uygulama açılışı, girilen ekranlar, oynanan mod ve sonucu
+(kazandı/kaybetti), online eşleşmenin kaç saniye sürdüğü ve uygulama sürümü bu
+anonim kimlikle sunucumuza yazılır. Konum, rehber, reklam kimliği gibi hiçbir
+kişisel bilgi eklenmez. **Ayarlar → Gelişmiş → "Kullanım verisi gönder"**
+kapatılırsa kullanım verisi hiç gönderilmez.
+
+### 1b. Online puan ve takma ad (herkese açık)
+
+Rastgele rakiple oynadığın **dereceli** online maçların sonucu ve buna göre
+hesaplanan **online puanın**, seçtiğin **takma adla** birlikte saklanır. Takma
+adın ve puanın, maç yaptığın rakibe ve uygulama içindeki **liderlik tablosunda
+diğer oyunculara görünür**. Bu yüzden takma ad olarak gerçek adını kullanmak
+zorunda değilsin; uygunsuz takma adlara izin verilmez. Arkadaş odasında (kodla)
+oynanan dostluk maçları puana sayılmaz.
 
 ### 2. Sesli cevaplar
 
@@ -97,7 +111,7 @@ izleyicisi kullanmıyoruz (yukarıdaki çökme raporları yalnızca hata ayıkla
 
 | Kime | Ne | Neden |
 |---|---|---|
-| Supabase (AB) | Cihaz kimliği, hesap bilgileri, oyun ilerlemesi, ses kaydı (geçici) | Sunucu ve veritabanı altyapısı |
+| Supabase (AB) | Anonim kimlik, kullanım verisi, online puan ve takma ad, hesap bilgileri, oyun ilerlemesi, ses kaydı (geçici) | Sunucu ve veritabanı altyapısı |
 | OpenAI (ABD) | Ses kaydı | Sesi yazıya çevirmek |
 | Sentry (AB) | Çökme raporları (teknik bilgi) | Hataları bulup düzeltmek |
 
@@ -107,12 +121,14 @@ Bunun dışında hiç kimseyle veri paylaşmıyoruz, satmıyoruz, kiralamıyoruz
 
 ## Saklama süresi ve verilerini silme
 
-Hesap açmadıysan: cihaz kimliğine bağlı kayıtlar oyun istatistiği olarak
-saklanır ve seni tanımlamaz.
+Hesap açmadıysan: anonim kimliğe bağlı kayıtlar (kullanım verisi, online puan)
+oyun istatistiği olarak saklanır ve seni tanımlamaz. Online puanını ve takma
+adını sildirmek istersen aşağıdaki e-postaya yazabilirsin.
 
 Hesap açtıysan: **Profilim → Hesabım → "Hesabımı kalıcı olarak sil"** ile
 hesabını, profilini, profil fotoğrafını ve bulut yedeğini kalıcı olarak
-silebilirsin. İşlem geri alınamaz ve anında uygulanır.
+silebilirsin; online puan kartın da birlikte silinir. İşlem geri alınamaz ve
+anında uygulanır.
 
 Uygulamayı silmeden hesabını silmek istersen ya da uygulamaya erişimin yoksa,
 yukarıdaki e-posta adresine yazman yeterli — talebini 30 gün içinde

@@ -5,6 +5,7 @@ import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, useKlavyeAcik } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
 import OnlineMacSonu from "../components/OnlineMacSonu";
+import RakipAyrildi from "../components/RakipAyrildi";
 import { MasaKartlari, TahminTablosu, SimdiBilirsenAfis, AcilisAnimasyonu, sayi } from "../components/KimBuMasa";
 import { prefetchPlayerPhoto } from "../components/PlayerPhoto";
 import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS } from "../lib/theme";
@@ -16,7 +17,7 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
-import { useOnlineRoom, rovansli } from "../lib/onlineRoom";
+import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
 import { baslangicDurumu, aksiyonuIsle, pot, TUR_ARASI_MS, HEDEF_TUR } from "../lib/onlineWhoAmI";
 
 // ============================================================================
@@ -56,6 +57,8 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   const oneriler = useMemo(() => (girdi.trim().length > 1 ? suggestPlayers(suggestIndex, girdi) : []), [suggestIndex, girdi]);
 
   const faz = durum?.faz;
+  // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
+  const ayrildi = <RakipAyrildi oda={room} benKimim={benKimim} rakipVar={rakipVar} aktif={!!faz && !["hazirlik", "macSonu", "hata"].includes(faz)} macNo={macSirasi(durum)} onExit={onExit} />;
   const benKilitli = !!durum?.kilitli?.includes(benKimim);
   const benPas = !!durum?.pas?.includes(benKimim);
   const rakipNo = benKimim === 1 ? 2 : 1;
@@ -179,6 +182,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     const kazandim = durum.turKazanani === benKimim;
     return (
       <GameBackground style={styles.kap}>
+        {ayrildi}
         {skorSeridi}
         <ScrollView contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl }} showsVerticalScrollIndicator={false}>
           <AcilisAnimasyonu
@@ -194,6 +198,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
           />
           {faz === "macSonu" ? (
             <OnlineMacSonu
+              oda={room}
               modAdi="Online — Kim Bu Futbolcu?"
               durum={durum}
               benKimim={benKimim}
@@ -218,6 +223,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   const carp = carpan(durum.acik);
   return (
     <GameBackground style={styles.kap}>
+      {ayrildi}
       {skorSeridi}
       <KlavyeAlani style={{ flex: 1 }}>
         <SimdiBilirsenAfis puan={pot(durum)} carp={carp} kucuk={klavyeAcik} alt="ilk bilen alır" />

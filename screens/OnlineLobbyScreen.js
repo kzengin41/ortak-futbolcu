@@ -12,6 +12,10 @@ import {
   odaKur, odaAktifOlunca, odayiKapat, koduylaKatil, rastgeleOdaBul, kulupKimlikleri, odaNesnesi,
 } from "../lib/onlineLobi";
 import { gecmis as meydanGecmisi } from "../lib/meydanOkuma";
+import LiderlikPenceresi, { DereceRozeti } from "../components/LiderlikPenceresi";
+import AdSecPenceresi from "../components/AdSecPenceresi";
+import { useDerece } from "../lib/derece";
+import { getProfile } from "../lib/profile";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 
 // ============================================================================
@@ -46,6 +50,12 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 //     içinde bir TÜR. Açıklaması kurala göre düzeldi (lib/onlineDraft.js:
 //     sırayla takım seçilir, seçtiğin takım rakibin sorusu olur; bilemezse
 //     puan seçene).
+// Paket 23 (11 Ekim 2026, Kerem onayı): Casual/Ranked düğmesi KALKTI.
+//   • Rastgele rakip + Hızlı Eşleş = DERECELİ (online puan değişir),
+//   • Arkadaş odası (kod) = DOSTLUK.
+//   Üstteki rozet online puanı ve ligi gösterir, dokununca liderlik tablosu.
+//   İlk dereceli aramadan önce takma ad yoksa seçtirilir. Eşleşme puana göre:
+//   ±150 ile başlar, beklerken her 10 sn'de +100 genişler, 30 sn sonra herkes.
 // ============================================================================
 export const GAME_MODES = [
   { id: "classic", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takımda da oynamış futbolcuyu rakibinden önce bul. İstersen takımları sırayla siz seçin", icon: "shield-checkmark", colorKey: "teamTeam" },
@@ -68,6 +78,11 @@ const HIZLI_MODLAR = GAME_MODES.map((m) => m.id);
 const KODLA_KATIL = { ikon: "kodlaKatil", title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
 const MEYDAN = { ikon: "meydanOkuma", title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
+// Puana göre eşleşme penceresi (sn cinsinden bekleme -> izin verilen puan farkı; null = herkes)
+export function eslesmePenceresi(gecenSn) {
+  if (gecenSn >= 30) return null;
+  return 150 + 100 * Math.floor(gecenSn / 10);
+}
 const YOKLAMA_MS = 6000;             // beklerken daha eski bir rastgele oda var mı?
 
 export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, modIstegi }) {
@@ -76,7 +91,11 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [gameMode, setGameMode] = useState(baslangicModu && GAME_MODES.some((m) => m.id === baslangicModu) ? baslangicModu : "classic");
   const [hizli, setHizli] = useState(false);       // Hızlı Eşleş araması mı (her mod)
-  const [isRanked, setIsRanked] = useState(false);
+  const { kart: derece } = useDerece();
+  const [liderlikAcik, setLiderlikAcik] = useState(false);
+  const [adIstegi, setAdIstegi] = useState(null);   // ad seçilince çalışacak arama
+  const [adOnerisi, setAdOnerisi] = useState("");
+  const gecenRef = useRef(0);
   // ekran: ana | arama (rastgele) | oda (arkadaş odası bekliyor)
   const [ekran, setEkran] = useState("ana");
   // açık pencere: { tip: "mod", mod } | { tip: "katil" } | { tip: "meydan", kodGir }
@@ -110,6 +129,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }, []);
 
   function hazir(room) {
+    try { require("../lib/olcum").olay("online_eslesme", { mod: room && room.gameMode, veri: { sn: gecenRef.current, d: room && room.isRanked ? 1 : 0, h: hizli ? 1 : 0 } }); } catch (e) {}
     birakRef.current?.();
     birakRef.current = null;
     odaRef.current = null;
@@ -127,7 +147,8 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
 
   async function odaKurVeBekle(rastgele, mod) {
     const allowedClubIds = KULUPSUZ.has(mod) ? null : await kulupKimlikleri(eslesme.derlenmis.onlineKapsam());
-    const satir = await odaKur({ gameMode: mod, isRanked, allowedClubIds, rastgele });
+    const puan = derece && Number.isFinite(derece.puan) ? derece.puan : null;
+    const satir = await odaKur({ gameMode: mod, isRanked: rastgele, allowedClubIds, rastgele, puan: rastgele ? puan : null });
     if (!canliRef.current) { odayiKapat(satir.id); return null; }
     odaRef.current = satir;
     setOda(satir);
@@ -137,7 +158,18 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
 
   // --- 1) Rastgele rakip ------------------------------------------------------
   // herMod: Hızlı Eşleş — bekleyen her moddaki odaya bakar, yoksa `mod` odası kurar.
-  async function rastgeleAra(mod, herMod = false) {
+  // Dereceli aramadan önce takma ad (yoksa) seçtirilir.
+  function rastgeleAra(mod, herMod = false) {
+    if (derece && derece.durum === "tamam" && !derece.takma_ad) {
+      setPencere(null);
+      getProfile().then((p) => setAdOnerisi((p && p.name) || "")).catch(() => {});
+      setAdIstegi(() => () => aramayaBasla(mod, herMod));
+      return;
+    }
+    aramayaBasla(mod, herMod);
+  }
+
+  async function aramayaBasla(mod, herMod = false) {
     setGameMode(mod);
     setHizli(herMod);
     setPencere(null);
@@ -145,8 +177,10 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     setCalisiyor(true);
     setEkran("arama");
     setGecen(0);
+    gecenRef.current = 0;
     try {
-      const bulunan = await rastgeleOdaBul({ gameMode: mod, modlar: herMod ? HIZLI_MODLAR : null, isRanked });
+      const puan = derece && Number.isFinite(derece.puan) ? derece.puan : null;
+      const bulunan = await rastgeleOdaBul({ gameMode: mod, modlar: herMod ? HIZLI_MODLAR : null, isRanked: true, puan, pencere: eslesmePenceresi(0) });
       if (bulunan) { hazir(bulunan); return; }
       await odaKurVeBekle(true, mod);
       setCalisiyor(false);
@@ -159,10 +193,11 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   // Arama sürerken: sayaç + daha önce kurulmuş bir rastgele oda çıktı mı?
   useEffect(() => {
     if (ekran !== "arama" || !oda) return;
-    const t = setInterval(() => setGecen((g) => g + 1), 1000);
+    const t = setInterval(() => setGecen((g) => { gecenRef.current = g + 1; return g + 1; }), 1000);
     const y = setInterval(async () => {
       try {
-        const eski = await rastgeleOdaBul({ gameMode, modlar: hizli ? HIZLI_MODLAR : null, isRanked, oncesi: oda.created_at });
+        const puan = derece && Number.isFinite(derece.puan) ? derece.puan : null;
+        const eski = await rastgeleOdaBul({ gameMode, modlar: hizli ? HIZLI_MODLAR : null, isRanked: true, oncesi: oda.created_at, puan, pencere: eslesmePenceresi(gecenRef.current) });
         if (!eski || !canliRef.current) return;
         birakRef.current?.();
         await odayiKapat(oda.id);
@@ -170,7 +205,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
       } catch (e) {}
     }, YOKLAMA_MS);
     return () => { clearInterval(t); clearInterval(y); };
-  }, [ekran, oda, gameMode, isRanked, hizli]);
+  }, [ekran, oda, gameMode, hizli, derece && derece.puan]);
 
   // --- 2) Arkadaşınla ---------------------------------------------------------
   async function arkadasOdasiKur(mod) {
@@ -190,6 +225,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }
 
   function bekleyiIptal() {
+    try { require("../lib/olcum").olay("online_iptal", { mod: gameMode, veri: { sn: gecenRef.current } }); } catch (e) {}
     birakRef.current?.();
     birakRef.current = null;
     if (odaRef.current) odayiKapat(odaRef.current.id);
@@ -224,7 +260,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           <View style={styles.waitCard}>
             <View style={styles.modRozet}>
               <Ionicons name={seciliMod.icon} size={14} color={COLORS.accent} />
-              <Text style={styles.modRozetYazi}>{rastgele && hizli ? "Hızlı Eşleş · her mod" : seciliMod.label} · {isRanked ? "Ranked" : "Casual"}</Text>
+              <Text style={styles.modRozetYazi}>{rastgele && hizli ? "Hızlı Eşleş · her mod" : seciliMod.label} · {rastgele ? "Dereceli" : "Dostluk"}</Text>
             </View>
             {rastgele ? (
               <>
@@ -278,10 +314,10 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   let secenekler = [];
   if (pencere?.tip === "mod" && pencere.mod.id === "classic") {
     // Tüm Modlar'daki gibi tür seçimi pencerenin içinde: rastgele takımlar / takımı sen seç
-    const tur = isRanked ? "Ranked" : "Casual";
+    const tur = "Dereceli";
     secenekler = [
       { anahtar: "c-rastgele", grup: "RASTGELE TAKIMLAR", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${tur} · iki takım gelir, ortak oyuncuyu ilk bulan alır`, kapali: calisiyor, onPress: () => rastgeleAra("classic") },
-      { anahtar: "c-oda", grup: "RASTGELE TAKIMLAR", ikon: "add-circle", label: "Oda Kur", alt: "Kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur("classic") },
+      { anahtar: "c-oda", grup: "RASTGELE TAKIMLAR", ikon: "add-circle", label: "Oda Kur", alt: "Dostluk · kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur("classic") },
       { anahtar: "d-rastgele", grup: "TAKIMI SEN SEÇ", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${tur} · sırayla takım seçersiniz, seçtiğin takım rakibin sorusu olur`, kapali: calisiyor, onPress: () => rastgeleAra("draft") },
       { anahtar: "d-oda", grup: "TAKIMI SEN SEÇ", ikon: "add-circle", label: "Oda Kur", alt: "Rakip bilemezse puan seçene — kodu arkadaşına gönder", kapali: calisiyor, onPress: () => arkadasOdasiKur("draft") },
       { anahtar: "katil", grup: "ARKADAŞINLA", ikon: "key", label: "Kodla Katıl", alt: "Arkadaşının kodu sende mi?", onPress: () => { setHata(""); setPencere({ tip: "katil" }); } },
@@ -289,8 +325,8 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   } else if (pencere?.tip === "mod") {
     const m = pencere.mod.id;
     secenekler = [
-      { anahtar: "rastgele", grup: "RASTGELE RAKİP", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${isRanked ? "Ranked" : "Casual"} · hemen eşleş`, kapali: calisiyor, onPress: () => rastgeleAra(m) },
-      { anahtar: "oda", grup: "ARKADAŞINLA", ikon: "add-circle", label: "Oda Kur", alt: "Kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur(m) },
+      { anahtar: "rastgele", grup: "RASTGELE RAKİP", ikon: "flash", label: "Rastgele Rakip Bul", alt: "Dereceli · puanına yakın rakip", kapali: calisiyor, onPress: () => rastgeleAra(m) },
+      { anahtar: "oda", grup: "ARKADAŞINLA", ikon: "add-circle", label: "Oda Kur", alt: "Dostluk · kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur(m) },
       { anahtar: "katil", grup: "ARKADAŞINLA", ikon: "key", label: "Kodla Katıl", alt: "Arkadaşının kodu sende mi?", onPress: () => { setHata(""); setPencere({ tip: "katil" }); } },
     ];
   } else if (pencere?.tip === "meydan" && !pencere.kodGir) {
@@ -336,10 +372,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
               <Ionicons name="filter" size={16} color={COLORS.accent} />
               <Text style={styles.presetRowText} numberOfLines={1}>{eslesme.derlenmis.etiket}</Text>
             </SoundPressable>
-            <SoundPressable onPress={() => setIsRanked((r) => !r)} style={[styles.turCip, isRanked && styles.turCipRanked]} accessibilityLabel={isRanked ? "Ranked" : "Casual"}>
-              <Ionicons name={isRanked ? "trophy" : "happy-outline"} size={16} color={isRanked ? COLORS.text : COLORS.accent} />
-              <Text style={[styles.turCipYazi, isRanked && { color: COLORS.text }]}>{isRanked ? "Ranked" : "Casual"}</Text>
-            </SoundPressable>
+            <DereceRozeti kart={derece} onPress={() => setLiderlikAcik(true)} />
           </View>
           {/* Paket 22 — Hızlı Eşleş: her moddaki bekleyen ilk rakip */}
           <SoundPressable
@@ -397,6 +430,14 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
       >
         {pencereIcerik}
       </ModSecimPenceresi>
+      <LiderlikPenceresi visible={liderlikAcik} onKapat={() => setLiderlikAcik(false)} />
+      <AdSecPenceresi
+        visible={!!adIstegi}
+        oneri={adOnerisi}
+        aciklama="Dereceli maçlarda rakibin ve liderlik tablosu seni bu adla görür. Sonra Online Puan ekranından değiştirebilirsin."
+        onKaydet={() => { const f = adIstegi; setAdIstegi(null); f && f(); }}
+        onKapat={() => setAdIstegi(null)}
+      />
     </GameBackground>
   );
 }
@@ -418,12 +459,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 10, paddingHorizontal: SPACING.md,
   },
   presetRowText: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flex: 1 },
-  turCip: {
-    flexDirection: "row", alignItems: "center", gap: 6, borderRadius: RADIUS.pill, paddingVertical: 10, paddingHorizontal: SPACING.md,
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.accent,
-  },
-  turCipRanked: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
-  turCipYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.accent },
   hizliBtn: {
     flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.accent, borderRadius: RADIUS.lg,
     paddingVertical: 14, paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg, ...SHADOW.card,

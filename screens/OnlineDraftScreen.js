@@ -19,8 +19,9 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
-import { useOnlineRoom, rovansli } from "../lib/onlineRoom";
+import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
 import OnlineMacSonu from "../components/OnlineMacSonu";
+import RakipAyrildi from "../components/RakipAyrildi";
 import {
   baslangicDurumu, aksiyonuIsle, secilebilirKulupIndeksi, ornekCevaplar, rakip,
   CEVAP_SURESI_MS, TUR_ARASI_MS, HEDEF_PUAN,
@@ -84,6 +85,8 @@ export default function OnlineDraftScreen({ room, onExit }) {
   const kulupOnerileri = useMemo(() => suggestClubs(kulupIndeksi, kulupGirdi), [kulupIndeksi, kulupGirdi]);
 
   const faz = durum?.faz;
+  // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
+  const ayrildi = <RakipAyrildi oda={room} benKimim={benKimim} rakipVar={rakipVar} aktif={!!faz && !["hazirlik", "macSonu", "hata"].includes(faz)} macNo={macSirasi(durum)} onExit={onExit} />;
   const benSecenim = durum?.secen === benKimim;
   const benCevaplayanim = durum ? rakip(durum.secen) === benKimim : false;
 
@@ -205,6 +208,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
 
   return (
     <GameBackground style={styles.kap}>
+      {ayrildi}
       <KlavyeAlani style={{ flex: 1 }}>
         <View style={styles.ustSerit}>
           <View style={styles.skorKutu}>
@@ -325,6 +329,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
           )}
           {faz === "macSonu" && (
             <OnlineMacSonu
+              oda={room}
               modAdi="Online — Takımı Sen Seç"
               durum={durum}
               benKimim={benKimim}

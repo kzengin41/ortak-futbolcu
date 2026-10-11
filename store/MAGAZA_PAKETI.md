@@ -198,8 +198,10 @@ kodda gerçekten ne olduğuna bakarak dolduruldu:
 | Kullanıcı adı | Evet | Hayır | İsteğe bağlı | Hesap yönetimi, oyun içi kimlik |
 | Fotoğraf | Evet (profil avatarı) | Hayır | İsteğe bağlı | Uygulama işlevselliği |
 | Ses kaydı | Evet | **Evet — OpenAI (Whisper)** | İsteğe bağlı | Uygulama işlevselliği (konuşmayı yazıya çevirme) |
-| Cihaz kimliği | Evet | Hayır | Zorunlu | Analiz, uygulama işlevselliği |
-| Uygulama etkileşimi (oynanan mod, skor) | Evet | Hayır | Zorunlu | Analiz |
+| Cihaz veya diğer kimlikler (anonim kullanıcı kimliği + cihaz kimliği) | Evet | Hayır | Zorunlu | Uygulama işlevselliği (online), analiz, dolandırıcılığı önleme/güvenlik |
+| Kullanıcı kimlikleri → **Kullanıcı kimliği** (anonim oturum kimliği) | Evet (Paket 23) | Hayır | Zorunlu | Uygulama işlevselliği (online puan) |
+| Uygulama etkileşimi (açılış, ekran, oynanan mod, sonuç) | Evet (Paket 23, `olaylar` tablosu) | Hayır | **İsteğe bağlı** (Ayarlar → Gelişmiş → Kullanım verisi gönder) | Analiz |
+| Oyun içi kimlik: takma ad + online puan | Evet | Hayır (diğer oyunculara liderlikte görünür) | İsteğe bağlı (yalnız dereceli maç oynayan) | Uygulama işlevselliği |
 | Hata/kullanıcı bildirimi metni | Evet | Hayır | İsteğe bağlı | Uygulama işlevselliği |
 | Uygulama bilgileri ve performans → **Kilitlenme günlükleri** | Evet (Sentry, 29 Eylül 2026) | Hayır* | Zorunlu | Analiz |
 | Uygulama bilgileri ve performans → **Teşhis** | Evet (Sentry: cihaz modeli, OS, sürüm) | Hayır* | Zorunlu | Analiz |
@@ -212,6 +214,10 @@ Ek cevaplar:
 - **Veriler aktarım sırasında şifreleniyor mu?** Evet (tamamı HTTPS).
 - **Kullanıcı verilerinin silinmesini isteyebiliyor mu?** Evet — uygulama içinde
   Hesap ekranından, ayrıca gizlilik politikasındaki e-posta adresinden.
+- **Paket 23 notu (11 Ekim 2026):** online artık Supabase anonim oturum kullanıyor
+  ve takma ad + online puan liderlik tablosunda herkese açık. Gizlilik politikası
+  (PRIVACY_POLICY.md + docs/index.html) buna göre güncellendi; formda "Kullanıcı
+  kimlikleri" ve "Uygulama etkileşimi" satırlarını işaretle.
 - **Ses kaydı saklanıyor mu?** Hayır. Edge function sesi OpenAI'ye iletip dönen
   metni döndürüyor, ne Supabase'e ne de başka bir yere yazıyor. Formda "Ses:
   toplanıyor, paylaşılıyor, saklanmıyor" olarak işaretle.

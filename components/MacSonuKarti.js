@@ -30,6 +30,11 @@ export default function MacSonuKarti({
   const kazandin = kazanan ? kazanan === "sen" : skorSen > skorRakip;
   // 4 Ekim 2026 (.29623) — görev olayları: CPU'ya karşı galibiyet (kart bir kez, maç sonunda açılır).
   useEffect(() => {
+    // Paket 23 — hafif ölçüm: maç sonu (mod + sonuç)
+    try { require("../lib/olcum").olay("mac_sonu", { mod: modeId || modAdi, veri: { s: solo ? "solo" : kazandin ? "g" : skorSen === skorRakip ? "b" : "m" } }); } catch (e) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
     if (solo || !kazandin || !rakip || !rakip.avatar) return;
     gorevOlayi("macKazan").catch(() => {});
     if (modeId === "xoxCpu") gorevOlayi("xoxKazan").catch(() => {});

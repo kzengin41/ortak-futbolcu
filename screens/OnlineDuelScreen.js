@@ -7,6 +7,7 @@ import SoundPressable from "../components/SoundPressable";
 import TeamBadge from "../components/TeamBadge";
 import TimerBar from "../components/TimerBar";
 import OnlineMacSonu from "../components/OnlineMacSonu";
+import RakipAyrildi from "../components/RakipAyrildi";
 import { supabase } from "../lib/supabaseClient";
 import { odaKur, odaNesnesi } from "../lib/onlineLobi";
 import { recordRound } from "../lib/stats";
@@ -129,6 +130,8 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   const myScore = (myPlayer === 1 ? roomRow?.score1 : roomRow?.score2) ?? 0;
   const oppScore = (myPlayer === 1 ? roomRow?.score2 : roomRow?.score1) ?? 0;
   const macBitti = phase === "result" && (myScore >= HEDEF || oppScore >= HEDEF);
+  // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
+  const ayrildi = <RakipAyrildi oda={room} benKimim={myPlayer} rakipVar={rakipVar} aktif={phase !== "loading" && !macBitti} macNo={1} onExit={onExit} />;
 
   const roundTimeLeft = roundRow
     ? Math.max(0, Math.ceil((new Date(roundRow.round_deadline).getTime() - now) / 1000))
@@ -238,6 +241,7 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   // 4 Ekim 2026 — klavye cevap kutusunu kapatmasın (components/Klavye.js).
   return (
     <GameBackground style={styles.kap}>
+      {ayrildi}
       <KlavyeAlani style={{ flex: 1 }}>
         <KlavyeScroll contentContainerStyle={{ flexGrow: 1, paddingBottom: SPACING.xl }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.ustSerit}>
@@ -346,6 +350,8 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
           {macBitti ? (
             <OnlineMacSonu
               modAdi="Online — Ortak Kulüp"
+              oda={room}
+              benKimim={myPlayer}
               onExit={onExit}
               skorSen={myScore}
               skorRakip={oppScore}

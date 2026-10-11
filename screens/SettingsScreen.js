@@ -412,6 +412,21 @@ export default function SettingsScreen({ onBack }) {
             />
           </View>
 
+          {/* Paket 23 — hafif ölçüm (lib/olcum.js) */}
+          <View style={[styles.row, { marginBottom: 26 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowLabel}>Kullanım verisi gönder</Text>
+              <Text style={styles.rowDesc}>Hangi modların oynandığını anonim olarak sayar; oyunu geliştirmemize yardım eder. Kişisel bilgi içermez.</Text>
+            </View>
+            <Switch
+              value={settings.olcum !== false}
+              onValueChange={(val) => setSetting("olcum", val)}
+              trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
+              thumbColor={COLORS.text}
+              accessibilityLabel="Kullanım verisi gönder"
+            />
+          </View>
+
           {/* 5 Ekim 2026 — OTA güncellemesinin gelip gelmediği buradan görülür (lib/guncelleme.js) */}
           <Text style={styles.sectionTitle} onLayout={yer("surum")}>Sürüm</Text>
           <SurumKutusu />

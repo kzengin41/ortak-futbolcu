@@ -17,8 +17,9 @@ import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
-import { useOnlineRoom, rovansli } from "../lib/onlineRoom";
+import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
 import OnlineMacSonu from "../components/OnlineMacSonu";
+import RakipAyrildi from "../components/RakipAyrildi";
 import {
   baslangicDurumu, aksiyonuIsle, kurHarfHaritasi, ALFABE,
   HEDEF_PUAN, TUR_ARASI_MS, HARF_GOSTERIM_MS,
@@ -84,6 +85,8 @@ export default function OnlineLetterScreen({ room, onExit }) {
   );
 
   const faz = durum?.faz;
+  // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
+  const ayrildi = <RakipAyrildi oda={room} benKimim={benKimim} rakipVar={rakipVar} aktif={!!faz && !["hazirlik", "macSonu", "hata"].includes(faz)} macNo={macSirasi(durum)} onExit={onExit} />;
   const benSecenim = durum?.secen === benKimim;
 
   // --- Host: "letter" çeşidinde rakip gelince harfleri at ------------------
@@ -204,6 +207,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
 
   return (
     <GameBackground style={styles.kap}>
+      {ayrildi}
       <KlavyeAlani style={{ flex: 1 }}>
         <View style={styles.ustSerit}>
           <View style={styles.skorKutu}>
@@ -307,6 +311,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
           )}
           {faz === "macSonu" && (
             <OnlineMacSonu
+              oda={room}
               modAdi="Online — İlk Harften Bul"
               durum={durum}
               benKimim={benKimim}

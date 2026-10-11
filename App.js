@@ -67,10 +67,10 @@ function goHome(navigation) {
 // Tek, merkezi çıkış onayı. Ekranın içindeki "✕ Bitir", "Menüye Dön" ya da
 // BackButton'dan hangisi çağırırsa çağırsın — hepsi bu fonksiyona bağlanır,
 // böylece "bazı butonlar soruyor bazıları sormuyor" tutarsızlığı ortadan kalkar.
-function confirmedExit(navigation) {
+function confirmedExit(navigation, mesaj) {
   Alert.alert(
     "Çıkış",
-    "Ana menüye dönmek istediğinize emin misiniz? İlerlemeniz kaybolacak.",
+    mesaj || "Ana menüye dönmek istediğinize emin misiniz? İlerlemeniz kaybolacak.",
     [
       { text: "Hayır", style: "cancel" },
       { text: "Evet", style: "destructive", onPress: () => goHome(navigation) },
@@ -300,13 +300,19 @@ function RehberliOyun({ mod, children }) {
 }
 
 // Online maç ekranları: aktif maçtan çıkmak rakibi de yarıda bırakır, mutlaka sor.
+// Paket 23: dereceli maçta yarıda çıkan oyuncu yenilmiş sayılır — uyarıda yazsın.
+function onlineCikis(navigation, room) {
+  confirmedExit(navigation, room && room.isRanked
+    ? "Dereceli maç sürüyorsa çıkarsan yenilmiş sayılırsın. Maç bittiyse puanın işlendi. Çıkmak istiyor musun?"
+    : undefined);
+}
 function OnlineDuelRoute({ navigation, route }) {
   return (
     <RehberliOyun mod="onlineDuel">
       {/* 5 Ekim 2026 (.29750) — rövanş yeni odada: aynı rotayı yeni odayla değiştir. */}
       <OnlineDuelScreen
         room={route.params?.room}
-        onExit={() => confirmedExit(navigation)}
+        onExit={() => onlineCikis(navigation, route.params?.room)}
         onRovansOda={(room) => navigation.replace("onlineDuel", { room })}
       />
     </RehberliOyun>
@@ -315,14 +321,14 @@ function OnlineDuelRoute({ navigation, route }) {
 function OnlineWhoAmIRoute({ navigation, route }) {
   return (
     <RehberliOyun mod="onlineWhoAmI">
-      <OnlineWhoAmIScreen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+      <OnlineWhoAmIScreen room={route.params?.room} onExit={() => onlineCikis(navigation, route.params?.room)} />
     </RehberliOyun>
   );
 }
 function OnlineDraftRoute({ navigation, route }) {
   return (
     <RehberliOyun mod="onlineDraft">
-      <OnlineDraftScreen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+      <OnlineDraftScreen room={route.params?.room} onExit={() => onlineCikis(navigation, route.params?.room)} />
     </RehberliOyun>
   );
 }
@@ -331,7 +337,7 @@ function getOnlineLetterRoute() {
   return function OnlineLetterRoute({ navigation, route }) {
     return (
       <RehberliOyun mod="onlineLetter">
-        <Screen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+        <Screen room={route.params?.room} onExit={() => onlineCikis(navigation, route.params?.room)} />
       </RehberliOyun>
     );
   };
@@ -343,7 +349,7 @@ function getOnlineXoxRoute() {
   return function OnlineXoxRoute({ navigation, route }) {
     return (
       <RehberliOyun mod="onlineXox">
-        <Screen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+        <Screen room={route.params?.room} onExit={() => onlineCikis(navigation, route.params?.room)} />
       </RehberliOyun>
     );
   };
@@ -354,7 +360,7 @@ function getOnlineFiveRoute() {
   return function OnlineFiveRoute({ navigation, route }) {
     return (
       <RehberliOyun mod="onlineFive">
-        <Screen room={route.params?.room} onExit={() => confirmedExit(navigation)} />
+        <Screen room={route.params?.room} onExit={() => onlineCikis(navigation, route.params?.room)} />
       </RehberliOyun>
     );
   };
@@ -472,6 +478,18 @@ function RootNavigator({ initialRouteName }) {
 function AppContent() {
   const [initialRouteName, setInitialRouteName] = useState(null);
   const navRef = useNavigationContainerRef();
+  // Paket 23 — hafif ölçüm (lib/olcum.js): açılış + girilen ekranlar (art arda aynısı bir kez).
+  const sonEkranRef = useRef(null);
+  useEffect(() => { try { require("./lib/olcum").olay("acilis"); } catch (e) {} }, []);
+  const ekranOlcumu = () => {
+    try {
+      const ad = navRef.getCurrentRoute && navRef.getCurrentRoute()?.name;
+      if (ad && ad !== sonEkranRef.current) {
+        sonEkranRef.current = ad;
+        require("./lib/olcum").olay("ekran", { mod: ad });
+      }
+    } catch (e) {}
+  };
   const playWhistle = useWhistleSound();
   useBackgroundAmbience(); // arka planda durmadan çalan tribün sesi — ayar açıkken otomatik başlar
 
@@ -495,7 +513,7 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer ref={navRef}>
+    <NavigationContainer ref={navRef} onStateChange={ekranOlcumu}>
       <RootNavigator initialRouteName={initialRouteName} />
     </NavigationContainer>
   );
