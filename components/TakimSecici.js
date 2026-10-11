@@ -30,7 +30,7 @@ function kulupListesi() {
   if (_kulupler) return _kulupler;
   const say = new Map();
   try {
-    const P = require("../lib/players.json");
+    const P = require("../lib/paket/players");
     for (const p of P) for (const c of p.clubs) {
       const k = canonicalClub(c);
       say.set(k, (say.get(k) || 0) + 1);

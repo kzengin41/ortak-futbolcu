@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Modal, Pressable, ScrollView, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import TeamBadge from "./TeamBadge";
@@ -52,16 +53,16 @@ function buildInfo(name) {
   if (!name) return null;
   try {
     const { PLAYERS } = require("../lib/players");
-    const birthPosition = require("../lib/playerBirthPosition.json");
-    const years = require("../lib/playerYears.json");
-    const nationalTeams = require("../lib/playerNationalTeams.json");
+    const birthPosition = require("../lib/paket/playerBirthPosition");
+    const years = require("../lib/paket/playerYears");
+    const nationalTeams = require("../lib/paket/playerNationalTeams");
     let achievements = {};
     try { achievements = require("../lib/playerAchievements.json"); } catch (e) {}
     // 28 Eylül 2026 — özgeçmiş verisi (Wikidata + Wikipedia "Honours"):
     // güncel/son kulüp, vefat, boy/ayak, yıllı kariyer, kupalar, ödüller.
     // scripts/ozgecmis_cek.py + ozgecmis_isle.py ile üretiliyor.
     let profiles = {};
-    try { profiles = require("../lib/playerProfiles.json"); } catch (e) {}
+    try { profiles = require("../lib/paket/playerProfiles"); } catch (e) {}
 
     const player = PLAYERS.find((p) => p.name === name);
     const bp = birthPosition[name] || {};
@@ -166,6 +167,10 @@ function DurumKarti({ pr, active, lastYear, olumYili, age }) {
 export default function PlayerMiniProfile({ name, visible, onClose }) {
   // Kart kapalıyken hiç hesaplama yapmıyoruz (ağır require'lar tetiklenmesin).
   const info = useMemo(() => (visible ? buildInfo(name) : null), [visible, name]);
+  const { height: ekranH } = useWindowDimensions();
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0 };
+  // Kart en fazla: ekran − üst/alt sistem çubukları − 32 px pay (en az 320 px)
+  const kartMax = Math.max(320, Math.round(ekranH - (insets.top || 0) - (insets.bottom || 0) - 32));
   if (!visible) return null;
 
   const pr = info?.profil || null;
@@ -194,21 +199,22 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
   }
 
   return (
-    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* İçeriğe dokunmak kartı kapatmasın diye iç Pressable dokunuşu yutuyor. */}
-        <Pressable style={styles.card} onPress={() => {}}>
-          <Pressable onPress={onClose} hitSlop={16} style={styles.closeBtn}>
+    <Modal visible transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      {/* Paket 22 (Kerem: "mini profilde en alt kısma halen kaymıyor") — KÖK NEDEN:
+          kart, karartmanın İÇİNDE bir Pressable'dı. Android'de dokunuşu ilk alan
+          iç Pressable kaydırma hareketini ScrollView'a bırakmıyordu; ayrıca %82
+          yüzde yüksekliği kenardan kenara çizilen Modal'da gezinme çubuğunun
+          altına taşıyordu. Artık: karartma AYRI bir katman (kardeş), kart düz bir
+          View, kaydırma alanının yüksekliği PİKSEL olarak (ekran − çubuklar)
+          hesaplanıyor. */}
+      <View style={[styles.backdrop, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Kapat" />
+        <View style={[styles.card, { maxHeight: kartMax }]}>
+          <Pressable onPress={onClose} hitSlop={16} style={styles.closeBtn} accessibilityLabel="Profili kapat">
             <Ionicons name="close" size={20} color={COLORS.textMuted} />
           </Pressable>
 
-          {/* Paket 18 (Kerem: "mini profilde en aşağıdaki şeyleri görecek şekilde
-              kaymıyor") — KÖK NEDEN: başlık, rozetler ve durum kartı kaydırma
-              alanının DIŞINDAYDI, ScrollView de `flexGrow: 0` ile küçülemiyordu;
-              kart %82 yüksekliğe takılınca alttaki kupalar kartın dışında kalıp
-              kesiliyordu. Artık bütün içerik tek kaydırma alanında ve alan
-              kartın içine sığacak kadar küçülebiliyor (flexShrink). */}
-          <ScrollView style={styles.body} contentContainerStyle={{ paddingBottom: 16 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ maxHeight: kartMax - 36 }} contentContainerStyle={{ paddingBottom: 16 }} nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
             <View style={styles.header}>
               <ProfileAvatar name={name} size={84} />
               <Text style={styles.name} numberOfLines={2}>{name}</Text>
@@ -298,22 +304,21 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
               <Text style={styles.empty}>Bu futbolcu için ayrıntılı bilgi bulunamadı.</Text>
             )}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(6,12,20,0.82)", alignItems: "center", justifyContent: "center", padding: 24 },
-  card: { width: "100%", maxWidth: 380, maxHeight: "82%", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 20, padding: 18 },
+  backdrop: { flex: 1, backgroundColor: "rgba(6,12,20,0.82)", alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  card: { width: "100%", maxWidth: 380, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 20, padding: 18 },
   closeBtn: { position: "absolute", top: 10, right: 10, zIndex: 2, padding: 4 },
   header: { alignItems: "center", gap: 10, marginBottom: 12 },
   name: { color: COLORS.text, fontSize: 18, fontWeight: "900", textAlign: "center" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 },
   chip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.bg, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 5, paddingHorizontal: 9 },
   chipText: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
-  body: { flexGrow: 0, flexShrink: 1 },
   sectionTitle: { color: COLORS.cta, fontSize: 12, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   clubRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
   clubName: { color: COLORS.text, fontSize: 13, fontWeight: "600", flex: 1 },

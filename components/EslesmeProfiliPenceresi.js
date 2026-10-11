@@ -66,7 +66,7 @@ function kulupAdlari() {
   if (_kulupAdlari) return _kulupAdlari;
   const say = new Map();
   try {
-    const P = require("../lib/players.json");
+    const P = require("../lib/paket/players");
     for (const p of P) for (const c of p.clubs) say.set(c, (say.get(c) || 0) + 1);
   } catch (e) {}
   _kulupAdlari = [...say.entries()]
@@ -78,7 +78,7 @@ function kulupAdlari() {
 // Profilin havuzunda kaç oyuncu var (alt bilgi satırı için).
 let _oyuncular = null;
 function havuzSayisi(derlenmis) {
-  if (!_oyuncular) { try { _oyuncular = require("../lib/players.json"); } catch (e) { _oyuncular = []; } }
+  if (!_oyuncular) { try { _oyuncular = require("../lib/paket/players"); } catch (e) { _oyuncular = []; } }
   let n = 0;
   for (const p of _oyuncular) if (derlenmis.oyuncuCarpani(p) > 0) n++;
   return n;

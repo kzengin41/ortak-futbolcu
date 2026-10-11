@@ -39,7 +39,7 @@ PAY = 2          # her kenarda saydam pay
 ADIM = HUCRE + 2 * PAY
 SUTUN = 10       # atlas başına 10×10 = 100 logo
 SATIR = 10
-KALITE = 90
+KALITE = 82   # Paket 22: 90 -> 82 (atlas 5.1 MB -> ~3.9 MB; 128 px logoda fark görünmüyor)
 
 ONCELIKLI = [  # lib/clubWeights.js MEGA + BIG (her zaman ilk atlasta)
     "Galatasaray", "Fenerbahçe", "Beşiktaş", "Real Madrid", "Barcelona", "Bayern Munich",

@@ -27,6 +27,7 @@ export const ARKAPLANLAR = {
   ts: require("../assets/backgrounds/saha_ts.jpg"),
   notr: require("../assets/backgrounds/saha_notr.jpg"),
 };
+export const ORTU = [0.38, 0.7, 0.9];   // arkaplan üstündeki zemin rengi örtüsü (üst, orta, alt)
 export const ARKAPLAN_SECENEKLERI = [
   { id: "tema", ad: "Temaya uygun" },
   { id: "saha", ad: "Yeşil saha" },
@@ -103,8 +104,11 @@ export default function GameBackground({ children, style, klavye }) {
           "futbol sahası zemini" isteği) ama üstü lacivert/gece stadyumu
           tonuna doğru KOYULAŞTIRILIYOR, böylece üstteki kartlar/metinler artık
           yeşil değil lacivert+altın paletiyle net şekilde ayrışıyor. */}
+      {/* Paket 22 — örtü hafifledi (0.5/0.86/0.97 → 0.38/0.70/0.90): saha daha
+          çok görünüyor; kartlar artık zeminden açık nötr bir yüzey olduğu için
+          okunabilirlik kartın kendisinden geliyor, örtüden değil. */}
       <LinearGradient
-        colors={[saydam(bg, 0.5), saydam(bg, 0.86), saydam(bg, 0.97)]}
+        colors={[saydam(bg, ORTU[0]), saydam(bg, ORTU[1]), saydam(bg, ORTU[2])]}
         locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFillObject}
       />

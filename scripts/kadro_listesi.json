@@ -1,9 +1,10 @@
 {
- "_aciklama": "scripts/kadro_cek.py girdisi. maclar: Wikipedia final makaleleri (Günün Kadrosu havuzu). sezonlar: kulüp × sezon kadroları (Ansiklopedi Takımlar sekmesi). Yeni maç/sezon eklemek için buraya yaz, script'i tekrar çalıştır.",
+ "_aciklama": "scripts/kadro_cek.py girdisi. maclar: Wikipedia final makaleleri (Günün Kadrosu havuzu). sezonlar: kulüp × sezon kadroları (Ansiklopedi Takımlar sekmesi). Yeni maç/sezon eklemek için buraya yaz, script'i tekrar çalıştır. Paket 22: maç girdisine 'bolum' yazılırsa (ör. \"Croatia vs Turkey\") sayfanın yalnız o bölümü okunur — tek makalesi olmayan efsane maçlar turnuva sayfasından alınır. 'lakap' Günün Kadrosu kartında görünür; 'skor'/'penalti' kutudan okunamayan skoru düzeltir.",
  "maclar": [
   {
    "baslik": "1999 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Camp Nou mucizesi: 90+1 ve 90+3"
   },
   {
    "baslik": "2000 UEFA Champions League final",
@@ -15,7 +16,8 @@
   },
   {
    "baslik": "2002 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Zidane'ın unutulmaz volesi"
   },
   {
    "baslik": "2003 UEFA Champions League final",
@@ -27,7 +29,8 @@
   },
   {
    "baslik": "2005 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "İstanbul Mucizesi: 0-3'ten geri dönüş"
   },
   {
    "baslik": "2006 UEFA Champions League final",
@@ -39,7 +42,8 @@
   },
   {
    "baslik": "2008 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Moskova'da yağmur altında penaltılar"
   },
   {
    "baslik": "2009 UEFA Champions League final",
@@ -47,15 +51,18 @@
   },
   {
    "baslik": "2010 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Mourinho'lu Inter'in üçlemesi"
   },
   {
    "baslik": "2011 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Wembley'de Barça şov"
   },
   {
    "baslik": "2012 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Drogba'nın gecesi"
   },
   {
    "baslik": "2013 UEFA Champions League final",
@@ -63,7 +70,8 @@
   },
   {
    "baslik": "2014 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "La Décima: Ramos 90+3"
   },
   {
    "baslik": "2015 UEFA Champions League final",
@@ -71,7 +79,8 @@
   },
   {
    "baslik": "2016 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Milano'da Madrid derbisi, penaltılar"
   },
   {
    "baslik": "2017 UEFA Champions League final",
@@ -79,7 +88,8 @@
   },
   {
    "baslik": "2018 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Bale'in rövaşatası"
   },
   {
    "baslik": "2019 UEFA Champions League final",
@@ -107,54 +117,25 @@
   },
   {
    "baslik": "2025 UEFA Champions League final",
-   "tur": "Şampiyonlar Ligi finali"
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Finallerin en farklısı: 5-0"
   },
   {
    "baslik": "2000 UEFA Cup final",
-   "tur": "UEFA Kupası finali"
+   "tur": "UEFA Kupası finali",
+   "lakap": "Galatasaray Avrupa'nın zirvesinde"
   },
   {
    "baslik": "2001 UEFA Cup final",
-   "tur": "UEFA Kupası finali"
+   "tur": "UEFA Kupası finali",
+   "lakap": "9 gollü final, altın golle bitti"
   },
   {
    "baslik": "2003 UEFA Cup final",
    "tur": "UEFA Kupası finali"
   },
   {
-   "baslik": "2004 UEFA Cup final",
-   "tur": "UEFA Kupası finali"
-  },
-  {
-   "baslik": "2006 UEFA Cup final",
-   "tur": "UEFA Kupası finali"
-  },
-  {
-   "baslik": "2009 UEFA Cup final",
-   "tur": "UEFA Kupası finali"
-  },
-  {
-   "baslik": "2010 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
-   "baslik": "2011 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
-   "baslik": "2012 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
    "baslik": "2013 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
-   "baslik": "2014 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
-   "baslik": "2015 UEFA Europa League final",
    "tur": "Avrupa Ligi finali"
   },
   {
@@ -166,23 +147,11 @@
    "tur": "Avrupa Ligi finali"
   },
   {
-   "baslik": "2018 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
    "baslik": "2019 UEFA Europa League final",
    "tur": "Avrupa Ligi finali"
   },
   {
    "baslik": "2020 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
-   "baslik": "2021 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
-   "baslik": "2022 UEFA Europa League final",
    "tur": "Avrupa Ligi finali"
   },
   {
@@ -194,88 +163,220 @@
    "tur": "Avrupa Ligi finali"
   },
   {
-   "baslik": "2025 UEFA Europa League final",
-   "tur": "Avrupa Ligi finali"
-  },
-  {
    "baslik": "2000 UEFA Super Cup",
-   "tur": "UEFA Süper Kupa"
+   "tur": "UEFA Süper Kupa",
+   "lakap": "Jardel'in altın golü"
   },
   {
    "baslik": "1998 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "0–3"
   },
   {
    "baslik": "2002 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "0–2"
   },
   {
    "baslik": "2006 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "1–1 (a.e.t.)",
+   "penalti": "5–3",
+   "lakap": "Zidane'ın kafa vuruşu"
   },
   {
    "baslik": "2010 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "0–1 (a.e.t.)",
+   "lakap": "İniesta 116. dakika"
   },
   {
    "baslik": "2014 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "1–0 (a.e.t.)"
   },
   {
    "baslik": "2018 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "4–2"
   },
   {
    "baslik": "2022 FIFA World Cup final",
-   "tur": "Dünya Kupası finali"
+   "tur": "Dünya Kupası finali",
+   "skor": "3–3 (a.e.t.)",
+   "penalti": "4–2"
   },
   {
    "baslik": "UEFA Euro 2000 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "2–1 (a.e.t.)",
+   "lakap": "Trezeguet'nin altın golü"
   },
   {
    "baslik": "UEFA Euro 2004 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "0–1",
+   "lakap": "Yunan mucizesi"
   },
   {
    "baslik": "UEFA Euro 2008 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "0–1"
   },
   {
    "baslik": "UEFA Euro 2012 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "4–0"
   },
   {
    "baslik": "UEFA Euro 2016 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "1–0 (a.e.t.)"
   },
   {
    "baslik": "UEFA Euro 2020 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "1–1 (a.e.t.)",
+   "penalti": "3–2"
   },
   {
    "baslik": "UEFA Euro 2024 final",
-   "tur": "Avrupa Şampiyonası finali"
+   "tur": "Avrupa Şampiyonası finali",
+   "skor": "2–1"
   },
   {
-   "baslik": "2021 UEFA Europa Conference League final",
-   "tur": "Konferans Ligi finali"
+   "baslik": "Brazil v Germany (2014 FIFA World Cup)",
+   "tur": "Dünya Kupası yarı finali",
+   "lakap": "Mineirazo: Brezilya 1-7 Almanya",
+   "skor": "1–7"
   },
   {
-   "baslik": "2022 UEFA Europa Conference League final",
-   "tur": "Konferans Ligi finali"
+   "baslik": "Argentina v England (1986 FIFA World Cup)",
+   "tur": "Dünya Kupası çeyrek finali",
+   "lakap": "Tanrı'nın Eli ve Yüzyılın Golü",
+   "skor": "2–1"
   },
   {
-   "baslik": "2023 UEFA Europa Conference League final",
-   "tur": "Konferans Ligi finali"
+   "baslik": "FC Barcelona 6–1 Paris Saint-Germain FC",
+   "tur": "Şampiyonlar Ligi son 16",
+   "lakap": "La Remontada: 0-4'ten 6-1"
   },
   {
-   "baslik": "2024 UEFA Europa Conference League final",
-   "tur": "Konferans Ligi finali"
+   "baslik": "Manchester City F.C. 3–2 Queens Park Rangers F.C.",
+   "tur": "Premier Lig son hafta",
+   "lakap": "93:20 — Agüerooo!"
   },
   {
-   "baslik": "2025 UEFA Conference League final",
-   "tur": "Konferans Ligi finali"
+   "baslik": "Liverpool F.C. 4–3 Newcastle United F.C. (1996)",
+   "tur": "Premier Lig",
+   "lakap": "Premier Lig tarihinin maçı"
+  },
+  {
+   "baslik": "Manchester United 8–2 Arsenal (2011)",
+   "tur": "Premier Lig",
+   "lakap": "Old Trafford'da 8-2"
+  },
+  {
+   "baslik": "2002 FIFA World Cup knockout stage",
+   "bolum": "Match for third place",
+   "tur": "Dünya Kupası 3.lük maçı",
+   "lakap": "Hakan Şükür 11. saniye",
+   "skor": "2–3"
+  },
+  {
+   "baslik": "2002 FIFA World Cup knockout stage",
+   "bolum": "Senegal vs Turkey",
+   "tur": "Dünya Kupası çeyrek finali",
+   "lakap": "İlhan Mansız'ın altın golü",
+   "skor": "0–1 (a.e.t.)"
+  },
+  {
+   "baslik": "2002 FIFA World Cup knockout stage",
+   "bolum": "Brazil vs Turkey",
+   "tur": "Dünya Kupası yarı finali",
+   "lakap": "Türkiye dünya devine karşı",
+   "skor": "1–0"
+  },
+  {
+   "baslik": "UEFA Euro 2008 knockout stage",
+   "bolum": "Croatia vs Turkey",
+   "tur": "EURO çeyrek finali",
+   "lakap": "Semih Şentürk 120+2",
+   "skor": "1–1 (a.e.t.)",
+   "penalti": "1–3"
+  },
+  {
+   "baslik": "UEFA Euro 2008 knockout stage",
+   "bolum": "Germany vs Turkey",
+   "tur": "EURO yarı finali",
+   "lakap": "Basel'de 3-2",
+   "skor": "3–2"
+  },
+  {
+   "baslik": "UEFA Euro 2008 Group A",
+   "bolum": "Turkey vs Czech Republic",
+   "tur": "EURO grup maçı",
+   "lakap": "Nihat'ın 3 dakikası: 0-2'den 3-2",
+   "skor": "3–2"
+  },
+  {
+   "baslik": "2006 FIFA World Cup knockout stage",
+   "bolum": "Germany vs Italy",
+   "tur": "Dünya Kupası yarı finali",
+   "lakap": "Grosso 119, Del Piero 120+1",
+   "skor": "0–2 (a.e.t.)"
+  },
+  {
+   "baslik": "2014 FIFA World Cup Group B",
+   "bolum": "Spain vs Netherlands",
+   "tur": "Dünya Kupası grup maçı",
+   "lakap": "Uçan Hollandalı: 1-5",
+   "skor": "1–5"
+  },
+  {
+   "baslik": "1970 FIFA World Cup final",
+   "tur": "Dünya Kupası finali",
+   "lakap": "Pelé'li Brezilya",
+   "skor": "4–1"
+  },
+  {
+   "baslik": "1986 FIFA World Cup final",
+   "tur": "Dünya Kupası finali",
+   "lakap": "Maradona'nın kupası",
+   "skor": "3–2"
+  },
+  {
+   "baslik": "1994 FIFA World Cup final",
+   "tur": "Dünya Kupası finali",
+   "lakap": "Baggio'nun penaltısı",
+   "skor": "0–0 (a.e.t.)",
+   "penalti": "3–2"
+  },
+  {
+   "baslik": "UEFA Euro 1988 final",
+   "tur": "Avrupa Şampiyonası finali",
+   "lakap": "Van Basten'in volesi",
+   "skor": "0–2"
+  },
+  {
+   "baslik": "1989 European Cup final",
+   "tur": "Şampiyon Kulüpler Kupası finali",
+   "lakap": "Sacchi'nin Milan'ı: 4-0"
+  },
+  {
+   "baslik": "1994 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Milan 4-0 Rüya Takım"
+  },
+  {
+   "baslik": "1995 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Van Gaal'in genç Ajax'ı"
+  },
+  {
+   "baslik": "1998 UEFA Champions League final",
+   "tur": "Şampiyonlar Ligi finali",
+   "lakap": "Mijatović ve 32 yıllık hasret"
   }
  ],
  "sezonlar": [

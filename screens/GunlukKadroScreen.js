@@ -151,6 +151,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
       {m ? (
         <View style={s.macKart}>
           <Text style={s.macTur}>{m.tur}{m.yil ? ` · ${m.yil}` : ""}</Text>
+          {m.lakap ? <Text style={s.lakap} numberOfLines={2}>{m.lakap}</Text> : null}
           <View style={s.macSatir}>
             <TakimEtiketi ad={m.takimlar[0].ad} tip={m.takimlar[0].tip} vurgulu={hedefIndeks === 0} />
             <View style={{ alignItems: "center" }}>
@@ -226,6 +227,7 @@ const s = StyleSheet.create({
   ust: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   saat: { fontSize: 18, fontWeight: "900", color: COLORS.text, fontVariant: ["tabular-nums"] },
   ustBaslik: { fontSize: 13, fontWeight: "800", letterSpacing: 2, color: VURGU.main, marginTop: SPACING.sm },
+  lakap: { fontSize: 14, fontWeight: "800", color: COLORS.cta, textAlign: "center", marginTop: 2, marginBottom: 4 },
   baslik: { fontSize: 20, fontWeight: "900", color: COLORS.text, marginTop: 4 },
   macKart: { marginTop: SPACING.sm, padding: 12, borderRadius: 18, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
   macTur: { fontSize: 12, fontWeight: "800", color: COLORS.textMuted, textAlign: "center", letterSpacing: 1 },

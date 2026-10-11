@@ -37,10 +37,20 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 // Kodla Katıl ve Meydan Okuma "Arkadaşınla" bölümünde kendi kartlarında.
 // Yeni mod: Online 5 Kulüp (gameMode "five", screens/OnlineFiveScreen.js).
 // Paket 18: kartlar yatay, ikonlar components/ModIkon.js (Tüm Modlar ile aynı).
+// Paket 22 (Kerem: "online sekmesine hızlı eşleştirme butonu koymamız lazım",
+// "takımı sen seç açıklaması yanlış... ortak kulüp içine gönderebiliriz"):
+//   - En üstte HIZLI EŞLEŞ: modu fark etmeksizin bekleyen ilk rastgele odaya
+//     girer; kimse yoksa Ortak Kulüp odası kurup bekler (beklerken de her moda
+//     bakmaya devam eder).
+//   - "Takımı Sen Seç" ayrı kart değil: Tüm Modlar'daki gibi Ortak Kulüp'ün
+//     içinde bir TÜR. Açıklaması kurala göre düzeldi (lib/onlineDraft.js:
+//     sırayla takım seçilir, seçtiğin takım rakibin sorusu olur; bilemezse
+//     puan seçene).
 // ============================================================================
 export const GAME_MODES = [
-  { id: "classic", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takım, ortak oyuncuyu ilk bulan alır", icon: "shield-checkmark", colorKey: "teamTeam" },
-  { id: "draft", ikon: "takimiSenSec", grup: "ortak", label: "Takımı Sen Seç", desc: "Takımı sen söyle, rakip ortağı bulsun", icon: "create", colorKey: "teamCountry" },
+  { id: "classic", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takımda da oynamış futbolcuyu rakibinden önce bul. İstersen takımları sırayla siz seçin", icon: "shield-checkmark", colorKey: "teamTeam" },
+  // Kartı yok (Ortak Kulüp'ün içinde bir tür); bekleme ekranı ve modIstegi için listede duruyor.
+  { id: "draft", ikon: "takimiSenSec", grup: "ortak", gizli: true, label: "Ortak Kulüp · Takımı Sen Seç", desc: "Sırayla takım seçersiniz: seçtiğin takım rakibin sorusu olur, bilemezse puan senin", icon: "create", colorKey: "teamCountry" },
   { id: "five", ikon: "besKulup", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
   { id: "xox", ikon: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
   { id: "whoami", ikon: "kimBu", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
@@ -53,6 +63,8 @@ const GRUPLAR = [
 ];
 // Kulüp kimliği (allowedClubIds) gerektirmeyen modlar: kendi üreticileri var.
 const KULUPSUZ = new Set(["xox", "five"]);
+// Hızlı Eşleş'te aranacak modlar: bu sürümün oynayabildiği bütün online modlar.
+const HIZLI_MODLAR = GAME_MODES.map((m) => m.id);
 const KODLA_KATIL = { ikon: "kodlaKatil", title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
 const MEYDAN = { ikon: "meydanOkuma", title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
@@ -63,6 +75,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   const eslesme = useEslesmeProfili();
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
   const [gameMode, setGameMode] = useState(baslangicModu && GAME_MODES.some((m) => m.id === baslangicModu) ? baslangicModu : "classic");
+  const [hizli, setHizli] = useState(false);       // Hızlı Eşleş araması mı (her mod)
   const [isRanked, setIsRanked] = useState(false);
   // ekran: ana | arama (rastgele) | oda (arkadaş odası bekliyor)
   const [ekran, setEkran] = useState("ana");
@@ -82,7 +95,8 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   // Tüm Modlar → "XOX Online" gibi girişler o modun penceresini açık getirir.
   // (modIstegi her girişte yeni bir nesne: aynı mod ikinci kez istense de uygulanır.)
   useEffect(() => {
-    const m = baslangicModu && GAME_MODES.find((x) => x.id === baslangicModu);
+    let m = baslangicModu && GAME_MODES.find((x) => x.id === baslangicModu);
+    if (m && m.gizli) m = GAME_MODES.find((x) => x.id === "classic");   // draft -> Ortak Kulüp penceresi
     if (m) { setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }
   }, [modIstegi]);
 
@@ -122,15 +136,17 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }
 
   // --- 1) Rastgele rakip ------------------------------------------------------
-  async function rastgeleAra(mod) {
+  // herMod: Hızlı Eşleş — bekleyen her moddaki odaya bakar, yoksa `mod` odası kurar.
+  async function rastgeleAra(mod, herMod = false) {
     setGameMode(mod);
+    setHizli(herMod);
     setPencere(null);
     setHata("");
     setCalisiyor(true);
     setEkran("arama");
     setGecen(0);
     try {
-      const bulunan = await rastgeleOdaBul({ gameMode: mod, isRanked });
+      const bulunan = await rastgeleOdaBul({ gameMode: mod, modlar: herMod ? HIZLI_MODLAR : null, isRanked });
       if (bulunan) { hazir(bulunan); return; }
       await odaKurVeBekle(true, mod);
       setCalisiyor(false);
@@ -146,7 +162,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     const t = setInterval(() => setGecen((g) => g + 1), 1000);
     const y = setInterval(async () => {
       try {
-        const eski = await rastgeleOdaBul({ gameMode, isRanked, oncesi: oda.created_at });
+        const eski = await rastgeleOdaBul({ gameMode, modlar: hizli ? HIZLI_MODLAR : null, isRanked, oncesi: oda.created_at });
         if (!eski || !canliRef.current) return;
         birakRef.current?.();
         await odayiKapat(oda.id);
@@ -154,7 +170,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
       } catch (e) {}
     }, YOKLAMA_MS);
     return () => { clearInterval(t); clearInterval(y); };
-  }, [ekran, oda, gameMode, isRanked]);
+  }, [ekran, oda, gameMode, isRanked, hizli]);
 
   // --- 2) Arkadaşınla ---------------------------------------------------------
   async function arkadasOdasiKur(mod) {
@@ -208,7 +224,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           <View style={styles.waitCard}>
             <View style={styles.modRozet}>
               <Ionicons name={seciliMod.icon} size={14} color={COLORS.accent} />
-              <Text style={styles.modRozetYazi}>{seciliMod.label} · {isRanked ? "Ranked" : "Casual"}</Text>
+              <Text style={styles.modRozetYazi}>{rastgele && hizli ? "Hızlı Eşleş · her mod" : seciliMod.label} · {isRanked ? "Ranked" : "Casual"}</Text>
             </View>
             {rastgele ? (
               <>
@@ -260,7 +276,17 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   const pencereMod = pencere?.tip === "mod" ? pencere.mod : pencere?.tip === "katil" ? KODLA_KATIL : pencere?.tip === "meydan" ? MEYDAN : null;
   let pencereIcerik = null;
   let secenekler = [];
-  if (pencere?.tip === "mod") {
+  if (pencere?.tip === "mod" && pencere.mod.id === "classic") {
+    // Tüm Modlar'daki gibi tür seçimi pencerenin içinde: rastgele takımlar / takımı sen seç
+    const tur = isRanked ? "Ranked" : "Casual";
+    secenekler = [
+      { anahtar: "c-rastgele", grup: "RASTGELE TAKIMLAR", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${tur} · iki takım gelir, ortak oyuncuyu ilk bulan alır`, kapali: calisiyor, onPress: () => rastgeleAra("classic") },
+      { anahtar: "c-oda", grup: "RASTGELE TAKIMLAR", ikon: "add-circle", label: "Oda Kur", alt: "Kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur("classic") },
+      { anahtar: "d-rastgele", grup: "TAKIMI SEN SEÇ", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${tur} · sırayla takım seçersiniz, seçtiğin takım rakibin sorusu olur`, kapali: calisiyor, onPress: () => rastgeleAra("draft") },
+      { anahtar: "d-oda", grup: "TAKIMI SEN SEÇ", ikon: "add-circle", label: "Oda Kur", alt: "Rakip bilemezse puan seçene — kodu arkadaşına gönder", kapali: calisiyor, onPress: () => arkadasOdasiKur("draft") },
+      { anahtar: "katil", grup: "ARKADAŞINLA", ikon: "key", label: "Kodla Katıl", alt: "Arkadaşının kodu sende mi?", onPress: () => { setHata(""); setPencere({ tip: "katil" }); } },
+    ];
+  } else if (pencere?.tip === "mod") {
     const m = pencere.mod.id;
     secenekler = [
       { anahtar: "rastgele", grup: "RASTGELE RAKİP", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${isRanked ? "Ranked" : "Casual"} · hemen eşleş`, kapali: calisiyor, onPress: () => rastgeleAra(m) },
@@ -315,6 +341,23 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
               <Text style={[styles.turCipYazi, isRanked && { color: COLORS.text }]}>{isRanked ? "Ranked" : "Casual"}</Text>
             </SoundPressable>
           </View>
+          {/* Paket 22 — Hızlı Eşleş: her moddaki bekleyen ilk rakip */}
+          <SoundPressable
+            onPress={() => rastgeleAra("classic", true)}
+            disabled={calisiyor}
+            style={styles.hizliBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Hızlı Eşleş"
+          >
+            <View style={styles.hizliIkon}>
+              <Ionicons name="flash" size={24} color={COLORS.accentDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.hizliBaslik}>Hızlı Eşleş</Text>
+              <Text style={styles.hizliAlt} numberOfLines={2}>Mod fark etmez — bekleyen ilk rakiple hemen başla</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.accentDark} />
+          </SoundPressable>
           {hata && !pencere ? (
             <View style={styles.errorCard}>
               <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
@@ -333,7 +376,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
 
         {GRUPLAR.map((g) => (
           <ModBolumu key={g.id} baslik={g.baslik} ikon={g.ikon}>
-            {GAME_MODES.filter((m) => m.grup === g.id).map((m) => (
+            {GAME_MODES.filter((m) => m.grup === g.id && !m.gizli).map((m) => (
               <ModKarti key={m.id} mod={m} rozet={m.rozet} onPress={() => { setHata(""); setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }} />
             ))}
           </ModBolumu>
@@ -381,6 +424,13 @@ const styles = StyleSheet.create({
   },
   turCipRanked: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
   turCipYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.accent },
+  hizliBtn: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.accent, borderRadius: RADIUS.lg,
+    paddingVertical: 14, paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg, ...SHADOW.card,
+  },
+  hizliIkon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.28)" },
+  hizliBaslik: { color: COLORS.accentDark, fontSize: 17, fontWeight: "900" },
+  hizliAlt: { color: COLORS.accentDark, fontSize: 12, fontWeight: "700", opacity: 0.8, marginTop: 1 },
 
 
 

@@ -154,7 +154,12 @@ def mac_kadrolari(wikitext):
     yedekte = False
     for satir in (wikitext or "").splitlines():
         s = satir.strip()
-        if re.search(r"Substitut", s, re.I) and s.startswith("|"):
+        # Paket 22: "|{{abbr|RB|Right-back}} ||" biçimi (2014 DK finali) -> "|RB ||"
+        s = re.sub(r"^\|\s*\{\{\s*abbr\s*\|\s*([A-Z]{1,4})\s*\|[^{}]*\}\}", r"|\1", s, flags=re.I)
+        # Yedek başlığı: oyuncu satırı OLMAYAN ve "Substitut" geçen satır. (2022 DK
+        # finalinde Rabiot'nun satırındaki dipnot "substitution" kelimesini içeriyordu;
+        # eskiden kadro orada yarıda kesiliyordu.)
+        if s.startswith("|") and not SATIR.match(s) and re.search(r"Substitut", s, re.I):
             yedekte = True
             continue
         if re.search(r"'''\s*(Manager|Head coach|Coach)\s*:?\s*'''", s, re.I):
@@ -204,11 +209,43 @@ def kutu_alani(wikitext, alan):
     return duz_metin(ham) or None
 
 
+def _bolum_norm(s):
+    s = duz_metin(s).lower()
+    s = re.sub(r"\s+v(s|\.)?\.?\s+", " vs ", s)
+    return re.sub(r"[^a-z0-9çğıöşü ]+", "", s).strip()
+
+
+def bolum_kes(metin, bolum):
+    """Paket 22 — tek makalesi olmayan maçlar turnuva sayfasında bir bölüm:
+        ===Croatia vs Turkey===
+    Bu başlıktan, aynı ya da daha üst düzeydeki bir sonraki başlığa kadar olan
+    kısmı döndürür (yoksa None). "v", "v.", "vs", "vs." farkı önemsiz."""
+    hedef = _bolum_norm(bolum)
+    satirlar = (metin or "").splitlines()
+    for i, s in enumerate(satirlar):
+        m = re.match(r"^(=+)\s*(.+?)\s*\1\s*$", s.strip())
+        if not m or _bolum_norm(m.group(2)) != hedef:
+            continue
+        duzey = len(m.group(1))
+        for j in range(i + 1, len(satirlar)):
+            m2 = re.match(r"^(=+)\s*(.+?)\s*\1\s*$", satirlar[j].strip())
+            if m2 and len(m2.group(1)) <= duzey:
+                return "\n".join(satirlar[i:j])
+        return "\n".join(satirlar[i:])
+    return None
+
+
 def mac_isle(oturum, giris):
     baslik = giris["baslik"] if isinstance(giris, dict) else giris
+    bolum = giris.get("bolum") if isinstance(giris, dict) else None
     gercek, metin = wikitext_getir(oturum, baslik)
     if not metin:
         return None, "sayfa bulunamadı (%s)" % SON_HATA["mesaj"]
+    if bolum:
+        metin = bolum_kes(metin, bolum)
+        if not metin:
+            return None, "bölüm bulunamadı (%s)" % bolum
+        gercek = "%s — %s" % (gercek, bolum)   # kimlik tekil olsun (aynı sayfadan birden çok maç)
     takimlar = mac_kadrolari(metin)
     if len(takimlar) != 2:
         return None, "kadro tablosu okunamadı (%d takım)" % len(takimlar)
@@ -223,7 +260,7 @@ def mac_isle(oturum, giris):
         "takimlar": [dict(ad=ad1, **takimlar[0]), dict(ad=ad2, **takimlar[1])],
     }
     if isinstance(giris, dict):
-        kayit.update({k: v for k, v in giris.items() if k != "baslik"})
+        kayit.update({k: v for k, v in giris.items() if k not in ("baslik", "bolum")})
     return kayit, None
 
 
