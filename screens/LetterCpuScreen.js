@@ -616,6 +616,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     const secilenAlt = SUBMODES.find((m) => m.id === subMode);
     return (
       <ModKurulum
+        modId="letterCpu"
         baslik="İlk Harften Bul"
         aciklama="Harfler 3-2-1'den sonra açılır. Harflere uyan bir futbolcuyu CPU'dan önce söyle. 3 puana ulaşan kazanır."
         vurgu={MODE_COLORS.letters}

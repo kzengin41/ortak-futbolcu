@@ -391,6 +391,7 @@ export default function OrtakKulupScreen({
     const secili = TURLER.find((t) => t.deger === tur) || TURLER[0];
     return (
       <ModKurulum
+        modId={modId}
         baslik="Ortak Kulüp"
         aciklama="İki kulüp (ya da bir kulüp ve bir ülke) çıkar. İkisinde de oynamış bir futbolcuyu rakibinden önce yaz."
         vurgu={MODE_COLORS.teamTeam}

@@ -312,6 +312,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
+        modId="local"
         baslik="Ortak Kulüp — Yanımdaki"
         aciklama="İki kulüp çıkar. İkisinde de oynamış futbolcuyu ilk söyleyen turu alır."
         vurgu={MODE_COLORS.hotSeat}

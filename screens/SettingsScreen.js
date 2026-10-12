@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Switch, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, Switch, Image, LayoutAnimation } from "react-native";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,51 +30,22 @@ const ITEMS = [
   { key: "whistle", label: "Açılış Düdüğü", desc: "Uygulama açıldığında bir kez çalar" },
 ];
 
-// 5 Ekim 2026 (Kerem: "ayarlar ekranında yukarıda hızlıca açabilmek için ses
-// ayarları / eşleştirme ayarları vb. ikon ile kısayol düğmeleri olsun.")
-// Kısayol: ilgili sekmeye geçer ve o bölüme kaydırır; pencere açılan
-// ayarlarda (eşleşme profili, takım) doğrudan pencereyi açar.
-const KISAYOLLAR = [
-  { id: "ses", ad: "Ses", ikon: "volume-high", sekme: "sen" },
-  { id: "eslesme", ad: "Eşleşme", ikon: "options", sekme: "oyun", pencere: "profil" },
-  { id: "takim", ad: "Takımın", ikon: "shield", sekme: "sen", pencere: "takim" },
-  { id: "tema", ad: "Tema", ikon: "color-palette", sekme: "sen" },
-  { id: "hatirlatma", ad: "Hatırlatma", ikon: "notifications", sekme: "sen" },
-  { id: "bilgi", ad: "Bilgi testi", ikon: "school", sekme: "oyun" },
-  { id: "sesli", ad: "Sesli cevap", ikon: "mic", sekme: "oyun" },
-  { id: "mod", ad: "Modlar", ikon: "game-controller", sekme: "gelismis" },
-];
-
-const SEKMELER = [
-  { id: "sen", ad: "Sen", ikon: "person" },
-  { id: "oyun", ad: "Oyun", ikon: "football" },
-  { id: "gelismis", ad: "Gelişmiş", ikon: "construct" },
-];
-
+// Paket 24 (12 Ekim 2026, Kerem: "ayarlar ekranını açtığımız gibi yukarıdan bir
+// ton bir şey ekranı kaplıyor. her şey kapalı gelsin, tıkladığımız açılsın.")
+// Kısayol ızgarası (8 düğme) ve Sen/Oyun/Gelişmiş sekmeleri kaldırıldı. Ekran
+// artık tek bir liste: her ayar bir satır (ikon + ad + kısa özet), HEPSİ KAPALI
+// açılır; satıra dokununca altında açılır, başka satır açılınca önceki kapanır.
+// Pencere açan ayarlar (Futbol Bilgin, Eşleşme Profili) doğrudan pencereyi açar.
 export default function SettingsScreen({ onBack }) {
   const { settings, setSetting } = useAppSettings();
   const genelProfil = ayarlardanProfil(settings);
   const [profilAcik, setProfilAcik] = useState(false);
-  const [takimAcik, setTakimAcik] = useState(false);
   const [testAcik, setTestAcik] = useState(false);
-  const [sekme, setSekme] = useState("sen");
-  const kaydirRef = useRef(null);
-  const konumlar = useRef({});
-  const hedefRef = useRef(null);
-  const kaydir = (y) => kaydirRef.current?.scrollTo?.({ y: Math.max(0, y - 12), animated: true });
-  // Bölüm başlığı yerleşince konumunu kaydet; kısayolla bekleniyorsa oraya kaydır.
-  const yer = (id) => (e) => {
-    const y = e.nativeEvent.layout.y;
-    konumlar.current[id] = y;
-    if (hedefRef.current === id) { hedefRef.current = null; setTimeout(() => kaydir(y), 30); }
+  const [acik, setAcik] = useState(null);   // açık satırın kimliği (tek seferde bir tane)
+  const ac = (id) => {
+    try { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } catch (e) {}
+    setAcik((x) => (x === id ? null : id));
   };
-  function kisayol(k) {
-    if (k.pencere === "profil") { setProfilAcik(true); return; }
-    if (k.pencere === "takim") setTakimAcik(true);
-    if (sekme === k.sekme && konumlar.current[k.id] != null) { kaydir(konumlar.current[k.id]); return; }
-    hedefRef.current = k.id;
-    setSekme(k.sekme);
-  }
 
   // 26 Eylül 2026 — tema seçilince uygulamayı kendisi yeniden yüklüyor,
   // kullanıcıdan "kapat aç" beklemiyoruz. Yazma BİTMEDEN yeniden yüklemek
@@ -139,65 +110,27 @@ export default function SettingsScreen({ onBack }) {
     }
   }
 
+  const temaAdi = (PALETLER.find((p) => p.id === (settings.themeId || "cim")) || PALETLER[0]).ad;
+  const sesOzet = ITEMS.filter((i) => (settings[i.key] || 0) > 0).length;
+
   return (
     <GameBackground style={styles.container}>
-      <ScrollView ref={kaydirRef} contentContainerStyle={{ paddingVertical: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingVertical: 24 }}>
         <BackButton onPress={onBack} confirm={false} />
         <Text style={styles.title}>Ayarlar</Text>
 
-        <View style={styles.kisayollar}>
-          {KISAYOLLAR.map((k) => (
-            <SoundPressable key={k.id} style={styles.kisayol} onPress={() => kisayol(k)} accessibilityLabel={`${k.ad} ayarlarına git`}>
-              <View style={styles.kisayolIkon}><Ionicons name={k.ikon} size={20} color={COLORS.accent} /></View>
-              <Text style={styles.kisayolYazi} numberOfLines={1}>{k.ad}</Text>
-            </SoundPressable>
-          ))}
-        </View>
+        <Text style={styles.grup}>Sen</Text>
+        <View style={styles.liste}>
+          <Satir id="takim" ikon="shield" ad="Tuttuğun Takım" ozet={genelProfil.takim || "Seçilmedi"} acik={acik} ac={ac}>
+            <Text style={styles.sectionDesc}>Takımın turlarda daha sık çıkar. Ne sıklıkla çıkacağını eşleşme profilinden ayarlarsın.</Text>
+            <TakimSecici
+              secili={genelProfil.takim}
+              kompakt
+              onSec={(t) => { setSetting("eslesmeProfili", { ...genelProfil, takim: t }); setAcik(null); }}
+            />
+          </Satir>
 
-        {/* 4 Ekim 2026 (benchmark .29994) — ayarlar üç başlıkta: Sen (takım, tema,
-            ses, hatırlatma), Oyun (bilgi seviyesi, eşleşme profili, sesli cevap),
-            Gelişmiş (mod varsayılanları — kapalı gelir). */}
-        <View style={styles.sekmeler} accessibilityRole="tablist">
-          {SEKMELER.map((t) => (
-            <SoundPressable
-              key={t.id}
-              style={[styles.sekme, sekme === t.id && styles.sekmeAktif]}
-              onPress={() => setSekme(t.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: sekme === t.id }}
-            >
-              <Ionicons name={t.ikon} size={16} color={sekme === t.id ? COLORS.accentDark : COLORS.textMuted} />
-              <Text style={[styles.sekmeYazi, sekme === t.id && styles.sekmeYaziAktif]}>{t.ad}</Text>
-            </SoundPressable>
-          ))}
-        </View>
-
-        {sekme === "sen" ? (
-          <>
-          <Text style={styles.sectionTitle} onLayout={yer("takim")}>Tuttuğun Takım</Text>
-          <Text style={styles.sectionDesc}>
-            Takımın turlarda daha sık çıkar. Ne sıklıkla çıkacağını eşleşme profilinden ayarlarsın.
-          </Text>
-          <SoundPressable style={styles.profilKart} onPress={() => setTakimAcik((a) => !a)}>
-            {genelProfil.takim ? <TeamBadge name={genelProfil.takim} size={30} /> : <Ionicons name="shield-outline" size={22} color={COLORS.accent} />}
-            <Text style={[styles.presetLabel, { flex: 1 }]}>{genelProfil.takim || "Seçilmedi"}</Text>
-            <Ionicons name={takimAcik ? "chevron-up" : "chevron-down"} size={18} color={COLORS.accent} />
-          </SoundPressable>
-          {takimAcik ? (
-            <View style={{ marginBottom: 26 }}>
-              <TakimSecici
-                secili={genelProfil.takim}
-                kompakt
-                onSec={(t) => { setSetting("eslesmeProfili", { ...genelProfil, takim: t }); setTakimAcik(false); }}
-              />
-            </View>
-          ) : <View style={{ height: 14 }} />}
-          <Text style={styles.sectionTitle} onLayout={yer("tema")}>Tema</Text>
-          <Text style={styles.sectionDesc}>
-            Tema seçtiğinde uygulama kendini bir saniyede yeniler ve yeni renklerle
-            açılır. Oyun ilerlemen, istatistiklerin ve ayarların korunur.
-          </Text>
-
+          <Satir id="tema" ikon="color-palette" ad="Tema ve Arkaplan" ozet={temaAdi} acik={acik} ac={ac}>
           <View style={styles.temaIzgara}>
             {PALETLER.map((p) => {
               const secili = (settings.themeId || "cim") === p.id;
@@ -208,12 +141,9 @@ export default function SettingsScreen({ onBack }) {
                   style={[styles.temaKart, secili && styles.temaKartAktif]}
                 >
                   {/* Örnek renkler paletin KENDİ değerlerinden geliyor, aktif
-                      temadan değil — böylece her kart gerçek rengini gösteriyor. */}
+                      temadan değil — böylece her kart gerçek rengini gösteriyor.
+                      İlk renk (kart yüzeyi) geniş, vurgular dar (bayrak gibi durmasın). */}
                   <View style={styles.temaSeritler}>
-                    {/* 26 Eylül 2026 — eşit üç şerit ÖNİZLEMENİN KENDİSİNİ bayrak
-                        gibi gösteriyordu (GS = Belçika, FB = Ukrayna). Artık ilk
-                        renk (zemin) geniş, vurgular dar: bayrak değil, gerçek
-                        arayüzdeki oran — geniş bir yüzey üstünde iki vurgu. */}
                     {(p.id === "ozel" && settings.customPalet
                       ? [settings.customPalet.card, settings.customPalet.accent, settings.customPalet.cta]
                       : p.onizleme
@@ -222,7 +152,6 @@ export default function SettingsScreen({ onBack }) {
                     ))}
                   </View>
                   <Text style={[styles.temaAd, secili && styles.temaAdAktif]} numberOfLines={1}>{p.ad}</Text>
-                  <Text style={styles.temaAciklama} numberOfLines={2}>{p.id === "ozel" ? "Kendi renklerini seç, önizle" : p.aciklama}</Text>
                   {secili ? (
                     <View style={styles.temaTik}>
                       <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} />
@@ -233,8 +162,7 @@ export default function SettingsScreen({ onBack }) {
             })}
           </View>
 
-          {/* Paket 18 (Kerem: "kişi arkaplanı kendi de değişebilsin") — tema
-              renkleri yeniden açılışta değişir ama arkaplan HEMEN değişir. */}
+          {/* Paket 18 — tema renkleri yeniden açılışta değişir ama arkaplan HEMEN değişir. */}
           <Text style={styles.altBaslik}>Arkaplan</Text>
           <View style={styles.arkaIzgara}>
             {ARKAPLAN_SECENEKLERI.map((a) => {
@@ -259,15 +187,10 @@ export default function SettingsScreen({ onBack }) {
             })}
           </View>
 
-          {/* 4 Ekim 2026 (Kerem: "kişi kendi renklerini seçip tema oluşturabilsin,
-              önizlenebilsin") — eski renk ızgaraları yerine tam ekran oluşturucu. */}
           <SoundPressable style={styles.profilKart} onPress={() => setOlusturucuAcik(true)}>
-            <Ionicons name="color-palette" size={22} color={COLORS.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.presetLabelActive}>{settings.customPalet ? "Kendi temanı düzenle" : "Kendi temanı oluştur"}</Text>
-              <Text style={styles.sectionDesc}>Zemin, ana vurgu ve ikincil renk · canlı önizleme</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
+            <Ionicons name="color-palette" size={20} color={COLORS.accent} />
+            <Text style={[styles.presetLabel, { flex: 1 }]}>{settings.customPalet ? "Kendi temanı düzenle" : "Kendi temanı oluştur"}</Text>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
           </SoundPressable>
 
           <View style={styles.temaNot}>
@@ -279,159 +202,90 @@ export default function SettingsScreen({ onBack }) {
             <Text style={styles.temaNotYazi}>
               {temaYenileniyor
                 ? "Tema uygulanıyor…"
-                : "Tema seçince uygulama kendini yeniler. Yenilenmezse kapatıp açtığında geçerli olur."}
+                : "Tema seçince uygulama kendini yeniler; ilerlemen ve ayarların korunur."}
             </Text>
           </View>
+          </Satir>
 
-          <Text style={styles.sectionTitle} onLayout={yer("ses")}>Ses Ayarları</Text>
+          <Satir id="ses" ikon="volume-high" ad="Ses" ozet={sesOzet ? `${sesOzet}/${ITEMS.length} açık` : "Kapalı"} acik={acik} ac={ac}>
           {ITEMS.map((item) => (
-            <View key={item.key} style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <Text style={styles.rowLabel}>{item.label}</Text>
-                  <Text style={styles.rowPercent}>{Math.round((settings[item.key] || 0) * 100)}%</Text>
-                </View>
-                <Text style={styles.rowDesc}>{item.desc}</Text>
-              
-                <Slider
-                  style={{ width: '100%', height: 40, marginTop: 12 }}
-                  minimumValue={0}
-                  maximumValue={1}
-                  step={0.05}
-                  minimumTrackTintColor={COLORS.accent}
-                  maximumTrackTintColor={COLORS.cardBorder}
-                  thumbTintColor={COLORS.text}
-                  value={settings[item.key] || 0}
-                  onValueChange={(val) => setSetting(item.key, val)}
-                />
+            <View key={item.key} style={styles.sesSatir}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={styles.rowLabel}>{item.label}</Text>
+                <Text style={styles.rowPercent}>{Math.round((settings[item.key] || 0) * 100)}%</Text>
               </View>
-            </View>
-          ))}
-          <Text style={styles.sectionTitle} onLayout={yer("hatirlatma")}>Hatırlatma</Text>
-          <Text style={styles.sectionDesc}>
-            {bildirimVar
-              ? `Günün bulmacasını ve görevlerini kaçırmamak için akşam ${HATIRLATMA_SAATI}:00'de tek bir hatırlatma.`
-              : expoGodaMiyiz()
-                ? "Bildirimler Expo Go'da denenemiyor. Uygulamanın derlenmiş sürümünde (APK) çalışır."
-                : "Bildirim modülü bu sürümde kurulu değil."}
-          </Text>
-          {bildirimVar && (
-            <View style={[styles.row, { marginBottom: 26 }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowLabel}>Akşam Hatırlatması</Text>
-                <Text style={styles.rowDesc}>Günde bir kez, sadece bu cihazda</Text>
-              </View>
-              <Switch
-                value={bildirimAcik}
-                disabled={bildirimMesgul}
-                onValueChange={bildirimDegistir}
-                trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
-                thumbColor={COLORS.text}
+              <Text style={styles.rowDesc}>{item.desc}</Text>
+              <Slider
+                style={{ width: '100%', height: 36, marginTop: 4 }}
+                minimumValue={0}
+                maximumValue={1}
+                step={0.05}
+                minimumTrackTintColor={COLORS.accent}
+                maximumTrackTintColor={COLORS.cardBorder}
+                thumbTintColor={COLORS.text}
+                value={settings[item.key] || 0}
+                onValueChange={(val) => setSetting(item.key, val)}
               />
             </View>
-          )}
+          ))}
+          </Satir>
 
-          </>
-        ) : null}
+          <Satir id="hatirlatma" ikon="notifications" ad="Hatırlatma" ozet={bildirimVar ? (bildirimAcik ? "Açık" : "Kapalı") : "Yok"} acik={acik} ac={ac}>
+            <Text style={styles.sectionDesc}>
+              {bildirimVar
+                ? `Günün bulmacasını ve görevlerini kaçırmamak için akşam ${HATIRLATMA_SAATI}:00'de tek bir hatırlatma.`
+                : expoGodaMiyiz()
+                  ? "Bildirimler Expo Go'da denenemiyor. Uygulamanın derlenmiş sürümünde (APK) çalışır."
+                  : "Bildirim modülü bu sürümde kurulu değil."}
+            </Text>
+            {bildirimVar && (
+              <AnahtarSatir etiket="Akşam Hatırlatması" alt="Günde bir kez, sadece bu cihazda" deger={bildirimAcik} kapali={bildirimMesgul} onDegis={bildirimDegistir} />
+            )}
+          </Satir>
+        </View>
 
-        {sekme === "oyun" ? (
-          <>
-          {/* 28 Eylül 2026 — Kerem: "her şeye hükmeden bir ayarlar yapımız olsun.
-              adam tek tek uğraşmak istemezse oradan halletsin." Buradaki profil
-              BÜTÜN modların varsayılanı; mod kurulumunda sadece o maç için
-              değiştirilebilir. */}
+        <Text style={styles.grup}>Oyun</Text>
+        <View style={styles.liste}>
           {/* 4 Ekim 2026 — futbol bilgisi testi: seviye bütün modların varsayılan zorluğu */}
-          <Text style={styles.sectionTitle} onLayout={yer("bilgi")}>Futbol Bilgin</Text>
-          <Text style={styles.sectionDesc}>
-            Kısa testin sonucu. Elle değiştirmediğin her mod bu zorlukla başlar; oynadıkça kendiliğinden ince ayarlanır.
-          </Text>
-          <SoundPressable style={styles.profilKart} onPress={() => setTestAcik(true)}>
-            <Ionicons name="school" size={22} color={COLORS.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.presetLabelActive}>
-                {Number.isFinite(settings.bilgiSeviyesi) ? `${settings.bilgiSeviyesi} / 10 · ${seviyeEtiketi(settings.bilgiSeviyesi)}` : "Test çözülmedi"}
-              </Text>
-              <Text style={styles.sectionDesc}>{Number.isFinite(settings.bilgiSeviyesi) ? "Testi tekrar çöz" : "8 soru, 1 dakika"}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
-          </SoundPressable>
-          <View style={{ height: 14 }} />
-
-          <Text style={styles.sectionTitle} onLayout={yer("eslesme")}>Eşleşme Profili</Text>
-          <Text style={styles.sectionDesc}>
-            Hangi kulüplerin ve oyuncuların çıkacağını belirler. Bütün modlar bununla başlar; istersen mod kurulumunda o maç için değiştirirsin.
-          </Text>
-          <SoundPressable style={styles.profilKart} onPress={() => setProfilAcik(true)}>
-            <Ionicons name="options" size={22} color={COLORS.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.presetLabelActive}>{profilEtiketi(genelProfil)}</Text>
-              <Text style={styles.sectionDesc}>Hızlı · Ayarla · Detaylı</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
-          </SoundPressable>
-
-          <Text style={styles.sectionTitle} onLayout={yer("sesli")}>Sesli Cevap</Text>
-          <Text style={styles.sectionDesc}>
-            Mikrofonla cevap verdiğinde anlaşılan ismi önce ekranda gösterip onayını
-            ister. Kapatırsan cevap doğrudan gönderilir (eski davranış).
-          </Text>
-          <View style={[styles.row, { marginBottom: 26 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowLabel}>Göndermeden Önce Onayla</Text>
-              <Text style={styles.rowDesc}>Yanlış anlaşılan cevap turu kaybettirmesin</Text>
-            </View>
-            <Switch
-              value={settings.voiceConfirm !== false}
-              onValueChange={(val) => setSetting("voiceConfirm", val)}
-              trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
-              thumbColor={COLORS.text}
+          <Satir
+            id="bilgi" ikon="school" ad="Futbol Bilgin" git
+            ozet={Number.isFinite(settings.bilgiSeviyesi) ? `${settings.bilgiSeviyesi}/10 · ${seviyeEtiketi(settings.bilgiSeviyesi)}` : "Test çözülmedi"}
+            onPress={() => setTestAcik(true)}
+          />
+          {/* 28 Eylül 2026 — bütün modların varsayılan eşleşme profili */}
+          <Satir id="eslesme" ikon="options" ad="Eşleşme Profili" git ozet={profilEtiketi(genelProfil)} onPress={() => setProfilAcik(true)} />
+          <Satir id="sesli" ikon="mic" ad="Sesli Cevap" ozet={settings.voiceConfirm !== false ? "Onaylı" : "Doğrudan"} acik={acik} ac={ac}>
+            <AnahtarSatir
+              etiket="Göndermeden Önce Onayla"
+              alt="Mikrofonla verdiğin cevap önce ekranda gösterilir; yanlış anlaşılan cevap turu kaybettirmez."
+              deger={settings.voiceConfirm !== false}
+              onDegis={(val) => setSetting("voiceConfirm", val)}
             />
-          </View>
+          </Satir>
+          <Satir id="mod" ikon="game-controller" ad="Mod Varsayılanları" ozet="HIZLI BAŞLA ayarları" acik={acik} ac={ac}>
+            <Text style={styles.sectionDesc}>
+              Her modun HIZLI BAŞLA ile açılan ayarları: zorluk (10 üzerinden), süre ve moda özel kurallar. Modu açınca MAÇ AYARLARI'ndan o maç için de değiştirebilirsin.
+            </Text>
+            <ModVarsayilanlariPaneli />
+          </Satir>
+        </View>
 
-          </>
-        ) : null}
-
-        {sekme === "gelismis" ? (
-          <>
-          <Text style={styles.sectionTitle} onLayout={yer("mod")}>Mod Varsayılanları</Text>
-          <Text style={styles.sectionDesc}>
-            Her modun zorluğu (10 üzerinden), süresi ve diğer ayarları. Mod açılınca bunlar hazır gelir; oynamadan önce istersen değiştirirsin.
-          </Text>
-          <ModVarsayilanlariPaneli />
-          {/* 4 Ekim 2026 — kurulumsuz başlangıç (bkz. lib/modAyarlari.js useKurulumKapisi) */}
-          <View style={[styles.row, { marginTop: 12, marginBottom: 26 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowLabel}>Modlar kurulum sormadan başlasın</Text>
-              <Text style={styles.rowDesc}>Son seçtiğin ayarlarla doğrudan oyuna girer. Ayarlara oyunda sol alttaki ⚙ ile dönersin.</Text>
-            </View>
-            <Switch
-              value={settings.kurulumAtla !== false}
-              onValueChange={(val) => setSetting("kurulumAtla", val)}
-              trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
-              thumbColor={COLORS.text}
-            />
-          </View>
-
+        <Text style={styles.grup}>Diğer</Text>
+        <View style={styles.liste}>
           {/* Paket 23 — hafif ölçüm (lib/olcum.js) */}
-          <View style={[styles.row, { marginBottom: 26 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowLabel}>Kullanım verisi gönder</Text>
-              <Text style={styles.rowDesc}>Hangi modların oynandığını anonim olarak sayar; oyunu geliştirmemize yardım eder. Kişisel bilgi içermez.</Text>
-            </View>
-            <Switch
-              value={settings.olcum !== false}
-              onValueChange={(val) => setSetting("olcum", val)}
-              trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
-              thumbColor={COLORS.text}
-              accessibilityLabel="Kullanım verisi gönder"
+          <Satir id="gizlilik" ikon="shield-checkmark" ad="Gizlilik" ozet={settings.olcum !== false ? "Kullanım verisi açık" : "Kullanım verisi kapalı"} acik={acik} ac={ac}>
+            <AnahtarSatir
+              etiket="Kullanım verisi gönder"
+              alt="Hangi modların oynandığını anonim olarak sayar; oyunu geliştirmemize yardım eder. Kişisel bilgi içermez."
+              deger={settings.olcum !== false}
+              onDegis={(val) => setSetting("olcum", val)}
             />
-          </View>
-
+          </Satir>
           {/* 5 Ekim 2026 — OTA güncellemesinin gelip gelmediği buradan görülür (lib/guncelleme.js) */}
-          <Text style={styles.sectionTitle} onLayout={yer("surum")}>Sürüm</Text>
-          <SurumKutusu />
-          </>
-        ) : null}
+          <Satir id="surum" ikon="information-circle" ad="Sürüm" ozet={guncellemeBilgisi().runtime || ""} acik={acik} ac={ac}>
+            <SurumKutusu />
+          </Satir>
+        </View>
 
         <BilgiTestiPenceresi visible={testAcik} onKapat={() => setTestAcik(false)} />
         <EslesmeProfiliPenceresi
@@ -453,19 +307,62 @@ export default function SettingsScreen({ onBack }) {
   );
 }
 
+// Paket 24 — tek satır: dokununca altında açılır (ya da `git` ise pencere açar).
+function Satir({ id, ikon, ad, ozet, acik, ac, git = false, onPress, children }) {
+  const acikMi = !git && acik === id;
+  return (
+    <View style={[styles.satir, acikMi && styles.satirAcik]}>
+      <SoundPressable
+        style={styles.satirUst}
+        onPress={git ? onPress : () => ac(id)}
+        accessibilityRole="button"
+        accessibilityState={git ? undefined : { expanded: acikMi }}
+        accessibilityLabel={ad}
+      >
+        <View style={styles.satirIkon}><Ionicons name={ikon} size={18} color={COLORS.accent} /></View>
+        <Text style={styles.satirAd} numberOfLines={1}>{ad}</Text>
+        {ozet ? <Text style={styles.satirOzet} numberOfLines={1}>{ozet}</Text> : null}
+        <Ionicons name={git ? "chevron-forward" : acikMi ? "chevron-up" : "chevron-down"} size={18} color={COLORS.textMuted} />
+      </SoundPressable>
+      {acikMi ? <View style={styles.satirIc}>{children}</View> : null}
+    </View>
+  );
+}
+
+function AnahtarSatir({ etiket, alt, deger, onDegis, kapali }) {
+  return (
+    <View style={styles.anahtar}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowLabel}>{etiket}</Text>
+        {alt ? <Text style={styles.rowDesc}>{alt}</Text> : null}
+      </View>
+      <Switch
+        value={deger}
+        disabled={kapali}
+        onValueChange={onDegis}
+        trackColor={{ false: COLORS.cardBorder, true: COLORS.accent }}
+        thumbColor={COLORS.text}
+        accessibilityLabel={etiket}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  kisayollar: { flexDirection: "row", flexWrap: "wrap", rowGap: 10, marginBottom: 18 },
-  kisayol: { width: "25%", alignItems: "center", gap: 4 },
-  kisayolIkon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
-  kisayolYazi: { fontSize: 11, fontWeight: "800", color: COLORS.textMuted },
-  sekmeler: { flexDirection: "row", gap: 6, padding: 4, borderRadius: 14, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, marginBottom: 22 },
-  sekme: { flex: 1, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center", height: 40, borderRadius: 10 },
-  sekmeAktif: { backgroundColor: COLORS.accent },
-  sekmeYazi: { color: COLORS.textMuted, fontWeight: "800", fontSize: 14 },
-  sekmeYaziAktif: { color: COLORS.accentDark },
+  grup: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: COLORS.textMuted, textTransform: "uppercase", marginTop: 6, marginBottom: 8, marginLeft: 4 },
+  liste: { gap: 8, marginBottom: 18 },
+  satir: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, overflow: "hidden" },
+  satirAcik: { borderColor: COLORS.accent },
+  satirUst: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 14, minHeight: 54 },
+  satirIkon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.accent, 0.14) },
+  satirAd: { color: COLORS.text, fontWeight: "800", fontSize: 15, flexShrink: 0 },
+  satirOzet: { flex: 1, textAlign: "right", color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
+  satirIc: { paddingHorizontal: 14, paddingBottom: 14 },
+  sesSatir: { marginBottom: 10 },
+  anahtar: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 4 },
   profilKart: {
     flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: COLORS.card,
-    borderColor: COLORS.accent, borderWidth: 1, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16,
+    borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14,
     marginBottom: 8,
   },
   container: { flex: 1, width: "100%", paddingHorizontal: 20 },

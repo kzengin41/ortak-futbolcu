@@ -110,8 +110,10 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const karakter = useMemo(() => karakterSec(zorluk), [zorluk]);
   // 27 Eylül 2026 — ızgara türü: sadece kulüp / kulüp+ülke / kulüp+başarı / karma
   const [izgaraTuru, setIzgaraTuru] = useState("kulup");
-  // 4 Ekim 2026 — çalma kuralı (benchmark .29313: oyuncu başı 3 hak, varsayılan açık)
-  const [calma, setCalma] = useState(true);
+  // 4 Ekim 2026 — çalma kuralı (oyuncu başı 3 hak). Paket 24 (Kerem: "xox çalma
+  // kuralı default kapalı olsun. ayarlardan ayarlansın.") — varsayılan KAPALI;
+  // Ayarlar > Mod Varsayılanları > Futbolcu XOX ya da Maç Ayarları'ndan açılır.
+  const [calma, setCalma] = useState(false);
   const xoxAyar = useMemo(() => zorlukAyari10(zorluk), [zorluk]);
   const [inputMode, setInputMode] = useState("keyboard");
   const [basladi, setBasladi] = useState(false);
@@ -137,14 +139,16 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const [sesHatasi, setSesHatasi] = useState(null);
   const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
   const { settings: appSettings } = useAppSettings();
-  // Çalma kuralı tercihi de "son seçimler" arasında hatırlanır.
+  // Çalma kuralı tercihi de "son seçimler" arasında hatırlanır. Paket 24: anahtar
+  // `calmaKurali` (eski `calma` anahtarı herkeste "açık" kayıtlıydı; yeni
+  // varsayılan kapalı olsun diye eski kayıt okunmuyor).
   const calmaYuklendi = useRef(false);
   useEffect(() => {
     if (calmaYuklendi.current || !appSettings) return;
     const k = appSettings.modVarsayilanlari && appSettings.modVarsayilanlari.xox;
     if (!k) return;
     calmaYuklendi.current = true;
-    if (typeof k.calma === "boolean") setCalma(k.calma);
+    if (typeof k.calmaKurali === "boolean") setCalma(k.calmaKurali);
   }, [appSettings]);
   const sesOnayiAcik = appSettings?.voiceConfirm !== false;
 
@@ -380,8 +384,8 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     kurulumaDon: () => setBasladi(false),
   });
   useEffect(() => {
-    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"]] }) });
-  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru]);
+    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"], ["Çalma kuralı", calma ? "Açık" : "Kapalı"]] }) });
+  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru, calma]);
 
   function cevapGonder(ad) {
     const metin = String(ad ?? girdi).trim();
@@ -400,11 +404,12 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     // 27 Eylül 2026 — ortak kurulum ekranı (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
+        modId="xox"
         baslik="Futbolcu XOX"
         aciklama="Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan kazanır."
         vurgu={VURGU}
         onGeri={onExitSilent || onExit}
-        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode, calma })}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode, calmaKurali: calma })}
         onBasla={yeniOyun}
         baslaYukleniyor={hazirlaniyor}
       >
@@ -448,7 +453,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
           />
         </KurulumBolum>
         <KurulumBolum baslik="ÇALMA KURALI" not={`Açıkken rakibin aldığı kareye dokunup o kare için FARKLI bir futbolcu söylersen kare senin olur. Herkesin ${CALMA_HAKKI} çalma hakkı var.`}>
-          <SecimCipleri secenekler={[{ deger: true, etiket: "Açık" }, { deger: false, etiket: "Kapalı" }]} secili={calma} onSec={setCalma} />
+          <SecimCipleri secenekler={[{ deger: false, etiket: "Kapalı" }, { deger: true, etiket: "Açık" }]} secili={calma} onSec={setCalma} />
         </KurulumBolum>
         <EslesmeProfiliBolumu eslesme={eslesme} not="Izgaradaki kulüpler profilin bölge ve kulüp ayarlarına göre seçilir." />
         <KurulumBolum baslik={MOD_TANIMLARI.xox.sure.etiket}>

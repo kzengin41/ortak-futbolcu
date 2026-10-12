@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "./GameBackground";
@@ -28,10 +28,24 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 // 27 Eylül 2026 (2. sürüm) — Kerem: "her mod için 10 üstünden zorluk". Bütün
 // modlar artık 1-10 ölçeğini kullanıyor; her mod kendi motoruna çeviriyor
 // (bkz. lib/modAyarlari.js ve ekranlardaki eşlemeler).
-import { zorlukEtiketi } from "../lib/modAyarlari";
+import { zorlukEtiketi, useOyunBilgisi, ayarIstegiAl, useAyarIstegi } from "../lib/modAyarlari";
 
 // ---------------------------------------------------------------- iskelet
+// Paket 24 (12 Ekim 2026, Kerem: "ayarsız başlatacağız derken bir problem var.
+// ayar ekranı 1 sn görünüyor ve kayboluyor. başlarken hızlı başla / eşleştirme
+// ayarları diye 2 buton olsun. ayar ekranı da aşırı karmaşık şu an. görüntü
+// olarak sade ve basit olması lazım.")
+// KÖK NEDEN: "kurulumsuz başlangıç" (4 Ekim) kurulum ekranını önce ÇİZİP
+// ayarlar yüklenince ~0,1-1 sn sonra oyunu kendiliğinden başlatıyordu; ekran
+// bir an görünüp kayboluyordu. Otomatik başlatma kaldırıldı. Artık iki aşama:
+//   1) GİRİŞ  — mod adı, kısa açıklama, kayıtlı ayarların özeti ve iki düğme:
+//               HIZLI BAŞLA (kayıtlı ayarlarla hemen) · MAÇ AYARLARI
+//   2) AYARLAR — sade liste: küçük başlık + seçim düğmeleri. Uzun açıklamalar
+//               başlığın yanındaki (i) düğmesinin arkasında. Altta BAŞLA.
+// Oyun sırasında ⚙ ile gelinirse doğrudan 2. aşama açılır.
+// `girisYok`: giriş aşaması olmadan doğrudan ayarlar (ör. Sunucu: adlar şart).
 export default function ModKurulum({
+  modId,
   baslik,
   aciklama,
   vurgu,
@@ -41,62 +55,125 @@ export default function ModKurulum({
   baslaYukleniyor = false,
   baslaDevreDisi = false,
   onVarsayilanKaydet,
+  girisYok = false,
   children,
 }) {
-  const [kaydedildi, setKaydedildi] = useState(false);
+  const [ayarda, setAyarda] = useState(() => ayarIstegiAl() || girisYok);
+  useAyarIstegi(() => setAyarda(true));
+  const bilgi = useOyunBilgisi(modId || null);
   const renk = vurgu?.main || COLORS.accent;
+  const kapali = baslaDevreDisi || baslaYukleniyor;
+
+  async function basla() {
+    // 4 Ekim 2026 — "son seçimler hatırlanır": BAŞLA seçimleri bu modun
+    // varsayılanı yapar; bir dahaki sefere HIZLI BAŞLA bu ayarlarla başlar.
+    try { if (onVarsayilanKaydet) await onVarsayilanKaydet(); } catch (e) {}
+    onBasla && onBasla();
+  }
+
+  if (!ayarda) {
+    const satirlar = ((bilgi && bilgi.satirlar) || []).slice(0, 6);
+    return (
+      <GameBackground style={styles.kap}>
+        {onGeri ? <BackButton onPress={onGeri} /> : null}
+        <ScrollView contentContainerStyle={styles.girisIcerik} showsVerticalScrollIndicator={false}>
+          <Text style={styles.baslik}>{baslik}</Text>
+          <View style={[styles.cizgi, { backgroundColor: renk }]} />
+          {aciklama ? <Text style={styles.aciklama}>{aciklama}</Text> : null}
+
+          {satirlar.length ? (
+            <View style={styles.ozet}>
+              {satirlar.map(([k, v]) => (
+                <View key={k} style={styles.ozetSatir}>
+                  <Text style={styles.ozetEtiket} numberOfLines={1}>{k}</Text>
+                  <Text style={styles.ozetDeger} numberOfLines={1}>{v}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <SoundPressable
+            style={[styles.basla, styles.girisBasla, kapali && { opacity: 0.6 }]}
+            onPress={() => onBasla && onBasla()}
+            disabled={kapali}
+            accessibilityLabel="Hızlı başla"
+          >
+            {baslaYukleniyor ? (
+              <ActivityIndicator color={COLORS.accentDark} />
+            ) : (
+              <View style={styles.dugmeIc}>
+                <Ionicons name="flash" size={20} color={COLORS.accentDark} />
+                <Text style={styles.baslaYazi}>HIZLI BAŞLA</Text>
+              </View>
+            )}
+          </SoundPressable>
+          <SoundPressable style={styles.ikincil} onPress={() => setAyarda(true)} accessibilityLabel="Maç ayarları">
+            <Ionicons name="options-outline" size={20} color={COLORS.text} />
+            <Text style={styles.ikincilYazi}>MAÇ AYARLARI</Text>
+          </SoundPressable>
+        </ScrollView>
+      </GameBackground>
+    );
+  }
+
   return (
     <GameBackground style={styles.kap}>
-      {onGeri ? <BackButton onPress={onGeri} /> : null}
+      <BackButton onPress={girisYok ? onGeri : () => setAyarda(false)} confirm={false} />
       <ScrollView
         contentContainerStyle={styles.icerik}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.baslik]}>{baslik}</Text>
-        <View style={[styles.cizgi, { backgroundColor: renk }]} />
-        {aciklama ? <Text style={styles.aciklama}>{aciklama}</Text> : null}
+        <Text style={styles.ayarBaslik}>{girisYok ? baslik : "Maç Ayarları"}</Text>
+        <Text style={styles.ayarAlt}>{girisYok ? aciklama : baslik}</Text>
 
-        {children}
+        <View style={styles.liste}>{children}</View>
 
-        <SoundPressable
-          style={[styles.basla, (baslaDevreDisi || baslaYukleniyor) && { opacity: 0.6 }]}
-          onPress={async () => {
-            // 4 Ekim 2026 — "son seçimler hatırlanır": BAŞLA seçimleri bu modun
-            // varsayılanı yapar; bir dahaki sefere oyun kurulumsuz bu ayarlarla başlar.
-            try { if (onVarsayilanKaydet) await onVarsayilanKaydet(); } catch (e) {}
-            onBasla && onBasla();
-          }}
-          disabled={baslaDevreDisi || baslaYukleniyor}
-        >
+        <SoundPressable style={[styles.basla, kapali && { opacity: 0.6 }]} onPress={basla} disabled={kapali}>
           {baslaYukleniyor ? (
             <ActivityIndicator color={COLORS.accentDark} />
           ) : (
             <Text style={styles.baslaYazi}>{baslaEtiketi}</Text>
           )}
         </SoundPressable>
-        {onVarsayilanKaydet ? (
-          <View style={styles.varsayilanLink}>
-            <Ionicons name="bookmark-outline" size={15} color={COLORS.textMuted} />
-            <Text style={styles.varsayilanYazi}>
-              Seçimlerin hatırlanır: bu mod bir dahaki sefere kurulum sormadan başlar. Oyun sırasında sol alttaki ⚙ ile buraya dönersin.
-            </Text>
-          </View>
-        ) : null}
+        {onVarsayilanKaydet ? <Text style={styles.hatirlatma}>Seçimlerin bir dahaki HIZLI BAŞLA için hatırlanır.</Text> : null}
       </ScrollView>
     </GameBackground>
   );
 }
 
-export function KurulumBolum({ baslik, not, notHata = false, children, vurgu }) {
+// Bölüm: küçük başlık + içerik. Uzun açıklama (not ve içerideki seçicilerin
+// açıklaması) başlığın yanındaki (i) ile açılır; hata notları hep görünür.
+const BolumBaglami = createContext(null);
+export function KurulumBolum({ baslik, not, notHata = false, children }) {
+  const [acik, setAcik] = useState(false);
+  const [icAciklama, setIcAciklama] = useState(false);
+  const ctx = useMemo(() => ({ acik, bildir: () => setIcAciklama(true) }), [acik]);
+  const bilgiVar = (!!not && !notHata) || icAciklama;
   return (
     <View style={styles.bolum}>
-      <Text style={[styles.bolumBaslik, vurgu && { color: vurgu.main }]}>{baslik}</Text>
-      {children}
-      {not ? <Text style={[styles.not, notHata && { color: COLORS.danger }]}>{not}</Text> : null}
+      <View style={styles.bolumUst}>
+        <Text style={styles.bolumBaslik}>{baslik}</Text>
+        {bilgiVar ? (
+          <SoundPressable onPress={() => setAcik((a) => !a)} hitSlop={12} accessibilityLabel={`${baslik} hakkında bilgi`}>
+            <Ionicons name={acik ? "information-circle" : "information-circle-outline"} size={18} color={acik ? COLORS.accent : COLORS.textFaint} />
+          </SoundPressable>
+        ) : null}
+      </View>
+      <BolumBaglami.Provider value={ctx}>{children}</BolumBaglami.Provider>
+      {not && (notHata || acik) ? <Text style={[styles.not, notHata && { color: COLORS.danger }]}>{not}</Text> : null}
     </View>
   );
+}
+
+// Seçicinin açıklaması görünsün mü? Bir bölümün içindeyse yalnız (i) açıkken;
+// bölüm dışında (eski kullanım) her zaman.
+function useAciklamaGorunur(aciklamaVar) {
+  const ctx = useContext(BolumBaglami);
+  const bildir = ctx && ctx.bildir;
+  useEffect(() => { if (aciklamaVar && bildir) bildir(); }, [aciklamaVar]);  // eslint-disable-line react-hooks/exhaustive-deps
+  return ctx ? ctx.acik : true;
 }
 
 // Yan yana seçenek düğmeleri (rakip, galibiyet sınırı, cevap yöntemi...).
@@ -162,43 +239,43 @@ export function CokluSecim({ secenekler, secililer, onDegis, enAz = 1 }) {
 // aciklama: (z) => string — modun o seviyede ne yaptığını anlatan kısa metin.
 export function ZorlukSecici({ deger, onDegis, aciklama }) {
   const z = deger || 5;
+  const gorunur = useAciklamaGorunur(!!aciklama);
   return (
     <View>
-      <View style={styles.zorlukUst}>
-        <Text style={styles.zorlukSayi}>{z}<Text style={styles.zorlukOnda}> / 10</Text></Text>
-        <Text style={styles.zorlukAd}>{zorlukEtiketi(z)}</Text>
-      </View>
       <View style={styles.zorlukCubuk}>
         <SoundPressable
           style={styles.zorlukOk}
           onPress={() => onDegis(Math.max(1, z - 1))}
           accessibilityLabel="Zorluğu azalt"
         >
-          <Ionicons name="remove" size={20} color={COLORS.text} />
+          <Ionicons name="remove" size={18} color={COLORS.text} />
         </SoundPressable>
-        <View style={styles.zorlukBolmeler}>
-          {Array.from({ length: 10 }).map((_, i) => {
-            const dolu = i < z;
-            return (
-              <SoundPressable
-                key={i}
-                style={[styles.zorlukBolme, dolu && { backgroundColor: COLORS.accent, borderColor: COLORS.accent }]}
-                onPress={() => onDegis(i + 1)}
-                accessibilityLabel={`Zorluk ${i + 1}`}
-                hitSlop={{ top: 8, bottom: 8 }}
-              />
-            );
-          })}
+        <View style={styles.zorlukOrta}>
+          <Text style={styles.zorlukAd}>{zorlukEtiketi(z)} <Text style={styles.zorlukOnda}>· {z}/10</Text></Text>
+          <View style={styles.zorlukBolmeler}>
+            {Array.from({ length: 10 }).map((_, i) => {
+              const dolu = i < z;
+              return (
+                <SoundPressable
+                  key={i}
+                  style={[styles.zorlukBolme, dolu && { backgroundColor: COLORS.accent }]}
+                  onPress={() => onDegis(i + 1)}
+                  accessibilityLabel={`Zorluk ${i + 1}`}
+                  hitSlop={{ top: 10, bottom: 10 }}
+                />
+              );
+            })}
+          </View>
         </View>
         <SoundPressable
           style={styles.zorlukOk}
           onPress={() => onDegis(Math.min(10, z + 1))}
           accessibilityLabel="Zorluğu artır"
         >
-          <Ionicons name="add" size={20} color={COLORS.text} />
+          <Ionicons name="add" size={18} color={COLORS.text} />
         </SoundPressable>
       </View>
-      {aciklama ? <Text style={styles.not}>{typeof aciklama === "function" ? aciklama(z) : aciklama}</Text> : null}
+      {aciklama && gorunur ? <Text style={styles.not}>{typeof aciklama === "function" ? aciklama(z) : aciklama}</Text> : null}
     </View>
   );
 }
@@ -218,6 +295,7 @@ export function SureSecici({
   const [ozelAcik, setOzelAcik] = useState(!hazirMi);
   const [metin, setMetin] = useState(!hazirMi && deger ? String(deger) : "");
 
+  const gorunur = useAciklamaGorunur(!!aciklama);
   const sayi = parseInt(metin, 10);
   const gecersiz = ozelAcik && (!Number.isFinite(sayi) || sayi < asgari || sayi > azami);
 
@@ -235,11 +313,9 @@ export function SureSecici({
   ];
   const secili = ozelAcik ? "ozel" : deger === null ? "suresiz" : deger;
 
-  let not = aciklama || null;
+  let not = gorunur ? aciklama || null : null;
   if (ozelAcik && gecersiz) {
     not = `En az ${asgari}, en fazla ${azami} saniye olabilir — ${deger} sn ile başlayacak.`;
-  } else if (ozelAcik && deger) {
-    not = `${deger} saniye.` + (aciklama ? " " + aciklama : "");
   }
 
   return (
@@ -290,54 +366,72 @@ export function KapsamDugmesi({ etiket, onPress }) {
 
 const styles = StyleSheet.create({
   kap: { flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.xxl },
-  icerik: { paddingBottom: SPACING.xxxl, paddingTop: SPACING.sm },
-  baslik: { ...TYPE.h1, textAlign: "center", marginTop: SPACING.md },
+  // giriş aşaması
+  girisIcerik: { flexGrow: 1, justifyContent: "center", paddingVertical: SPACING.xxl },
+  baslik: { ...TYPE.h1, textAlign: "center" },
   cizgi: { alignSelf: "center", width: 48, height: 4, borderRadius: 2, marginTop: SPACING.sm },
-  aciklama: { ...TYPE.bodyMuted, textAlign: "center", marginTop: SPACING.md, marginBottom: SPACING.sm },
+  aciklama: { ...TYPE.bodyMuted, textAlign: "center", marginTop: SPACING.md, paddingHorizontal: SPACING.sm },
+  ozet: {
+    marginTop: SPACING.xl, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.lg, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg,
+  },
+  ozetSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACING.md, paddingVertical: 7 },
+  ozetEtiket: { ...TYPE.caption, flexShrink: 0 },
+  ozetDeger: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flexShrink: 1, textAlign: "right" },
+  girisBasla: { marginTop: SPACING.xl },
+  dugmeIc: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  ikincil: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm,
+    borderRadius: RADIUS.md, paddingVertical: SPACING.lg - 2, marginTop: SPACING.md,
+    borderWidth: 1.5, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
+  },
+  ikincilYazi: { ...TYPE.button, color: COLORS.text },
+
+  // ayarlar aşaması
+  icerik: { paddingBottom: SPACING.xxxl, paddingTop: SPACING.xl },
+  ayarBaslik: { ...TYPE.h2, textAlign: "center" },
+  ayarAlt: { ...TYPE.caption, textAlign: "center", marginTop: 4 },
+  liste: { marginTop: SPACING.md },
+  hatirlatma: { ...TYPE.caption, color: COLORS.textFaint, textAlign: "center", marginTop: SPACING.md },
 
   bolum: { marginTop: SPACING.lg },
-  bolumBaslik: { ...TYPE.eyebrow, fontSize: 12, marginBottom: SPACING.sm },
-  not: { ...TYPE.caption, marginTop: SPACING.sm },
+  bolumUst: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.sm },
+  bolumBaslik: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: COLORS.textMuted, textTransform: "uppercase" },
+  not: { ...TYPE.caption, marginTop: SPACING.sm, lineHeight: 17 },
 
   cipSatir: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm },
   cip: {
-    flexGrow: 1, flexBasis: 64, minHeight: 46,
+    flexGrow: 1, flexBasis: 64, minHeight: 42,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
-    borderRadius: RADIUS.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
+    borderRadius: RADIUS.md, paddingVertical: 6, paddingHorizontal: SPACING.sm,
   },
   cipAktif: { borderColor: COLORS.accent, backgroundColor: COLORS.accent },
-  cipYazi: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", textAlign: "center" },
+  cipYazi: { ...TYPE.caption, fontSize: 13, color: COLORS.text, fontWeight: "800", textAlign: "center" },
   cipYaziAktif: { color: COLORS.accentDark },
 
-  zorlukUst: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: SPACING.sm },
-  zorlukSayi: { ...TYPE.h1, fontSize: 30 },
-  zorlukOnda: { ...TYPE.caption, fontSize: 14 },
-  zorlukAd: { ...TYPE.h3, color: COLORS.accent },
   zorlukCubuk: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  zorlukOrta: { flex: 1, gap: 6 },
+  zorlukAd: { ...TYPE.h3, fontSize: 15, textAlign: "center" },
+  zorlukOnda: { ...TYPE.caption },
   zorlukOk: {
-    width: 44, height: 44, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center",
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
+    width: 40, height: 40, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
   },
-  zorlukBolmeler: { flex: 1, flexDirection: "row", gap: 4 },
-  zorlukBolme: {
-    flex: 1, height: 26, borderRadius: 6,
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
-  },
-  varsayilanLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: SPACING.md, paddingVertical: SPACING.sm },
-  varsayilanYazi: { ...TYPE.caption, textDecorationLine: "underline" },
+  zorlukBolmeler: { flexDirection: "row", gap: 3 },
+  zorlukBolme: { flex: 1, height: 10, borderRadius: 5, backgroundColor: COLORS.cardBorder },
 
   ozelSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginTop: SPACING.sm },
   ozelGirdi: {
-    width: 96, backgroundColor: COLORS.card, borderColor: COLORS.accent, borderWidth: 2,
+    width: 96, backgroundColor: COLORS.card, borderColor: COLORS.accent, borderWidth: 1.5,
     borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
     color: COLORS.text, fontSize: 16, fontWeight: "800", textAlign: "center",
   },
   ozelBirim: { ...TYPE.bodyMuted },
 
   kapsam: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.sm, minHeight: 50,
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
+    flexDirection: "row", alignItems: "center", gap: SPACING.sm, minHeight: 46,
+    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
     borderRadius: RADIUS.md, paddingHorizontal: SPACING.md,
   },
   kapsamYazi: { ...TYPE.body, fontWeight: "800", flex: 1 },

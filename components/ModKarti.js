@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PressScale from "./ui/PressScale";
 import ModIkon from "./ModIkon";
-import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro } from "../lib/theme";
 
 // ============================================================================
 // MOD KARTI + SEÇİM PENCERESİ — Paket 16, 5 Ekim 2026 (Kerem: "Online
@@ -38,8 +38,8 @@ export function ModKarti({ mod, onPress, rozet, accessibilityLabel }) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || mod.title}
     >
-      <View style={[s.ikonKaro, { backgroundColor: c.main }]}>
-        <ModIkonu mod={mod} renk={c.ust || COLORS.accentDark} />
+      <View style={[s.ikonKaro, yumusakKaro(c.main)]}>
+        <ModIkonu mod={mod} renk={c.main} />
       </View>
       <View style={s.metin}>
         <View style={s.baslikSatir}>
@@ -75,8 +75,8 @@ export function ModSecimPenceresi({ mod, soru = "Kiminle oynuyorsun?", secenekle
         <Pressable style={s.modalCard} onPress={() => {}}>
           {mod && (
             <>
-              <View style={[s.modalIconWrap, { backgroundColor: c.main }]}>
-                <ModIkonu mod={mod} boyut={28} renk={c.ust || COLORS.accentDark} />
+              <View style={[s.modalIconWrap, yumusakKaro(c.main)]}>
+                <ModIkonu mod={mod} boyut={28} renk={c.main} />
               </View>
               <Text style={s.modalTitle}>{mod.title}</Text>
               <Text style={s.modalDesc}>{mod.desc}</Text>

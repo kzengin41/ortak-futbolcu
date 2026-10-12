@@ -369,6 +369,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   if (phase === "setup") {
     return (
       <ModKurulum
+        modId="whoAmICpu"
         baslik="Kim Bu Futbolcu?"
         aciklama="Gizli futbolcunun bilgileri kapalı kartlarda. İstediğin kartı çevir, ama her kart puanından düşer. Yanlış tahmin bir can götürür ama ipucu bırakır; doğru tahmin bir can geri verir."
         vurgu={MODE_COLORS.whoAmI}

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import SoundPressable from "./SoundPressable";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro } from "../lib/theme";
 import { getBulmacaDurumu } from "../lib/dailyPuzzleStore";
 import { DENEME_HAKKI, gunNumarasi } from "../lib/dailyPuzzle";
 
@@ -34,7 +34,7 @@ export default function DailyPuzzleCard({ onPress }) {
         <Ionicons
           name={bitti ? (bilindi ? "checkmark-circle" : "close-circle") : "calendar"}
           size={22}
-          color={bitti ? COLORS.accentDark : COLORS.ctaDark}
+          color={bitti ? (bilindi ? COLORS.accent : COLORS.textMuted) : COLORS.cta}
         />
       </View>
       <View style={{ flex: 1 }}>
@@ -71,10 +71,10 @@ const styles = StyleSheet.create({
   },
   ikonKutu: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.cta, alignItems: "center", justifyContent: "center",
+    alignItems: "center", justifyContent: "center", ...yumusakKaro(COLORS.cta),
   },
-  ikonBasarili: { backgroundColor: COLORS.accent },
-  ikonBasarisiz: { backgroundColor: COLORS.textFaint },
+  ikonBasarili: yumusakKaro(COLORS.accent),
+  ikonBasarisiz: yumusakKaro(COLORS.textFaint),
   baslik: { ...TYPE.h3, fontSize: 14 },
   altBaslik: { ...TYPE.caption, marginTop: 2 },
 });

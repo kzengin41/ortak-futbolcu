@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import BackButton from "../components/BackButton";
 import SoundPressable from "../components/SoundPressable";
-import { COLORS, MODE_COLORS, SPACING, RADIUS, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, MODE_COLORS, SPACING, RADIUS, TYPE, SHADOW, yumusakKaro } from "../lib/theme";
 
 // 4 Eylül 2026 (Kerem ekran görüntüsü: "setLayoutAnimationEnabledExperimental
 // is currently a no-op in the New Architecture" konsol uyarısı) — bu satır
@@ -175,8 +175,8 @@ export default function HelpScreen({ onBack, onSources }) {
               style={[styles.card, isOpen && { borderColor: modeColor.main }]}
             >
               <SoundPressable onPress={() => toggle(section.key)} style={styles.cardHeader}>
-                <View style={[styles.iconWrap, { backgroundColor: modeColor.main }]}>
-                  <Ionicons name={section.icon} size={20} color={modeColor.dark} />
+                <View style={[styles.iconWrap, yumusakKaro(modeColor.main)]}>
+                  <Ionicons name={section.icon} size={20} color={modeColor.main} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{section.title}</Text>

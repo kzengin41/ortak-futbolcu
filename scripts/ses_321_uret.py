@@ -1,3 +1,8 @@
+# Paket 24 (12 Ekim 2026, Kerem: "3-2-1 geri sayımı ve bir donk sesi geliyor.
+# toplamda 3 tane ses olması lazım. sonuncusu donk.") — Paket 22'de count-1
+# dosyası "bip + 1,25 sn sonra başlama sesi" idi: 3 bip + 1 başlama = 4 ses.
+# Artık tam 3 ses: "3" bip, "2" bip, "1" DONK (tok, alçak, kısa yankılı).
+# Donk "1" ile AYNI ANDA çalar; ayrı bir başlama sesi yok.
 # Paket 22 — 3-2-1 efekti (sentez, lisans derdi yok). Yarış oyunu sayımı:
 # "bip – bip – bip – BİİİP": her sayı kısa, tok bir bip (+ alçak darbe),
 # başlama anında yükselen bir "vuuş" ve parlak, uzun bir başlama sesi.
@@ -52,17 +57,23 @@ def yaz(ad, x):
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", "_g.wav", "-af", "highpass=f=35", "-c:a", "libmp3lame", "-b:a", "96k", ad], check=True)
     return x
 
-BASLA_AN = 1.25   # CountdownOverlay: "1"den 800 ms sonra sayı biter, 450 ms sonra oyun başlar
+def donk(f=311):   # bipin bir oktav altı (D#4): tok gövde + güçlü darbe + hafif ton düşüşü
+    sn = 0.9; n = int(sn * SR); x = t(sn)
+    kay = f * (1 + .06 * np.exp(-x / .025))                 # vuruş anında hafif yukarıdan iner
+    faz = 2 * np.pi * np.cumsum(kay) / SR
+    g = (np.sin(faz) + .45 * np.sin(2 * faz) + .22 * np.sin(3 * faz) + .3 * np.sin(.5 * faz)) * zarf(n, .003, .22, .03)
+    d = np.zeros(n); dd = darbe(.3, 170, 45); d[:len(dd)] = dd * 1.4
+    tik = np.zeros(n); k = bp(gurultu(.02, 4), 1500, 6000) * np.linspace(1, 0, int(.02 * SR)); tik[:len(k)] = k
+    return .55 * g + .7 * d + .2 * tik
+
 b = bip()
-n1 = np.zeros(int((BASLA_AN + 1.35) * SR)); n1[:len(b)] += b
-v = vuus(); i = int(BASLA_AN * SR) - len(v); n1[i:i + len(v)] += v
-s = basla(); i = int(BASLA_AN * SR); n1[i:i + len(s)] += s[:len(n1) - i]
-OLCEK = 0.93 / np.abs(n1).max()
+dk = donk()
+OLCEK = 0.93 / max(np.abs(dk).max(), np.abs(b).max() / 0.8)   # bipler donk'tan biraz kısık
 yaz("count-3.mp3", b)
 yaz("count-2.mp3", b)
-yaz("count-1.mp3", n1)
+yaz("count-1.mp3", dk)
 # dinleme dosyası (uygulamadaki zamanlama: 0 / 0.8 / 1.6 sn)
-d = np.zeros(int(4.4 * SR))
-for t0, x in ((0, b), (.8, b), (1.6, n1)):
-    i = int(t0 * SR); d[i:i + len(x)] += x
+d = np.zeros(int(2.8 * SR))
+for t0, x in ((0, b), (.8, b), (1.6, dk)):
+    i = int(t0 * SR); d[i:i + len(x)] += x[:len(d) - i]
 yaz("dinle_3-2-1.mp3", np.concatenate([np.zeros(int(.3 * SR)), d]))

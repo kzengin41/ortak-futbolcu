@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import SoundPressable from "./SoundPressable";
-import { COLORS, MODE_COLORS, RADIUS, SPACING, SHADOW } from "../lib/theme";
+import { COLORS, MODE_COLORS, RADIUS, SPACING, SHADOW, yumusakKaro } from "../lib/theme";
 import { gunlukDurumOku, BES_KULUP_HAK, IZGARA_HAK } from "../lib/gunlukKayit";
 
 // Tüm Modlar'daki "Günlük 5 Kulüp" + "Günlük Izgara" girişleri (4 Ekim 2026).
@@ -60,8 +60,8 @@ export default function GunlukOyunlarKarti({ onBesKulup, onIzgara, onKadro, onKi
 function Kutu({ baslik, alt, ikon, renk, bitti, onPress }) {
   return (
     <SoundPressable style={[s.kutu, { borderColor: renk }]} onPress={onPress} accessibilityLabel={`${baslik}, ${alt}`}>
-      <View style={[s.ikon, { backgroundColor: bitti ? COLORS.accent : renk }]}>
-        <Ionicons name={bitti ? "checkmark" : ikon} size={18} color={COLORS.accentDark} />
+      <View style={[s.ikon, yumusakKaro(bitti ? COLORS.accent : renk)]}>
+        <Ionicons name={bitti ? "checkmark" : ikon} size={18} color={bitti ? COLORS.accent : renk} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.baslik} numberOfLines={1}>{baslik}</Text>

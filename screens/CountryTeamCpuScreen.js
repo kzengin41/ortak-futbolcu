@@ -530,6 +530,7 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
     // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
+        modId="countryTeamCpu"
         baslik="Kulüp & Ülke"
         aciklama="Bir ülke ve bir kulüp çıkar. O ülkeden olup o kulüpte oynamış futbolcuyu bul."
         vurgu={MODE_COLORS.teamCountry}

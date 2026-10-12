@@ -398,6 +398,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
+        modId="cpu"
         baslik="Ortak Kulüp"
         aciklama="İki kulüp çıkar. İkisinde de oynamış bir futbolcuyu CPU'dan önce söyle."
         vurgu={MODE_COLORS.teamTeam}

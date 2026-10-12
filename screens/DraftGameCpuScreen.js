@@ -424,6 +424,7 @@ export default function DraftGameCpuScreen({ onExit, onExitSilent }) {
     // ortak ModKurulum parçalarıyla kuruluyor (bkz. components/ModKurulum.js).
     return (
       <ModKurulum
+        modId="draftCpu"
         baslik="Takımı Sen Seç"
         aciklama="Bir kulüp seçersin, CPU ikinci kulübü verir. İkisinde de oynamış futbolcuyu bul."
         vurgu={MODE_COLORS.teamTeam}

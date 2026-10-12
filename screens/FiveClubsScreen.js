@@ -485,6 +485,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     // kendi 3 kademesi kullanılıyor; görünüm diğer modlarla aynı.
     return (
       <ModKurulum
+        modId="fiveClubs"
         baslik={vsCpu ? "5 Kulüp — CPU'ya Karşı" : "5 Kulüp — 2 Kişi"}
         aciklama={vsCpu
           ? "Ekranda 5 büyük kulüp çıkar. Sen ve CPU sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."

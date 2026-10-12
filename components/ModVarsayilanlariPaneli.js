@@ -38,6 +38,7 @@ export default function ModVarsayilanlariPaneli() {
           tanim.sure ? (v.sure == null ? "Süresiz" : `${v.sure} sn`) : null,
           tanim.galibiyet != null ? (v.galibiyet === 0 ? "Sınırsız" : `${v.galibiyet} galibiyet`) : null,
           tanim.yontem ? (v.yontem === "voice" ? "Mikrofon" : "Klavye") : null,
+          ...(tanim.ekler || []).map((e) => (e.ozet ? e.ozet(ekDegeri(settings, modId, e)) : null)),
         ].filter(Boolean).join(" · ");
         return (
           <View key={modId} style={[styles.kart, acikMi && { borderColor: renk }]}>
@@ -90,6 +91,15 @@ export default function ModVarsayilanlariPaneli() {
                     />
                   </KurulumBolum>
                 ) : null}
+                {(tanim.ekler || []).map((e) => (
+                  <KurulumBolum key={e.alan} baslik={e.etiket} not={e.aciklama}>
+                    <SecimCipleri
+                      secenekler={e.secenekler}
+                      secili={ekDegeri(settings, modId, e)}
+                      onSec={(d) => yaz(modId, e.alan, d)}
+                    />
+                  </KurulumBolum>
+                ))}
                 <Text style={styles.not}>
                   {zorlukEtiketi(v.zorluk)} seviyede başlar. Oynamadan önce kurulum ekranında yine değiştirebilirsin.
                 </Text>
@@ -100,6 +110,12 @@ export default function ModVarsayilanlariPaneli() {
       })}
     </View>
   );
+}
+
+// Paket 24 — moda özel ek ayarın kayıtlı değeri (yoksa tablodaki varsayılan).
+function ekDegeri(settings, modId, ek) {
+  const k = (settings && settings.modVarsayilanlari && settings.modVarsayilanlari[modId]) || {};
+  return k[ek.alan] !== undefined ? k[ek.alan] : ek.varsayilan;
 }
 
 const styles = StyleSheet.create({

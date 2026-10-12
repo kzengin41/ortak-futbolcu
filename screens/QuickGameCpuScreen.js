@@ -181,6 +181,7 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
   if (!started) {
     return (
       <ModKurulum
+        modId="quickCpu"
         baslik="Çoktan Seçmeli"
         aciklama={`Süre ${toplamSure} sn. Her doğru +${DOGRU_BONUSU} sn ve puan; art arda doğrular çarpanı ×2, ×3'e çıkarır. Sorular kolaydan başlar, sen bildikçe zorlaşır.`}
         vurgu={MODE_COLORS.training}

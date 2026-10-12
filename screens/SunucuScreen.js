@@ -128,6 +128,7 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
   if (phase === "kurulum") {
     return (
       <ModKurulum
+        modId="sunucu" girisYok
         baslik="Sunucu Modu"
         aciklama="2–6 kişi, tek telefon. Telefonu tutan sunucu iki kulübü okur; ilk bağıranın adına dokunur, ekrandaki doğru cevaplara bakıp ✓ ya da ✗ der. Kimse yazmaz."
         vurgu={VURGU}
