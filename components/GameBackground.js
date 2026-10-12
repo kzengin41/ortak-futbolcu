@@ -1,5 +1,6 @@
-import React from "react";
-import { ImageBackground, StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import { ImageBackground, StyleSheet, View, useWindowDimensions } from "react-native";
+import Svg, { Defs, RadialGradient, Stop, Rect, Circle, Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { KlavyeAlani, KlavyeScroll } from "./Klavye";
 import { useAltBosluk } from "../lib/altBosluk";
@@ -7,41 +8,77 @@ import { useSoundSettings } from "../lib/SettingsContext";
 import { COLORS, paletBul, saydam } from "../lib/theme";
 
 // ============================================================================
-// Paket 18 (Kerem: "gs-fb-bjk-ts modlarında da o renk paletine uygun farklı
-// arkaplanlar tasarla. kişinin kendi tasarlayacağı temalar için de uygun
-// arkaplanlar olması lazım... kişi arkaplanı kendi de değişebilsin")
-//   • saha          — yeşil çim fotoğrafı (varsayılan "Saha" teması)
-//   • gs/fb/bjk/ts  — aynı sahanın takım renklerine boyanmış hâli
-//   • notr          — gri saha dokusu; üstüne temanın ZEMİN rengi %60 bindirilir.
-//                     KURAL: hangi rengi seçersen seç arkaplan o temaya uyar
-//                     (Gece Mavisi, Koyu ve Özel temalar bunu kullanır).
-//   • duz           — görsel yok, yalnız temanın zemin rengi
-// Ayar: settings.arkaplan ("tema" = temanın kendi arkaplanı). Gradyan artık
-// sabit lacivert değil, temanın zemin renginden (COLORS.bg) türetiliyor.
+// Paket 25 (12 Ekim 2026, Kerem: "tema ve arkaplan konusu hala problemli.
+// beşiktaş açtım, full toz bulutu gibi, gri bir alan. herhangi bir temada
+// arkaplan ile kontrast yok, uyum da sağlanmamış.")
+// KÖK NEDEN: takım arkaplanları (saha_gs/fb/bjk/ts/notr.jpg) çim FOTOĞRAFININ
+// boyanmış hâliydi: piksel piksel gren (standart sapma ~24) + kartlarla aynı
+// parlaklık bandı. Üstüne zemin renginde örtü binince gri, tozlu bir yüzey
+// oluyor, kartlar o yüzeyden ayrışmıyordu; renkler de temadan değil resimden
+// geliyordu.
+// ÇÖZÜM: "Temaya uygun" arkaplan artık RESİM DEĞİL, temanın kendi renklerinden
+// ÇİZİLEN bir saha deseni (SahaDeseni, react-native-svg):
+//   • zemin (COLORS.bg) — kartlardan belirgin koyu (kart/zemin kontrastı 1.42)
+//   • üstte vurgu renginde yumuşak bir ışık (stadyum projektörü), aşağı söner
+//   • çok hafif biçilmiş çim şeritleri (yatay düz bantlar, gren YOK)
+//   • ince saha çizgileri: üstte orta yuvarlak, altta ceza sahası
+// Hepsi temadan türediği için her temada uyumlu; gren olmadığı için temiz.
+// Seçenekler: Temaya uygun (desen) · Çim fotoğrafı · Düz renk. Takım
+// fotoğrafları kaldırıldı (eski kayıtlı seçimler "Temaya uygun"a düşer).
 // ============================================================================
 export const ARKAPLANLAR = {
   saha: require("../assets/backgrounds/grass_bg.jpg"),
-  gs: require("../assets/backgrounds/saha_gs.jpg"),
-  fb: require("../assets/backgrounds/saha_fb.jpg"),
-  bjk: require("../assets/backgrounds/saha_bjk.jpg"),
-  ts: require("../assets/backgrounds/saha_ts.jpg"),
-  notr: require("../assets/backgrounds/saha_notr.jpg"),
 };
-export const ORTU = [0.38, 0.7, 0.9];   // arkaplan üstündeki zemin rengi örtüsü (üst, orta, alt)
+export const ORTU = [0.38, 0.7, 0.9];   // çim fotoğrafı üstündeki zemin rengi örtüsü (üst, orta, alt)
 export const ARKAPLAN_SECENEKLERI = [
   { id: "tema", ad: "Temaya uygun" },
-  { id: "saha", ad: "Yeşil saha" },
-  { id: "gs", ad: "GS sahası" },
-  { id: "fb", ad: "FB sahası" },
-  { id: "bjk", ad: "BJK sahası" },
-  { id: "ts", ad: "TS sahası" },
-  { id: "notr", ad: "Tema renginde saha" },
+  { id: "saha", ad: "Çim fotoğrafı" },
   { id: "duz", ad: "Düz renk" },
 ];
 
 export function arkaplanAnahtari(themeId, secim) {
-  if (secim && secim !== "tema" && (ARKAPLANLAR[secim] || secim === "duz")) return secim;
-  return paletBul(themeId || "cim").arka || "saha";
+  if (secim === "saha" || secim === "duz") return secim;
+  const a = paletBul(themeId || "cim").arka;
+  return a === "saha" || a === "duz" ? a : "desen";
+}
+
+// Temanın renklerinden çizilen saha. genislik/yukseklik verilmezse ekran boyu.
+export function SahaDeseni({ genislik, yukseklik, cizgiKalinligi = 1.5 }) {
+  const ekran = useWindowDimensions();
+  const w = genislik || ekran.width;
+  const h = yukseklik || Math.max(ekran.height, 1);
+  const serit = 10;                       // biçilmiş çim: yatay bantlar
+  const sh = h / serit;
+  const cizgi = saydam(COLORS.text, 0.11);
+  // ceza sahası (alt): kutu, küçük kutu, yay
+  const kutuUst = h - h * 0.17;
+  const kx1 = w * 0.17, kx2 = w * 0.83;
+  const yayR = w * 0.17, yayMy = h - h * 0.115;
+  const dy = kutuUst - yayMy;                         // yay merkezi kutunun içinde: yalnız dışarı taşan kısım
+  const dx = Math.sqrt(Math.max(0, yayR * yayR - dy * dy));
+  const merkezR = w * 0.27;
+  return (
+    <Svg width={w} height={h} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <RadialGradient id="isik" cx={w / 2} cy={-h * 0.05} r={Math.max(w, h) * 0.75} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor={COLORS.accent} stopOpacity={0.22} />
+          <Stop offset="0.45" stopColor={COLORS.accent} stopOpacity={0.07} />
+          <Stop offset="1" stopColor={COLORS.accent} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect x={0} y={0} width={w} height={h} fill={COLORS.bg} />
+      {Array.from({ length: serit }).map((_, i) => (i % 2 === 0 ? (
+        <Rect key={i} x={0} y={i * sh} width={w} height={sh} fill={COLORS.text} fillOpacity={0.03} />
+      ) : null))}
+      <Rect x={0} y={0} width={w} height={h} fill="url(#isik)" />
+      <Circle cx={w / 2} cy={0} r={merkezR} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
+      <Circle cx={w / 2} cy={0} r={3} fill={cizgi} />
+      <Path d={`M${kx1} ${h + 2} V${kutuUst} H${kx2} V${h + 2}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
+      <Path d={`M${w * 0.35} ${h + 2} V${h - h * 0.065} H${w * 0.65} V${h + 2}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
+      {dx > 0 ? <Path d={`M${w / 2 - dx} ${kutuUst} A${yayR} ${yayR} 0 0 1 ${w / 2 + dx} ${kutuUst}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" /> : null}
+      <Circle cx={w / 2} cy={yayMy} r={2.5} fill={cizgi} />
+    </Svg>
+  );
 }
 
 // 4 Eylül 2026 (Kerem: "neden arkaplan, kapat butonu vs en sağa kadar
@@ -90,28 +127,30 @@ export default function GameBackground({ children, style, klavye }) {
   const { settings } = useSoundSettings();
   const anahtar = arkaplanAnahtari(settings && settings.themeId, settings && settings.arkaplan);
   const bg = COLORS.bg;
+  // Desen kabın GERÇEK boyutuna çizilir (sekme çubuklu ekranlarda ceza sahası
+  // çubuğun altında kalmasın); ölçülene kadar düz zemin rengi.
+  const [boyut, setBoyut] = useState(null);
+  const olc = (e) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (!boyut || Math.abs(boyut.w - width) > 1 || Math.abs(boyut.h - height) > 1) setBoyut({ w: width, h: height });
+  };
   return (
     <ImageBackground
-      source={anahtar === "duz" ? null : ARKAPLANLAR[anahtar]}
+      source={anahtar === "saha" ? ARKAPLANLAR.saha : null}
       style={[styles.background, { backgroundColor: bg }]}
       resizeMode="cover"
+      onLayout={anahtar === "desen" ? olc : undefined}
     >
-      {anahtar === "notr" ? <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: saydam(bg, 0.6) }]} /> : null}
-      {/* 31 Ağustos 2026 (Kerem: "UI aşırı yeşil, mide bulandırıyor") — eski
-          gradyan çim fotoğrafını neredeyse saf/parlak yeşile boyuyordu,
-          üzerine binen kartlar da yeşil olunca ekranın HER YERİ yeşil oluyordu.
-          Yeni gradyan: sahayı hâlâ görebiliyorsun (kimlik/atmosfer için —
-          "futbol sahası zemini" isteği) ama üstü lacivert/gece stadyumu
-          tonuna doğru KOYULAŞTIRILIYOR, böylece üstteki kartlar/metinler artık
-          yeşil değil lacivert+altın paletiyle net şekilde ayrışıyor. */}
-      {/* Paket 22 — örtü hafifledi (0.5/0.86/0.97 → 0.38/0.70/0.90): saha daha
-          çok görünüyor; kartlar artık zeminden açık nötr bir yüzey olduğu için
-          okunabilirlik kartın kendisinden geliyor, örtüden değil. */}
-      <LinearGradient
-        colors={[saydam(bg, ORTU[0]), saydam(bg, ORTU[1]), saydam(bg, ORTU[2])]}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFillObject}
-      />
+      {anahtar === "desen" && boyut ? <SahaDeseni genislik={boyut.w} yukseklik={boyut.h} /> : null}
+      {/* Çim fotoğrafı seçiliyse: fotoğraf zemin renginde örtüyle koyulaşır
+          (31 Ağustos'tan beri; Paket 22'de 0.38/0.70/0.90). */}
+      {anahtar === "saha" ? (
+        <LinearGradient
+          colors={[saydam(bg, ORTU[0]), saydam(bg, ORTU[1]), saydam(bg, ORTU[2])]}
+          locations={[0, 0.55, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
+      ) : null}
       {klavye === "kaydir" ? (
         <KlavyeAlani>
           <KlavyeScroll style={{ flex: 1 }} contentContainerStyle={altPayli(kaydirmaStili(style), alt)} showsVerticalScrollIndicator={false}>
@@ -131,6 +170,7 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     width: "100%",
+    overflow: "hidden",
   },
   forceTransparent: {
     backgroundColor: "transparent",

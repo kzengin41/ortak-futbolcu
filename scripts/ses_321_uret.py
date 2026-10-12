@@ -72,8 +72,8 @@ OLCEK = 0.93 / max(np.abs(dk).max(), np.abs(b).max() / 0.8)   # bipler donk'tan 
 yaz("count-3.mp3", b)
 yaz("count-2.mp3", b)
 yaz("count-1.mp3", dk)
-# dinleme dosyası (uygulamadaki zamanlama: 0 / 0.8 / 1.6 sn)
+# dinleme dosyası (uygulamadaki zamanlama, Paket 25: 0 / 0.7 / 1.4 sn; takımlar 1.8 sn)
 d = np.zeros(int(2.8 * SR))
-for t0, x in ((0, b), (.8, b), (1.6, dk)):
+for t0, x in ((0, b), (.7, b), (1.4, dk)):
     i = int(t0 * SR); d[i:i + len(x)] += x[:len(d) - i]
 yaz("dinle_3-2-1.mp3", np.concatenate([np.zeros(int(.3 * SR)), d]))

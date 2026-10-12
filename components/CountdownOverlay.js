@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Animated, StyleSheet, Modal } from "react-native";
 // Tur başlamadan önce 3-2-1 geri sayımı.
+// Paket 25 (12 Ekim 2026, Kerem: "3-2-1 sayımından sonra hala bir aşama varmış
+// gibi gecikiyor. htalks'taki gibi 3-2-1 dedi mi takımlar gelmeli. ek bir süre
+// yok.") — eskiden "1" ekranda 800 ms + 450 ms = 1,25 sn kalıyordu (eski
+// "başlama sesi" için bırakılmış pay). Artık ritim: 3 · 2 · 1 her biri 700 ms,
+// "1"in DONK'u vurur vurmaz (400 ms) takımlar gelir. Başta 300 → 150 ms.
+const BASLANGIC_MS = 150;
+const ARALIK_MS = 700;
+const BIR_SONRASI_MS = 400;
 export default function CountdownOverlay({ onComplete, countPlayers, isMirrored }) {
   const [display, setDisplay] = useState("3");
   const scale = useRef(new Animated.Value(0.4)).current;
@@ -9,6 +17,7 @@ export default function CountdownOverlay({ onComplete, countPlayers, isMirrored 
   useEffect(() => {
     let interval;
     let timeout;
+    let bitis;
     
     function playCount(idx) {
       try {
@@ -37,20 +46,20 @@ export default function CountdownOverlay({ onComplete, countPlayers, isMirrored 
 
       interval = setInterval(() => {
         i++;
-        if (i >= sequence.length) {
-          clearInterval(interval);
-          setTimeout(onComplete, 450);
-          return;
-        }
         setDisplay(sequence[i]);
         pop();
         playCount(i);
-      }, 800);
-    }, 300);
+        if (i >= sequence.length - 1) {
+          clearInterval(interval);
+          bitis = setTimeout(onComplete, BIR_SONRASI_MS);
+        }
+      }, ARALIK_MS);
+    }, BASLANGIC_MS);
 
     return () => {
       clearTimeout(timeout);
       clearInterval(interval);
+      clearTimeout(bitis);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

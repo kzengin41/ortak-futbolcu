@@ -19,7 +19,7 @@ import {
 } from "../lib/notifications";
 
 import { COLORS, PALETLER, saydam } from "../lib/theme";
-import { ARKAPLANLAR, ARKAPLAN_SECENEKLERI, arkaplanAnahtari } from "../components/GameBackground";
+import { ARKAPLANLAR, ARKAPLAN_SECENEKLERI, arkaplanAnahtari, SahaDeseni } from "../components/GameBackground";
 import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
 import { guncellemeBilgisi, guncellemeDenetle, yenidenBaslat } from "../lib/guncelleme";
@@ -166,7 +166,9 @@ export default function SettingsScreen({ onBack }) {
           <Text style={styles.altBaslik}>Arkaplan</Text>
           <View style={styles.arkaIzgara}>
             {ARKAPLAN_SECENEKLERI.map((a) => {
-              const secili = (settings.arkaplan || "tema") === a.id;
+              // Paket 25: eski takım fotoğrafı seçimleri (gs/fb/...) artık "Temaya uygun"
+              const kayitli = settings.arkaplan === "saha" || settings.arkaplan === "duz" ? settings.arkaplan : "tema";
+              const secili = kayitli === a.id;
               const goster = a.id === "tema" ? arkaplanAnahtari(settings.themeId, "tema") : a.id;
               return (
                 <SoundPressable
@@ -177,8 +179,9 @@ export default function SettingsScreen({ onBack }) {
                   accessibilityState={{ selected: secili }}
                 >
                   <View style={[styles.arkaResim, { backgroundColor: COLORS.bg }]}>
-                    {goster !== "duz" ? <Image source={ARKAPLANLAR[goster]} style={StyleSheet.absoluteFillObject} resizeMode="cover" /> : null}
-                    {goster === "notr" ? <View style={[StyleSheet.absoluteFillObject, { backgroundColor: saydam(COLORS.bg, 0.6) }]} /> : null}
+                    {goster === "saha" ? <Image source={ARKAPLANLAR.saha} style={StyleSheet.absoluteFillObject} resizeMode="cover" /> : null}
+                    {goster === "saha" ? <View style={[StyleSheet.absoluteFillObject, { backgroundColor: saydam(COLORS.bg, 0.55) }]} /> : null}
+                    {goster === "desen" ? <DesenOnizleme /> : null}
                     {secili ? <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} style={styles.arkaTik} /> : null}
                   </View>
                   <Text style={[styles.arkaAd, secili && { color: COLORS.text }]} numberOfLines={1}>{a.ad}</Text>
@@ -307,6 +310,16 @@ export default function SettingsScreen({ onBack }) {
   );
 }
 
+// Paket 25 — "Temaya uygun" arkaplanın küçük önizlemesi (kartın kendi boyutunda).
+function DesenOnizleme() {
+  const [b, setB] = useState(null);
+  return (
+    <View style={StyleSheet.absoluteFill} onLayout={(e) => setB(e.nativeEvent.layout)}>
+      {b ? <SahaDeseni genislik={b.width} yukseklik={b.height} cizgiKalinligi={1} /> : null}
+    </View>
+  );
+}
+
 // Paket 24 — tek satır: dokununca altında açılır (ya da `git` ise pencere açar).
 function Satir({ id, ikon, ad, ozet, acik, ac, git = false, onPress, children }) {
   const acikMi = !git && acik === id;
@@ -403,9 +416,9 @@ const styles = StyleSheet.create({
   // --- tema secici ---
   altBaslik: { color: COLORS.text, fontSize: 14, fontWeight: "900", marginTop: 4, marginBottom: 8 },
   arkaIzgara: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  arkaKart: { width: "23%", flexGrow: 1, minWidth: 72, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.cardBorder, overflow: "hidden", backgroundColor: COLORS.card },
+  arkaKart: { flex: 1, minWidth: 72, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.cardBorder, overflow: "hidden", backgroundColor: COLORS.card },
   arkaKartAktif: { borderColor: COLORS.accent, borderWidth: 2 },
-  arkaResim: { height: 64, overflow: "hidden" },
+  arkaResim: { height: 96, overflow: "hidden" },
   arkaTik: { position: "absolute", top: 4, right: 4 },
   arkaAd: { fontSize: 11, fontWeight: "800", color: COLORS.textMuted, paddingHorizontal: 6, paddingVertical: 5 },
   temaIzgara: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },

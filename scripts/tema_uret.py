@@ -31,6 +31,8 @@ def lum(hexs):
 def kontrast(a,b):
     x,y=sorted([lum(a),lum(b)],reverse=True); return (x+.05)/(y+.05)
 import json
+# Paket 25: kart zeminden daha belirgin ayrılsın (kontrast 1.26 → ~1.5)
+L_ZEMIN, L_KART, L_CERCEVE = .15, .295, .41
 # (taban tonu, yüzey kroması, vurgu, ikincil, üçüncü) — vurgular (L, C, h)
 T = {
  'cim':  dict(h=150, cs=.030, acc=(.84,.19,138), cta=(.86,.14,90),  uc=(.84,.085,190)),
@@ -44,9 +46,9 @@ T = {
 def palet(t):
     h, cs = t['h'], t['cs']
     p = {}
-    p['bg'] = '#000000' if t.get('siyah') else hx(.165, cs*1.35, h)
-    p['card'] = hx(.265 if not t.get('siyah') else .235, cs, h)
-    p['cardBorder'] = p['border'] = hx(.37 if not t.get('siyah') else .34, cs*.9, h)
+    p['bg'] = '#000000' if t.get('siyah') else hx(L_ZEMIN, cs*1.35, h)
+    p['card'] = hx(L_KART if not t.get('siyah') else L_KART - .02, cs, h)
+    p['cardBorder'] = p['border'] = hx(L_CERCEVE if not t.get('siyah') else L_CERCEVE - .02, cs*.9, h)
     p['text'] = hx(.97, min(cs, .008), h)
     p['textMuted'] = hx(.77, min(cs, .03), h)
     p['textFaint'] = hx(.57, min(cs, .03), h)
@@ -57,16 +59,20 @@ def palet(t):
         koyu = hx(.2, min(C*.35,.06) if C else 0, hh)
         p[ad+'Dark'] = koyu if kontrast(p[ad], koyu) >= kontrast(p[ad], '#FFFFFF') else '#FFFFFF'
     return p
-out = {k: palet(v) for k,v in T.items()}
+OUT={}; out = {k: palet(v) for k,v in T.items()}
 for k,p in out.items():
-    print(k, json.dumps(p), 'card/bg %.2f'%kontrast(p['card'],p['bg']), 'text/card %.1f muted/card %.1f acc/accD %.1f cta/ctaD %.1f'%(kontrast(p['text'],p['card']),kontrast(p['textMuted'],p['card']),kontrast(p['accent'],p['accentDark']),kontrast(p['cta'],p['ctaDark'])))
+    OUT[k]=p; print(k, json.dumps(p), 'card/bg %.2f'%kontrast(p['card'],p['bg']), 'text/card %.1f muted/card %.1f acc/accD %.1f cta/ctaD %.1f'%(kontrast(p['text'],p['card']),kontrast(p['textMuted'],p['card']),kontrast(p['accent'],p['accentDark']),kontrast(p['cta'],p['ctaDark'])))
 
 # özel tema zeminleri
 Z = [('lacivert','Lacivert',248,.035),('gece','Gece mavisi',268,.04),('siyah','Siyah',0,0),('grafit','Grafit',250,.012),('orman','Orman',152,.035),('bordo','Bordo',18,.045),('mor','Mor',300,.04),('kahve','Kahve',60,.03)]
 zem=[]
 for i,ad,h,cs in Z:
     t=dict(h=h,cs=cs,siyah=(i=='siyah'))
-    bg='#000000' if i=='siyah' else hx(.165,cs*1.35,h)
-    zem.append(dict(id=i,ad=ad,renkler=dict(bg=bg,card=hx(.265 if i!='siyah' else .235,cs,h),cardBorder=hx(.37 if i!='siyah' else .34,cs*.9,h),text=hx(.97,min(cs,.008),h),textMuted=hx(.77,min(cs,.03),h),textFaint=hx(.57,min(cs,.03),h))))
+    bg='#000000' if i=='siyah' else hx(L_ZEMIN,cs*1.35,h)
+    zem.append(dict(id=i,ad=ad,renkler=dict(bg=bg,card=hx(L_KART if i!='siyah' else L_KART-.02,cs,h),cardBorder=hx(L_CERCEVE if i!='siyah' else L_CERCEVE-.02,cs*.9,h),text=hx(.97,min(cs,.008),h),textMuted=hx(.77,min(cs,.03),h),textFaint=hx(.57,min(cs,.03),h))))
 
 for z in zem: print(z['id'], z['renkler'])
+
+import sys
+if len(sys.argv)>1:
+    json.dump({'palet':OUT,'zemin':zem}, open(sys.argv[1],'w'), indent=1)
