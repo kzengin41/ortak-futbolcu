@@ -31,6 +31,8 @@ except ImportError:
 
 KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLAYERS_YOLU = os.path.join(KOK, "lib", "players.json")
+ALIAS_YOLU = os.path.join(KOK, "lib", "clubAliases.js")
+CIFT_YOLU = os.path.join(KOK, "scripts", "cift_havuzu.json")
 PARCA = 5000  # tek istekte gönderilen satır sayısı
 
 
@@ -50,18 +52,51 @@ def env_oku(anahtar):
     return ""
 
 
+def kanonik_harita():
+    """Paket 28: lib/clubAliases.js'teki CLUB_ALIAS_GROUPS -> {varyant: kanonik}.
+    Uygulama "Celta" ile "Celta Vigo"yu aynı kulüp sayıyor; sunucu da saysın diye
+    her oyuncu kulübünün KANONİK adıyla da eşleştirilir."""
+    harita = {}
+    if not os.path.exists(ALIAS_YOLU):
+        return harita
+    with io.open(ALIAS_YOLU, encoding="utf-8") as f:
+        metin = f.read()
+    i = metin.find("export const CLUB_ALIAS_GROUPS = {")
+    if i < 0:
+        return harita
+    blok = metin[i:metin.find("\n};", i)]
+    for m in re.finditer(r'^\s*"([^"]+)":\s*\[([^\]]*)\]', blok, re.M):
+        for v in re.findall(r'"([^"]+)"', m.group(2)):
+            harita[v] = m.group(1)
+    return harita
+
+
 def veri_hazirla():
     with io.open(PLAYERS_YOLU, encoding="utf-8") as f:
         oyuncular = json.load(f)
-    kulup_adlari = sorted({c for p in oyuncular for c in (p.get("clubs") or [])})
+    kanon = kanonik_harita()
+    kulup_adlari = sorted({x for p in oyuncular for c in (p.get("clubs") or []) for x in (c, kanon.get(c, c))})
     kulup_id = {ad: i + 1 for i, ad in enumerate(kulup_adlari)}
     clubs = [{"id": kulup_id[ad], "name": ad} for ad in kulup_adlari]
     players, player_clubs = [], []
     for i, p in enumerate(oyuncular, 1):
         players.append({"id": i, "name": p["name"]})
-        for c in sorted(set(p.get("clubs") or [])):
+        for c in sorted({x for c in (p.get("clubs") or []) for x in (c, kanon.get(c, c))}):
             player_clubs.append({"player_id": i, "club_id": kulup_id[c]})
-    return clubs, players, player_clubs, takma_adlar(players)
+    return clubs, players, player_clubs, takma_adlar(players), cift_havuzu(kulup_id)
+
+
+def cift_havuzu(kulup_id):
+    """Paket 28: scripts/cift_havuzu.json -> club_pairs satırları (bkz. supabase/paket28_cift_havuzu.sql)."""
+    if not os.path.exists(CIFT_YOLU):
+        return []
+    with io.open(CIFT_YOLU, encoding="utf-8") as f:
+        veri = json.load(f)
+    satirlar = []
+    for a, b, n, z in veri.get("ciftler", []):
+        if a in kulup_id and b in kulup_id and a != b:
+            satirlar.append({"club_a_id": kulup_id[a], "club_b_id": kulup_id[b], "cevap": n, "zorluk": z})
+    return satirlar
 
 
 def takma_adlar(players):
@@ -117,9 +152,9 @@ def main():
     ap.add_argument("--deneme", action="store_true", help="hicbir seyi degistirme, sadece say")
     a = ap.parse_args()
 
-    clubs, players, player_clubs, takmalar = veri_hazirla()
-    print("Yuklenecek: %d kulup, %d oyuncu, %d oyuncu-kulup baglantisi, %d takma ad"
-          % (len(clubs), len(players), len(player_clubs), len(takmalar)))
+    clubs, players, player_clubs, takmalar, ciftler = veri_hazirla()
+    print("Yuklenecek: %d kulup, %d oyuncu, %d oyuncu-kulup baglantisi, %d takma ad, %d kulup cifti"
+          % (len(clubs), len(players), len(player_clubs), len(takmalar), len(ciftler)))
     if a.deneme:
         print("--deneme: sunucuya dokunulmadi.")
         return 0
@@ -140,7 +175,7 @@ def main():
         "Prefer": "return=minimal",
     })
 
-    print("1/5 Eski veri siliniyor...")
+    print("1/6 Eski veri siliniyor...")
     r = istek(oturum, "POST", proje + "/rest/v1/rpc/veri_sifirla", data="{}")
     if r.status_code >= 300:
         print("   HATA (%s): %s" % (r.status_code, r.text[:400]))
@@ -149,7 +184,7 @@ def main():
 
     for sira, (tablo, satirlar) in enumerate(
             [("clubs", clubs), ("players", players), ("player_clubs", player_clubs)], 2):
-        print("%d/5 %s yukleniyor (%d satir)..." % (sira, tablo, len(satirlar)))
+        print("%d/6 %s yukleniyor (%d satir)..." % (sira, tablo, len(satirlar)))
         for bas in range(0, len(satirlar), PARCA):
             parca = satirlar[bas:bas + PARCA]
             r = istek(oturum, "POST", proje + "/rest/v1/" + tablo,
@@ -162,13 +197,23 @@ def main():
         print()
 
     # Takma adlar: tablo yoksa (supabase/takma_adlar.sql calismamissa) atlanir.
-    print("5/5 takma adlar yukleniyor (%d satir)..." % len(takmalar))
+    print("5/6 takma adlar yukleniyor (%d satir)..." % len(takmalar))
     for bas in range(0, len(takmalar), PARCA):
         r = istek(oturum, "POST", proje + "/rest/v1/player_aliases",
                   data=json.dumps(takmalar[bas:bas + PARCA], ensure_ascii=False).encode("utf-8"))
         if r.status_code >= 300:
             print("   UYARI: takma adlar yuklenemedi (%s). supabase/takma_adlar.sql dosyasini"
                   " SQL Editor'de calistirip bu scripti tekrar calistir." % r.status_code)
+            break
+
+    # Paket 28: kulup cifti havuzu (tablo yoksa supabase/paket28_cift_havuzu.sql calismamistir).
+    print("6/6 kulup cifti havuzu yukleniyor (%d satir)..." % len(ciftler))
+    for bas in range(0, len(ciftler), PARCA):
+        r = istek(oturum, "POST", proje + "/rest/v1/club_pairs",
+                  data=json.dumps(ciftler[bas:bas + PARCA], ensure_ascii=False).encode("utf-8"))
+        if r.status_code >= 300:
+            print("   UYARI: cift havuzu yuklenemedi (%s): %s" % (r.status_code, r.text[:200]))
+            print("   supabase/paket28_cift_havuzu.sql dosyasini SQL Editor'de calistirip bu scripti tekrar calistir.")
             break
 
     print("\nTAMAM. Online modlar artik uygulamadaki guncel veriyi kullaniyor.")
