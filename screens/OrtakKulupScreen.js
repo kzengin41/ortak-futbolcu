@@ -398,6 +398,10 @@ export default function OrtakKulupScreen({
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, yontem: inputMode })}
         onBasla={() => (tur === "coktan" ? onModaGit?.("quickCpu") : setStarted(true))}
+        // Paket 26 (Kerem: "ülke-kulüp modunu açabileceğim bir yer yok. ortak kulüp
+        // içerisinde gömelim dedik ama gömdük kayboldu") — tür seçimi Paket 24'ten
+        // beri MAÇ AYARLARI'nın arkasında kalmıştı; artık giriş ekranında, ilk bakışta.
+        girisSecimi={<SecimCipleri secenekler={TURLER.map(({ deger, etiket, ikon }) => ({ deger, etiket, ikon }))} secili={tur} onSec={setTur} />}
       >
         <KurulumBolum baslik="TÜR" not={secili.not}>
           <SecimCipleri secenekler={TURLER.map(({ deger, etiket, ikon }) => ({ deger, etiket, ikon }))} secili={tur} onSec={setTur} />

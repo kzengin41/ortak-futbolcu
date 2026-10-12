@@ -56,6 +56,7 @@ export default function ModKurulum({
   baslaDevreDisi = false,
   onVarsayilanKaydet,
   girisYok = false,
+  girisSecimi = null,   // Paket 26: giriş ekranında HIZLI BAŞLA'nın üstünde gösterilen seçim (ör. Ortak Kulüp türü)
   children,
 }) {
   const [ayarda, setAyarda] = useState(() => ayarIstegiAl() || girisYok);
@@ -80,6 +81,7 @@ export default function ModKurulum({
           <Text style={styles.baslik}>{baslik}</Text>
           <View style={[styles.cizgi, { backgroundColor: renk }]} />
           {aciklama ? <Text style={styles.aciklama}>{aciklama}</Text> : null}
+          {girisSecimi ? <View style={styles.girisSecimi}>{girisSecimi}</View> : null}
 
           {satirlar.length ? (
             <View style={styles.ozet}>
@@ -379,6 +381,7 @@ const styles = StyleSheet.create({
   ozetEtiket: { ...TYPE.caption, flexShrink: 0 },
   ozetDeger: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flexShrink: 1, textAlign: "right" },
   girisBasla: { marginTop: SPACING.xl },
+  girisSecimi: { marginTop: SPACING.xl },
   dugmeIc: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   ikincil: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm,

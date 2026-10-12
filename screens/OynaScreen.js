@@ -34,8 +34,11 @@ const MODES = [
     colorKey: "teamTeam",
     id: "cpu",
     // 4 Ekim 2026 (.28743) — "Tek telefon" artık mod değil RAKİP SEÇENEĞİ.
+    // Paket 26 — Kulüp × Ülke ve Takımı sen seç doğrudan burada da (kaybolmasınlar).
     options: [
-      { id: "cpu", rakip: "cpu", label: "CPU'ya karşı" },
+      { id: "cpu", rakip: "cpu", label: "Kulüp × Kulüp", alt: "İki kulüpte oynamış futbolcu" },
+      { id: "countryTeamCpu", rakip: "cpu", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcu" },
+      { id: "draftCpu", rakip: "cpu", label: "Takımı sen seç", alt: "Bir kulübü sen yazarsın, ikincisini CPU seçer" },
       { id: "local", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Ekran ikiye bölünür, ilk basan cevaplar" },
       { id: "sunucu", rakip: "yanimdaki", label: "Yanımdakiler — Sunucu modu", alt: "2–6 kişi; sen okursun, onlar bağırır" },
       { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true, params: { mod: "classic" } },

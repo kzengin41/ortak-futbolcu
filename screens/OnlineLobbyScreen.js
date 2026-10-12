@@ -8,6 +8,7 @@ import SoundPressable from "../components/SoundPressable";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import { ModKarti, ModBolumu, ModSecimPenceresi, modStilleri } from "../components/ModKarti";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
+import { standartProfil } from "../lib/eslesmeProfili";
 import {
   odaKur, odaAktifOlunca, odayiKapat, koduylaKatil, rastgeleOdaBul, kulupKimlikleri, odaNesnesi,
 } from "../lib/onlineLobi";
@@ -146,7 +147,9 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }
 
   async function odaKurVeBekle(rastgele, mod) {
-    const allowedClubIds = KULUPSUZ.has(mod) ? null : await kulupKimlikleri(eslesme.derlenmis.onlineKapsam());
+    // Paket 27: dereceli (rastgele) odada herkes aynı Dengeli havuz; arkadaş odasında kuranın profili.
+    const profil = rastgele ? standartProfil() : eslesme.derlenmis;
+    const allowedClubIds = KULUPSUZ.has(mod) ? null : await kulupKimlikleri(profil.onlineKapsam());
     const puan = derece && Number.isFinite(derece.puan) ? derece.puan : null;
     const satir = await odaKur({ gameMode: mod, isRanked: rastgele, allowedClubIds, rastgele, puan: rastgele ? puan : null });
     if (!canliRef.current) { odayiKapat(satir.id); return null; }
@@ -370,7 +373,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           <View style={styles.ayarSatir}>
             <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
               <Ionicons name="filter" size={16} color={COLORS.accent} />
-              <Text style={styles.presetRowText} numberOfLines={1}>{eslesme.derlenmis.etiket}</Text>
+              <Text style={styles.presetRowText} numberOfLines={1}>Arkadaş odası: {eslesme.derlenmis.etiket}</Text>
             </SoundPressable>
             <DereceRozeti kart={derece} onPress={() => setLiderlikAcik(true)} />
           </View>

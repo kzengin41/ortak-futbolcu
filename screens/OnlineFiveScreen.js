@@ -16,6 +16,7 @@ import {
   enIyiFiveClubCevabi, FIVE_CLUB_DIFFICULTIES,
 } from "../lib/gameEngine";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
+import { standartProfil } from "../lib/eslesmeProfili";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -41,8 +42,10 @@ export default function OnlineFiveScreen({ room, onExit }) {
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
   const eslesme = useEslesmeProfili();
-  const profilRef = useRef(eslesme.derlenmis);
-  profilRef.current = eslesme.derlenmis;
+  // Paket 27 (Kerem'in kararı): dereceli maçta herkes aynı (Dengeli) havuzla
+  // oynar; arkadaş odasında oda kuranın (host) eşleşme profili geçerli.
+  const profilRef = useRef(null);
+  profilRef.current = room && room.isRanked ? standartProfil() : eslesme.derlenmis;
 
   const baglam = useMemo(() => ({
     turUret: (kullanilan, sonKulupler) =>

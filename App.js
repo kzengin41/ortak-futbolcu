@@ -218,38 +218,50 @@ function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {
   };
 }
 
+// Paket 26 (12 Ekim 2026, Kerem: "Sunucu modunda oynayanların isimlerini
+// yazarken her harfte bir yazım alanından dışarı atıyor") — KÖK NEDEN: React
+// Navigation getComponent'i navigator HER çizildiğinde yeniden çağırıyor ve
+// withExit(...) her çağrıda YENİ bir bileşen türü üretiyordu. Navigator yeniden
+// çizilince (klavye açılınca, bir ayar yazılınca…) ekran baştan kuruluyordu
+// (unmount + mount): odak kayboluyor, klavye kapanıyor, ekranın iç durumu
+// sıfırlanabiliyordu. tekSefer: bileşen bir kez üretilir, sonra hep aynısı döner.
+function tekSefer(uret) {
+  let bilesen = null;
+  return () => bilesen || (bilesen = uret());
+}
+
 // Ağır ekranlar: getComponent içindeki require() ilk navigasyona kadar ÇALIŞMAZ.
 // (React Navigation resmi lazy-screen deseni: component yerine getComponent.)
-const getLocalRoute = () => withExit(require("./screens/LocalGameScreen").default, { mod: "local" });
+const getLocalRoute = tekSefer(() => withExit(require("./screens/LocalGameScreen").default, { mod: "local" }));
 // 4 Ekim 2026 — Ortak Kulüp birleşti: üç rota da aynı ekrana, farklı türle açılıyor
 // (Kulüp × Kulüp / Kulüp × Ülke / Takımı sen seç). Eski CpuGame, CountryTeamCpu ve
 // DraftGameCpu ekranları artık kullanılmıyor.
-const getCpuRoute = () => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "kulup" } });
-const getQuickCpuRoute = () => withExit(require("./screens/QuickGameCpuScreen").default, { mod: "quickCpu" });
-const getDraftCpuRoute = () => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "secim" } });
-const getCountryTeamCpuRoute = () => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "ulke" } });
-const getWhoAmICpuRoute = () => withExit(require("./screens/WhoAmICpuScreen").default, { mod: "whoAmICpu" });
-const getLetterCpuRoute = () => withExit(require("./screens/LetterCpuScreen").default, { mod: "letterCpu" });
-const getFiveClubsRoute = () => withExit(require("./screens/FiveClubsScreen").default, { mod: "fiveClubs" });
+const getCpuRoute = tekSefer(() => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "kulup" } }));
+const getQuickCpuRoute = tekSefer(() => withExit(require("./screens/QuickGameCpuScreen").default, { mod: "quickCpu" }));
+const getDraftCpuRoute = tekSefer(() => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "secim" } }));
+const getCountryTeamCpuRoute = tekSefer(() => withExit(require("./screens/OrtakKulupScreen").default, { mod: "cpu", ekstraProps: { tur: "ulke" } }));
+const getWhoAmICpuRoute = tekSefer(() => withExit(require("./screens/WhoAmICpuScreen").default, { mod: "whoAmICpu" }));
+const getLetterCpuRoute = tekSefer(() => withExit(require("./screens/LetterCpuScreen").default, { mod: "letterCpu" }));
+const getFiveClubsRoute = tekSefer(() => withExit(require("./screens/FiveClubsScreen").default, { mod: "fiveClubs" }));
 // 12 Eylül 2026 — 5 Kulüp'ün CPU'ya karşı hâli. Aynı ekran, tek fark vsCpu.
-const getFiveClubsCpuRoute = () => withExit(require("./screens/FiveClubsScreen").default, { mod: "fiveClubsCpu", ekstraProps: { vsCpu: true } });
+const getFiveClubsCpuRoute = tekSefer(() => withExit(require("./screens/FiveClubsScreen").default, { mod: "fiveClubsCpu", ekstraProps: { vsCpu: true } }));
 // 12 Eylül 2026 — Futbolcu XOX. Rakip tipi (CPU / 2 kişi) ve zorluk ekranın
 // kendi kurulum adımında seçildiği için tek rota yetiyor.
-const getXoxRoute = () => withExit(require("./screens/XoxScreen").default, { mod: "xox" });
+const getXoxRoute = tekSefer(() => withExit(require("./screens/XoxScreen").default, { mod: "xox" }));
 // 4 Ekim 2026 — günlük oyunlar (herkese aynı soru, ilerleme kaydediliyor → onaysız çıkış)
 // ve İlk Harf'in tek kişilik zinciri (kurulum yok, rehber yok: kurallar ekranda).
-const getGunluk5Route = () => withExit(require("./screens/GunlukBesKulupScreen").default, { confirm: false });
-const getGunlukIzgaraRoute = () => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false });
-const getHarfZinciriRoute = () => withExit(require("./screens/HarfZinciriScreen").default);
+const getGunluk5Route = tekSefer(() => withExit(require("./screens/GunlukBesKulupScreen").default, { confirm: false }));
+const getGunlukIzgaraRoute = tekSefer(() => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false }));
+const getHarfZinciriRoute = tekSefer(() => withExit(require("./screens/HarfZinciriScreen").default));
 // 4 Ekim 2026 (.28709) — Sunucu modu: 2–6 kişi, tek telefon, sunucu okur.
 // 4 Ekim 2026 (.29452/.29833) — Günün Kadrosu (günlük, ilerleme kaydedilir) ve
 // Ansiklopedi → Takımlar'dan açılan kadro sayfası.
-const getGunlukKadroRoute = () => withExit(require("./screens/GunlukKadroScreen").default, { confirm: false });
-const getKadroRoute = () => require("./screens/KadroScreen").default;
-const getSunucuRoute = () => withExit(require("./screens/SunucuScreen").default, { mod: "sunucu" });
+const getGunlukKadroRoute = tekSefer(() => withExit(require("./screens/GunlukKadroScreen").default, { confirm: false }));
+const getKadroRoute = tekSefer(() => require("./screens/KadroScreen").default);
+const getSunucuRoute = tekSefer(() => withExit(require("./screens/SunucuScreen").default, { mod: "sunucu" }));
 // Paket 13 — Günlük Kim Bu ve Kadro Avı (kart masası; components/KimBuMasa.js)
-const getGunlukKimBuRoute = () => withExit(require("./screens/GunlukKimBuScreen").default, { confirm: false, mod: "gunlukKimBu" });
-const getKadroAviRoute = () => withExit(require("./screens/KadroAviScreen").default, { mod: "kadroAvi" });
+const getGunlukKimBuRoute = tekSefer(() => withExit(require("./screens/GunlukKimBuScreen").default, { confirm: false, mod: "gunlukKimBu" }));
+const getKadroAviRoute = tekSefer(() => withExit(require("./screens/KadroAviScreen").default, { mod: "kadroAvi" }));
 
 // Online sekmesi: doğrudan lobi ekranını gösterir (artık ayrı bir "onlineLobby"
 // stack rotası değil, sekmenin kendisi). Bir oda hazır olduğunda ROOT stack'teki
@@ -366,7 +378,7 @@ function getOnlineFiveRoute() {
   };
 }
 // 5 Ekim 2026 (.29648) — asenkron meydan okuma (sunucusuz, kodla)
-const getMeydanOkumaRoute = () => withExit(require("./screens/MeydanOkumaScreen").default, { mod: "meydanOkuma" });
+const getMeydanOkumaRoute = tekSefer(() => withExit(require("./screens/MeydanOkumaScreen").default, { mod: "meydanOkuma" }));
 
 const TAB_ICONS = {
   oyna: "home",

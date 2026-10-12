@@ -1,67 +1,39 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Modal, View, Text, ScrollView, TextInput, StyleSheet } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Modal, View, Text, ScrollView, TextInput, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SoundPressable from "./SoundPressable";
 import TeamBadge from "./TeamBadge";
 import TakimSecici from "./TakimSecici";
-import { SecimCipleri, KurulumBolum, KapsamDugmesi } from "./ModKurulum";
+import { KurulumBolum, KapsamDugmesi } from "./ModKurulum";
 import {
-  HAZIR_PROFILLER, BOLGE_KADEMELERI, DONEMLER, KUCUK_KULUP, TAKIM_ORANI, LIGLER,
-  VARSAYILAN_PROFIL, etkinAyar, profilDerle, profilEtiketi,
+  HAZIR_PROFILLER, KAROLAR, KARO_DURUMLARI, KULUP_SEVIYELERI, DONEMLER, TAKIM_ORANI,
+  VARSAYILAN_PROFIL, profiliDuzenle, hazirdanProfil, hazirEslesmesi, profilDerle,
 } from "../lib/eslesmeProfili";
 import { canonicalClub } from "../lib/clubAliases";
 import { weightForClubs } from "../lib/clubWeights";
-import { COLORS, RADIUS, SPACING, TYPE } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, saydam } from "../lib/theme";
 
 // ============================================================================
-// EŞLEŞME PROFİLİ PENCERESİ — 28 Eylül 2026
-// Aynı profilin üç editörü:
-//   HIZLI    — hazır profil kartları + tuttuğun takım (uğraşmak istemeyen)
-//   AYARLA   — 4 basit ayar (orta)
-//   DETAYLI  — lig/ülke ağırlıkları, kulüp bazında ayar, dönem sınırı
-// Mod kurulumundan açılırsa: "Bu maç için uygula" + "Varsayılan yap".
-// Ayarlar'dan açılırsa (ayarlarModu): tek "Kaydet".
+// EŞLEŞME PROFİLİ PENCERESİ — 2. sürüm (Paket 27, 12 Ekim 2026)
+// Kerem: "eşleştirme profillerini baştan çalışmamız lazım. ayrıca bu eşleştirme
+// profilleri ekranı da karmaşık duruyor." Eskiden 3 sekme (Hızlı / Ayarla /
+// Detaylı) ve 9 ayrı kavram vardı. Artık TEK EKRAN, dört soru:
+//   HAZIR      tek dokunuşla hazır cevaplar (aşağıdakileri doldurur)
+//   NEREDEN    8 karo — dokundukça kapalı → açık → ağırlıklı
+//   KULÜPLER   hepsi / büyük kulüpler / Şampiyonlar Ligi
+//   NE ZAMAN   on yıllar (çoklu)
+//   TAKIMIN    tuttuğun takım + Normal / Sık
+// Altta CANLI ÖNİZLEME: seçtikçe örnek kulüp çiftleri ve havuz büyüklüğü
+// değişir. Kulüp bazında "öne çıkar / hiç çıkmasın" kapalı gelen "Gelişmiş"te.
+// Motor: lib/eslesmeProfili.js (2. sürüm) + lib/gameEngine.js bölgeli taban.
 // ============================================================================
-const SEKMELER = [
-  { id: "hizli", etiket: "Hızlı", ikon: "flash" },
-  { id: "ayarla", etiket: "Ayarla", ikon: "options" },
-  { id: "detayli", etiket: "Detaylı", ikon: "construct" },
-];
-const AGIRLIK_CIPLERI = [
-  { deger: 0, etiket: "Kapalı" },
-  { deger: 50, etiket: "Az" },
-  { deger: 100, etiket: "Normal" },
-  { deger: 200, etiket: "Çok" },
-];
-const ULKE_SATIRLARI = [
-  { anahtar: "ulke:Turkey", ad: "Türkiye (alt ligler)", bayrak: "🇹🇷" },
-  { anahtar: "ulke:United Kingdom", ad: "İngiltere (alt ligler)", bayrak: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { anahtar: "ulke:Spain", ad: "İspanya (alt ligler)", bayrak: "🇪🇸" },
-  { anahtar: "ulke:Italy", ad: "İtalya (alt ligler)", bayrak: "🇮🇹" },
-  { anahtar: "ulke:Germany", ad: "Almanya (alt ligler)", bayrak: "🇩🇪" },
-  { anahtar: "ulke:France", ad: "Fransa (alt ligler)", bayrak: "🇫🇷" },
-  { anahtar: "ulke:Portugal", ad: "Portekiz", bayrak: "🇵🇹" },
-  { anahtar: "ulke:Netherlands", ad: "Hollanda", bayrak: "🇳🇱" },
-  { anahtar: "ulke:Brazil", ad: "Brezilya", bayrak: "🇧🇷" },
-  { anahtar: "ulke:Argentina", ad: "Arjantin", bayrak: "🇦🇷" },
-  { anahtar: "ulke:United States", ad: "ABD (MLS)", bayrak: "🇺🇸" },
-  { anahtar: "ulke:Saudi Arabia", ad: "Suudi Arabistan", bayrak: "🇸🇦" },
-  { anahtar: "digerleri", ad: "Diğer bütün ülkeler", bayrak: "🌐" },
-];
-const DONEM_SINIRI = [
-  { deger: 0, etiket: "Hepsi" },
-  { deger: 1990, etiket: "1990+" },
-  { deger: 2000, etiket: "2000+" },
-  { deger: 2010, etiket: "2010+" },
-  { deger: 2020, etiket: "2020+" },
-];
 
+let _kulupAdlari = null;
 function sade(s) {
   return String(s || "").replace(/İ/g, "i").replace(/I/g, "ı").toLowerCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ı/g, "i");
 }
-
-let _kulupAdlari = null;
 function kulupAdlari() {
   if (_kulupAdlari) return _kulupAdlari;
   const say = new Map();
@@ -75,28 +47,41 @@ function kulupAdlari() {
   return _kulupAdlari;
 }
 
-// Profilin havuzunda kaç oyuncu var (alt bilgi satırı için).
-let _oyuncular = null;
-function havuzSayisi(derlenmis) {
-  if (!_oyuncular) { try { _oyuncular = require("../lib/paket/players"); } catch (e) { _oyuncular = []; } }
-  let n = 0;
-  for (const p of _oyuncular) if (derlenmis.oyuncuCarpani(p) > 0) n++;
-  return n;
+// Önizleme: havuz büyüklüğü + 3 örnek çift (oyun motoruyla, zorluk 5).
+let _motor = null;
+function motor() {
+  if (_motor) return _motor;
+  const G = require("../lib/gameEngine");
+  const { PLAYERS } = require("../lib/players");
+  _motor = { G, PLAYERS };
+  return _motor;
+}
+function onizlemeHesapla(derlenmis) {
+  const { G, PLAYERS } = motor();
+  let toplam = 0;
+  for (const p of PLAYERS) if (derlenmis.oyuncuCarpani(p) > 0) toplam++;
+  const havuz = G.computeRoundPool(PLAYERS, derlenmis, 5);
+  return { toplam, havuz: havuz.entries.length, ciftler: G.ornekCiftler(havuz, 3) };
 }
 
 export default function EslesmeProfiliPenceresi({
   visible, profil, onUygula, onVarsayilanYap, onClose, ayarlarModu, online,
 }) {
-  const [sekme, setSekme] = useState("hizli");
-  const [taslak, setTaslak] = useState({ ...VARSAYILAN_PROFIL, ...(profil || {}) });
+  const insets = useSafeAreaInsets() || { top: 0, bottom: 0 };
+  const [taslak, setTaslak] = useState(() => profiliDuzenle(profil));
   const [takimAcik, setTakimAcik] = useState(false);
+  const [gelismis, setGelismis] = useState(false);
   const [kulupAra, setKulupAra] = useState("");
+  const [onizleme, setOnizleme] = useState(null);
+  const [uyari, setUyari] = useState(null);
 
   useEffect(() => {
     if (visible) {
-      setTaslak({ ...VARSAYILAN_PROFIL, ...(profil || {}) });
+      setTaslak(profiliDuzenle(profil));
       setTakimAcik(false);
+      setGelismis(false);
       setKulupAra("");
+      setUyari(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -104,211 +89,228 @@ export default function EslesmeProfiliPenceresi({
   const anahtar = JSON.stringify(taslak);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const derlenmis = useMemo(() => profilDerle(taslak), [anahtar]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const havuz = useMemo(() => (visible ? havuzSayisi(derlenmis) : 0), [anahtar, visible]);
-  const ayar = etkinAyar(taslak);
-  const temel = HAZIR_PROFILLER.find((h) => h.id === taslak.temel) || HAZIR_PROFILLER[0];
+  const secili = hazirEslesmesi(taslak);
 
-  const guncelle = (degisim) => setTaslak((t) => ({ ...t, ...degisim }));
-  function hazirSec(id) {
-    setTaslak((t) => ({
-      ...VARSAYILAN_PROFIL, temel: id, takim: t.takim, takimOrani: t.takimOrani,
-    }));
+  // Canlı önizleme — dokunuşları bekletmesin diye kısa bir gecikmeyle hesaplanır.
+  const zamanlayici = useRef(null);
+  useEffect(() => {
+    if (!visible) return undefined;
+    setOnizleme((o) => (o ? { ...o, yukleniyor: true } : { yukleniyor: true }));
+    clearTimeout(zamanlayici.current);
+    zamanlayici.current = setTimeout(() => {
+      try { setOnizleme(onizlemeHesapla(derlenmis)); } catch (e) { setOnizleme(null); }
+    }, 250);
+    return () => clearTimeout(zamanlayici.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anahtar, visible]);
+
+  const guncelle = (degisim) => setTaslak((t) => ({ ...t, ...degisim, temel: "ozel" }));
+  const hazirSec = (id) => setTaslak((t) => hazirdanProfil(id, t));
+  function karoDegistir(id) {
+    const simdi = taslak.karolar[id] || 0;
+    const sonraki = (simdi + 1) % 3;
+    const yeni = { ...taslak.karolar, [id]: sonraki };
+    if (!Object.values(yeni).some((v) => v > 0)) { setUyari("En az bir yer açık kalmalı."); return; }
+    setUyari(null);
+    guncelle({ karolar: yeni });
   }
-  function ligAgirligi(id) {
-    if (taslak.ligAgirlik && taslak.ligAgirlik[id] != null) return taslak.ligAgirlik[id];
-    if (temel.kapsam && temel.kapsam.ligler) return temel.kapsam.ligler.includes(id) ? 100 : 0;
-    return 100;
-  }
-  function ligAyarla(id, deger) {
-    guncelle({ ligAgirlik: { ...(taslak.ligAgirlik || {}), [id]: deger } });
+  function donemDegistir(d) {
+    const var_ = taslak.donemler.includes(d);
+    const yeni = var_ ? taslak.donemler.filter((x) => x !== d) : [...taslak.donemler, d];
+    if (!yeni.length) { setUyari("En az bir dönem seçili kalmalı."); return; }
+    setUyari(null);
+    guncelle({ donemler: yeni });
   }
   function kulupAyarla(ad, durum) {
     const k = { ...(taslak.kulupAyar || {}) };
     if (!durum || k[ad] === durum) delete k[ad]; else k[ad] = durum;
-    guncelle({ kulupAyar: k });
+    setTaslak((t) => ({ ...t, kulupAyar: k }));
   }
 
   const kulupSonuclari = useMemo(() => {
     const q = sade(kulupAra.trim());
     if (q.length < 2) return [];
-    return kulupAdlari().filter((k) => k.sade.includes(q)).slice(0, 12).map((k) => k.ad);
+    return kulupAdlari().filter((k) => k.sade.includes(q)).slice(0, 10).map((k) => k.ad);
   }, [kulupAra]);
 
   if (!visible) return null;
 
+  const nitelik = !onizleme || onizleme.havuz == null ? null
+    : onizleme.havuz >= 150 ? { yazi: "çeşit bol", ikon: "checkmark-circle", renk: COLORS.accent }
+    : onizleme.havuz >= 60 ? { yazi: "yeterli", ikon: "checkmark", renk: COLORS.cta }
+    : { yazi: "dar — biraz genişlet", ikon: "alert-circle", renk: COLORS.danger };
+  const ozelSayisi = Object.keys(taslak.kulupAyar || {}).length;
+
   return (
-    <Modal visible animationType="slide" onRequestClose={onClose}>
-      <View style={styles.kap}>
+    <Modal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <View style={[styles.kap, { paddingTop: insets.top + 12 }]}>
         <View style={styles.ust}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.baslik}>Eşleşme Profili</Text>
-            <Text style={styles.altBaslik} numberOfLines={1}>{profilEtiketi(taslak)}</Text>
+            <Text style={styles.baslik}>Hangi futbolcular çıksın?</Text>
+            <Text style={styles.altBaslik} numberOfLines={1}>
+              {ayarlarModu ? "Bütün modlar bu seçimle başlar" : "Bu maç için ya da varsayılan olarak"}
+            </Text>
           </View>
-          <SoundPressable onPress={onClose} hitSlop={12} style={styles.kapat}>
+          <SoundPressable onPress={onClose} hitSlop={12} style={styles.kapat} accessibilityLabel="Kapat">
             <Ionicons name="close" size={24} color={COLORS.textMuted} />
           </SoundPressable>
         </View>
 
-        <View style={styles.sekmeler}>
-          {SEKMELER.map((s) => {
-            const aktif = sekme === s.id;
-            return (
-              <SoundPressable key={s.id} style={[styles.sekme, aktif && styles.sekmeAktif]} onPress={() => setSekme(s.id)}>
-                <Ionicons name={s.ikon} size={16} color={aktif ? COLORS.accentDark : COLORS.textMuted} />
-                <Text style={[styles.sekmeYazi, aktif && styles.sekmeYaziAktif]}>{s.etiket}</Text>
-              </SoundPressable>
-            );
-          })}
-        </View>
-
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.icerik} keyboardShouldPersistTaps="handled">
-          {sekme === "hizli" ? (
-            <>
-              <Text style={styles.not}>Tek dokunuşla seç. İstersen "Ayarla" ya da "Detaylı" sekmesinden ince ayar yaparsın.</Text>
-              <View style={styles.kartlar}>
-                {HAZIR_PROFILLER.map((h) => {
-                  const aktif = taslak.temel === h.id;
-                  return (
-                    <SoundPressable key={h.id} style={[styles.kart, aktif && styles.kartAktif]} onPress={() => hazirSec(h.id)}>
-                      <Text style={styles.kartIkon}>{h.ikon}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.kartAd, aktif && styles.kartAdAktif]}>{h.ad}</Text>
-                        <Text style={styles.kartAciklama} numberOfLines={2}>{h.aciklama}</Text>
-                      </View>
-                      {aktif ? <Ionicons name="checkmark-circle" size={22} color={COLORS.accent} /> : null}
-                    </SoundPressable>
-                  );
-                })}
-              </View>
-
-              <KurulumBolum baslik="TUTTUĞUN TAKIM">
-                {taslak.takim && !takimAcik ? (
-                  <View style={styles.takimSatir}>
-                    <TeamBadge name={taslak.takim} size={36} />
-                    <Text style={styles.takimAd} numberOfLines={1}>{taslak.takim}</Text>
-                    <SoundPressable onPress={() => setTakimAcik(true)} style={styles.kucukDugme}>
-                      <Text style={styles.kucukDugmeYazi}>Değiştir</Text>
-                    </SoundPressable>
-                    <SoundPressable onPress={() => guncelle({ takim: null })} hitSlop={8}>
-                      <Ionicons name="trash-outline" size={18} color={COLORS.textMuted} />
-                    </SoundPressable>
-                  </View>
-                ) : takimAcik ? (
-                  <TakimSecici secili={taslak.takim} kompakt onSec={(t) => { guncelle({ takim: t }); setTakimAcik(false); }} />
-                ) : (
-                  <SoundPressable style={styles.genisDugme} onPress={() => setTakimAcik(true)}>
-                    <Ionicons name="add-circle-outline" size={18} color={COLORS.accent} />
-                    <Text style={styles.genisDugmeYazi}>Takım seç</Text>
-                  </SoundPressable>
-                )}
-              </KurulumBolum>
-              {taslak.takim ? (
-                <KurulumBolum baslik="TAKIMIN NE SIKLIKLA ÇIKSIN">
-                  <SecimCipleri secenekler={TAKIM_ORANI} secili={taslak.takimOrani} onSec={(v) => guncelle({ takimOrani: v })} />
-                </KurulumBolum>
-              ) : null}
-            </>
-          ) : null}
-
-          {sekme === "ayarla" ? (
-            <>
-              <Text style={styles.not}>Temel: {temel.ikon} {temel.ad}. Değiştirdiğin her ayar bu profilin üstüne yazılır.</Text>
-              <KurulumBolum baslik="BÖLGE DENGESİ">
-                <SecimCipleri
-                  secenekler={BOLGE_KADEMELERI.map((b) => ({ deger: b.deger, etiket: b.etiket }))}
-                  secili={ayar.bolge}
-                  onSec={(v) => guncelle({ bolge: v })}
-                />
-                {temel.kapsam ? <Text style={styles.not}>Bu hazır profil belirli liglerle sınırlı; denge o ligler içinde uygulanır.</Text> : null}
-              </KurulumBolum>
-              <KurulumBolum baslik="DÖNEM">
-                <SecimCipleri secenekler={DONEMLER} secili={ayar.donem} onSec={(v) => guncelle({ donem: v })} />
-                <Text style={styles.not}>{(DONEMLER.find((d) => d.deger === ayar.donem) || {}).aciklama}</Text>
-              </KurulumBolum>
-              <KurulumBolum baslik="KÜÇÜK KULÜPLER">
-                <SecimCipleri secenekler={KUCUK_KULUP} secili={ayar.kucukKulup} onSec={(v) => guncelle({ kucukKulup: v })} />
-                <Text style={styles.not}>Pek tanınmayan kulüpler (alt ligler, küçük takımlar) ne kadar çıksın.</Text>
-              </KurulumBolum>
-              <KurulumBolum baslik="TUTTUĞUN TAKIM NE SIKLIKLA ÇIKSIN">
-                {taslak.takim ? (
-                  <SecimCipleri secenekler={TAKIM_ORANI} secili={taslak.takimOrani} onSec={(v) => guncelle({ takimOrani: v })} />
-                ) : (
-                  <SoundPressable style={styles.genisDugme} onPress={() => { setSekme("hizli"); setTakimAcik(true); }}>
-                    <Ionicons name="add-circle-outline" size={18} color={COLORS.accent} />
-                    <Text style={styles.genisDugmeYazi}>Önce takımını seç</Text>
-                  </SoundPressable>
-                )}
-              </KurulumBolum>
-              {taslak.bolge != null || taslak.donem != null || taslak.kucukKulup != null ? (
-                <SoundPressable style={styles.sifirla} onPress={() => guncelle({ bolge: null, donem: null, kucukKulup: null })}>
-                  <Ionicons name="refresh" size={16} color={COLORS.textMuted} />
-                  <Text style={styles.sifirlaYazi}>"{temel.ad}" ayarlarına dön</Text>
+          <Text style={styles.eb}>Hazır</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hazirlar}>
+            {HAZIR_PROFILLER.map((h) => {
+              const aktif = secili === h.id;
+              return (
+                <SoundPressable key={h.id} style={[styles.hazir, aktif && styles.hazirAktif]} onPress={() => hazirSec(h.id)} accessibilityLabel={`Hazır: ${h.ad}`} accessibilityState={{ selected: aktif }}>
+                  <Text style={[styles.hazirYazi, aktif && styles.hazirYaziAktif]}>{h.ikon} {h.ad}</Text>
                 </SoundPressable>
+              );
+            })}
+            {secili === "ozel" ? (
+              <View style={[styles.hazir, styles.hazirAktif]}><Text style={[styles.hazirYazi, styles.hazirYaziAktif]}>✏️ Özel</Text></View>
+            ) : null}
+          </ScrollView>
+          {secili !== "ozel" ? <Text style={styles.not}>{(HAZIR_PROFILLER.find((h) => h.id === secili) || {}).aciklama}</Text> : null}
+
+          <Text style={styles.eb}>Nereden <Text style={styles.ebIpucu}>· dokun: kapalı → açık → ağırlıklı</Text></Text>
+          <View style={styles.izgara}>
+            {KAROLAR.map((k) => {
+              const d = taslak.karolar[k.id] || 0;
+              return (
+                <SoundPressable
+                  key={k.id}
+                  style={[styles.karo, d === 1 && styles.karoAcik, d === 2 && styles.karoCok, d === 0 && styles.karoKapali]}
+                  onPress={() => karoDegistir(k.id)}
+                  accessibilityLabel={`${k.ad}: ${KARO_DURUMLARI[d]}`}
+                >
+                  <Text style={styles.karoBayrak}>{k.bayrak}</Text>
+                  <Text style={styles.karoAd} numberOfLines={2}>{k.ad}</Text>
+                  <Text style={[styles.karoDurum, d > 0 && { color: COLORS.accent }, d === 2 && { fontWeight: "900" }]}>{KARO_DURUMLARI[d]}</Text>
+                </SoundPressable>
+              );
+            })}
+          </View>
+          {uyari ? <Text style={[styles.not, { color: COLORS.danger }]}>{uyari}</Text> : null}
+
+          <Text style={styles.eb}>Kulüpler</Text>
+          <View style={styles.seg}>
+            {KULUP_SEVIYELERI.map((s) => {
+              const aktif = taslak.kulupler === s.deger;
+              return (
+                <SoundPressable key={s.deger} style={[styles.segDugme, aktif && styles.segAktif]} onPress={() => guncelle({ kulupler: s.deger })} accessibilityLabel={`Kulüpler: ${s.etiket}`}>
+                  <Text style={[styles.segYazi, aktif && styles.segYaziAktif]} numberOfLines={2}>{s.etiket}</Text>
+                </SoundPressable>
+              );
+            })}
+          </View>
+          <Text style={styles.not}>{(KULUP_SEVIYELERI.find((s) => s.deger === taslak.kulupler) || {}).aciklama}</Text>
+
+          <Text style={styles.eb}>Ne zaman</Text>
+          <View style={styles.seg}>
+            {DONEMLER.map((d) => {
+              const aktif = taslak.donemler.includes(d.deger);
+              return (
+                <SoundPressable key={d.deger} style={[styles.segDugme, aktif && styles.segAktif]} onPress={() => donemDegistir(d.deger)} accessibilityLabel={`Dönem: ${d.etiket}`} accessibilityState={{ selected: aktif }}>
+                  <Text style={[styles.segYazi, aktif && styles.segYaziAktif]} numberOfLines={2}>{d.etiket}</Text>
+                </SoundPressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.eb}>Takımın</Text>
+          {takimAcik ? (
+            <TakimSecici secili={taslak.takim} kompakt onSec={(t) => { setTaslak((x) => ({ ...x, takim: t })); setTakimAcik(false); }} />
+          ) : taslak.takim ? (
+            <View style={styles.takimSatir}>
+              <SoundPressable onPress={() => setTakimAcik(true)} style={styles.takimSol} accessibilityLabel="Takımı değiştir">
+                <TeamBadge name={taslak.takim} size={32} />
+                <Text style={styles.takimAd} numberOfLines={1}>{taslak.takim}</Text>
+              </SoundPressable>
+              {TAKIM_ORANI.filter((t) => t.deger !== "yok").map((t) => {
+                const aktif = taslak.takimOrani === t.deger;
+                return (
+                  <SoundPressable key={t.deger} style={[styles.mini, aktif && styles.miniAktif]} onPress={() => setTaslak((x) => ({ ...x, takimOrani: t.deger }))} accessibilityLabel={`Takımın: ${t.etiket}`}>
+                    <Text style={[styles.miniYazi, aktif && styles.miniYaziAktif]}>{t.etiket}</Text>
+                  </SoundPressable>
+                );
+              })}
+              <SoundPressable onPress={() => setTaslak((x) => ({ ...x, takim: null }))} hitSlop={8} accessibilityLabel="Takımı kaldır">
+                <Ionicons name="close-circle" size={20} color={COLORS.textFaint} />
+              </SoundPressable>
+            </View>
+          ) : (
+            <SoundPressable style={styles.genisDugme} onPress={() => setTakimAcik(true)}>
+              <Ionicons name="add-circle-outline" size={18} color={COLORS.accent} />
+              <Text style={styles.genisDugmeYazi}>Takım seç</Text>
+            </SoundPressable>
+          )}
+
+          {/* Canlı önizleme */}
+          <View style={styles.onizleme}>
+            <View style={styles.onizlemeUst}>
+              <Text style={styles.onizlemeBaslik}>ÖRNEK EŞLEŞMELER</Text>
+              {onizleme && onizleme.yukleniyor ? <ActivityIndicator size="small" color={COLORS.textMuted} /> : null}
+              {nitelik && !onizleme.yukleniyor ? (
+                <View style={styles.nitelik}>
+                  <Ionicons name={nitelik.ikon} size={14} color={nitelik.renk} />
+                  <Text style={[styles.nitelikYazi, { color: nitelik.renk }]} numberOfLines={1}>
+                    {onizleme.toplam.toLocaleString("tr-TR")} oyuncu · {nitelik.yazi}
+                  </Text>
+                </View>
               ) : null}
-            </>
+            </View>
+            {(onizleme && onizleme.ciftler ? onizleme.ciftler : []).map(([a, b]) => (
+              <View key={`${a}|${b}`} style={styles.cift}>
+                <TeamBadge name={canonicalClub(a)} size={22} />
+                <Text style={styles.ciftAd} numberOfLines={1}>{a}</Text>
+                <Text style={styles.ciftX}>×</Text>
+                <TeamBadge name={canonicalClub(b)} size={22} />
+                <Text style={styles.ciftAd} numberOfLines={1}>{b}</Text>
+              </View>
+            ))}
+            {onizleme && onizleme.ciftler && !onizleme.ciftler.length && !onizleme.yukleniyor ? (
+              <Text style={[styles.not, { color: COLORS.danger }]}>Bu seçimle eşleşme çıkmıyor — bir yer ya da dönem daha aç.</Text>
+            ) : null}
+          </View>
+
+          {/* Gelişmiş: kulüp bazında ayar */}
+          <SoundPressable style={styles.gelismisBaslik} onPress={() => setGelismis((g) => !g)} accessibilityRole="button" accessibilityState={{ expanded: gelismis }} accessibilityLabel="Gelişmiş">
+            <Ionicons name="construct-outline" size={16} color={COLORS.textMuted} />
+            <Text style={styles.gelismisYazi}>Gelişmiş{ozelSayisi ? ` · ${ozelSayisi} kulüp ayarı` : ""}</Text>
+            <View style={{ flex: 1 }} />
+            <Ionicons name={gelismis ? "chevron-up" : "chevron-down"} size={18} color={COLORS.textMuted} />
+          </SoundPressable>
+          {gelismis ? (
+            <View>
+              <Text style={styles.not}>Bir kulübü öne çıkar ya da hiç çıkmasın.</Text>
+              <View style={styles.aramaKutu}>
+                <Ionicons name="search" size={18} color={COLORS.textMuted} />
+                <TextInput
+                  style={styles.arama}
+                  value={kulupAra}
+                  onChangeText={setKulupAra}
+                  placeholder="Kulüp ara"
+                  placeholderTextColor={COLORS.textFaint}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+              </View>
+              {[...new Set([...Object.keys(taslak.kulupAyar || {}), ...kulupSonuclari])].map((ad) => (
+                <KulupSatiri key={ad} ad={ad} durum={(taslak.kulupAyar || {})[ad]} onSec={(d) => kulupAyarla(ad, d)} />
+              ))}
+            </View>
           ) : null}
 
-          {sekme === "detayli" ? (
-            <>
-              <KurulumBolum baslik="LİGLER (GÜNCEL ÜST LİGLER)">
-                {LIGLER.map((l) => (
-                  <View key={l.id} style={styles.agirlikSatir}>
-                    <Text style={styles.agirlikAd} numberOfLines={1}>{l.bayrak} {l.ad}</Text>
-                    <AgirlikCipleri deger={ligAgirligi(l.id)} onSec={(v) => ligAyarla(l.id, v)} />
-                  </View>
-                ))}
-              </KurulumBolum>
-              <KurulumBolum baslik="ÜLKELER (YUKARIDAKİ LİGLER DIŞINDAKİ KULÜPLER)">
-                {temel.kapsam ? <Text style={styles.not}>"{temel.ad}" profili sadece seçili liglerle sınırlı; buradaki ayarlar ancak "Dengeli", "Türkiye Ağırlıklı", "Nostalji" ya da "Dünya Futbolu" temelinde işe yarar.</Text> : null}
-                {ULKE_SATIRLARI.map((u) => (
-                  <View key={u.anahtar} style={styles.agirlikSatir}>
-                    <Text style={styles.agirlikAd} numberOfLines={1}>{u.bayrak} {u.ad}</Text>
-                    <AgirlikCipleri
-                      deger={taslak.ligAgirlik && taslak.ligAgirlik[u.anahtar] != null ? taslak.ligAgirlik[u.anahtar] : 100}
-                      onSec={(v) => ligAyarla(u.anahtar, v)}
-                    />
-                  </View>
-                ))}
-              </KurulumBolum>
-              <KurulumBolum baslik="KULÜPLER">
-                <Text style={styles.not}>Bir kulübü öne çıkar, her zaman dahil et ya da hiç çıkmasın.</Text>
-                <View style={styles.aramaKutu}>
-                  <Ionicons name="search" size={18} color={COLORS.textMuted} />
-                  <TextInput
-                    style={styles.arama}
-                    value={kulupAra}
-                    onChangeText={setKulupAra}
-                    placeholder="Kulüp ara"
-                    placeholderTextColor={COLORS.textFaint}
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    spellCheck={false}
-                  />
-                </View>
-                {[...new Set([...Object.keys(taslak.kulupAyar || {}), ...kulupSonuclari])].map((ad) => (
-                  <KulupSatiri key={ad} ad={ad} durum={(taslak.kulupAyar || {})[ad]} onSec={(d) => kulupAyarla(ad, d)} />
-                ))}
-              </KurulumBolum>
-              <KurulumBolum baslik="EN ERKEN DÖNEM">
-                <SecimCipleri
-                  secenekler={DONEM_SINIRI}
-                  secili={taslak.yilAraligi ? taslak.yilAraligi[0] : 0}
-                  onSec={(v) => guncelle({ yilAraligi: v ? [v, null] : null })}
-                />
-                <Text style={styles.not}>Seçilen yıldan önce futbolu bırakmış oyuncular çıkmaz.</Text>
-              </KurulumBolum>
-            </>
+          {online ? (
+            <Text style={[styles.not, { marginTop: SPACING.md }]}>
+              Dereceli maçlarda herkes aynı (Dengeli) havuzla oynar; bu seçim arkadaş odalarında geçerli.
+            </Text>
           ) : null}
         </ScrollView>
 
-        <View style={styles.alt}>
-          <Text style={[styles.havuz, havuz < 40 && { color: COLORS.danger }]}>
-            {havuz < 40
-              ? `Bu profille sadece ${havuz} oyuncu kalıyor — biraz genişlet.`
-              : `Bu profille ${havuz.toLocaleString("tr-TR")} oyuncu havuzda.`}
-            {online ? " Online odada sadece kulüp kapsamı uygulanır." : ""}
-          </Text>
+        <View style={[styles.alt, { paddingBottom: insets.bottom + SPACING.md }]}>
           {ayarlarModu ? (
             <SoundPressable style={styles.anaDugme} onPress={() => onVarsayilanYap && onVarsayilanYap(taslak)}>
               <Text style={styles.anaDugmeYazi}>KAYDET</Text>
@@ -348,25 +350,9 @@ export function EslesmeProfiliBolumu({ eslesme, online, not }) {
   );
 }
 
-function AgirlikCipleri({ deger, onSec }) {
-  return (
-    <View style={styles.agirlikCipler}>
-      {AGIRLIK_CIPLERI.map((a) => {
-        const aktif = deger === a.deger;
-        return (
-          <SoundPressable key={a.deger} style={[styles.aCip, aktif && styles.aCipAktif]} onPress={() => onSec(a.deger)}>
-            <Text style={[styles.aCipYazi, aktif && styles.aCipYaziAktif]}>{a.etiket}</Text>
-          </SoundPressable>
-        );
-      })}
-    </View>
-  );
-}
-
 const KULUP_DURUMLARI = [
   { deger: "one", etiket: "Öne çıkar", ikon: "star" },
-  { deger: "dahil", etiket: "Dahil", ikon: "checkmark" },
-  { deger: "haric", etiket: "Hariç", ikon: "close" },
+  { deger: "haric", etiket: "Hiç çıkmasın", ikon: "close" },
 ];
 function KulupSatiri({ ad, durum, onSec }) {
   return (
@@ -376,8 +362,9 @@ function KulupSatiri({ ad, durum, onSec }) {
       {KULUP_DURUMLARI.map((k) => {
         const aktif = durum === k.deger;
         return (
-          <SoundPressable key={k.deger} style={[styles.kDugme, aktif && styles.kDugmeAktif]} onPress={() => onSec(k.deger)} hitSlop={4}>
+          <SoundPressable key={k.deger} style={[styles.kDugme, aktif && styles.kDugmeAktif]} onPress={() => onSec(k.deger)} hitSlop={4} accessibilityLabel={`${ad}: ${k.etiket}`}>
             <Ionicons name={k.ikon} size={14} color={aktif ? COLORS.accentDark : COLORS.textMuted} />
+            <Text style={[styles.kDugmeYazi, aktif && { color: COLORS.accentDark }]}>{k.etiket}</Text>
           </SoundPressable>
         );
       })}
@@ -386,74 +373,89 @@ function KulupSatiri({ ad, durum, onSec }) {
 }
 
 const styles = StyleSheet.create({
-  kap: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 48 },
-  ust: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.lg, marginBottom: SPACING.md },
-  baslik: { ...TYPE.h1 },
-  altBaslik: { ...TYPE.caption, color: COLORS.accent, marginTop: 2 },
+  kap: { flex: 1, backgroundColor: COLORS.bg },
+  ust: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.lg, marginBottom: SPACING.xs },
+  baslik: { ...TYPE.h2 },
+  altBaslik: { ...TYPE.caption, marginTop: 2 },
   kapat: { padding: 4 },
-  sekmeler: {
-    flexDirection: "row", marginHorizontal: SPACING.lg, backgroundColor: COLORS.card,
-    borderRadius: RADIUS.md, padding: 4, gap: 4, borderWidth: 1, borderColor: COLORS.cardBorder,
+  icerik: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxxl },
+  eb: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: COLORS.textMuted, textTransform: "uppercase", marginTop: SPACING.lg, marginBottom: SPACING.sm },
+  ebIpucu: { letterSpacing: 0, textTransform: "none", fontWeight: "700", color: COLORS.textFaint },
+  not: { ...TYPE.caption, color: COLORS.textMuted, marginTop: SPACING.sm, lineHeight: 17 },
+
+  hazirlar: { gap: SPACING.sm, paddingRight: SPACING.lg },
+  hazir: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  hazirAktif: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  hazirYazi: { fontSize: 13, fontWeight: "800", color: COLORS.text },
+  hazirYaziAktif: { color: COLORS.accentDark },
+
+  izgara: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm },
+  karo: {
+    width: "23%", flexGrow: 1, minHeight: 78, alignItems: "center", justifyContent: "center", paddingVertical: 8, paddingHorizontal: 4,
+    borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
   },
-  sekme: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 42, borderRadius: RADIUS.sm },
-  sekmeAktif: { backgroundColor: COLORS.accent },
-  sekmeYazi: { ...TYPE.caption, fontWeight: "900", color: COLORS.textMuted },
-  sekmeYaziAktif: { color: COLORS.accentDark },
-  icerik: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
-  not: { ...TYPE.caption, color: COLORS.textMuted, marginTop: SPACING.xs, marginBottom: SPACING.sm },
-  kartlar: { gap: SPACING.sm },
-  kart: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md, minHeight: 64,
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2,
-    borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+  karoAcik: { borderColor: saydam(COLORS.accent, 0.6), backgroundColor: saydam(COLORS.accent, 0.1) },
+  karoCok: { borderColor: COLORS.accent, borderWidth: 2, backgroundColor: saydam(COLORS.accent, 0.22) },
+  karoKapali: { opacity: 0.5 },
+  karoBayrak: { fontSize: 22 },
+  karoAd: { fontSize: 11, fontWeight: "800", color: COLORS.text, textAlign: "center", marginTop: 2 },
+  karoDurum: { fontSize: 10, fontWeight: "700", color: COLORS.textFaint, marginTop: 1 },
+
+  seg: { flexDirection: "row", gap: 6 },
+  segDugme: {
+    flex: 1, minHeight: 42, alignItems: "center", justifyContent: "center", paddingHorizontal: 4,
+    borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
   },
-  kartAktif: { borderColor: COLORS.accent },
-  kartIkon: { fontSize: 24 },
-  kartAd: { ...TYPE.h3 },
-  kartAdAktif: { color: COLORS.accent },
-  kartAciklama: { ...TYPE.caption, marginTop: 2 },
+  segAktif: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  segYazi: { fontSize: 12, fontWeight: "800", color: COLORS.text, textAlign: "center" },
+  segYaziAktif: { color: COLORS.accentDark },
+
   takimSatir: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.card,
-    borderRadius: RADIUS.md, padding: SPACING.md, borderWidth: 1, borderColor: COLORS.cardBorder,
+    flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: COLORS.card,
+    borderRadius: RADIUS.md, paddingVertical: 8, paddingHorizontal: SPACING.md, borderWidth: 1, borderColor: COLORS.cardBorder,
   },
-  takimAd: { ...TYPE.h3, flex: 1 },
-  kucukDugme: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  kucukDugmeYazi: { ...TYPE.caption, color: COLORS.accent, fontWeight: "800" },
+  takimSol: { flex: 1, flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  takimAd: { ...TYPE.h3, fontSize: 15, flexShrink: 1 },
+  mini: { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
+  miniAktif: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  miniYazi: { fontSize: 12, fontWeight: "800", color: COLORS.text },
+  miniYaziAktif: { color: COLORS.accentDark },
   genisDugme: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 48,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 46,
     borderWidth: 1, borderStyle: "dashed", borderColor: COLORS.accent, borderRadius: RADIUS.md,
   },
   genisDugmeYazi: { ...TYPE.body, color: COLORS.accent, fontWeight: "800" },
-  sifirla: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center", marginTop: SPACING.lg, padding: SPACING.sm },
-  sifirlaYazi: { ...TYPE.caption },
-  agirlikSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: 6 },
-  agirlikAd: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flex: 1 },
-  agirlikCipler: { flexDirection: "row", gap: 4 },
-  aCip: {
-    minWidth: 50, minHeight: 34, alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8, paddingHorizontal: 6, backgroundColor: COLORS.card,
+
+  onizleme: {
+    marginTop: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: saydam(COLORS.accent, 0.45),
+    backgroundColor: saydam(COLORS.accent, 0.07), paddingVertical: SPACING.md, paddingHorizontal: SPACING.md, minHeight: 120,
   },
-  aCipAktif: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  aCipYazi: { fontSize: 12, fontWeight: "800", color: COLORS.textMuted },
-  aCipYaziAktif: { color: COLORS.accentDark },
+  onizlemeUst: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: 4 },
+  onizlemeBaslik: { fontSize: 11, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted, flex: 1 },
+  nitelik: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 },
+  nitelikYazi: { fontSize: 12, fontWeight: "800" },
+  cift: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+  ciftAd: { fontSize: 13, fontWeight: "800", color: COLORS.text, flexShrink: 1 },
+  ciftX: { fontSize: 12, color: COLORS.textFaint, marginHorizontal: 2 },
+
+  gelismisBaslik: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: SPACING.lg, paddingVertical: SPACING.sm },
+  gelismisYazi: { ...TYPE.caption, fontWeight: "800" },
   aramaKutu: {
     flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: COLORS.card,
     borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: SPACING.md,
-    minHeight: 46, marginBottom: SPACING.sm,
+    minHeight: 46, marginVertical: SPACING.sm,
   },
   arama: { flex: 1, color: COLORS.text, fontSize: 15, paddingVertical: 10 },
   kulupSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: 6 },
   kulupAd: { ...TYPE.caption, color: COLORS.text, fontWeight: "700", flex: 1 },
   kDugme: {
-    width: 36, height: 34, alignItems: "center", justifyContent: "center",
+    flexDirection: "row", alignItems: "center", gap: 4, height: 32, paddingHorizontal: 8,
     borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8, backgroundColor: COLORS.card,
   },
   kDugmeAktif: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  alt: {
-    padding: SPACING.lg, paddingBottom: SPACING.xl, borderTopWidth: 1, borderTopColor: COLORS.cardBorder,
-    backgroundColor: COLORS.bg, gap: SPACING.sm,
-  },
-  havuz: { ...TYPE.caption, textAlign: "center" },
+  kDugmeYazi: { fontSize: 11, fontWeight: "800", color: COLORS.textMuted },
+
+  alt: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, backgroundColor: COLORS.bg },
   anaDugme: { backgroundColor: COLORS.accent, borderRadius: RADIUS.md, minHeight: 52, alignItems: "center", justifyContent: "center" },
   anaDugmeYazi: { ...TYPE.button, color: COLORS.accentDark },
   ikinciDugme: {
