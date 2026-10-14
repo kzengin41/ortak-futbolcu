@@ -1,9 +1,9 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PressScale from "./ui/PressScale";
 import ModIkon from "./ModIkon";
-import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro } from "../lib/theme";
+import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro, saydam } from "../lib/theme";
 
 // ============================================================================
 // MOD KARTI + SEÇİM PENCERESİ — Paket 16, 5 Ekim 2026 (Kerem: "Online
@@ -24,16 +24,27 @@ import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro } from 
 // Renk yalnız ikon karosunda (mod grubunun tonu, bkz. lib/theme.js MOD_GRUBU);
 // kart yüzeyi tüm modlarda aynı — göz yormasın.
 // `mod.ikon`: components/ModIkon.js'teki özel ikon; yoksa Ionicons `mod.icon`.
+//
+// Paket 30 (14 Ekim 2026, Kerem: "tüm modlar sayfası halen çok karmaşık
+// görünüyor, oyun basitliği yok") — benchmark: NYT Games (tek dikey liste,
+// her oyun eşit ve sade), Chess.com (tek dokunuşla oyna, sonra "kiminle"),
+// iOS Ayarlar tipi gruplu liste. ModBolumu artık TEK bir yüzey: içindeki
+// kartlar ayrı ayrı kutu değil, ince çizgiyle ayrılmış satırlar. Başlık küçük
+// gri büyük harf (her bölüm başlığı ikonlu, kocaman h2 değil). İkon karoları
+// tek renk (temanın eylem rengi): renk yarışı yok, ekranın tek renkli büyük
+// alanı vitrin kartı. Açıklama tek satır.
 // ============================================================================
+const GrupBaglami = createContext(false);
 export function ModIkonu({ mod, boyut = 26, renk }) {
   return mod.ikon ? <ModIkon ad={mod.ikon} boyut={boyut} renk={renk} /> : <Ionicons name={mod.icon} size={boyut - 2} color={renk} />;
 }
 
-export function ModKarti({ mod, onPress, rozet, accessibilityLabel }) {
-  const c = MODE_COLORS[mod.colorKey] || MODE_COLORS.online;
+export function ModKarti({ mod, onPress, rozet, accessibilityLabel, son }) {
+  const grupta = useContext(GrupBaglami);
+  const c = { main: COLORS.accent };
   return (
     <PressScale
-      style={s.kart}
+      style={grupta ? [s.satir, !son && s.satirCizgi] : s.kart}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || mod.title}
@@ -48,27 +59,29 @@ export function ModKarti({ mod, onPress, rozet, accessibilityLabel }) {
             <View style={[s.rozet, { borderColor: c.main }]}><Text style={[s.rozetYazi, { color: c.main }]}>{rozet}</Text></View>
           ) : null}
         </View>
-        <Text style={s.cardDesc} numberOfLines={2}>{mod.desc}</Text>
+        <Text style={s.cardDesc} numberOfLines={1}>{mod.kisa || mod.desc}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
     </PressScale>
   );
 }
 
-export function ModBolumu({ baslik, ikon, children, style }) {
+export function ModBolumu({ baslik, children, style }) {
+  const dizi = React.Children.toArray(children).filter(Boolean);
   return (
     <View style={[s.section, style]}>
-      <View style={s.sectionTitleRow}>
-        <Ionicons name={ikon} size={16} color={COLORS.accent} />
-        <Text style={s.sectionTitle}>{baslik}</Text>
-      </View>
-      <View style={s.grid}>{children}</View>
+      {baslik ? <Text style={s.sectionTitle}>{baslik}</Text> : null}
+      <GrupBaglami.Provider value={true}>
+        <View style={s.grup}>
+          {dizi.map((c, i) => (React.isValidElement(c) ? React.cloneElement(c, { son: i === dizi.length - 1 }) : c))}
+        </View>
+      </GrupBaglami.Provider>
     </View>
   );
 }
 
 export function ModSecimPenceresi({ mod, soru = "Kiminle oynuyorsun?", secenekler = [], onClose, children, altYazi }) {
-  const c = mod ? MODE_COLORS[mod.colorKey] || MODE_COLORS.online : null;
+  const c = mod ? { main: COLORS.accent } : null;
   return (
     <Modal visible={!!mod} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={s.modalBackdrop} onPress={onClose}>
@@ -95,12 +108,12 @@ export function ModSecimPenceresi({ mod, soru = "Kiminle oynuyorsun?", secenekle
                             accessibilityLabel={opt.label}
                             onPress={() => { if (!opt.kapali) opt.onPress && opt.onPress(); }}
                           >
-                            <Ionicons name={opt.ikon || "play"} size={20} color={opt.kapali ? COLORS.textMuted : COLORS.accentDark} />
+                            <Ionicons name={opt.ikon || "play"} size={20} color={opt.kapali ? COLORS.textMuted : COLORS.accent} />
                             <View style={{ flex: 1 }}>
                               <Text style={[s.modalOptionText, opt.kapali && { color: COLORS.textMuted }]}>{opt.label}</Text>
                               {opt.alt ? <Text style={[s.modalOptionAlt, opt.kapali && { color: COLORS.textMuted }]}>{opt.alt}</Text> : null}
                             </View>
-                            {!opt.kapali ? <Ionicons name="chevron-forward" size={18} color={COLORS.accentDark} /> : null}
+                            {!opt.kapali ? <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} /> : null}
                           </PressScale>
                         </View>
                       );
@@ -133,24 +146,24 @@ export const modStilleri = StyleSheet.create({
 
 const s = StyleSheet.create({
   section: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SPACING.md, marginLeft: 4 },
-  sectionTitle: { ...TYPE.h2 },
-
-  grid: { gap: SPACING.sm },
+  sectionTitle: { color: COLORS.textMuted, fontWeight: "900", fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: SPACING.sm, marginLeft: 4 },
+  grup: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.lg, overflow: "hidden" },
+  satir: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingVertical: 13, paddingHorizontal: SPACING.md },
+  satirCizgi: { borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
   kart: {
     flexDirection: "row", alignItems: "center", gap: SPACING.md,
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
     borderRadius: RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.md,
     ...SHADOW.card,
   },
-  ikonKaro: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  ikonKaro: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   metin: { flex: 1, minWidth: 0 },
   baslikSatir: { flexDirection: "row", alignItems: "center", gap: 6 },
   rozet: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 6, paddingVertical: 2 },
   rozetYazi: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
 
   cardTitle: { ...TYPE.h3, flexShrink: 1 },
-  cardDesc: { fontSize: 12, fontWeight: "500", color: COLORS.textMuted, lineHeight: 16, marginTop: 2 },
+  cardDesc: { fontSize: 12.5, fontWeight: "600", color: COLORS.textMuted, lineHeight: 17, marginTop: 1 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: SPACING.xl },
   modalCard: {
@@ -159,7 +172,7 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderColor: COLORS.cardBorder,
     borderWidth: 1,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     alignItems: "center",
   },
@@ -167,17 +180,20 @@ const s = StyleSheet.create({
   modalTitle: { ...TYPE.h2, marginBottom: 4, textAlign: "center" },
   modalDesc: { ...TYPE.bodyMuted, textAlign: "center", marginBottom: SPACING.lg },
   modalOptions: { width: "100%", gap: SPACING.sm },
+  // Paket 30 — seçenekler sakin satır: 6 tane dolu renkli buton üst üste göz yoruyordu.
   modalOptionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: COLORS.accent,
+    gap: 12,
+    backgroundColor: saydam(COLORS.text, 0.04),
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     borderRadius: RADIUS.md,
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: 12,
+    paddingHorizontal: SPACING.md,
   },
-  modalOptionText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 14 },
-  modalOptionAlt: { color: COLORS.accentDark, fontWeight: "600", fontSize: 12, opacity: 0.8, marginTop: 2 },
+  modalOptionText: { color: COLORS.text, fontWeight: "900", fontSize: 15 },
+  modalOptionAlt: { color: COLORS.textMuted, fontWeight: "600", fontSize: 12, marginTop: 2 },
   modalOptionKapali: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
   kiminle: { ...TYPE.h3, alignSelf: "flex-start", marginBottom: 2 },
   rakipBaslik: { color: COLORS.textMuted, fontWeight: "900", fontSize: 11, letterSpacing: 1.5, marginTop: 6, marginBottom: 6 },

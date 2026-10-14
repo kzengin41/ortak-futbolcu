@@ -1,14 +1,15 @@
 import React, { useRef, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import GameBackground from "../components/GameBackground";
 import BackButton from "../components/BackButton";
+import PressScale from "../components/ui/PressScale";
 // Paket 16 — kart, bölüm ve "Kiminle oynuyorsun?" penceresi Online lobiyle ortak.
 import { ModKarti, ModBolumu, ModSecimPenceresi } from "../components/ModKarti";
-import { COLORS, SPACING, TYPE } from "../lib/theme";
-
-import DailyGoalsCard from "../components/DailyGoalsCard";
-import DailyPuzzleCard from "../components/DailyPuzzleCard";
-import GunlukOyunlarKarti from "../components/GunlukOyunlarKarti";
+import { Forma } from "../components/FormaDeseni";
+import GunlukSatiri from "../components/GunlukSatiri";
+import { COLORS, RADIUS, SPACING, TYPE, saydam } from "../lib/theme";
 // "Oyna" sekmesi — 30 Ağustos 2026'da alt menüye (bottom tab) geçişle birlikte
 // eski HomeScreen'den ayrıştırıldı: Online ve Ansiklopedi artık kendi
 // sekmeleri, oyuncu kartı + Ayarlar/Yardım artık Profilim sekmesinde — bu
@@ -29,7 +30,7 @@ const MODES = [
     ikon: "ortakKulup",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
     title: "Ortak Kulüp",
-    desc: "İki kulüpte (ya da kulüp + ülke) oynamış futbolcuyu rakibinden önce bul",
+    desc: "İki kulüp söylenir. İkisinde de oynamış futbolcuyu rakibinden önce bul.",
     icon: "shield-checkmark",
     colorKey: "teamTeam",
     id: "cpu",
@@ -48,11 +49,18 @@ const MODES = [
     key: "letters",
     ikon: "ilkHarf",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
-    title: "İlk Harften Bul",
+    title: "İlk Harf",
     desc: "Verilen baş harflerle başlayan futbolcuyu bul",
+    kisa: "Baş harflerden futbolcuyu bul",
     icon: "text",
     colorKey: "letters",
     id: "letterCpu",
+    // Paket 30 — Harf Zinciri ayrı kart değil, İlk Harf'in tek kişilik seçeneği.
+    options: [
+      { id: "letterCpu", rakip: "cpu", label: "CPU'ya karşı", alt: "Harfi gören ilk söyler" },
+      { id: "letterZincir", rakip: "tek", label: "Harf Zinciri", alt: "Son harften devam et, 3 canla en uzun zincir" },
+      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true, params: { mod: "letter" } },
+    ],
   },
   {
     // 4 Ekim 2026 (benchmark .28548) — İlk Harf zincirinin tek kişilik hâli.
@@ -71,6 +79,7 @@ const MODES = [
     grup: "bilgi",
     title: "Kim Bu Futbolcu?",
     desc: "Kartları çevir, gizli futbolcuyu bil",
+    kisa: "Kartları çevir, gizli futbolcuyu bil",
     icon: "help-circle",
     colorKey: "whoAmI",
     id: "whoAmICpu",
@@ -101,6 +110,7 @@ const MODES = [
     grup: "klasik",
     title: "5 Kulüp",
     desc: "5 büyük kulüpten kaçında oynadığını bil, en çok puanı topla",
+    kisa: "Futbolcu 5 kulübün kaçında oynadı?",
     icon: "podium",
     colorKey: "fiveClubs",
     // 12 Eylül 2026 (Kerem: "5 kulüp modu aslında cpu'ya karşı da
@@ -123,6 +133,7 @@ const MODES = [
     grup: "klasik",
     title: "Futbolcu XOX",
     desc: "3x3 ızgara, kareyi almak için ortak futbolcuyu söyle",
+    kisa: "Kareyi kapmak için ortak futbolcuyu söyle",
     icon: "grid",
     // 26 Eylül 2026 — eskiden "hotSeat" idi; "Tek Telefon 2 Kişi" ile aynı
     // renkteydi ve iki kart ayırt edilemiyordu (bkz. lib/theme.js notu).
@@ -140,14 +151,26 @@ const MODES = [
 // 28 Eylül 2026 — denetim bulgusu #7: "8 eşit ağırlıklı mod kartı, gruplama/öneri
 // yok". Kartlar üç başlık altında; en üstte tek dokunuşla oyuna sokan bir
 // "Hemen Oyna" kartı (Ortak Kulüp, CPU'ya karşı — ayarlar eşleşme profilinden).
-const RAKIP_BASLIK = { cpu: "CPU", yanimdaki: "YANIMDAKİLERLE", online: "ONLINE" };
-const RAKIP_IKON = { cpu: "hardware-chip", yanimdaki: "people", online: "globe" };
+const RAKIP_BASLIK = { cpu: "CPU", yanimdaki: "YANIMDAKİLERLE", online: "ONLINE", tek: "TEK BAŞINA" };
+const RAKIP_IKON = { cpu: "hardware-chip", yanimdaki: "people", online: "globe", tek: "person" };
 
-const GRUPLAR = [
-  { id: "klasik", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
-  { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
-  { id: "arkadas", baslik: "Arkadaşınla Aynı Telefonda", ikon: "people" },
-];
+// ============================================================================
+// Paket 30 (14 Ekim 2026) — TÜM MODLAR BAŞTAN. Kerem: "oyunun tüm modlar sayfası
+// halen çok karmaşık görünüyor, oyun basitliği yok … üstteki günlük şeyler
+// falan aşırı kalabalık, onlar kesin kalksın"; düzen kararı: "oyun listesi ama
+// 3-2-1 ortak kulüp ön planda olacak. diğer modlar ilk bakışta 3-2-1 kadar
+// dikkat çekmeyecek"; günlükler "tüm modlar içinde tek satır".
+// ESKİ: başlık + 1 büyük + 4 küçük günlük kutu + açık görev kartı + 3 bölüm
+// başlığı + 6 eşit kart (+ Sunucu ve Harf Zinciri ayrı kartlar) ≈ 15 öğe.
+// YENİ (benchmark: NYT Games tek liste, Chess.com tek dokunuşla oyna,
+// Rogue Company "tek büyük oyna + mod değiştir"):
+//   1. VİTRİN — 3-2-1 Ortak Kulüp: temanın kulüp rengi, forması, tek OYNA.
+//   2. GÜNLÜK — tek satır (5 nokta = bugünkü günlük oyunlar), dokununca pencere.
+//   3. DİĞER OYUNLAR — 4 satırlık sakin liste (Kim Bu, 5 Kulüp, XOX, İlk Harf).
+// Sunucu modu Ortak Kulüp → "Yanımdakiler"de; Harf Zinciri İlk Harf'in içinde.
+// ============================================================================
+const VITRIN = MODES.find((m) => m.key === "teamTeam");
+const DIGERLERI = ["whoAmI", "fiveClubs", "xox", "letters"].map((k) => MODES.find((m) => m.key === k));
 
 // 3 Ekim 2026 — bu ekran artık ana sayfa DEĞİL, "Tüm Modlar" sayfası (yeni ana
 // sayfa: screens/AnaSayfaScreen.js). Seviye şeridi, "Hemen Oyna" kartı ve
@@ -195,37 +218,25 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
     <GameBackground style={styles.container}>
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
       >
-        {/* 12 Eylül 2026 — VİTRİN DÜZENLEMESİ.
-            Denetimden: "Uygulamayı açan kullanıcının ilk gördüğü ekran
-            ilerlemeye dair tek bir piksel göstermiyor" ve "40px '3-2-1'
-            hiçbir iş yapmıyor". Marka bloğu compact'e çekildi, yerine
-            seviye/XP/seri şeridi ve günlük görev kartı geldi. */}
         <View style={styles.baslikSatiri}>
           {onBack ? <BackButton onPress={onBack} /> : null}
           <Text style={styles.sayfaBaslik}>Tüm Modlar</Text>
         </View>
 
-        <View style={styles.ustBloklar}>
-          {/* 12 Eylül 2026 — Günün Bulmacası: geri gelme sebebi. Görev
-              kartının ÜSTÜNDE duruyor çünkü günde bir kez ve süreli. */}
-          <DailyPuzzleCard onPress={onDailyPuzzle} />
-          {/* 4 Ekim 2026 — Günlük 5 Kulüp + Günlük Izgara (.29283, .29364) */}
-          {onGunlukOyun ? (
-            <GunlukOyunlarKarti onKadro={() => onGunlukOyun("gunlukKadro")} onKimBu={() => onGunlukOyun("gunlukKimBu")} onBesKulup={() => onGunlukOyun("gunluk5")} onIzgara={() => onGunlukOyun("gunlukIzgara")} />
-          ) : null}
-          <DailyGoalsCard />
+        <Vitrin mod={VITRIN} onPress={() => handleCardPress(VITRIN)} />
+
+        <View style={styles.gunluk}>
+          <GunlukSatiri onOyun={(id) => (id === "dailyPuzzle" ? onDailyPuzzle && onDailyPuzzle() : onGunlukOyun && onGunlukOyun(id))} />
         </View>
 
-        {GRUPLAR.map((g) => (
-          <ModBolumu key={g.id} baslik={g.baslik} ikon={g.ikon}>
-            {MODES.filter((m) => m.grup === g.id).map((m) => (
-              <ModKarti key={m.key} mod={m} onPress={() => handleCardPress(m)} />
-            ))}
-          </ModBolumu>
-        ))}
+        <ModBolumu baslik="Diğer oyunlar">
+          {DIGERLERI.map((m) => (
+            <ModKarti key={m.key} mod={m} onPress={() => handleCardPress(m)} />
+          ))}
+        </ModBolumu>
       </Animated.ScrollView>
 
       {/* 4 Ekim 2026 (.28743) — ilk soru "kiminle?": CPU / Yanımdaki / Online */}
@@ -249,12 +260,55 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
   );
 }
 
+// Paket 30 — 3-2-1 Ortak Kulüp vitrini: ekranın TEK renkli büyük alanı.
+// Zemin temanın kulüp rengi (GS kırmızısı, FB laciverti…), sağda kulübün forması,
+// tek eylem: OYNA (temanın eylem rengi; GS'de sarı üstüne kırmızı yazı).
+function Vitrin({ mod, onPress }) {
+  return (
+    <PressScale style={styles.vitrin} onPress={onPress} accessibilityRole="button" accessibilityLabel="3-2-1 Ortak Kulüp, oyna">
+      <LinearGradient
+        colors={[saydam("#FFFFFF", 0.12), saydam("#FFFFFF", 0), saydam("#000000", 0.32)]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <Forma boyut={172} style={styles.vitrinForma} />
+      <View style={styles.vitrinIc}>
+        <Text style={styles.vitrinUst}>3-2-1 · ANA OYUN</Text>
+        <Text style={styles.vitrinBaslik}>{mod.title}</Text>
+        <Text style={styles.vitrinAciklama}>{mod.desc}</Text>
+        <View style={styles.oyna}>
+          <Ionicons name="play" size={18} color={COLORS.accentDark} />
+          <Text style={styles.oynaYazi}>OYNA</Text>
+        </View>
+      </View>
+    </PressScale>
+  );
+}
+
 const styles = StyleSheet.create({
-  ustBloklar: { gap: SPACING.md, marginBottom: SPACING.xxl },
-  baslikSatiri: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.lg, gap: SPACING.sm },
-  sayfaBaslik: { ...TYPE.h1 },
   // 12 Eylül 2026: paddingTop 50 SPACING ölçeğinde olmayan bir değerdi;
   // marka bloğu compact'e çekildiği için üst boşluk da ölçeğe döndü.
   container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl },
+  baslikSatiri: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.lg, gap: SPACING.sm },
+  sayfaBaslik: { ...TYPE.h1 },
 
+  vitrin: {
+    marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, overflow: "hidden",
+    backgroundColor: COLORS.marka, minHeight: 216,
+    borderWidth: 1, borderColor: saydam(COLORS.markaUst, 0.14),
+  },
+  vitrinForma: { position: "absolute", right: -40, top: 34, transform: [{ rotate: "9deg" }] },
+  vitrinIc: { padding: SPACING.xl, paddingRight: 120, gap: 6 },
+  vitrinUst: { color: COLORS.marka2, fontWeight: "900", fontSize: 12, letterSpacing: 2 },
+  vitrinBaslik: { color: COLORS.markaUst, fontWeight: "900", fontSize: 32, lineHeight: 36, letterSpacing: -0.5 },
+  vitrinAciklama: { color: COLORS.markaUst, opacity: 0.86, fontWeight: "600", fontSize: 14, lineHeight: 20 },
+  oyna: {
+    marginTop: SPACING.md, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: COLORS.accent, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 26,
+  },
+  oynaYazi: { color: COLORS.accentDark, fontWeight: "900", fontSize: 16, letterSpacing: 1 },
+
+  gunluk: { marginHorizontal: SPACING.xl, marginTop: SPACING.lg, marginBottom: SPACING.xl },
 });

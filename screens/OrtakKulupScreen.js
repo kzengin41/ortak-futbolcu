@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
-import { COLORS, MODE_COLORS } from "../lib/theme";
+import { COLORS, MODE_COLORS, saydam } from "../lib/theme";
 import GameBackground from "../components/GameBackground";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
@@ -472,12 +472,12 @@ export default function OrtakKulupScreen({
       <View style={styles.ustSatir}>
         <Pressable onPress={() => setShowReport(true)} hitSlop={20}>
           <View style={styles.bildir}>
-            <Ionicons name="flag" size={13} color="#FFB020" />
+            <Ionicons name="flag" size={13} color={COLORS.textMuted} />
             <Text style={styles.bildirYazi}>BİLDİR</Text>
           </View>
         </Pressable>
         <Pressable onPress={phase === "gameOver" ? (onExitSilent || onExit) : onExit} hitSlop={20}>
-          <View style={styles.kapat}><Ionicons name="close" size={22} color="#FF5D5D" /></View>
+          <View style={styles.kapat}><Ionicons name="close" size={22} color={COLORS.danger} /></View>
         </Pressable>
       </View>
 
@@ -703,68 +703,68 @@ export default function OrtakKulupScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0B1620", padding: 20 },
+  container: { flex: 1, backgroundColor: COLORS.bg, padding: 20 },
   ustSatir: { width: "100%", paddingTop: 6, marginBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  bildir: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,100,100,0.2)", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 },
-  bildirYazi: { color: "#FFB020", fontSize: 12, fontWeight: "800" },
-  kapat: { backgroundColor: "rgba(255,93,93,0.15)", borderRadius: 16, padding: 6 },
+  bildir: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: saydam(COLORS.text, 0.08), paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 },
+  bildirYazi: { color: COLORS.textMuted, fontSize: 12, fontWeight: "800" },
+  kapat: { backgroundColor: saydam(COLORS.danger, 0.15), borderRadius: 16, padding: 6 },
 
   skorSerit: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   skorTaraf: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 110 },
   skorEtiket: { color: COLORS.textMuted, fontSize: 12, fontWeight: "800", letterSpacing: 1 },
   skorSayi: { color: COLORS.text, fontSize: 28, fontWeight: "900" },
   skorHedef: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
-  cpuAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: "#16222E" },
+  cpuAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.card },
   cpuEmoji: { fontSize: 20, textAlign: "center" },
   cpuEmojiKucuk: { fontSize: 18 },
 
-  teamsCard: { flexDirection: "row", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 18, padding: 18, alignItems: "center", justifyContent: "center" },
-  teamName: { color: "#F3F7FA", fontSize: 14, fontWeight: "900", textAlign: "center", marginTop: 8 },
+  teamsCard: { flexDirection: "row", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 18, padding: 18, alignItems: "center", justifyContent: "center" },
+  teamName: { color: COLORS.text, fontSize: 14, fontWeight: "900", textAlign: "center", marginTop: 8 },
   bayrak: { fontSize: 50 },
-  plus: { color: "#7CFF5C", fontWeight: "900", fontSize: 20, marginHorizontal: 8 },
+  plus: { color: COLORS.accent, fontWeight: "900", fontSize: 20, marginHorizontal: 8 },
   bilgiSatir: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
-  ortakCip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(124,255,92,0.10)", borderWidth: 1, borderColor: "rgba(124,255,92,0.35)" },
+  ortakCip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: saydam(COLORS.accent, 0.10), borderWidth: 1, borderColor: saydam(COLORS.accent, 0.35) },
   ortakYazi: { color: COLORS.text, fontSize: 13, fontWeight: "800" },
   kural: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 6 },
 
   sureSatir: { flexDirection: "row", alignItems: "center", gap: 8 },
   sureYazi: { color: COLORS.textMuted, fontSize: 13, fontWeight: "800", width: 44, textAlign: "right" },
   cpuDurum: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 6 },
-  cpuBalon: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, padding: 10, borderRadius: 14, backgroundColor: "#121C27", borderWidth: 1, borderColor: "#28394B" },
+  cpuBalon: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, padding: 10, borderRadius: 14, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder },
   cpuBalonYazi: { flex: 1, color: COLORS.textMuted, fontSize: 13, fontWeight: "600" },
 
-  girdiSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, backgroundColor: "#16222E", borderRadius: 14, borderWidth: 2, borderColor: "#7CFF5C", paddingHorizontal: 6, height: 54 },
-  girdi: { flex: 1, color: "#F3F7FA", fontSize: 16, fontWeight: "600", paddingVertical: 0, paddingHorizontal: 6 },
-  mic: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#0B1620" },
-  micAktif: { backgroundColor: "#FF5D5D" },
-  gonder: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#7CFF5C" },
-  micBuyuk: { marginTop: 12, height: 76, borderRadius: 20, backgroundColor: "#7CFF5C", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  micBuyukYazi: { color: "#0B1620", fontWeight: "900", fontSize: 18 },
+  girdiSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 2, borderColor: COLORS.accent, paddingHorizontal: 6, height: 54 },
+  girdi: { flex: 1, color: COLORS.text, fontSize: 16, fontWeight: "600", paddingVertical: 0, paddingHorizontal: 6 },
+  mic: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg },
+  micAktif: { backgroundColor: COLORS.danger },
+  gonder: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.accent },
+  micBuyuk: { marginTop: 12, height: 76, borderRadius: 20, backgroundColor: COLORS.accent, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  micBuyukYazi: { color: COLORS.accentDark, fontWeight: "900", fontSize: 18 },
   degistir: { alignSelf: "center", padding: 10 },
-  degistirYazi: { color: "#7CFF5C", fontSize: 13, fontWeight: "700" },
-  oneriKutu: { marginTop: 4, backgroundColor: "#16222E", borderRadius: 12, borderWidth: 1, borderColor: "#28394B" },
+  degistirYazi: { color: COLORS.accent, fontSize: 13, fontWeight: "700" },
+  oneriKutu: { marginTop: 4, backgroundColor: COLORS.card, borderRadius: 12, borderWidth: 1, borderColor: COLORS.cardBorder },
   oneri: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 11, paddingHorizontal: 12 },
-  oneriYazi: { color: "#F3F7FA", fontSize: 15, fontWeight: "600", flex: 1 },
+  oneriYazi: { color: COLORS.text, fontSize: 15, fontWeight: "600", flex: 1 },
   hata: { color: "#FF8A8A", fontSize: 13, fontWeight: "700", marginTop: 8, textAlign: "center" },
   kilitYazi: { color: COLORS.textMuted, fontSize: 14, fontWeight: "700", textAlign: "center", marginTop: 16 },
   altSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14 },
   haklar: { flexDirection: "row", alignItems: "center", gap: 5 },
   hakNokta: { width: 10, height: 10, borderRadius: 5 },
   hakYazi: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", marginLeft: 4 },
-  pas: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14, borderWidth: 1.5, borderColor: "#28394B", backgroundColor: "#16222E" },
-  pasYazi: { color: "#F3F7FA", fontWeight: "800", fontSize: 14 },
+  pas: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  pasYazi: { color: COLORS.text, fontWeight: "800", fontSize: 14 },
 
   secimKutu: { marginTop: 12, alignItems: "stretch" },
-  secimBaslik: { color: "#F3F7FA", fontSize: 22, fontWeight: "900", textAlign: "center" },
+  secimBaslik: { color: COLORS.text, fontSize: 22, fontWeight: "900", textAlign: "center" },
   secimAlt: { color: COLORS.textMuted, fontSize: 13, fontWeight: "600", textAlign: "center", marginTop: 6 },
 
-  resultText: { color: "#F3F7FA", fontWeight: "900", fontSize: 18, textAlign: "center" },
+  resultText: { color: COLORS.text, fontWeight: "900", fontSize: 18, textAlign: "center" },
   tepki: { color: COLORS.textMuted, fontSize: 14, fontStyle: "italic", fontWeight: "600", marginTop: 6, textAlign: "center" },
-  showAnswersBtn: { borderColor: "#7CFF5C", borderWidth: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18, marginTop: 16 },
-  showAnswersBtnText: { color: "#7CFF5C", fontSize: 13, fontWeight: "700" },
-  answersBox: { height: 220, width: "100%", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 14, marginTop: 12 },
+  showAnswersBtn: { borderColor: COLORS.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18, marginTop: 16 },
+  showAnswersBtnText: { color: COLORS.accent, fontSize: 13, fontWeight: "700" },
+  answersBox: { height: 220, width: "100%", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, marginTop: 12 },
   answersBoxRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
-  answersBoxItem: { color: "#F3F7FA", fontSize: 14, fontWeight: "700" },
-  primaryBtn: { alignSelf: "stretch", backgroundColor: "#7CFF5C", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 18 },
-  primaryBtnText: { color: "#0B1620", fontWeight: "900", textTransform: "uppercase", fontSize: 15 },
+  answersBoxItem: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
+  primaryBtn: { alignSelf: "stretch", backgroundColor: COLORS.accent, borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 18 },
+  primaryBtnText: { color: COLORS.accentDark, fontWeight: "900", textTransform: "uppercase", fontSize: 15 },
 });

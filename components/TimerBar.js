@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, Animated, StyleSheet } from "react-native";
+import { COLORS } from "../lib/theme";
 
 export default function TimerBar({ current, total }) {
   const widthAnim = useRef(new Animated.Value(Math.max(0, current / total))).current;
@@ -15,7 +16,7 @@ export default function TimerBar({ current, total }) {
 
   const color = widthAnim.interpolate({
     inputRange: [0, 0.3, 1],
-    outputRange: ["#FF5D5D", "#FFB020", "#7CFF5C"]
+    outputRange: ["#FF5D5D", "#FFB020", COLORS.accent]
   });
 
   return (
@@ -34,13 +35,13 @@ export default function TimerBar({ current, total }) {
 const styles = StyleSheet.create({
   container: {
     height: 12,
-    backgroundColor: "#0B1620",
+    backgroundColor: COLORS.bg,
     borderRadius: 6,
     overflow: "hidden",
     marginHorizontal: 16,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: "#16222E",
+    borderColor: COLORS.card,
   },
   bar: {
     height: "100%",

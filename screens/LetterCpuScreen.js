@@ -3,7 +3,7 @@ import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI, YONTEM_SECENEKLERI } from "../lib/modAyarlari";
-import { MODE_COLORS } from "../lib/theme";
+import { MODE_COLORS, COLORS } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, Animated, Easing, Modal, ScrollView, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -734,7 +734,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
 
           {!atananHarfler && (
             <SoundPressable style={[styles.randomLetterBtn, { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }]} onPress={handleRandomLetter}>
-              <Ionicons name="shuffle" size={16} color="#7CFF5C" />
+              <Ionicons name="shuffle" size={16} color={COLORS.accent} />
               <Text style={styles.randomLetterBtnText}>Rastgele Ata</Text>
             </SoundPressable>
           )}
@@ -803,7 +803,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
             <View style={styles.fuseContainer}>
               <Animated.View style={[styles.fuseBar, {
                 width: fuseAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
-                backgroundColor: fuseAnim.interpolate({ inputRange: [0, 0.3, 1], outputRange: ["#FF5D5D", "#FFB020", "#7CFF5C"] })
+                backgroundColor: fuseAnim.interpolate({ inputRange: [0, 0.3, 1], outputRange: [COLORS.danger, COLORS.cta, COLORS.accent] })
               }]} />
               <Text style={styles.fuseText}>{timeLeft} saniye</Text>
             </View>
@@ -820,7 +820,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 spellCheck={false}
                 style={styles.input}
                 placeholder="Örn: Abdülkerim Bardakcı"
-                placeholderTextColor="#8CA0B3"
+                placeholderTextColor={COLORS.textMuted}
                 value={answerInput}
                 onChangeText={setAnswerInput}
                 autoFocus
@@ -839,7 +839,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                   <Pressable style={[styles.primaryBtn, { flex: 1, marginRight: 8, paddingVertical: 12 }]} onPress={checkUserGuess}>
                     <Text style={[styles.primaryBtnText, { fontSize: 14 }]}>Gönder</Text>
                   </Pressable>
-                  <Pressable style={[styles.primaryBtn, { flex: 1, marginLeft: 8, paddingVertical: 12, backgroundColor: "#FF5D5D" }]} onPress={() => {
+                  <Pressable style={[styles.primaryBtn, { flex: 1, marginLeft: 8, paddingVertical: 12, backgroundColor: COLORS.danger }]} onPress={() => {
                     if (timerRef.current) clearInterval(timerRef.current);
                     awardPoint("cpu", "Pes ettin!");
                   }}>
@@ -891,7 +891,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
           {winningPlayer && <Text style={styles.winnerName}>{winningPlayer.name}</Text>}
             
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: "#FFB020", marginTop: 16 }]}
+              style={[styles.primaryBtn, { backgroundColor: COLORS.cta, marginTop: 16 }]}
               onPress={() => {
                 setAnswersSnapshot({ userLetter, cpuLetter });
                 setShowAnswers(true);
@@ -907,8 +907,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     
       <Modal visible={showAnswers} transparent animationType="slide" onRequestClose={() => setShowAnswers(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', padding: 20, paddingTop: 60 }}>
-          <View style={{ backgroundColor: '#16222E', flex: 1, borderRadius: 20, padding: 20, borderColor: '#28394B', borderWidth: 2 }}>
-            <Text style={{ color: '#F3F7FA', fontSize: 20, fontWeight: '900', marginBottom: 16 }}>Olası Cevaplar</Text>
+          <View style={{ backgroundColor: COLORS.card, flex: 1, borderRadius: 20, padding: 20, borderColor: COLORS.cardBorder, borderWidth: 2 }}>
+            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '900', marginBottom: 16 }}>Olası Cevaplar</Text>
             <ScrollView>
               {filteredPlayers.filter(p => {
                 // NOT: burada önceden tanımsız bir `chainLetter` değişkeni
@@ -942,9 +942,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                   return (first === a && last === b) || (first === b && last === a);
                 }
               }).slice(0, 50).map(p => (
-                <Text key={p.name} style={{ color: '#7CFF5C', fontSize: 16, marginBottom: 8 }}>{p.name}</Text>
+                <Text key={p.name} style={{ color: COLORS.accent, fontSize: 16, marginBottom: 8 }}>{p.name}</Text>
               ))}
-              <Text style={{ color: '#8CA0B3', fontSize: 12, marginTop: 10 }}>* Sadece en popüler 50 kişi listelenmiştir.</Text>
+              <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 10 }}>* Sadece en popüler 50 kişi listelenmiştir.</Text>
             </ScrollView>
             <Pressable style={[styles.primaryBtn, { marginTop: 20 }]} onPress={() => setShowAnswers(false)}>
               <Text style={styles.primaryBtnText}>Kapat</Text>
@@ -959,74 +959,74 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0B1620", padding: 20 },
+  container: { flex: 1, backgroundColor: COLORS.bg, padding: 20 },
   header: { marginTop: 40, marginBottom: 12 },
-  title: { color: "#F3F7FA", fontSize: 24, fontWeight: "900", textAlign: "center", marginBottom: 12 },
-  scoreRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, backgroundColor: "#16222E", paddingVertical: 10, borderRadius: 12, borderColor: "#28394B", borderWidth: 1 },
-  scoreText: { color: "#7CFF5C", fontWeight: "900", fontSize: 16 },
+  title: { color: COLORS.text, fontSize: 24, fontWeight: "900", textAlign: "center", marginBottom: 12 },
+  scoreRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, backgroundColor: COLORS.card, paddingVertical: 10, borderRadius: 12, borderColor: COLORS.cardBorder, borderWidth: 1 },
+  scoreText: { color: COLORS.accent, fontWeight: "900", fontSize: 16 },
 
-  setupCard: { backgroundColor: "#16222E", padding: 20, borderRadius: 20, borderColor: "#28394B", borderWidth: 2 },
-  setupTitle: { color: "#F3F7FA", fontSize: 18, fontWeight: "900", marginBottom: 12 },
+  setupCard: { backgroundColor: COLORS.card, padding: 20, borderRadius: 20, borderColor: COLORS.cardBorder, borderWidth: 2 },
+  setupTitle: { color: COLORS.text, fontSize: 18, fontWeight: "900", marginBottom: 12 },
   setupOptions: { gap: 10 },
-  setupBtn: { padding: 16, borderRadius: 12, borderWidth: 2, borderColor: "#28394B", backgroundColor: "#0B1620" },
-  setupBtnActive: { borderColor: "#7CFF5C", backgroundColor: "#172431" },
-  setupBtnText: { color: "#8CA0B3", fontSize: 16, fontWeight: "900" },
-  setupBtnTextActive: { color: "#7CFF5C" },
-  setupBtnDesc: { color: "#8CA0B3", fontSize: 12, marginTop: 4 },
+  setupBtn: { padding: 16, borderRadius: 12, borderWidth: 2, borderColor: COLORS.cardBorder, backgroundColor: COLORS.bg },
+  setupBtnActive: { borderColor: COLORS.accent, backgroundColor: COLORS.card },
+  setupBtnText: { color: COLORS.textMuted, fontSize: 16, fontWeight: "900" },
+  setupBtnTextActive: { color: COLORS.accent },
+  setupBtnDesc: { color: COLORS.textMuted, fontSize: 12, marginTop: 4 },
   
   setupOptionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  setupPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: "#28394B", backgroundColor: "#0B1620" },
-  setupPillActive: { borderColor: "#7CFF5C", backgroundColor: "#172431" },
-  setupPillText: { color: "#8CA0B3", fontSize: 13, fontWeight: "700" },
-  setupPillTextActive: { color: "#7CFF5C" },
+  setupPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.bg },
+  setupPillActive: { borderColor: COLORS.accent, backgroundColor: COLORS.card },
+  setupPillText: { color: COLORS.textMuted, fontSize: 13, fontWeight: "700" },
+  setupPillTextActive: { color: COLORS.accent },
   
-  poolSizeText: { color: "#F3F7FA", fontSize: 12, fontStyle: "italic", marginTop: 16, textAlign: "center" },
-  startBtn: { backgroundColor: "#7CFF5C", padding: 16, borderRadius: 16, alignItems: "center", marginTop: 24 },
-  startBtnText: { color: "#0B1620", fontWeight: "900", fontSize: 18 },
+  poolSizeText: { color: COLORS.text, fontSize: 12, fontStyle: "italic", marginTop: 16, textAlign: "center" },
+  startBtn: { backgroundColor: COLORS.accent, padding: 16, borderRadius: 16, alignItems: "center", marginTop: 24 },
+  startBtnText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 18 },
   atandiKutu: { alignItems: "center", justifyContent: "center", paddingVertical: 36, gap: 8 },
-  atandiBaslik: { color: "#8CA0B3", fontSize: 13, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase" },
+  atandiBaslik: { color: COLORS.textMuted, fontSize: 13, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase" },
   atandiSatir: { flexDirection: "row", alignItems: "center", gap: 16 },
-  atandiHarf: { color: "#7CFF5C", fontSize: 64, fontWeight: "900" },
-  atandiAyrac: { color: "#8CA0B3", fontSize: 28, fontWeight: "900" },
-  atandiAlt: { color: "#8CA0B3", fontSize: 13, fontWeight: "600" },
-  randomLetterBtn: { width: "100%", borderColor: "#7CFF5C", borderWidth: 1.5, borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 16, marginBottom: 4 },
-  randomLetterBtnText: { color: "#7CFF5C", fontWeight: "800", fontSize: 15 },
+  atandiHarf: { color: COLORS.accent, fontSize: 64, fontWeight: "900" },
+  atandiAyrac: { color: COLORS.textMuted, fontSize: 28, fontWeight: "900" },
+  atandiAlt: { color: COLORS.textMuted, fontSize: 13, fontWeight: "600" },
+  randomLetterBtn: { width: "100%", borderColor: COLORS.accent, borderWidth: 1.5, borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 16, marginBottom: 4 },
+  randomLetterBtnText: { color: COLORS.accent, fontWeight: "800", fontSize: 15 },
 
   board: { flex: 1, alignItems: "center", marginTop: 20 },
-  instruction: { color: "#F3F7FA", fontSize: 22, fontWeight: "900", marginBottom: 8 },
-  instructionSub: { color: "#8CA0B3", fontSize: 13, textAlign: "center", marginBottom: 24, paddingHorizontal: 20 },
+  instruction: { color: COLORS.text, fontSize: 22, fontWeight: "900", marginBottom: 8 },
+  instructionSub: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", marginBottom: 24, paddingHorizontal: 20 },
   keyboard: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6 },
-  keyBtn: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 8, width: "13%", aspectRatio: 1, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  keyBtnText: { color: "#7CFF5C", fontSize: 20, fontWeight: "900" },
+  keyBtn: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2, borderRadius: 8, width: "13%", aspectRatio: 1, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  keyBtnText: { color: COLORS.accent, fontSize: 20, fontWeight: "900" },
 
-  lettersCard: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 16, padding: 20, paddingBottom: 30, marginTop: 20, marginBottom: 20 },
+  lettersCard: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2, borderRadius: 16, padding: 20, paddingBottom: 30, marginTop: 20, marginBottom: 20 },
   letterBox: { alignItems: "center" },
-  letterLabel: { color: "#8CA0B3", fontSize: 12, fontWeight: "700", marginBottom: 8 },
-  letterValue: { color: "#F3F7FA", fontSize: 48, fontWeight: "900" },
-  harfKurali: { position: "absolute", bottom: 6, left: 0, right: 0, textAlign: "center", color: "#8CA0B3", fontSize: 12, fontWeight: "700" },
-  letterPlus: { color: "#7CFF5C", fontSize: 32, fontWeight: "900", marginHorizontal: 24 },
+  letterLabel: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  letterValue: { color: COLORS.text, fontSize: 48, fontWeight: "900" },
+  harfKurali: { position: "absolute", bottom: 6, left: 0, right: 0, textAlign: "center", color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
+  letterPlus: { color: COLORS.accent, fontSize: 32, fontWeight: "900", marginHorizontal: 24 },
   
-  chainCard: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 2, borderRadius: 16, padding: 20, marginTop: 20, marginBottom: 20, alignItems: "center" },
-  chainLabel: { color: "#8CA0B3", fontSize: 14, fontWeight: "700", marginBottom: 4 },
-  chainValue: { color: "#7CFF5C", fontSize: 54, fontWeight: "900" },
-  chainHistoryBox: { marginTop: 16, width: "100%", maxHeight: 100, overflow: "hidden", borderTopWidth: 1, borderTopColor: "#28394B", paddingTop: 10 },
-  chainHistoryText: { color: "#F3F7FA", fontSize: 13, textAlign: "center", marginVertical: 2 },
+  chainCard: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 2, borderRadius: 16, padding: 20, marginTop: 20, marginBottom: 20, alignItems: "center" },
+  chainLabel: { color: COLORS.textMuted, fontSize: 14, fontWeight: "700", marginBottom: 4 },
+  chainValue: { color: COLORS.accent, fontSize: 54, fontWeight: "900" },
+  chainHistoryBox: { marginTop: 16, width: "100%", maxHeight: 100, overflow: "hidden", borderTopWidth: 1, borderTopColor: COLORS.cardBorder, paddingTop: 10 },
+  chainHistoryText: { color: COLORS.text, fontSize: 13, textAlign: "center", marginVertical: 2 },
 
-  fuseContainer: { height: 24, backgroundColor: "#0B1620", borderRadius: 12, borderColor: "#28394B", borderWidth: 1, overflow: "hidden", marginBottom: 16, position: "relative" },
+  fuseContainer: { height: 24, backgroundColor: COLORS.bg, borderRadius: 12, borderColor: COLORS.cardBorder, borderWidth: 1, overflow: "hidden", marginBottom: 16, position: "relative" },
   fuseBar: { height: "100%" },
   fuseText: { position: "absolute", width: "100%", textAlign: "center", color: "#FFF", fontSize: 12, fontWeight: "900", lineHeight: 22, textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 2 },
 
   inputArea: { flex: 1, marginTop: 10 },
-  input: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 14, padding: 16, color: "#F3F7FA", fontSize: 16, marginBottom: 12 },
-  suggestBox: { marginTop: -8, marginBottom: 12, backgroundColor: "#0A141C", borderColor: "#28394B", borderWidth: 1, borderRadius: 12, overflow: "hidden" },
-  suggestRow: { paddingVertical: 12, paddingHorizontal: 16, borderBottomColor: "#1B2A38", borderBottomWidth: 1 },
-  suggestText: { color: "#7CFF5C", fontSize: 14, fontWeight: "600" },
+  input: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, padding: 16, color: COLORS.text, fontSize: 16, marginBottom: 12 },
+  suggestBox: { marginTop: -8, marginBottom: 12, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 12, overflow: "hidden" },
+  suggestRow: { paddingVertical: 12, paddingHorizontal: 16, borderBottomColor: COLORS.card, borderBottomWidth: 1 },
+  suggestText: { color: COLORS.accent, fontSize: 14, fontWeight: "600" },
   turnIndicator: { color: "#FFD93D", textAlign: "center", fontSize: 16, fontWeight: "900", marginTop: 10 },
 
   resultPanel: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
-  resultText: { color: "#F3F7FA", fontWeight: "900", fontSize: 24, textAlign: "center", marginTop: 16 },
-  winnerName: { color: "#7CFF5C", fontWeight: "900", fontSize: 20, marginTop: 8, textAlign: "center" },
-  primaryBtn: { backgroundColor: "#7CFF5C", borderRadius: 14, paddingVertical: 16, paddingHorizontal: 40, alignItems: "center", marginTop: 24 },
-  primaryBtnText: { color: "#0B1620", fontWeight: "900", textTransform: "uppercase", fontSize: 16 },
-  backLink: { color: "#8CA0B3", textAlign: "center", fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
+  resultText: { color: COLORS.text, fontWeight: "900", fontSize: 24, textAlign: "center", marginTop: 16 },
+  winnerName: { color: COLORS.accent, fontWeight: "900", fontSize: 20, marginTop: 8, textAlign: "center" },
+  primaryBtn: { backgroundColor: COLORS.accent, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 40, alignItems: "center", marginTop: 24 },
+  primaryBtnText: { color: COLORS.accentDark, fontWeight: "900", textTransform: "uppercase", fontSize: 16 },
+  backLink: { color: COLORS.textMuted, textAlign: "center", fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
 });

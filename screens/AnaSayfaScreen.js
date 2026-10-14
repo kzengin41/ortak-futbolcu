@@ -11,10 +11,8 @@ import { useAppSettings } from "../lib/SettingsContext";
 import { ayarlardanProfil, profilEtiketi, etkinAyar } from "../lib/eslesmeProfili";
 import { getProfile, xpProgress } from "../lib/profile";
 import { getStreak, seriDurumu } from "../lib/streak";
-import { getBulmacaDurumu } from "../lib/dailyPuzzleStore";
-import { gunlukDurumOku } from "../lib/gunlukKayit";
-import { DENEME_HAKKI, gunNumarasi } from "../lib/dailyPuzzle";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, saydam } from "../lib/theme";
+import { LinearGradient } from "expo-linear-gradient";
 
 // ============================================================================
 // YENİ ANA SAYFA — 3 Ekim 2026
@@ -101,8 +99,6 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
   const [armalar, setArmalar] = useState([null, null]);
   const [seviye, setSeviye] = useState(null);
   const [seri, setSeri] = useState({ count: 0, lastPlayedDate: null });
-  const [bulmaca, setBulmaca] = useState(null);
-  const [kadro, setKadro] = useState(undefined); // Günün Kadrosu bugünkü kaydı
 
   // Ekrana her dönüşte: yeni vitrin çifti, güncel XP / seri / bulmaca durumu.
   useFocusEffect(
@@ -114,8 +110,6 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
       setArmalar([a1, a2]);
       getProfile().then((p) => !iptal && setSeviye(xpProgress(p))).catch(() => {});
       getStreak().then((s) => !iptal && setSeri(s)).catch(() => {});
-      getBulmacaDurumu().then((d) => !iptal && setBulmaca(d)).catch(() => {});
-      gunlukDurumOku("kadro").then((d) => !iptal && setKadro(d || null)).catch(() => {});
       return () => { iptal = true; };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [settings?.eslesmeProfili])
@@ -126,17 +120,6 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
   const bugunOynandi = sd.durum === "tamam";
   const sol = gizliAd(cift?.[0]);
   const sag = gizliAd(cift?.[1]);
-
-  const bulmacaBitti = Boolean(bulmaca?.bitti);
-  const bulmacaAlt = !bulmaca
-    ? "Herkese aynı soru, günde bir kez"
-    : bulmacaBitti
-    ? bulmaca.bilindi
-      ? `Bugünü ${bulmaca.denemeler.length} denemede bildin`
-      : "Bugünü bilemedin, yarın yeni soru"
-    : bulmaca.denemeler?.length
-    ? `${DENEME_HAKKI - bulmaca.denemeler.length} deneme hakkın kaldı`
-    : "Herkese aynı soru, 3 deneme hakkı";
 
   return (
     <GameBackground style={styles.kap}>
@@ -164,7 +147,16 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
         </View>
 
         {/* Kahraman kart */}
+        {/* Paket 30 — vitrin kartı temanın KULÜP rengiyle (COLORS.marka): GS'de
+            kırmızı, FB'de lacivert; OYNA temanın eylem rengi (GS sarı). */}
         <View style={styles.kahraman}>
+          <LinearGradient
+            colors={[saydam("#FFFFFF", 0.12), saydam("#FFFFFF", 0), saydam("#000000", 0.3)]}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
           <Text style={styles.kahramanUst}>SIRADAKİ MAÇIN HAZIR</Text>
           <View style={styles.takimlar}>
             <GizliTakim ad={sol} arma={armalar[0]} />
@@ -185,53 +177,24 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
             <Text style={styles.ayarYazi} numberOfLines={1}>
               {profilEtiketi(profil)} · CPU'ya karşı
             </Text>
-            <Ionicons name="options-outline" size={15} color={COLORS.textMuted} />
+            <Ionicons name="options-outline" size={15} color={saydam(COLORS.markaUst, 0.75)} />
           </SoundPressable>
         </View>
 
-        {/* 4 Ekim 2026 (.29452) — tek günlük satırı artık GÜNÜN KADROSU (günlük vitrin).
-            Günün Bulmacası Tüm Modlar'da. onGunlukKadro verilmemişse eski bulmaca satırı. */}
-        {onGunlukKadro ? (
-        <SoundPressable style={styles.gunluk} onPress={onGunlukKadro} accessibilityLabel="Günün Kadrosu">
-          <View style={styles.gunlukIkon}>
-            <Ionicons name={kadro?.bitti ? "checkmark" : "shirt"} size={22} color={COLORS.cta} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.gunlukBaslik}>Günün Kadrosu #{gunNumarasi()}</Text>
-            <Text style={styles.gunlukAlt}>
-              {kadro?.bitti ? `Bugün ${(kadro.bulunan || []).length}/11 buldun` : (kadro?.bulunan || []).length ? `${kadro.bulunan.length}/11 · devam et` : "Efsane bir maçın ilk 11'ini bul · seriyi korur 🔥"}
-            </Text>
-          </View>
-          {!kadro?.bitti && <Ionicons name="chevron-forward" size={18} color={COLORS.cta} />}
-        </SoundPressable>
-        ) : (
-        <SoundPressable style={styles.gunluk} onPress={onDailyPuzzle}>
-          <View style={styles.gunlukIkon}>
-            <Ionicons
-              name={bulmacaBitti ? (bulmaca.bilindi ? "checkmark" : "close") : "calendar"}
-              size={22}
-              color={COLORS.cta}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.gunlukBaslik}>Günün Bulmacası #{gunNumarasi()}</Text>
-            <Text style={styles.gunlukAlt}>{bulmacaAlt}</Text>
-          </View>
-          {!bulmacaBitti && <Ionicons name="chevron-forward" size={18} color={COLORS.cta} />}
-        </SoundPressable>
-        )}
-
+        {/* Paket 30 (14 Ekim 2026, Kerem: "günlükler … tüm modlar içinde tek satır
+            olarak durması lazım. anasayfa'da durmasın") — Günün Kadrosu / Bulmacası
+            satırı kalktı; günlük oyunların hepsi Tüm Modlar'daki "Günlük" satırında. */}
         {/* 4 Ekim 2026 (Kerem: "anasayfadaki tüm modlar butonu da belli
             olmuyor") — artık günlük satırıyla aynı ağırlıkta bir kart. */}
         <SoundPressable style={styles.tumModlar} onPress={onAllModes} accessibilityRole="button" accessibilityLabel="Tüm modlar">
           <View style={styles.tumModlarIkon}>
-            <Ionicons name="grid" size={20} color={TUM_MODLAR_RENGI} />
+            <Ionicons name="grid" size={20} color={COLORS.accent} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.gunlukBaslik}>Tüm modlar</Text>
-            <Text style={styles.gunlukAlt} numberOfLines={1}>Kim Bu, 5 Kulüp, XOX, İlk Harf ve dahası</Text>
+            <Text style={styles.gunlukAlt} numberOfLines={1}>Günlük oyunlar, Kim Bu, 5 Kulüp, XOX, İlk Harf</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={TUM_MODLAR_RENGI} />
+          <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
         </SoundPressable>
       </ScrollView>
     </GameBackground>
@@ -306,19 +269,19 @@ const styles = StyleSheet.create({
   seriYazi: { color: COLORS.text, fontSize: 14, fontWeight: "800" },
 
   kahraman: {
-    backgroundColor: COLORS.card, borderRadius: 26, borderWidth: 1, borderColor: COLORS.cardBorder,
-    paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.lg, ...SHADOW.card,
+    backgroundColor: COLORS.marka, borderRadius: 26, borderWidth: 1, borderColor: saydam(COLORS.markaUst, 0.14),
+    paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.lg, overflow: "hidden", ...SHADOW.card,
   },
-  kahramanUst: { color: COLORS.textMuted, fontSize: 12, fontWeight: "800", letterSpacing: 1.6 },
+  kahramanUst: { color: COLORS.marka2, fontSize: 12, fontWeight: "900", letterSpacing: 1.8 },
   takimlar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: SPACING.xl },
   takim: { width: "40%", alignItems: "center", gap: SPACING.sm },
   arma: {
     width: 70, height: 80, borderTopLeftRadius: 12, borderTopRightRadius: 12,
     borderBottomLeftRadius: 35, borderBottomRightRadius: 35,
-    borderWidth: 2, borderStyle: "dashed", borderColor: COLORS.cardBorder, backgroundColor: COLORS.bg,
+    borderWidth: 2, borderStyle: "dashed", borderColor: saydam(COLORS.markaUst, 0.45), backgroundColor: saydam("#000000", 0.25),
     alignItems: "center", justifyContent: "center",
   },
-  armaSoru: { color: COLORS.textMuted, fontSize: 34, fontWeight: "900" },
+  armaSoru: { color: saydam(COLORS.markaUst, 0.8), fontSize: 34, fontWeight: "900" },
   armaRenkli: {
     width: 70, height: 80, borderTopLeftRadius: 12, borderTopRightRadius: 12,
     borderBottomLeftRadius: 35, borderBottomRightRadius: 35, borderWidth: 3,
@@ -333,10 +296,10 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   soruRozetYazi: { color: "#FFFFFF", fontSize: 19, fontWeight: "900" },
-  takimAd: { color: COLORS.text, fontSize: 20, fontWeight: "900", letterSpacing: 1.5 },
-  takimNokta: { color: COLORS.textMuted, fontWeight: "900" },
-  carpi: { color: COLORS.textMuted, fontSize: 26, fontWeight: "900" },
-  kahramanAciklama: { ...TYPE.body, color: COLORS.textMuted, textAlign: "center", marginTop: SPACING.lg },
+  takimAd: { color: COLORS.markaUst, fontSize: 20, fontWeight: "900", letterSpacing: 1.5 },
+  takimNokta: { color: saydam(COLORS.markaUst, 0.6), fontWeight: "900" },
+  carpi: { color: saydam(COLORS.markaUst, 0.6), fontSize: 26, fontWeight: "900" },
+  kahramanAciklama: { ...TYPE.body, color: COLORS.markaUst, opacity: 0.85, textAlign: "center", marginTop: SPACING.lg },
   oyna: {
     marginTop: SPACING.lg, height: 66, borderRadius: 18, backgroundColor: COLORS.accent,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
@@ -346,7 +309,7 @@ const styles = StyleSheet.create({
     alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6,
     paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, marginTop: SPACING.sm,
   },
-  ayarYazi: { color: COLORS.textMuted, fontSize: 13, fontWeight: "700", maxWidth: 260 },
+  ayarYazi: { color: saydam(COLORS.markaUst, 0.8), fontSize: 13, fontWeight: "700", maxWidth: 260 },
 
   gunluk: {
     marginTop: SPACING.lg, flexDirection: "row", alignItems: "center", gap: SPACING.md,
@@ -361,10 +324,10 @@ const styles = StyleSheet.create({
 
   tumModlar: {
     marginTop: SPACING.md, flexDirection: "row", alignItems: "center", gap: SPACING.md,
-    padding: SPACING.lg, borderRadius: 20, borderWidth: 1, borderColor: TUM_MODLAR_RENGI, backgroundColor: COLORS.card,
+    padding: SPACING.lg, borderRadius: 20, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
   },
   tumModlarIkon: {
     width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center",
-    backgroundColor: COLORS.bg,
+    backgroundColor: saydam(COLORS.accent, 0.14),
   },
 });

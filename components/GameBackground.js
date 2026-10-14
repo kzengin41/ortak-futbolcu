@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ImageBackground, StyleSheet, View, useWindowDimensions } from "react-native";
-import Svg, { Defs, RadialGradient, Stop, Rect, Circle, Path } from "react-native-svg";
+import { ArkaplanDeseni } from "./FormaDeseni";
 import { LinearGradient } from "expo-linear-gradient";
 import { KlavyeAlani, KlavyeScroll } from "./Klavye";
 import { useAltBosluk } from "../lib/altBosluk";
@@ -42,43 +42,13 @@ export function arkaplanAnahtari(themeId, secim) {
   return a === "saha" || a === "duz" ? a : "desen";
 }
 
-// Temanın renklerinden çizilen saha. genislik/yukseklik verilmezse ekran boyu.
-export function SahaDeseni({ genislik, yukseklik, cizgiKalinligi = 1.5 }) {
+// Temanın renklerinden çizilen arkaplan. genislik/yukseklik verilmezse ekran boyu.
+// Paket 30 — "Forma" sistemi: çizim components/FormaDeseni.js ArkaplanDeseni'nde
+// (kulüp renginde stadyum ışığı + forma motifi + ince saha çizgileri). Ad geriye
+// uyum için duruyor (Ayarlar önizlemesi bunu çağırıyor).
+export function SahaDeseni({ genislik, yukseklik, cizgiKalinligi = 1.4 }) {
   const ekran = useWindowDimensions();
-  const w = genislik || ekran.width;
-  const h = yukseklik || Math.max(ekran.height, 1);
-  const serit = 10;                       // biçilmiş çim: yatay bantlar
-  const sh = h / serit;
-  const cizgi = saydam(COLORS.text, 0.11);
-  // ceza sahası (alt): kutu, küçük kutu, yay
-  const kutuUst = h - h * 0.17;
-  const kx1 = w * 0.17, kx2 = w * 0.83;
-  const yayR = w * 0.17, yayMy = h - h * 0.115;
-  const dy = kutuUst - yayMy;                         // yay merkezi kutunun içinde: yalnız dışarı taşan kısım
-  const dx = Math.sqrt(Math.max(0, yayR * yayR - dy * dy));
-  const merkezR = w * 0.27;
-  return (
-    <Svg width={w} height={h} style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Defs>
-        <RadialGradient id="isik" cx={w / 2} cy={-h * 0.05} r={Math.max(w, h) * 0.75} gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor={COLORS.accent} stopOpacity={0.22} />
-          <Stop offset="0.45" stopColor={COLORS.accent} stopOpacity={0.07} />
-          <Stop offset="1" stopColor={COLORS.accent} stopOpacity={0} />
-        </RadialGradient>
-      </Defs>
-      <Rect x={0} y={0} width={w} height={h} fill={COLORS.bg} />
-      {Array.from({ length: serit }).map((_, i) => (i % 2 === 0 ? (
-        <Rect key={i} x={0} y={i * sh} width={w} height={sh} fill={COLORS.text} fillOpacity={0.03} />
-      ) : null))}
-      <Rect x={0} y={0} width={w} height={h} fill="url(#isik)" />
-      <Circle cx={w / 2} cy={0} r={merkezR} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
-      <Circle cx={w / 2} cy={0} r={3} fill={cizgi} />
-      <Path d={`M${kx1} ${h + 2} V${kutuUst} H${kx2} V${h + 2}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
-      <Path d={`M${w * 0.35} ${h + 2} V${h - h * 0.065} H${w * 0.65} V${h + 2}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
-      {dx > 0 ? <Path d={`M${w / 2 - dx} ${kutuUst} A${yayR} ${yayR} 0 0 1 ${w / 2 + dx} ${kutuUst}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" /> : null}
-      <Circle cx={w / 2} cy={yayMy} r={2.5} fill={cizgi} />
-    </Svg>
-  );
+  return <ArkaplanDeseni genislik={genislik || ekran.width} yukseklik={yukseklik || Math.max(ekran.height, 1)} cizgiKalinligi={cizgiKalinligi} />;
 }
 
 // 4 Eylül 2026 (Kerem: "neden arkaplan, kapat butonu vs en sağa kadar

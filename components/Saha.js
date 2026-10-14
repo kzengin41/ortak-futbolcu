@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PlayerPhoto from "./PlayerPhoto";
 import SoundPressable from "./SoundPressable";
-import { COLORS, RADIUS } from "../lib/theme";
+import { COLORS, RADIUS, saydam } from "../lib/theme";
 import { HAT_ETIKET } from "../lib/kadrolar";
 
 // ============================================================================
@@ -94,7 +94,7 @@ const s = StyleSheet.create({
   nokta: { alignItems: "center", width: 64 },
   daire: { alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.35)", borderWidth: 2, borderColor: "rgba(255,255,255,0.6)", overflow: "hidden" },
   daireAcik: { backgroundColor: "#FFFFFF", borderColor: COLORS.accent },
-  daireKirmizi: { backgroundColor: "rgba(255,93,93,0.85)", borderColor: "#FF5D5D" },
+  daireKirmizi: { backgroundColor: saydam(COLORS.danger, 0.85), borderColor: COLORS.danger },
   daireSecili: { backgroundColor: COLORS.cta, borderColor: "#FFFFFF", borderWidth: 3, transform: [{ scale: 1.12 }] },
   adSecili: { color: "#FFFFFF" },
   no: { color: "#FFFFFF", fontWeight: "900" },

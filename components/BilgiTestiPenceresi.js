@@ -5,7 +5,7 @@ import SoundPressable from "./SoundPressable";
 import { useAppSettings } from "../lib/SettingsContext";
 import { ayarlardanProfil, ozellestirilmisMi } from "../lib/eslesmeProfili";
 import { seviyeEtiketi, oneriEtiketi, oneriyiUygula, pencereyiSifirla } from "../lib/bilgiSeviyesi";
-import { COLORS, RADIUS, SPACING, TYPE } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, saydam } from "../lib/theme";
 
 // ============================================================================
 // FUTBOL BİLGİSİ TESTİ PENCERESİ — 4 Ekim 2026
@@ -275,8 +275,8 @@ const s = StyleSheet.create({
     minHeight: 54, flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.md, backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.cardBorder,
   },
-  sikDogru: { borderColor: COLORS.accent, backgroundColor: "rgba(124,255,92,0.10)" },
-  sikYanlis: { borderColor: COLORS.danger, backgroundColor: "rgba(255,93,93,0.10)" },
+  sikDogru: { borderColor: COLORS.accent, backgroundColor: saydam(COLORS.accent, 0.10) },
+  sikYanlis: { borderColor: COLORS.danger, backgroundColor: saydam(COLORS.danger, 0.10) },
   sikYazi: { flex: 1, fontSize: 16, fontWeight: "800", color: COLORS.text },
   bilmiyorum: { alignSelf: "center", marginTop: SPACING.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xl },
   bilmiyorumYazi: { fontSize: 15, fontWeight: "800", color: COLORS.textMuted, textDecorationLine: "underline" },

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, useKlavyeAcik } from "../components/Klavye";
-import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS, saydam } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
@@ -664,18 +664,18 @@ const s = StyleSheet.create({
   bolumAlt: { fontSize: 12, fontWeight: "600", letterSpacing: 0, color: COLORS.textMuted },
   izgara: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   kart: { borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 4 },
-  kartKapali: { backgroundColor: "#141E2B", borderColor: "#2E3E55" },
-  kartAcik: { backgroundColor: "#10283A", borderColor: "#2B6A8E" },
-  kartBaslangic: { backgroundColor: "#10283A", borderColor: "#5EC8FF" },
+  kartKapali: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder },
+  kartAcik: { backgroundColor: COLORS.card, borderColor: "#2B6A8E" },
+  kartBaslangic: { backgroundColor: COLORS.card, borderColor: "#5EC8FF" },
   kartBedava: { backgroundColor: "#0E2A18", borderColor: "#2F7A47" },
-  kartKilitli: { backgroundColor: "#0F1620", borderColor: "#222D3B", opacity: 0.6 },
+  kartKilitli: { backgroundColor: COLORS.card, borderColor: COLORS.card, opacity: 0.6 },
   kilitSatir: { flexDirection: "row", alignItems: "center", gap: 3 },
   kartBedelKilitli: { fontSize: 13, fontWeight: "900", color: COLORS.textMuted, textDecorationLine: "line-through" },
   kartEtiket: { fontSize: 12, fontWeight: "800", letterSpacing: 0.6, color: COLORS.textMuted },
   kartDeger: { fontSize: 14, fontWeight: "900", color: COLORS.text, textAlign: "center", alignSelf: "stretch" },
   arkadasAd: { fontSize: 14, fontWeight: "900", color: COLORS.text, textAlign: "center", alignSelf: "stretch" },
   kartBedel: { fontSize: 13, fontWeight: "900", color: COLORS.cta },
-  kariyerYil: { fontSize: 12, fontWeight: "800", color: "#C9D4DF" },
+  kariyerYil: { fontSize: 12, fontWeight: "800", color: COLORS.textMuted },
   kariyerAd: { fontSize: 12, fontWeight: "800", color: COLORS.text, textAlign: "center" },
   kalkan: {
     width: 28, height: 32, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 14, borderBottomRightRadius: 14,
@@ -700,7 +700,7 @@ const s = StyleSheet.create({
   // görünmüyor") — artık kırmızı çerçeveli, tam genişlikte düğme.
   pesEt: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 46, marginTop: SPACING.sm,
-    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.danger, backgroundColor: "rgba(255,93,93,0.10)",
+    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.danger, backgroundColor: saydam(COLORS.danger, 0.10),
   },
   pesEtYazi: { fontSize: 15, fontWeight: "800", color: COLORS.danger },
 
@@ -709,7 +709,7 @@ const s = StyleSheet.create({
   sonucAd: { ...TYPE.h1, marginTop: SPACING.md, textAlign: "center" },
   sonucMeta: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted, marginTop: 2 },
   sonucKariyer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginTop: SPACING.md },
-  sonucKulup: { width: 70, minHeight: 60, borderRadius: 12, backgroundColor: "#10283A", borderWidth: 1, borderColor: "#2B6A8E", alignItems: "center", justifyContent: "center", padding: 4 },
+  sonucKulup: { width: 70, minHeight: 60, borderRadius: 12, backgroundColor: COLORS.card, borderWidth: 1, borderColor: "#2B6A8E", alignItems: "center", justifyContent: "center", padding: 4 },
   sonucKulupYil: { fontSize: 12, fontWeight: "800", color: "#9FCBE6" },
   sonucKulupAd: { fontSize: 12, fontWeight: "800", color: COLORS.text, textAlign: "center", marginTop: 2 },
   dokum: { alignSelf: "stretch", marginTop: SPACING.md, padding: SPACING.lg, borderRadius: 18, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, gap: 7 },

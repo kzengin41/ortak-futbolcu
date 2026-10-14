@@ -3,6 +3,7 @@ import { View, Text, Animated, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import PlayerPhoto from "./PlayerPhoto";
 import { LinearGradient } from "expo-linear-gradient";
+import { COLORS } from "../lib/theme";
 
 // 12 Eylül 2026 — UX DENETİMİ BULGUSU: dört ekran (WhoAmICpuScreen,
 // LetterCpuScreen, OnlineLetterScreen, CountryClubArcadeScreen) bu bileşeni
@@ -76,8 +77,8 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
     };
   }, []);
 
-  const color = dogru ? "#7CFF5C" : "#FF5D5D";
-  const colorDark = dogru ? "#0B1620" : "#450000";
+  const color = dogru ? COLORS.accent : COLORS.danger;
+  const colorDark = dogru ? COLORS.accentDark : "#450000";
 
   return (
     <View style={styles.overlay} pointerEvents="none">
@@ -136,14 +137,14 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   cardInner: {
-    backgroundColor: "#0B1620",
+    backgroundColor: COLORS.bg,
     borderRadius: 18,
     alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
   },
   cardName: {
-    color: "#F3F7FA",
+    color: COLORS.text,
     fontSize: 24,
     fontWeight: "900",
     textAlign: "center",
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardSubtitle: {
-    color: "#7CFF5C",
+    color: COLORS.accent,
     fontSize: 14,
     fontWeight: "800",
     letterSpacing: 1,

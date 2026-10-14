@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
-import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
+import { COLORS, MODE_COLORS, SPACING, RADIUS, saydam } from "../lib/theme";
 import GameBackground from "../components/GameBackground";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
@@ -349,9 +349,9 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
 const s = StyleSheet.create({
   kap: { flex: 1, backgroundColor: COLORS.bg, padding: 20, paddingBottom: 40 },
   ust: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 6, marginBottom: 10 },
-  bildir: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,100,100,0.2)", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 },
+  bildir: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: saydam(COLORS.danger, 0.2), paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 },
   bildirYazi: { color: COLORS.cta, fontSize: 12, fontWeight: "800" },
-  kapat: { backgroundColor: "rgba(255,93,93,0.15)", borderRadius: 16, padding: 6 },
+  kapat: { backgroundColor: saydam(COLORS.danger, 0.15), borderRadius: 16, padding: 6 },
 
   panel: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   panelEtiket: { fontSize: 12, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted },
@@ -371,8 +371,8 @@ const s = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10,
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1.5, borderRadius: 14,
   },
-  sikDogru: { borderColor: COLORS.accent, backgroundColor: "rgba(124,255,92,0.12)" },
-  sikYanlis: { borderColor: COLORS.danger, backgroundColor: "rgba(255,93,93,0.12)" },
+  sikDogru: { borderColor: COLORS.accent, backgroundColor: saydam(COLORS.accent, 0.12) },
+  sikYanlis: { borderColor: COLORS.danger, backgroundColor: saydam(COLORS.danger, 0.12) },
   sikYazi: { flex: 1, color: COLORS.text, fontSize: 15, fontWeight: "800" },
   seviye: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: SPACING.md },
 });

@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
-import { MODE_COLORS } from "../lib/theme";
+import { MODE_COLORS, COLORS, saydam } from "../lib/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
@@ -455,7 +455,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               onChangeText={setAnswerInput}
               onSubmitEditing={() => submitAnswer()}
               placeholder="Futbolcu adı..."
-              placeholderTextColor="#56697A"
+              placeholderTextColor={COLORS.textFaint}
               style={[styles.input, { padding: 8, marginBottom: 4 }]}
             />
             {suggestions.length > 0 && (
@@ -490,14 +490,14 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           çakışmıyor, normal akışta kendi satırını alıyor. */}
       <View style={{ width: "100%", paddingHorizontal: 16, paddingTop: 6, marginBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Pressable onPress={() => { if(typeof setShowReport === 'function') setShowReport(true); }} hitSlop={20}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,100,100,0.2)", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}>
-            <Ionicons name="flag" size={13} color="#FFB020" />
-            <Text style={{ color: "#FFB020", fontSize: 12, fontWeight: "800" }}>BİLDİR</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: saydam(COLORS.text, 0.08), paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}>
+            <Ionicons name="flag" size={13} color={COLORS.textMuted} />
+            <Text style={{ color: COLORS.textMuted, fontSize: 12, fontWeight: "800" }}>BİLDİR</Text>
           </View>
         </Pressable>
         <Pressable onPress={onExit} hitSlop={20}>
-          <View style={{ backgroundColor: "rgba(255,93,93,0.15)", borderRadius: 16, padding: 6 }}>
-            <Ionicons name="close" size={22} color="#FF5D5D" />
+          <View style={{ backgroundColor: saydam(COLORS.danger, 0.15), borderRadius: 16, padding: 6 }}>
+            <Ionicons name="close" size={22} color={COLORS.danger} />
           </View>
         </Pressable>
       </View>
@@ -645,7 +645,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
                 onChangeText={setAnswerInput}
                 onSubmitEditing={() => submitAnswer()}
                 placeholder="Futbolcu adı..."
-                placeholderTextColor="#56697A"
+                placeholderTextColor={COLORS.textFaint}
                 style={styles.input}
               />
               {suggestions.length > 0 && (
@@ -666,7 +666,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
                   onPress={handleMicPress}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? <Ionicons name="hourglass" size={20} color="#F3F7FA" /> : isRecording ? <Ionicons name="stop" size={20} color="#fff" /> : <Ionicons name="mic" size={20} color="#F3F7FA" />}
+                  {isProcessing ? <Ionicons name="hourglass" size={20} color={COLORS.text} /> : isRecording ? <Ionicons name="stop" size={20} color="#fff" /> : <Ionicons name="mic" size={20} color={COLORS.text} />}
                 </SoundPressable>
               </View>
               {heardText && (
@@ -756,90 +756,90 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0B1620", padding: 20, justifyContent: "center" },
-  scrollContainer: { flex: 1, backgroundColor: "#0B1620", padding: 20 },
-  title: { color: "#F3F7FA", fontSize: 20, fontWeight: "900", textAlign: "center" },
-  diffBtn: { borderColor: "#28394B", borderWidth: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
-  diffBtnActive: { borderColor: "#7CFF5C", backgroundColor: "#16222E" },
-  diffBtnText: { color: "#8CA0B3", fontWeight: "800", fontSize: 13 },
-  diffBtnTextActive: { color: "#7CFF5C" },
-  center: { color: "#F3F7FA", textAlign: "center", marginBottom: 16 },
+  container: { flex: 1, backgroundColor: COLORS.bg, padding: 20, justifyContent: "center" },
+  scrollContainer: { flex: 1, backgroundColor: COLORS.bg, padding: 20 },
+  title: { color: COLORS.text, fontSize: 20, fontWeight: "900", textAlign: "center" },
+  diffBtn: { borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  diffBtnActive: { borderColor: COLORS.accent, backgroundColor: COLORS.card },
+  diffBtnText: { color: COLORS.textMuted, fontWeight: "800", fontSize: 13 },
+  diffBtnTextActive: { color: COLORS.accent },
+  center: { color: COLORS.text, textAlign: "center", marginBottom: 16 },
   scoreRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  scoreText: { color: "#8CA0B3", fontWeight: "700", fontSize: 13 },
-  teamsCard: { flexDirection: "row", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 18, padding: 20, alignItems: "center", justifyContent: "center" },
-  teamName: { color: "#F3F7FA", fontSize: 14, fontWeight: "900", textAlign: "center", marginTop: 8 },
-  plus: { color: "#7CFF5C", fontWeight: "900", fontSize: 18, marginHorizontal: 8 },
-  timerText: { color: "#8CA0B3", textAlign: "center", marginTop: 16, fontSize: 12 },
+  scoreText: { color: COLORS.textMuted, fontWeight: "700", fontSize: 13 },
+  teamsCard: { flexDirection: "row", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 18, padding: 20, alignItems: "center", justifyContent: "center" },
+  teamName: { color: COLORS.text, fontSize: 14, fontWeight: "900", textAlign: "center", marginTop: 8 },
+  plus: { color: COLORS.accent, fontWeight: "900", fontSize: 18, marginHorizontal: 8 },
+  timerText: { color: COLORS.textMuted, textAlign: "center", marginTop: 16, fontSize: 12 },
   buzzRow: { flexDirection: "row", gap: 12, marginTop: 16 },
-  buzzBtn: { flex: 1, borderColor: "#7CFF5C", borderWidth: 2, borderRadius: 18, paddingVertical: 36, alignItems: "center" },
-  buzzBtnDisabled: { borderColor: "#28394B" },
-  buzzBtnText: { color: "#7CFF5C", fontWeight: "900", fontSize: 16, letterSpacing: 0.5 },
-  buzzBtnAlt: { color: "#8CA0B3", fontWeight: "700", fontSize: 12, marginTop: 4 },
-  buzzBtnTextDisabled: { color: "#8CA0B3" },
+  buzzBtn: { flex: 1, borderColor: COLORS.accent, borderWidth: 2, borderRadius: 18, paddingVertical: 36, alignItems: "center" },
+  buzzBtnDisabled: { borderColor: COLORS.cardBorder },
+  buzzBtnText: { color: COLORS.accent, fontWeight: "900", fontSize: 16, letterSpacing: 0.5 },
+  buzzBtnAlt: { color: COLORS.textMuted, fontWeight: "700", fontSize: 12, marginTop: 4 },
+  buzzBtnTextDisabled: { color: COLORS.textMuted },
   passBtn: { 
     marginTop: 12, 
     paddingVertical: 14, 
-    backgroundColor: "#16222E", 
-    borderColor: "#28394B", 
+    backgroundColor: COLORS.card, 
+    borderColor: COLORS.cardBorder, 
     borderWidth: 1.5, 
     borderRadius: 16, 
     alignItems: "center" 
   },
-  passBtnText: { color: "#F3F7FA", fontSize: 14, fontWeight: "800" },
-  answeringText: { color: "#7CFF5C", textAlign: "center", fontWeight: "800", marginBottom: 12 },
-  input: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 14, padding: 16, color: "#F3F7FA", fontSize: 16, marginBottom: 12 },
-  suggestBox: { marginTop: -6, marginBottom: 12, backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 12, overflow: "hidden" },
+  passBtnText: { color: COLORS.text, fontSize: 14, fontWeight: "800" },
+  answeringText: { color: COLORS.accent, textAlign: "center", fontWeight: "800", marginBottom: 12 },
+  input: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, padding: 16, color: COLORS.text, fontSize: 16, marginBottom: 12 },
+  suggestBox: { marginTop: -6, marginBottom: 12, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 12, overflow: "hidden" },
   leagueSelectBtn: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#16222E",
-    borderColor: "#28394B",
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.cardBorder,
     borderWidth: 1,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 18,
     marginTop: 12,
   },
-  leagueSelectText: { color: "#F3F7FA", fontSize: 14, fontWeight: "700" },
-  leagueSelectChevron: { color: "#7CFF5C", fontSize: 12, fontWeight: "700" },
-  suggestRow: { paddingVertical: 10, paddingHorizontal: 14, borderBottomColor: "#1B2A38", borderBottomWidth: 1 },
-  suggestText: { color: "#7CFF5C", fontSize: 14, fontWeight: "600" },
-  primaryBtn: { backgroundColor: "#7CFF5C", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 8 },
+  leagueSelectText: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
+  leagueSelectChevron: { color: COLORS.accent, fontSize: 12, fontWeight: "700" },
+  suggestRow: { paddingVertical: 10, paddingHorizontal: 14, borderBottomColor: COLORS.card, borderBottomWidth: 1 },
+  suggestText: { color: COLORS.accent, fontSize: 14, fontWeight: "600" },
+  primaryBtn: { backgroundColor: COLORS.accent, borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 8 },
   micBtn: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#16222E",
-    borderColor: "#28394B",
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.cardBorder,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 8,
   },
-  micBtnActive: { backgroundColor: "#FF5D5D", borderColor: "#FF5D5D" },
+  micBtnActive: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
   micBtnText: { fontSize: 22 },
   micBtnBig: {
-    backgroundColor: "#7CFF5C",
+    backgroundColor: COLORS.accent,
     borderRadius: 20,
     paddingVertical: 28,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 12,
   },
-  micBtnBigText: { color: "#0B1620", fontWeight: "900", fontSize: 18 },
-  heardBanner: { backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12, marginBottom: 4 },
-  heardBannerText: { color: "#F3F7FA", fontSize: 14, fontStyle: "italic", textAlign: "center" },
-  switchModeLink: { color: "#7CFF5C", fontSize: 12, fontWeight: "700" },
-  voiceError: { color: "#FF5D5D", fontSize: 12, textAlign: "center", marginTop: 8 },
-  voiceHint: { color: "#8CA0B3", fontSize: 12, textAlign: "center", marginTop: 8 },
-  primaryBtnText: { color: "#0B1620", fontWeight: "900", textTransform: "uppercase", fontSize: 13 },
-  resultText: { color: "#F3F7FA", fontWeight: "900", fontSize: 18, marginBottom: 8 },
-  answersText: { color: "#8CA0B3", fontSize: 12, textAlign: "center", marginBottom: 12 },
-  showAnswersBtn: { borderColor: "#7CFF5C", borderWidth: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18, marginBottom: 12 },
-  showAnswersBtnText: { color: "#7CFF5C", fontSize: 13, fontWeight: "700" },
-  answersBox: { maxHeight: 160, width: "100%", backgroundColor: "#16222E", borderColor: "#28394B", borderWidth: 1, borderRadius: 14, marginBottom: 12 },
-  answersBoxItem: { color: "#F3F7FA", fontSize: 13, paddingVertical: 5 },
+  micBtnBigText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 18 },
+  heardBanner: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12, marginBottom: 4 },
+  heardBannerText: { color: COLORS.text, fontSize: 14, fontStyle: "italic", textAlign: "center" },
+  switchModeLink: { color: COLORS.accent, fontSize: 12, fontWeight: "700" },
+  voiceError: { color: COLORS.danger, fontSize: 12, textAlign: "center", marginTop: 8 },
+  voiceHint: { color: COLORS.textMuted, fontSize: 12, textAlign: "center", marginTop: 8 },
+  primaryBtnText: { color: COLORS.accentDark, fontWeight: "900", textTransform: "uppercase", fontSize: 13 },
+  resultText: { color: COLORS.text, fontWeight: "900", fontSize: 18, marginBottom: 8 },
+  answersText: { color: COLORS.textMuted, fontSize: 12, textAlign: "center", marginBottom: 12 },
+  showAnswersBtn: { borderColor: COLORS.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18, marginBottom: 12 },
+  showAnswersBtnText: { color: COLORS.accent, fontSize: 13, fontWeight: "700" },
+  answersBox: { maxHeight: 160, width: "100%", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, marginBottom: 12 },
+  answersBoxItem: { color: COLORS.text, fontSize: 13, paddingVertical: 5 },
   answersBoxRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
-  backLink: { color: "#8CA0B3", textAlign: "center", fontSize: 12 },
+  backLink: { color: COLORS.textMuted, textAlign: "center", fontSize: 12 },
 });

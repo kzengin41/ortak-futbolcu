@@ -28,7 +28,7 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 //   npx expo install expo-image-picker
 // (npm install DEĞİL — npx expo install, Expo SDK 54 ile uyumlu doğru
 // sürümü otomatik seçip package.json'a ekler.)
-const AVATAR_COLORS = ["#7CFF5C", "#7DD3FC", "#A78BFA", "#FFB020", "#FF5D5D", "#FFD93D", "#C084FC"];
+const AVATAR_COLORS = [COLORS.accent, "#7DD3FC", "#A78BFA", COLORS.cta, COLORS.danger, "#FFD93D", "#C084FC"];
 
 export default function AccountScreen({ onBack }) {
   const [checking, setChecking] = useState(true);

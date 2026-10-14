@@ -402,7 +402,9 @@ function MainTabsRoute() {
         animation: "shift",
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.textMuted,
-        tabBarStyle: { backgroundColor: COLORS.card, borderTopColor: COLORS.cardBorder, borderTopWidth: 1 },
+        // Paket 30 — sekme çubuğu zeminle kart arasında kendi tonunda (COLORS.tabBar);
+        // seçili sekme temanın eylem rengi (GS sarı, FB sarı, BJK beyaz…).
+        tabBarStyle: { backgroundColor: COLORS.tabBar || COLORS.card, borderTopColor: COLORS.cardBorder, borderTopWidth: 1 },
         tabBarIcon: ({ color, size }) => <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />,
       })}
     >

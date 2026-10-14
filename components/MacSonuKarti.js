@@ -161,7 +161,7 @@ const s = StyleSheet.create({
   },
   enIyiEtiket: { fontSize: 12, fontWeight: "800", letterSpacing: 1.2, color: "#FFD98A" },
   enIyiAd: { fontSize: 16, fontWeight: "900", color: COLORS.text, marginTop: 2 },
-  enIyiAlt: { fontSize: 12, fontWeight: "600", color: "#C9D4DF" },
+  enIyiAlt: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
   dugmeler: { flexDirection: "row", gap: SPACING.sm, alignSelf: "stretch", marginTop: SPACING.xl },
   rovans: { flex: 1.4, height: 54, borderRadius: 16, backgroundColor: COLORS.accent, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   rovansPasif: { backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.cardBorder },
