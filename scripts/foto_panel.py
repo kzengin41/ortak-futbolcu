@@ -174,7 +174,7 @@ def sade(s):
 
 def taninirlik(ad):
     t = DURUM["tanin"].get(ad)
-    return max(t) if t else 0
+    return t[0] if t else 0   # Paket 29: playerFame ilk sayı = tanınırlık (scripts/populerlik.py)
 
 
 def kucult(veri):

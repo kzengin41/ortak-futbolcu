@@ -420,6 +420,10 @@ for ad, k in (ham.get("oyuncu") or {}).items():
         profiller[ad] = p
 
 # ---------------------------------------------------------------- tanınırlık (5. aşama)
+# PAKET 29 (14 Ekim 2026): lib/playerFame.json artık BURADA YAZILMIYOR — tek hesap
+# scripts/populerlik.py (Tanınırlık 2). Aşağıdaki eski hesap yalnız rapordaki sayaç için
+# duruyor; dosyanın sonunda populerlik.py çağrılır (ağırlıklar ve elle ayarlar
+# scripts/populerlik_ayar.json'dan gelir, popülerlik panelinde değişir).
 # lib/playerFame.json: ad -> [güncel popülerlik, tüm zamanlar tanınırlığı], ikisi de
 # 0-100 YÜZDELİK (100 = en tanınan). Oyun zorluğu sıralamaya baktığı için ölçek
 # değil sıra önemli. Aynı adı taşıyan oyunculardan uygulamada puanı sadece bu
@@ -496,11 +500,16 @@ sayac["kulup_ulkesi"] = len(kulup_ulke)
 os.makedirs(CIKTI_DIR, exist_ok=True)
 if kulup_ulke:
     json.dump(kulup_ulke, open(os.path.join(CIKTI_DIR, "clubCountries.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-if unler:
-    json.dump(unler, open(os.path.join(CIKTI_DIR, "playerFame.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 json.dump(profiller, open(os.path.join(CIKTI_DIR, "playerProfiles.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 json.dump(oduller, open(os.path.join(CIKTI_DIR, "playerAwards.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 kod_say = collections.Counter(c for v in oduller.values() for c in v)
 rapor = {"sayac": sayac, "odul_kodlari": kod_say, "supheli_ornek": supheli[:40]}
 json.dump(rapor, open(os.path.join(os.path.dirname(HAM), "ozgecmis_rapor.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=dict)
 print(json.dumps(rapor, ensure_ascii=False, default=dict)[:1500])
+
+# Paket 29: tanınırlık (playerFame.json) — profiller yazıldıktan SONRA, tek hesapla.
+if len(sys.argv) < 6:
+    import subprocess
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "populerlik.py")], check=False)
+else:
+    print("NOT: test çıktısı — playerFame.json için scripts/populerlik.py ayrıca çalıştırılmalı.")

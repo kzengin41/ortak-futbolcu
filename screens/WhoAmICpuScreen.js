@@ -142,7 +142,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   // eşleşme profilinden büyük bir ek (TR kulübü ×5 → +18,6, tuttuğun takım
   // +6) ekliyordu; bu ek oyuncular arasındaki tanınırlık farkını eziyordu ve
   // GS'de birkaç maç oynamış biri ilk 150'ye giriyordu. YENİ: sıralama
-  // yalnızca tanınırlıkla (playerFame: [güncel, tüm zamanlar] yüzdelik).
+  // yalnızca tanınırlıkla (playerFame ilk sayı, Tanınırlık 2 — scripts/populerlik.py).
   // Eşleşme profili sadece SÜZGEÇ: profildeki kulüplerde oynamamış oyuncu
   // sorulmaz, ama profil kimseyi öne çıkarmaz. (Endoğan Adili artık ~4.100.
   // sırada; Uğurcan ~200, Barış Alper ~150.)

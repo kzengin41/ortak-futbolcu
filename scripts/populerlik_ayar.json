@@ -1,0 +1,42 @@
+{
+ "agirliklar": {
+  "dil": 0.5,
+  "tr_agirlik": 0.8,
+  "dalga_torpu": 0.5,
+  "kariyer_agirlik": 0.1,
+  "hoca_torpu": 0.75,
+  "verisiz_tavan": 93.0
+ },
+ "oyuncular": {
+  "Cristiano Ronaldo": {
+   "kademe": 1
+  },
+  "David Beckham": {
+   "kademe": -1
+  },
+  "Erling Haaland": {
+   "kademe": 1
+  },
+  "Hakan Şükür": {
+   "sira": 800
+  },
+  "Luka Modrić": {
+   "kademe": -1
+  },
+  "Mauro Icardi": {
+   "kademe": -1
+  },
+  "Metin Oktay": {
+   "sira": 300
+  },
+  "Mohamed Salah": {
+   "kademe": -1
+  },
+  "Neymar": {
+   "kademe": -1
+  },
+  "Zinedine Zidane": {
+   "kademe": -1
+  }
+ }
+}
