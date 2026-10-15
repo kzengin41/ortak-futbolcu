@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Switch, Image, LayoutAnimation } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Switch, Image, LayoutAnimation, Modal } from "react-native";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import ModVarsayilanlariPaneli from "../components/ModVarsayilanlariPaneli";
 import { useAppSettings } from "../lib/SettingsContext";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import TakimSecici from "../components/TakimSecici";
+import TakimTemaSorusu, { soruGerekliMi } from "../components/TakimTemaSorusu";
 import BilgiTestiPenceresi from "../components/BilgiTestiPenceresi";
 import { seviyeEtiketi } from "../lib/bilgiSeviyesi";
 import TeamBadge from "../components/TeamBadge";
@@ -18,7 +19,7 @@ import {
   HATIRLATMA_SAATI, expoGodaMiyiz,
 } from "../lib/notifications";
 
-import { COLORS, PALETLER, saydam, vurguZemini } from "../lib/theme";
+import { COLORS, PALETLER, saydam, vurguZemini, SPACING } from "../lib/theme";
 import { ARKAPLANLAR, ARKAPLAN_SECENEKLERI, arkaplanAnahtari, SahaDeseni } from "../components/GameBackground";
 import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
@@ -53,6 +54,7 @@ export default function SettingsScreen({ onBack }) {
   // lib/SettingsContext.js ve lib/temaYenile.js).
   const [temaYenileniyor, setTemaYenileniyor] = useState(false);
   const [olusturucuAcik, setOlusturucuAcik] = useState(false);
+  const [temaTakim, setTemaTakim] = useState(null);
 
   // 4 Ekim 2026 — tema oluşturucudan gelen tam palet. Eski "Özel" ayar
   // anahtarları (customAccent...) da aynı değerlerle yazılıyor ki index.js
@@ -126,7 +128,12 @@ export default function SettingsScreen({ onBack }) {
             <TakimSecici
               secili={genelProfil.takim}
               kompakt
-              onSec={(t) => { setSetting("eslesmeProfili", { ...genelProfil, takim: t }); setAcik(null); }}
+              onSec={(t) => {
+                setSetting("eslesmeProfili", { ...genelProfil, takim: t });
+                setAcik(null);
+                // Paket 36: "takımını seçince tema takımına özel değiştirilsin mi diye sorsun"
+                if (t && soruGerekliMi(t, settings)) setTemaTakim(t);
+              }}
             />
           </Satir>
 
@@ -305,6 +312,15 @@ export default function SettingsScreen({ onBack }) {
           onKapat={() => setOlusturucuAcik(false)}
           onKaydet={ozelTemaKaydet}
         />
+        {temaTakim ? (
+          <Modal visible transparent animationType="fade" onRequestClose={() => setTemaTakim(null)}>
+            <View style={styles.temaSoruPerde}>
+              <View style={styles.temaSoruKart}>
+                <TakimTemaSorusu takim={temaTakim} onBitti={() => setTemaTakim(null)} />
+              </View>
+            </View>
+          </Modal>
+        ) : null}
       </ScrollView>
     </GameBackground>
   );
@@ -362,6 +378,11 @@ function AnahtarSatir({ etiket, alt, deger, onDegis, kapali }) {
 }
 
 const styles = StyleSheet.create({
+  temaSoruPerde: { flex: 1, backgroundColor: "rgba(6,12,20,0.78)", justifyContent: "flex-end" },
+  temaSoruKart: {
+    backgroundColor: COLORS.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: SPACING.lg, paddingBottom: SPACING.xl, borderWidth: 1, borderColor: COLORS.cardBorder,
+  },
   grup: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: COLORS.textMuted, textTransform: "uppercase", marginTop: 6, marginBottom: 8, marginLeft: 4 },
   liste: { gap: 8, marginBottom: 18 },
   satir: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, overflow: "hidden" },

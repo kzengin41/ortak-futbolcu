@@ -14,6 +14,13 @@ import { COLORS, RADIUS, SPACING, TYPE, saydam, vurguZemini } from "../lib/theme
 // tekrar çözülür (`visible` + `onKapat`). Soru üretimi lib/bilgiTesti.js
 // (players.json yüklüyor) — o yüzden modül ancak test BAŞLAYINCA yükleniyor,
 // ana sayfanın açılışı ağırlaşmasın.
+//
+// Paket 36 (Kerem: "bilmiyorum yok … Türkiye bilgini ölçüyoruz, nostalji
+// bilgini ölçüyoruz gibi uyarsın … tüm oyun bundan ibaret sanılıyor"):
+//  • "Bilmiyorum" artık şıkların altında tam boy bir seçenek (eskiden küçük,
+//    altı çizili bir yazıydı, fark edilmiyordu).
+//  • Her sorunun üstünde ne ölçüldüğü yazar (TÜRKİYE · NOSTALJİ …) + tek cümle.
+//  • Girişte ve sonuçta "bu oyun değil, 1 dakikalık seviye ayarı" açıkça yazar.
 // ============================================================================
 let _bt = null;
 const bt = () => (_bt = _bt || require("../lib/bilgiTesti"));
@@ -79,7 +86,7 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
     setSecilen(sik === null ? "__bilmiyorum" : sik);
     const B = bt();
     const sonra = B.sonrakiSeviye(seviye.current, dogru, no);
-    cevaplar.current.push({ bolge: soru.bolge, donem: soru.donem, seviye: seviye.current, dogru, sonra });
+    cevaplar.current.push({ bolge: soru.bolge, donem: soru.donem, seviye: seviye.current, dogru, bilmiyorum: sik === null, sonra });
     seviye.current = sonra;
     zaman.current = setTimeout(() => {
       const i = no + 1;
@@ -119,15 +126,15 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                   <Ionicons name="close" size={24} color={COLORS.textMuted} />
                 </SoundPressable>
               </View>
-              <Text style={s.baslik}>Futbol bilgini ölçelim</Text>
+              <Text style={s.baslik}>1 dakikalık seviye ayarı</Text>
               <Text style={s.aciklama}>
-                8 kısa soru, yaklaşık 1 dakika. Sonuca göre bütün modlarda zorluk ve hangi oyuncuların çıkacağı
-                sana göre ayarlanır. Bilmediğin soruda "Bilmiyorum" de, tahmin etme.
+                Bu oyunun kendisi değil — oyunlar bundan sonra başlıyor. 8 kolay soruyla futbol bilgini ölçüp
+                bütün modların zorluğunu sana göre ayarlıyoruz.
               </Text>
               <View style={s.maddeler}>
-                <Madde ikon="speedometer" yazi="Zorluk: bütün modlar senin seviyenden başlar" />
-                <Madde ikon="options" yazi="Eşleşme: Türkiye / Avrupa ve dönem dengesi önerilir" />
-                <Madde ikon="trending-up" yazi="Oynadıkça seviyen kendiliğinden ince ayarlanır" />
+                <Madde ikon="flag" yazi="Türkiye bilgin: Süper Lig'in bugünü ve nostaljisi" />
+                <Madde ikon="globe" yazi="Avrupa bilgin: bugünün yıldızları ve eskiler" />
+                <Madde ikon="help-circle" yazi="Emin değilsen “Bilmiyorum” de — sallamak sonucu bozar" />
               </View>
               <SoundPressable style={s.anaDugme} onPress={basla} disabled={faz === "hazirlaniyor"}>
                 {faz === "hazirlaniyor" ? <ActivityIndicator color={COLORS.accentDark} /> : <Text style={s.anaDugmeYazi}>TESTE BAŞLA</Text>}
@@ -156,6 +163,12 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                   <Ionicons name="close" size={22} color={COLORS.textMuted} />
                 </SoundPressable>
               </View>
+              {bt().eksenEtiketi(soru) ? (
+                <View style={s.eksen}>
+                  <Text style={s.eksenKisa}>{bt().eksenEtiketi(soru).kisa}</Text>
+                  <Text style={s.eksenCumle}>{bt().eksenEtiketi(soru).cumle}</Text>
+                </View>
+              ) : null}
               <Text style={s.soruMetin}>{soru.metin}</Text>
               <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
                 {soru.siklar.map((sik) => {
@@ -180,7 +193,13 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                   );
                 })}
               </View>
-              <SoundPressable style={s.bilmiyorum} onPress={() => cevapla(null)} disabled={secilen !== null}>
+              <SoundPressable
+                style={[s.bilmiyorum, secilen === "__bilmiyorum" && s.bilmiyorumSecili]}
+                onPress={() => cevapla(null)}
+                disabled={secilen !== null}
+                accessibilityLabel="Bilmiyorum"
+              >
+                <Ionicons name="help-circle-outline" size={20} color={COLORS.textMuted} />
                 <Text style={s.bilmiyorumYazi}>Bilmiyorum</Text>
               </SoundPressable>
             </>
@@ -194,7 +213,7 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                   <Text style={s.sonucEtiket}>{seviyeEtiketi(sonuc.seviye)}</Text>
                 </View>
               </View>
-              <Text style={s.aciklama}>{bt().SORU_SAYISI} sorudan {sonuc.dogruSayisi} doğru. Bütün modlar {sonuc.seviye}/10 zorlukla başlayacak (Ayarlar'da elle değiştirdiğin modlar hariç).</Text>
+              <Text style={s.aciklama}>{bt().SORU_SAYISI} sorudan {sonuc.dogruSayisi} doğru. Bütün modlar {sonuc.seviye}/10 zorlukla başlayacak (Ayarlar'da elle değiştirdiğin modlar hariç). Oynadıkça seviyen kendiliğinden ince ayarlanır.</Text>
 
               <View style={s.cubuklar}>
                 <Cubuk etiket="Türkiye" oran={sonuc.oranlar.tr} />
@@ -212,6 +231,7 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                 <Switch value={profilUygula} onValueChange={setProfilUygula} trackColor={{ true: COLORS.accent }} />
               </View>
 
+              <Text style={s.oyunlarNot}>Şimdi asıl oyunlar: 3-2-1 Ortak Futbolcu, 5 Kulüp, XOX, Kim Bu, İlk Harf ve online kapışmalar.</Text>
               <SoundPressable style={s.anaDugme} onPress={kaydet}>
                 <Text style={s.anaDugmeYazi}>KAYDET VE OYNA</Text>
               </SoundPressable>
@@ -278,8 +298,16 @@ const s = StyleSheet.create({
   sikDogru: { borderColor: COLORS.accent, backgroundColor: vurguZemini(0.10) },
   sikYanlis: { borderColor: COLORS.danger, backgroundColor: saydam(COLORS.danger, 0.10) },
   sikYazi: { flex: 1, fontSize: 16, fontWeight: "800", color: COLORS.text },
-  bilmiyorum: { alignSelf: "center", marginTop: SPACING.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xl },
-  bilmiyorumYazi: { fontSize: 15, fontWeight: "800", color: COLORS.textMuted, textDecorationLine: "underline" },
+  bilmiyorum: {
+    minHeight: 50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm,
+    marginTop: SPACING.sm, borderRadius: RADIUS.md, borderWidth: 1.5, borderStyle: "dashed", borderColor: COLORS.cardBorder,
+  },
+  bilmiyorumSecili: { borderStyle: "solid", borderColor: COLORS.textMuted, backgroundColor: saydam(COLORS.text, 0.06) },
+  bilmiyorumYazi: { fontSize: 16, fontWeight: "800", color: COLORS.textMuted },
+  eksen: { marginTop: SPACING.sm, padding: SPACING.sm, borderRadius: RADIUS.md, backgroundColor: vurguZemini(0.10) },
+  eksenKisa: { fontSize: 11, fontWeight: "900", letterSpacing: 1.4, color: COLORS.accent },
+  eksenCumle: { fontSize: 13, fontWeight: "700", color: COLORS.text, marginTop: 2 },
+  oyunlarNot: { fontSize: 13, fontWeight: "700", color: COLORS.textMuted, marginTop: SPACING.lg, textAlign: "center" },
 
   sonucUst: { fontSize: 13, fontWeight: "800", letterSpacing: 2, color: COLORS.accent },
   sonucSatir: { flexDirection: "row", alignItems: "flex-end", gap: SPACING.sm, marginTop: SPACING.sm },

@@ -4,7 +4,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { NavigationContainer, CommonActions, useNavigation, useNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 // Çökme raporlama (Sentry) — ekranlardan ÖNCE yüklensin ki açılıştaki hatalar da yakalansın.
 import { Sentry, hataRaporla } from "./lib/hataRaporu";
@@ -44,6 +43,7 @@ import { SettingsProvider } from "./lib/SettingsContext";
 import ModeGuide, { ModeGuideButton, KurulumButonu, useModeGuide } from "./components/ModeGuide";
 import UnlockToast from "./components/UnlockToast";
 import { COLORS } from "./lib/theme";
+import GameBackground from "./components/GameBackground";
 
 const ONBOARDING_KEY = "ortak-futbolcu-onboarding-done";
 
@@ -56,11 +56,13 @@ const NO_CONFIRM_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi",
 const APP_EXIT_ROUTES = new Set(["oyna", "tumModlar", "online", "ansiklopedi", "profilim", "onboarding"]);
 
 const Stack = createNativeStackNavigator();
-import SekmeKaydirma from "./components/SekmeKaydirma";
+import { createKaydirmaliSekmeler } from "./components/KaydirmaliSekmeler";
 import CanliSesBalonu from "./components/CanliSesBalonu";
 import GuncellemeBandi from "./components/GuncellemeBandi";
 import { aktifModEkle } from "./lib/gununModu";
-const Tab = createBottomTabNavigator();
+// Paket 36 — alt menü artık kaydırmalı şerit (components/KaydirmaliSekmeler.js):
+// parmakla kaydırırken komşu sekme yanından görünür (eskiden beyaz boşluk).
+const Tab = createKaydirmaliSekmeler();
 
 function goHome(navigation) {
   navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "mainTabs" }] }));
@@ -307,12 +309,27 @@ function OnlineRoute({ navigation, route }) {
 // alıyorlar ve çıkış her zaman onaylı), bu yüzden mod rehberi onlara ayrı bir
 // sarmalayıcıyla ekleniyor. Rehberin kendisi ve "görüldü" kaydı aynı yerden
 // geliyor, davranış offline modlarla birebir aynı.
+//
+// Paket 36 (Kerem: "onlineda maç başlarken bilgilendirmeyi okurken maç arkada
+// başlıyor. bilgilendirmenin kapatılması beklemeli.") — maç ekranı rehber
+// KAPANANA kadar bağlanmıyor. Ekran bağlanmadan oyuncu odanın kanalında
+// "görünmüyor"; ev sahibi de maçı ancak iki taraf da ekrandayken başlatıyor
+// (her mod rakibin varlığını bekliyor; Düello ilk turu rakip gelince üretiyor).
+// Maç sırasında "?" ile açılan rehber ekranı kapatmaz (yalnız ilk açılış bekletir).
 function RehberliOyun({ mod, children }) {
   const rehber = useModeGuide(mod);
   React.useEffect(() => aktifModEkle(mod), []);   // Paket 34: 2× XP
+  const [basladi, setBasladi] = React.useState(false);
+  React.useEffect(() => {
+    if (!basladi && rehber.hazir && !rehber.gorunur) setBasladi(true);
+  }, [basladi, rehber.hazir, rehber.gorunur]);
   return (
     <View style={{ flex: 1 }}>
-      {children}
+      {basladi ? children : (
+        <GameBackground style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
+          {rehber.hazir ? <Text style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: "700", textAlign: "center" }}>Rehberi kapatınca maç başlar — rakibin de seni bekliyor.</Text> : null}
+        </GameBackground>
+      )}
       {rehber.varMi && <ModeGuideButton onPress={rehber.ac} />}
       {rehber.varMi && <ModeGuide mod={mod} gorunur={rehber.gorunur} onClose={rehber.kapat} />}
     </View>
@@ -422,14 +439,12 @@ const TAB_ICONS = {
 function MainTabsRoute() {
   return (
     <Tab.Navigator
-      // Paket 18 — sekmeler arası sağa-sola kaydırma (components/SekmeKaydirma.js)
-      // ve geçişte yana kayma animasyonu.
-      screenLayout={(p) => <SekmeKaydirma {...p} />}
+      // Paket 18/36 — sekmeler arası sağa-sola kaydırma: navigator'ın kendisi
+      // (components/KaydirmaliSekmeler.js), komşu sekme önizlemeli.
       // Paket 31 — kendi sekme çubuğumuz (components/AltSekmeCubugu.js): seçili sekmede hap + dolu ikon.
       tabBar={(p) => <AltSekmeCubugu {...p} />}
       screenOptions={({ route }) => ({
         headerShown: false,
-        animation: "shift",
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.textMuted,
         // Paket 30 — sekme çubuğu zeminle kart arasında kendi tonunda (COLORS.tabBar);

@@ -21,7 +21,7 @@ import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import { taninirlik } from "../lib/taninirlik";
 import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
-import { baslangicDurumu, aksiyonuIsle, HAMLE_SURESI_SN, ISARET, sonucBenim, kareSayilari } from "../lib/onlineXox";
+import { baslangicDurumu, aksiyonuIsle, HAMLE_SURESI_SN, ISARET, sonucBenim, kareSayilari, kosulAnahtari } from "../lib/onlineXox";
 
 // ============================================================================
 // ONLINE FUTBOLCU XOX — 5 Ekim 2026 (benchmark .29379)
@@ -46,7 +46,20 @@ export default function OnlineXoxScreen({ room, onExit }) {
 
   const baglam = useMemo(() => ({
     veriSeti: PLAYERS,
-    izgaraYap: () => izgaraUret(PLAYERS, zorlukAyari10(ZORLUK), Math.random, "kulup", profilRef.current),
+    // Paket 36: rövanşta önceki maçın takımlarından kaçın — birkaç ızgara
+    // dener, öncekilerle en az ortak koşulu olanı seçer (ideali sıfır).
+    izgaraYap: (haric = []) => {
+      const h = new Set(haric);
+      let enIyi = null, enAz = Infinity;
+      for (let i = 0; i < (h.size ? 10 : 1); i++) {
+        const iz = izgaraUret(PLAYERS, zorlukAyari10(ZORLUK), Math.random, "kulup", profilRef.current);
+        if (!iz) continue;
+        const ortak = [...iz.satirlar, ...iz.sutunlar].filter((k) => h.has(kosulAnahtari(k))).length;
+        if (ortak < enAz) { enIyi = iz; enAz = ortak; }
+        if (ortak === 0) break;
+      }
+      return enIyi;
+    },
   }), []);
   const aksiyonIsle = useMemo(() => rovansli((d, a, k) => aksiyonuIsle(d, a, k, baglam)), [baglam]);
   const ilkDurum = useMemo(() => baslangicDurumu(), []);

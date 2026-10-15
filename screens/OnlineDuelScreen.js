@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import GameBackground from "../components/GameBackground";
@@ -9,6 +9,14 @@ import EslesmeKarti from "../components/EslesmeKarti";
 import TimerBar from "../components/TimerBar";
 import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
+import PlayerPhoto from "../components/PlayerPhoto";
+import VoiceConfirm from "../components/VoiceConfirm";
+import { PLAYERS } from "../lib/players";
+import { buildSuggestIndex, suggestPlayers, findMatchedPlayer, playersForPair, sesIpuclari } from "../lib/gameEngine";
+import { taninirlik } from "../lib/taninirlik";
+import { useVoiceInput } from "../lib/useVoiceInput";
+import { useAppSettings } from "../lib/SettingsContext";
+import { unlockPlayer } from "../lib/pokedex";
 import { supabase } from "../lib/supabaseClient";
 import { odaKur, odaNesnesi } from "../lib/onlineLobi";
 import { recordRound } from "../lib/stats";
@@ -26,8 +34,27 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme
 // için aynı odada değil, YENİ bir odada. İki taraf da RÖVANŞ'a dokununca odayı
 // kuran (1) yeni odayı rakibiyle birlikte açar ve kodunu eski odanın kanalından
 // yollar; iki telefon da yeni maça geçer.
+//
+// PAKET 36 (15 Ekim 2026) — Kerem'in kardeşiyle ilk online denemesinden:
+//  • "süre bitince buga giriyor. ekran bire bir aynı kalıyor" → cevap hakkını
+//    alanın süresi dolunca yazdığı (boşsa boş) cevap otomatik gönderilir; o
+//    telefon donmuşsa diğeri 2 sn sonra resolve_timeout ile turu açar/kapatır
+//    (supabase/paket36_online.sql). Yarış aşamasında da RPC birkaç sn'de bir
+//    yeniden denenir (ağ hatasında tur takılı kalmasın).
+//  • "sonraki tur butonu olsun, butona basılmazsa 10 sn içinde otomatik geçsin"
+//    → iki tarafta da SONRAKİ TUR (geri sayımlı); misafir basınca ev sahibine
+//    haber gider, 10 sn dolunca ev sahibi kendiliğinden geçer.
+//  • "mikrofon yok. verdiğim cevap karşıda çıkmıyor, mini profil karşıda da
+//    çıkmalı" → mikrofon + öneriler; yazılan cevap rakibin ekranında canlı
+//    görünür; tur sonunda bilinen futbolcu (fotoğrafına dokununca mini profil)
+//    İKİ tarafta da çıkar; kimse bilemediyse en tanınmış 3 doğru cevap.
+//  • "maç başlarken bilgilendirmeyi okurken maç arkada başlıyor" → ilk turu
+//    ev sahibi ancak rakip EKRANA GELDİĞİNDE üretir (rehber kapanmadan ekran
+//    bağlanmıyor, bkz. App.js RehberliOyun).
 export const HEDEF = 5;
 const VURGU = MODE_COLORS.online;
+export const SONRAKI_TUR_SN = 10;      // sonuç ekranından otomatik geçiş
+const CEVAP_PAYI_MS = 2000;            // cevap süresi dolduktan sonra rakibin turu açması için pay
 
 export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   const [roundRow, setRoundRow] = useState(null);
@@ -36,9 +63,16 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   const [answerInput, setAnswerInput] = useState("");
   const [now, setNow] = useState(Date.now());
   const [rakipVar, setRakipVar] = useState(true);
+  const [ilkYukleme, setIlkYukleme] = useState(null);         // null | "var" | "yok"
   const [benIstedim, setBenIstedim] = useState(false);
   const [rakipIstedi, setRakipIstedi] = useState(false);
   const [rovansHata, setRovansHata] = useState(null);
+  const [rakipGeldi, setRakipGeldi] = useState(false);       // presence'ta rakip bir kez görüldü mü
+  const [rakipYazi, setRakipYazi] = useState(null);          // { tur, metin } — rakibin canlı yazdığı
+  const [tahminler, setTahminler] = useState({});            // turId -> [{ kim, metin }]
+  const [rakipHazir, setRakipHazir] = useState(null);        // misafirin "sonraki tur" dediği tur no
+  const [sesOnayIstegi, setSesOnayIstegi] = useState(null);
+  const [sesHata, setSesHata] = useState(null);
   const channelRef = useRef(null);
   const rvKanalRef = useRef(null);
   const kuruluyorRef = useRef(false);
@@ -57,15 +91,7 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
         .limit(1);
       const rd = turlar && turlar[0];
       if (mounted && rd) setRoundRow(rd);
-      // 27 Eylül 2026: henüz tur yoksa ilk turu odayı kuran (1) üretir; 2 numara
-      // realtime ile gelen turu bekler.
-      if (mounted && !rd && myPlayer === 1) {
-        await supabase.rpc("generate_round", {
-          p_room_id: room.id,
-          p_round_number: 1,
-          p_allowed_club_ids: r?.allowed_club_ids ?? null,
-        });
-      }
+      if (mounted) setIlkYukleme(rd ? "var" : "yok");
     })();
 
     channelRef.current = supabase
@@ -87,6 +113,15 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     rvKanalRef.current = rv;
     rv
       .on("broadcast", { event: "istek" }, () => mounted && setRakipIstedi(true))
+      .on("broadcast", { event: "yaziyor" }, ({ payload }) => {
+        if (mounted && payload && payload.tur) setRakipYazi({ tur: payload.tur, metin: String(payload.metin || "").slice(0, 40) });
+      })
+      .on("broadcast", { event: "tahmin" }, ({ payload }) => {
+        if (mounted && payload && payload.tur) tahminEkle(payload.tur, myPlayer === 1 ? 2 : 1, payload.metin);
+      })
+      .on("broadcast", { event: "sonraki" }, ({ payload }) => {
+        if (mounted && payload && payload.no) setRakipHazir(payload.no);
+      })
       .on("broadcast", { event: "yeniOda" }, ({ payload }) => {
         if (!mounted || myPlayer !== 2 || !payload?.oda) return;
         onRovansOda && onRovansOda(odaNesnesi(payload.oda, 2));
@@ -94,7 +129,9 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
       .on("presence", { event: "sync" }, () => {
         if (!mounted) return;
         const hepsi = rv.presenceState() || {};
-        setRakipVar(Boolean(hepsi[String(myPlayer === 1 ? 2 : 1)]?.length));
+        const var_ = Boolean(hepsi[String(myPlayer === 1 ? 2 : 1)]?.length);
+        setRakipVar(var_);
+        if (var_) setRakipGeldi(true);
       })
       .subscribe((st) => { if (st === "SUBSCRIBED") rv.track({ oyuncu: myPlayer }); });
 
@@ -143,13 +180,66 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   const turSuresi = roundRow?.round_deadline && roundRow?.started_at
     ? Math.max(1, Math.round((new Date(roundRow.round_deadline) - new Date(roundRow.started_at)) / 1000))
     : 20;
+  const iAmBuzzer = roundRow?.buzzed_by === myPlayer;
+  const iAmLocked = roundRow?.locked_players?.includes(myPlayer);
 
-  // Süre sunucu saatine göre dolduysa ilk fark eden istemci kapatır (idempotent RPC)
+  // --- Paket 36: ilk tur ancak iki taraf da ekrandayken --------------------
+  // (Misafir mod rehberini okurken maç arkada başlamasın — rehber kapanmadan
+  // ekranı bağlanmıyor, yani presence'ta görünmüyor.)
+  const ilkTurRef = useRef(false);
   useEffect(() => {
-    if (phase === "racing" && roundTimeLeft === 0 && roundRow) {
-      supabase.rpc("resolve_timeout", { p_round_id: roundRow.id });
+    if (myPlayer !== 1 || ilkYukleme !== "yok" || !rakipGeldi || ilkTurRef.current || roundRow) return;
+    ilkTurRef.current = true;
+    supabase.rpc("generate_round", {
+      p_room_id: room.id,
+      p_round_number: 1,
+      p_allowed_club_ids: roomRow?.allowed_club_ids ?? null,
+    }).then(({ error }) => { if (error) ilkTurRef.current = false; }, () => { ilkTurRef.current = false; });
+  }, [myPlayer, ilkYukleme, rakipGeldi, roundRow, roomRow]);
+
+  // --- Süre dolunca turu kapat (ilk fark eden; RPC idempotent) -------------
+  // Ağ hatasında tur takılı kalmasın diye 3 sn'de bir yeniden denenir.
+  const sonDenemeRef = useRef(0);
+  function zamanAsimi() {
+    if (!roundRow || Date.now() - sonDenemeRef.current < 3000) return;
+    sonDenemeRef.current = Date.now();
+    supabase.rpc("resolve_timeout", { p_round_id: roundRow.id }).then(() => {}, () => {});
+  }
+  useEffect(() => {
+    if (phase === "racing" && roundTimeLeft === 0) zamanAsimi();
+    // Cevap hakkını alanın süresi (+pay) doldu ve hâlâ cevap gelmedi: o telefon
+    // donmuş/arka planda olabilir — turu sunucu açar ya da kapatır.
+    if (phase === "answering" && roundRow?.answer_deadline && now > new Date(roundRow.answer_deadline).getTime() + CEVAP_PAYI_MS) zamanAsimi();
+  }, [phase, roundTimeLeft, now, roundRow]);
+
+  // Cevap süresi bitti: kutuda ne yazılıysa (boşsa boş) gönder — ekran donmasın.
+  const otoGonderRef = useRef(null);
+  useEffect(() => {
+    if (phase !== "answering" || !iAmBuzzer || answerTimeLeft > 0 || !roundRow) return;
+    const anahtar = `${roundRow.id}-${roundRow.buzzed_at}`;
+    if (otoGonderRef.current === anahtar) return;
+    otoGonderRef.current = anahtar;
+    setSesOnayIstegi(null);
+    cevapGonder(answerInput);
+  }, [phase, iAmBuzzer, answerTimeLeft, roundRow]);
+
+  // --- Paket 36: sonraki tura geçiş (iki taraf da; 10 sn sonra otomatik) ---
+  const sonucAnRef = useRef({ id: null, t: 0 });
+  if (phase === "result" && roundRow && sonucAnRef.current.id !== roundRow.id) sonucAnRef.current = { id: roundRow.id, t: Date.now() };
+  const sonrakiKalan = phase === "result" ? Math.max(0, SONRAKI_TUR_SN - Math.floor((now - sonucAnRef.current.t) / 1000)) : SONRAKI_TUR_SN;
+  const [benHazirim, setBenHazirim] = useState(null);   // "sonraki tur" dediğim tur no (misafir)
+  const uretilenRef = useRef(0);
+  useEffect(() => {
+    if (phase !== "result" || macBitti || !roundRow) return;
+    const no = roundRow.round_number;
+    if (myPlayer === 1) {
+      if (sonrakiKalan === 0 || rakipHazir === no) handleNextRound();
+    } else if (now - sonucAnRef.current.t > (SONRAKI_TUR_SN + 6) * 1000) {
+      // Ev sahibi hiç geçirmediyse (bağlantısı koptu vb.) misafir kendisi üretir;
+      // generate_round aynı tur numarasını iki kez üretmez (paket36).
+      handleNextRound(true);
     }
-  }, [phase, roundTimeLeft, roundRow]);
+  }, [phase, macBitti, sonrakiKalan, rakipHazir, roundRow, now]);
 
   // Maç sonu istatistik + XP (bir kez)
   const macIslendiRef = useRef(false);
@@ -190,8 +280,55 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     rvKanalRef.current?.send({ type: "broadcast", event: "istek", payload: { kimden: myPlayer } });
   }
 
-  const iAmBuzzer = roundRow?.buzzed_by === myPlayer;
-  const iAmLocked = roundRow?.locked_players?.includes(myPlayer);
+  function yayinla(event, payload) {
+    try { rvKanalRef.current?.send({ type: "broadcast", event, payload }); } catch (e) {}
+  }
+  function tahminEkle(tur, kim, metin) {
+    const m = String(metin || "").trim().slice(0, 60);
+    setTahminler((t) => ({ ...t, [tur]: [...(t[tur] || []), { kim, metin: m }] }));
+  }
+
+  // --- cevap kutusu: öneriler + canlı yayın + mikrofon ----------------------
+  const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
+  const oneriler = useMemo(
+    () => (phase === "answering" && iAmBuzzer && answerInput.trim().length >= 3 ? suggestPlayers(suggestIndex, answerInput) : []),
+    [suggestIndex, answerInput, phase, iAmBuzzer]
+  );
+  const sonYayinRef = useRef(0);
+  function yaziDegisti(metin) {
+    setAnswerInput(metin);
+    // Rakip ekranında canlı görünsün (çok sık yayın yapmamak için ~150 ms aralık).
+    const t = Date.now();
+    if (roundRow && t - sonYayinRef.current > 150) {
+      sonYayinRef.current = t;
+      yayinla("yaziyor", { tur: roundRow.id, metin });
+    }
+  }
+
+  const teamAAd = roundRow ? clubsMap[roundRow.club_a_id] : null;
+  const teamBAd = roundRow ? clubsMap[roundRow.club_b_id] : null;
+  const { settings: appSettings } = useAppSettings();
+  const sesOnayiAcik = appSettings?.voiceConfirm !== false;
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(
+    () => sesIpuclari(PLAYERS, [teamAAd, teamBAd])
+  );
+  async function mikrofon() {
+    setSesHata(null);
+    if (isRecording) {
+      try {
+        const metin = await stopRecording();
+        if (!metin) { setSesHata("Sesi anlayamadım, tekrar dener misin?"); return; }
+        const gonder = (a) => { setAnswerInput(a); cevapGonder(a); };
+        const yaz = (a) => yaziDegisti(a);
+        if (sesOnayiAcik) setSesOnayIstegi({ duyulan: metin, ad: metin, gonder, yaz });
+        else gonder(metin);
+      } catch (err) {
+        setSesHata(err?.message || "Ses tanıma başarısız oldu");
+      }
+    } else {
+      try { await startRecording(); } catch (err) { setSesHata(err?.message || "Mikrofona erişilemedi"); }
+    }
+  }
 
   async function handleBuzz() {
     if (!roundRow) return;
@@ -201,27 +338,75 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     if (!roundRow) return;
     await supabase.rpc("pass_round", { p_round_id: roundRow.id, p_player: myPlayer });
   }
-  async function handleSubmit() {
-    if (!roundRow || !answerInput.trim()) return;
-    const text = answerInput;
+  async function cevapGonder(metin) {
+    if (!roundRow) return;
+    const text = String(metin || "");
     setAnswerInput("");
+    if (text.trim()) {
+      tahminEkle(roundRow.id, myPlayer, text);
+      yayinla("tahmin", { tur: roundRow.id, metin: text });
+    }
+    yayinla("yaziyor", { tur: roundRow.id, metin: "" });
     await supabase.rpc("submit_guess", { p_round_id: roundRow.id, p_player: myPlayer, p_guess: text });
   }
-  async function handleNextRound() {
-    // Çakışan iki insert olmasın diye sıradaki turu sadece odayı kuran başlatır.
-    if (myPlayer !== 1 || !roundRow || macBitti) return;
-    await supabase.rpc("generate_round", {
-      p_room_id: room.id,
-      p_round_number: roundRow.round_number + 1,
-      p_allowed_club_ids: roomRow?.allowed_club_ids ?? null,
-    });
+  function handleSubmit() {
+    if (!answerInput.trim()) return;
+    cevapGonder(answerInput);
   }
+  async function handleNextRound(yedek = false) {
+    // Çakışan iki insert olmasın diye sıradaki turu normalde odayı kuran başlatır;
+    // misafir "SONRAKİ TUR" deyince ona haber verir (yedek: ev sahibi sessiz kaldı).
+    if (!roundRow || macBitti) return;
+    const no = roundRow.round_number + 1;
+    if (myPlayer !== 1 && !yedek) {
+      setBenHazirim(roundRow.round_number);
+      yayinla("sonraki", { no: roundRow.round_number });
+      return;
+    }
+    if (uretilenRef.current >= no) return;
+    uretilenRef.current = no;
+    let hata = null;
+    try {
+      const { error } = await supabase.rpc("generate_round", {
+        p_room_id: room.id,
+        p_round_number: no,
+        p_allowed_club_ids: roomRow?.allowed_club_ids ?? null,
+      });
+      hata = error;
+    } catch (e) { hata = e; }
+    if (hata) uretilenRef.current = no - 1;
+  }
+
+  // Tur sonucu: bilinen futbolcu (iki tarafta da fotoğraf + mini profil).
+  const turTahminleri = (roundRow && tahminler[roundRow.id]) || [];
+  const ciftOyunculari = useMemo(
+    () => (teamAAd && teamBAd ? playersForPair(PLAYERS, teamAAd, teamBAd) : []),
+    [teamAAd, teamBAd]
+  );
+  const bilinen = useMemo(() => {
+    if (phase !== "result" || !roundRow?.winner) return null;
+    const son = [...turTahminleri].reverse().find((t) => t.kim === roundRow.winner);
+    if (!son) return null;
+    const p = findMatchedPlayer(son.metin, ciftOyunculari);
+    return { metin: son.metin, ad: p ? p.name : null };
+  }, [phase, roundRow?.winner, roundRow?.id, turTahminleri, ciftOyunculari]);
+  const ornekler = useMemo(() => {
+    const liste = (roundRow?.revealed_answers || []).filter(Boolean);
+    return [...new Set(liste)].sort((a, b) => taninirlik(b) - taninirlik(a));
+  }, [roundRow?.revealed_answers]);
+  const kilitAcildiRef = useRef(null);
+  useEffect(() => {
+    if (bilinen?.ad && roundRow?.winner === myPlayer && kilitAcildiRef.current !== roundRow.id) {
+      kilitAcildiRef.current = roundRow.id;
+      unlockPlayer(bilinen.ad);
+    }
+  }, [bilinen, roundRow?.winner, roundRow?.id]);
 
   if (phase === "loading") {
     return (
       <GameBackground style={styles.merkez}>
         <ActivityIndicator color={VURGU.main} />
-        <Text style={styles.bekleme}>Maç hazırlanıyor...</Text>
+        <Text style={styles.bekleme}>{!rakipGeldi ? "Rakip bekleniyor… (kuralları okuyor olabilir)" : "Maç hazırlanıyor..."}</Text>
         <SoundPressable onPress={onExit} style={styles.cikisBtn}>
           <Text style={styles.cikisText}>Lobiye dön</Text>
         </SoundPressable>
@@ -229,12 +414,15 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     );
   }
 
-  const teamA = clubsMap[roundRow.club_a_id] || "...";
-  const teamB = clubsMap[roundRow.club_b_id] || "...";
+  const teamA = teamAAd || "...";
+  const teamB = teamBAd || "...";
+  const rakipCanli = rakipYazi && rakipYazi.tur === roundRow.id && roundRow.buzzed_by && roundRow.buzzed_by !== myPlayer ? rakipYazi.metin : "";
+  const rakipNo = myPlayer === 1 ? 2 : 1;
+  const rakipYanlislar = turTahminleri.filter((t) => t.kim === rakipNo && !(roundRow.winner === rakipNo && bilinen && t.metin === bilinen.metin));
   const rovansHal = !rakipVar
     ? { etiket: "RAKİP AYRILDI", pasif: true, rakipIstiyor: false }
     : benIstedim
-    ? { etiket: rakipIstedi ? "ODA KURULUYOR…" : "RAKİP BEKLENİYOR…", pasif: true, rakipIstiyor: false }
+    ? { etiket: rakipIstedi ? "ODA KURULUYOR…" : "DAVET GÖNDERİLDİ…", pasif: true, rakipIstiyor: false }
     : rakipIstedi
     ? { etiket: "KABUL ET — RÖVANŞ", pasif: false, rakipIstiyor: true }
     : { etiket: "RÖVANŞ", pasif: false, rakipIstiyor: false };
@@ -285,6 +473,15 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                   <Text style={styles.pasYazi}>Bilemedim, pas</Text>
                 </SoundPressable>
               )}
+              {turTahminleri.length ? (
+                <View style={styles.tahminListe}>
+                  {turTahminleri.map((t, i) => (
+                    <Text key={i} style={styles.tahminSatir}>
+                      {`${t.kim === myPlayer ? "Sen" : "Rakip"}: “${t.metin}” `}<Text style={{ color: COLORS.danger }}>✗</Text>
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
             </>
           )}
 
@@ -292,27 +489,61 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
             <View style={{ marginTop: SPACING.lg }}>
               {iAmBuzzer ? (
                 <>
-                  <Text style={styles.cevapBaslik}>Sıra sende — {answerTimeLeft} sn</Text>
+                  <Text style={[styles.cevapBaslik, answerTimeLeft <= 3 && { color: COLORS.danger }]}>Sıra sende — {answerTimeLeft} sn</Text>
                   <View style={styles.girdiSatir}>
                     <TextInput
                       autoFocus
                       value={answerInput}
-                      onChangeText={setAnswerInput}
+                      onChangeText={yaziDegisti}
                       onSubmitEditing={handleSubmit}
                       placeholder="İki takımda da oynamış futbolcu..."
                       placeholderTextColor={COLORS.textFaint}
                       autoCorrect={false}
+                      autoCapitalize="words"
+                      spellCheck={false}
                       style={styles.girdi}
                     />
+                    <SoundPressable
+                      style={[styles.mikBtn, isRecording && styles.mikBtnAktif]}
+                      onPress={mikrofon}
+                      disabled={isProcessing}
+                      accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle söyle"}
+                    >
+                      <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#fff" : COLORS.text} />
+                    </SoundPressable>
                     <SoundPressable style={styles.gonderBtn} onPress={handleSubmit} accessibilityLabel="Gönder">
                       <Ionicons name="send" size={18} color={COLORS.accentDark} />
                     </SoundPressable>
                   </View>
+                  {oneriler.length > 0 && !sesOnayIstegi ? (
+                    <View style={styles.oneriKutu}>
+                      {oneriler.map((ad) => (
+                        <Pressable key={ad} onPress={() => cevapGonder(ad)} style={styles.oneriSatir} accessibilityRole="button" accessibilityLabel={ad}>
+                          <Text style={styles.oneriYazi}>{ad}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : null}
+                  {isRecording ? <Text style={styles.sesIpucu}>Dinliyorum — bitince dokun</Text> : null}
+                  {isProcessing ? <Text style={styles.sesIpucu}>Yazıya çevriliyor…</Text> : null}
+                  {sesHata ? <Text style={[styles.sesIpucu, { color: COLORS.danger }]}>{sesHata}</Text> : null}
+                  <VoiceConfirm
+                    istek={sesOnayIstegi}
+                    onOnayla={(ad) => { const i = sesOnayIstegi; setSesOnayIstegi(null); i && i.gonder(ad); }}
+                    onTekrar={() => { setSesOnayIstegi(null); mikrofon(); }}
+                    onYaz={(ad) => { const i = sesOnayIstegi; setSesOnayIstegi(null); i && i.yaz(ad); }}
+                    onIptal={() => setSesOnayIstegi(null)}
+                  />
                 </>
               ) : (
                 <View style={styles.bilgiKart}>
-                  <ActivityIndicator color={VURGU.main} />
-                  <Text style={styles.bilgiYazi}>Rakip cevap veriyor...</Text>
+                  <View style={styles.bilgiUst}>
+                    <ActivityIndicator color={VURGU.main} />
+                    <Text style={styles.bilgiYazi}>Rakip cevap veriyor · {answerTimeLeft} sn</Text>
+                  </View>
+                  <Text style={[styles.canliYazi, !rakipCanli && { color: COLORS.textFaint }]} numberOfLines={1} accessibilityLiveRegion="polite">
+                    {rakipCanli ? `“${rakipCanli}”` : "yazıyor…"}
+                  </Text>
                 </View>
               )}
             </View>
@@ -323,16 +554,39 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
               <Text style={[styles.sonucBaslik, { color: roundRow.winner === myPlayer ? COLORS.accent : roundRow.winner ? COLORS.cta : COLORS.text }]}>
                 {roundRow.winner === 0 ? "Kimse bilemedi" : roundRow.winner === myPlayer ? "Puan senin!" : "Rakip bildi"}
               </Text>
-              <Text style={styles.ornekBaslik}>Geçerli cevaplardan bazıları</Text>
-              <Text style={styles.ornekMetin}>{(roundRow.revealed_answers || []).slice(0, 8).join(" · ")}</Text>
+              {roundRow.winner > 0 && bilinen ? (
+                <View style={styles.bilinen}>
+                  {bilinen.ad ? <PlayerPhoto name={bilinen.ad} size={84} /> : null}
+                  <Text style={styles.bilinenAd}>{bilinen.ad || bilinen.metin}</Text>
+                  <Text style={styles.bilinenAlt}>
+                    {roundRow.winner === myPlayer ? "Senin cevabın" : "Rakibin cevabı"}{bilinen.ad && bilinen.ad !== bilinen.metin ? ` · “${bilinen.metin}”` : ""}
+                  </Text>
+                  {bilinen.ad ? <Text style={styles.dokunIpucu}>Profil için fotoğrafa dokun</Text> : null}
+                </View>
+              ) : null}
+              {rakipYanlislar.length ? (
+                <Text style={styles.tahminSatir}>Rakip denedi: {rakipYanlislar.map((t) => `“${t.metin}”`).join(", ")} ✗</Text>
+              ) : null}
+              {roundRow.winner === 0 && ornekler.length ? (
+                <View style={styles.ornekFotolar}>
+                  {ornekler.slice(0, 3).map((ad) => (
+                    <View key={ad} style={styles.ornekFoto}>
+                      <PlayerPhoto name={ad} size={56} />
+                      <Text style={styles.ornekFotoAd} numberOfLines={2}>{ad}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+              <Text style={styles.ornekBaslik}>{roundRow.winner === 0 ? "Diğer doğru cevaplar" : "Geçerli cevaplardan bazıları"}</Text>
+              <Text style={styles.ornekMetin}>{ornekler.slice(roundRow.winner === 0 ? 3 : 0, roundRow.winner === 0 ? 11 : 8).join(" · ") || "—"}</Text>
               {!macBitti ? (
-                myPlayer === 1 ? (
-                  <SoundPressable style={styles.anaBtn} onPress={handleNextRound}>
-                    <Text style={styles.anaBtnYazi}>SIRADAKİ TUR</Text>
+                myPlayer === 1 || benHazirim !== roundRow.round_number ? (
+                  <SoundPressable style={styles.anaBtn} onPress={() => handleNextRound()} accessibilityLabel="Sonraki tur">
+                    <Text style={styles.anaBtnYazi}>SONRAKİ TUR · {sonrakiKalan}</Text>
                     <Ionicons name="arrow-forward" size={18} color={COLORS.accentDark} />
                   </SoundPressable>
                 ) : (
-                  <Text style={styles.bekleme}>Ev sahibi sıradaki turu başlatıyor...</Text>
+                  <Text style={styles.bekleme}>Hazırsın — sıradaki tur başlıyor… ({sonrakiKalan})</Text>
                 )
               ) : null}
             </View>
@@ -401,15 +655,35 @@ const styles = StyleSheet.create({
   cevapBaslik: { ...TYPE.h3, color: COLORS.accent, textAlign: "center", marginBottom: SPACING.sm },
   girdiSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   girdi: {
-    flex: 1, backgroundColor: COLORS.card, borderColor: COLORS.accent, borderWidth: 2, borderRadius: RADIUS.md,
+    flex: 1, minWidth: 0, backgroundColor: COLORS.card, borderColor: COLORS.accent, borderWidth: 2, borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.md, color: COLORS.text, fontSize: 16,
   },
   gonderBtn: { backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, ...SHADOW.card },
   bilgiKart: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm,
+    alignItems: "center", justifyContent: "center", gap: SPACING.sm,
     backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.lg, borderWidth: 1, borderColor: COLORS.cardBorder,
   },
+  bilgiUst: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   bilgiYazi: { ...TYPE.body, fontWeight: "800" },
+  canliYazi: { color: COLORS.text, fontSize: 20, fontWeight: "900", textAlign: "center" },
+  mikBtn: {
+    backgroundColor: COLORS.card, borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md,
+    borderWidth: 1.5, borderColor: COLORS.cardBorder,
+  },
+  mikBtnAktif: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  oneriKutu: { marginTop: SPACING.sm, backgroundColor: COLORS.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, overflow: "hidden" },
+  oneriSatir: { paddingVertical: 11, paddingHorizontal: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.cardBorder },
+  oneriYazi: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
+  sesIpucu: { ...TYPE.caption, textAlign: "center", marginTop: SPACING.sm },
+  tahminListe: { marginTop: SPACING.md, alignItems: "center", gap: 2 },
+  tahminSatir: { ...TYPE.caption, color: COLORS.textMuted, textAlign: "center", marginTop: SPACING.sm },
+  bilinen: { alignItems: "center", marginTop: SPACING.md, gap: 4 },
+  bilinenAd: { color: COLORS.text, fontSize: 20, fontWeight: "900", textAlign: "center", marginTop: SPACING.sm },
+  bilinenAlt: { ...TYPE.caption, textAlign: "center" },
+  dokunIpucu: { ...TYPE.caption, fontSize: 11, color: COLORS.textFaint },
+  ornekFotolar: { flexDirection: "row", justifyContent: "center", gap: SPACING.md, marginTop: SPACING.md },
+  ornekFoto: { alignItems: "center", width: 88 },
+  ornekFotoAd: { ...TYPE.caption, fontSize: 12, color: COLORS.text, fontWeight: "800", textAlign: "center", marginTop: 4 },
 
   sonucKart: {
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.lg,

@@ -3,6 +3,7 @@ import { Modal, View, Text, ScrollView, StyleSheet, Switch } from "react-native"
 import { Ionicons } from "@expo/vector-icons";
 import SoundPressable from "./SoundPressable";
 import TakimSecici from "./TakimSecici";
+import TakimTemaSorusu, { soruGerekliMi } from "./TakimTemaSorusu";
 import { useAppSettings } from "../lib/SettingsContext";
 import { ayarlardanProfil } from "../lib/eslesmeProfili";
 import { bildirimDesteginVarMi, hatirlatmayiKur, HATIRLATMA_SAATI } from "../lib/notifications";
@@ -21,14 +22,29 @@ export default function TakimSorusuPenceresi() {
   // Akşam hatırlatması da burada, tek dokunuşla (denetim bulgusu #9: varsayılan
   // kapalıydı ve Ayarlar'da 3 dokunuş derindeydi). İşaretli gelir; kaldırılabilir.
   const [hatirlat, setHatirlat] = useState(true);
+  // Paket 36: takım seçilince "tema takımına özel değişsin mi?" aynı pencerede sorulur.
+  const [temaTakim, setTemaTakim] = useState(null);
   if (!loaded || settings.takimSoruldu) return null;
   const bildirimVar = bildirimDesteginVarMi();
   const profil = ayarlardanProfil(settings);
 
   function bitir(takim) {
     if (takim) setSetting("eslesmeProfili", { ...profil, takim, takimOrani: profil.takimOrani || "az" });
-    setSetting("takimSoruldu", true);
     if (bildirimVar && hatirlat) hatirlatmayiKur().catch(() => {});
+    if (takim && soruGerekliMi(takim, settings)) { setTemaTakim(takim); return; }
+    setSetting("takimSoruldu", true);
+  }
+
+  if (temaTakim) {
+    return (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setSetting("takimSoruldu", true)}>
+        <View style={styles.perde}>
+          <View style={styles.kart}>
+            <TakimTemaSorusu takim={temaTakim} onBitti={() => setSetting("takimSoruldu", true)} />
+          </View>
+        </View>
+      </Modal>
+    );
   }
 
   return (

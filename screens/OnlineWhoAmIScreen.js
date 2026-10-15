@@ -10,6 +10,8 @@ import { MasaKartlari, TahminTablosu, SimdiBilirsenAfis, AcilisAnimasyonu, sayi 
 import { prefetchPlayerPhoto } from "../components/PlayerPhoto";
 import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
+import { PLAYER_LAST_ACTIVE_YEAR } from "../lib/playerYears";
+import { oyundaCikmasin } from "../lib/taninirlik";
 import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
 import { carpan, acilabilirMi, ASGARI_PUAN } from "../lib/kimBuMasa";
 import { masaHazirla, karsilastirAd, gizliMi, oyuncuBul, taninmisHavuz } from "../lib/kimBuVeri";
@@ -28,8 +30,23 @@ import { baslangicDurumu, aksiyonuIsle, pot, TUR_ARASI_MS, HEDEF_TUR } from "../
 // ============================================================================
 const VURGU = MODE_COLORS.whoAmI;
 
+// Paket 36 (Kerem: "hidetoshi nakata diye biri çıktı bu kim?") — ESKİ: en
+// tanınmış ilk 600 (Nakata 463. sıradaydı). YENİ: herkesin bileceği isimler —
+// en tanınmış ilk ONLINE_HAVUZ (Türk futbolsever gözüyle tanınırlık), 1998'den
+// sonra oynamış (Puskás/Di Stéfano gibi efsaneler ipucuyla tahmin edilemiyor),
+// popülerlik panelinde "oyunda çıkmasın" denenler hariç.
+export const ONLINE_HAVUZ = 200;
+let _onlineHavuz = null;
+export function onlineKimBuHavuzu() {
+  if (!_onlineHavuz) {
+    _onlineHavuz = taninmisHavuz(1200)
+      .filter((p) => !oyundaCikmasin(p) && (PLAYER_LAST_ACTIVE_YEAR[p.name] || 0) >= 1998)
+      .slice(0, ONLINE_HAVUZ);
+  }
+  return _onlineHavuz;
+}
 function yeniMasa(kullanilanlar) {
-  const havuz = taninmisHavuz(600).filter((p) => !kullanilanlar.includes(p.name));
+  const havuz = onlineKimBuHavuzu().filter((p) => !kullanilanlar.includes(p.name));
   if (!havuz.length) return null;
   const p = havuz[Math.floor(Math.random() * havuz.length)];
   return { gizli: p.name, masa: masaHazirla(p) };

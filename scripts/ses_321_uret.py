@@ -1,3 +1,11 @@
+# Paket 36 (15 Ekim 2026, Kerem: "3-2-1 ses tonu kötü halen.") — karar:
+# "Sessiz sayaç + stadyum efekti": konuşan ses YOK; 3 ve 2'de kısa, temiz bir
+# stadyum saati bipi, 1'de HAKEM DÜDÜĞÜ (kısa "fırt"). Eski tok bip + alçak
+# "donk" (aşağıda, Paket 24) kaldırıldı: darbe/gövde sesi telefon hoparlöründe
+# boğuk ve "bozuk" duyuluyordu. Hepsi sentez (lisans derdi yok, Piper yok).
+#   python scripts/ses_321_uret.py   → assets/sounds/count-3/2/1.mp3 + dinle_3-2-1.mp3
+#
+# --- ESKİ (Paket 24) açıklama ------------------------------------------------
 # Paket 24 (12 Ekim 2026, Kerem: "3-2-1 geri sayımı ve bir donk sesi geliyor.
 # toplamda 3 tane ses olması lazım. sonuncusu donk.") — Paket 22'de count-1
 # dosyası "bip + 1,25 sn sonra başlama sesi" idi: 3 bip + 1 başlama = 4 ses.
@@ -6,7 +14,8 @@
 # Paket 22 — 3-2-1 efekti (sentez, lisans derdi yok). Yarış oyunu sayımı:
 # "bip – bip – bip – BİİİP": her sayı kısa, tok bir bip (+ alçak darbe),
 # başlama anında yükselen bir "vuuş" ve parlak, uzun bir başlama sesi.
-import numpy as np, subprocess, wave
+import numpy as np, subprocess, wave, os
+KOK = os.path.dirname(os.path.abspath(__file__))
 SR = 44100
 def t(sn): return np.arange(int(sn * SR)) / SR
 def zarf(n, atak, birak, sustain=0.0):
@@ -66,14 +75,38 @@ def donk(f=311):   # bipin bir oktav altı (D#4): tok gövde + güçlü darbe + 
     tik = np.zeros(n); k = bp(gurultu(.02, 4), 1500, 6000) * np.linspace(1, 0, int(.02 * SR)); tik[:len(k)] = k
     return .55 * g + .7 * d + .2 * tik
 
-b = bip()
-dk = donk()
-OLCEK = 0.93 / max(np.abs(dk).max(), np.abs(b).max() / 0.8)   # bipler donk'tan biraz kısık
-yaz("count-3.mp3", b)
-yaz("count-2.mp3", b)
-yaz("count-1.mp3", dk)
-# dinleme dosyası (uygulamadaki zamanlama, Paket 25: 0 / 0.7 / 1.4 sn; takımlar 1.8 sn)
-d = np.zeros(int(2.8 * SR))
-for t0, x in ((0, b), (.7, b), (1.4, dk)):
-    i = int(t0 * SR); d[i:i + len(x)] += x[:len(d) - i]
-yaz("dinle_3-2-1.mp3", np.concatenate([np.zeros(int(.3 * SR)), d]))
+# --- Paket 36: temiz bip + hakem düdüğü -------------------------------------
+def temiz_bip(f=1046.5, sn=0.16):   # C6: stadyum saati / skorbord bipi, darbe yok
+    n = int(sn * SR); x = t(sn)
+    g = np.sin(2 * np.pi * f * x) + .18 * np.sin(2 * np.pi * 2 * f * x) + .05 * np.sin(2 * np.pi * 3 * f * x)
+    return g * zarf(n, .003, .035, .07)
+
+def hakem_dudugu(sn=0.62, f=2950):
+    # Bilyeli düdük: ~3 kHz taşıyıcı, bilyenin titreşimi ~30 Hz frekans + genlik
+    # modülasyonu (trill), başta hafif yukarı kayma, nefes gürültüsü.
+    n = int(sn * SR); x = t(sn)
+    rng = np.random.default_rng(11)
+    trill = 29 + 3 * np.sin(2 * np.pi * 0.9 * x)            # titreşim hızı hafif oynar
+    faz_tr = 2 * np.pi * np.cumsum(trill) / SR
+    kay = 1 - .045 * np.exp(-x / .035)                       # üflemenin başında pes başlar
+    fr = f * kay * (1 + .028 * np.sin(faz_tr))
+    faz = 2 * np.pi * np.cumsum(fr) / SR
+    am = 1 - .38 * (0.5 + 0.5 * np.sin(faz_tr + 0.6))
+    ton_ = (np.sin(faz) + .14 * np.sin(2 * faz)) * am
+    nefes = bp(rng.standard_normal(n), 1800, 7500); nefes /= np.abs(nefes).max()
+    e = zarf(n, .012, .05, sn - .012 - .09)
+    return (.82 * ton_ + .16 * nefes * (0.6 + 0.4 * am)) * e
+
+b = temiz_bip()
+dd = hakem_dudugu()
+OLCEK = 0.9 / np.abs(dd).max()
+b = b / np.abs(b).max() * (0.62 / OLCEK)                    # bipler düdükten belirgin kısık
+yaz(os.path.join(KOK, "..", "assets", "sounds", "count-3.mp3"), b)
+yaz(os.path.join(KOK, "..", "assets", "sounds", "count-2.mp3"), b)
+yaz(os.path.join(KOK, "..", "assets", "sounds", "count-1.mp3"), dd)
+# dinleme dosyası (uygulamadaki zamanlama: 0 / 0.7 / 1.4 sn)
+d = np.zeros(int(2.4 * SR))
+for t0, xx in ((0, b), (.7, b), (1.4, dd)):
+    i0 = int(t0 * SR); d[i0:i0 + len(xx)] += xx[:len(d) - i0]
+yaz("dinle_3-2-1.mp3", np.concatenate([np.zeros(int(.3 * SR)), d]))   # çalıştırılan klasöre (repoya koyma)
+if os.path.exists("_g.wav"): os.remove("_g.wav")

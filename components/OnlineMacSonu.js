@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Modal } from "react-native";
+import SoundPressable from "./SoundPressable";
 import { Ionicons } from "@expo/vector-icons";
 import MacSonuKarti from "./MacSonuKarti";
 import DereceSonucu from "./DereceSonucu";
@@ -25,6 +26,10 @@ export default function OnlineMacSonu({
 }) {
   const hal = halDisaridan || rovansHali(durum, benKimim, rakipVar);
   const [rakipAd, setRakipAd] = useState(null);
+  // Paket 36 — rövanş daveti ayrı bir pencerede (kartın altındaki küçük yazı
+  // gözden kaçıyordu). "Şimdi değil" pencereyi kapatır; düğme yine KABUL ET kalır.
+  const [davetKapali, setDavetKapali] = useState(false);
+  useEffect(() => { if (!hal.rakipIstiyor) setDavetKapali(false); }, [hal.rakipIstiyor]);
   useEffect(() => {
     let canli = true;
     if (oda && oda.rakipId) rakipKarti(oda.rakipId).then((k) => { if (canli && k && k.takma_ad) setRakipAd(k.takma_ad); });
@@ -56,8 +61,28 @@ export default function OnlineMacSonu({
           {hal.rakipIstiyor ? (
             <View style={s.istek}>
               <Ionicons name="flash" size={16} color={COLORS.cta} />
-              <Text style={s.istekYazi}>Rakip rövanş istiyor!</Text>
+              <Text style={s.istekYazi}>{rakipAd || "Rakip"} seni rövanşa davet ediyor!</Text>
             </View>
+          ) : hal.davetGonderildi || /DAVET GÖNDERİLDİ/.test(hal.etiket || "") ? (
+            <Text style={s.davetBilgi}>Rövanş daveti gönderildi — rakibin kabul etmesi bekleniyor.</Text>
+          ) : null}
+          {hal.rakipIstiyor && !davetKapali ? (
+          <Modal visible transparent animationType="fade" onRequestClose={() => setDavetKapali(true)}>
+            <View style={s.perde}>
+              <View style={s.davet} accessibilityViewIsModal>
+                <View style={s.davetIkon}><Ionicons name="refresh" size={28} color={COLORS.accentDark} /></View>
+                <Text style={s.davetUst}>RÖVANŞ DAVETİ</Text>
+                <Text style={s.davetBaslik}>{rakipAd || "Rakip"} seni rövanşa davet ediyor</Text>
+                <Text style={s.davetAlt}>Kabul edersen yeni maç hemen başlar.</Text>
+                <SoundPressable style={s.kabul} onPress={() => { setDavetKapali(true); (onRovans || (() => gonder && gonder({ tip: "rovans" })))(); }} accessibilityLabel="Rövanşı kabul et">
+                  <Text style={s.kabulYazi}>KABUL ET</Text>
+                </SoundPressable>
+                <SoundPressable style={s.reddet} onPress={() => setDavetKapali(true)} accessibilityLabel="Şimdi değil">
+                  <Text style={s.reddetYazi}>Şimdi değil</Text>
+                </SoundPressable>
+              </View>
+            </View>
+          </Modal>
           ) : null}
         </>
       }
@@ -72,4 +97,18 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.ctaDark, borderWidth: 1, borderColor: COLORS.cta,
   },
   istekYazi: { color: COLORS.cta, fontSize: 14, fontWeight: "900" },
+  davetBilgi: { color: COLORS.textMuted, fontSize: 13, fontWeight: "700", textAlign: "center", marginTop: SPACING.md },
+  perde: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: SPACING.xl },
+  davet: {
+    width: "100%", maxWidth: 360, backgroundColor: COLORS.card, borderRadius: 24, padding: SPACING.xl,
+    alignItems: "center", borderWidth: 1.5, borderColor: COLORS.accent,
+  },
+  davetIkon: { width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
+  davetUst: { color: COLORS.accent, fontSize: 12, fontWeight: "900", letterSpacing: 1.5, marginTop: SPACING.md },
+  davetBaslik: { color: COLORS.text, fontSize: 20, fontWeight: "900", textAlign: "center", marginTop: 6 },
+  davetAlt: { color: COLORS.textMuted, fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 6 },
+  kabul: { alignSelf: "stretch", backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: "center", marginTop: SPACING.lg },
+  kabulYazi: { color: COLORS.accentDark, fontSize: 16, fontWeight: "900", letterSpacing: 1 },
+  reddet: { paddingVertical: SPACING.md, alignItems: "center", alignSelf: "stretch" },
+  reddetYazi: { color: COLORS.textMuted, fontSize: 14, fontWeight: "800" },
 });

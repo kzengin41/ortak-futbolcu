@@ -23,6 +23,7 @@ Yayın öncesi tam liste: [`store/MAGAZA_PAKETI.md`](store/MAGAZA_PAKETI.md) →
 **Kerem'in yapacakları**
 
 1. Supabase → Authentication → **Allow anonymous sign-ins** aç, sonra SQL Editor'da `supabase/paket23_derece.sql` çalıştır, hemen ardından `eas update`.
+1b. SQL Editor'da **`supabase/paket36_online.sql`** (Paket 36: düelloda süre bitince donma düzeltmesi, Hızlı Eşleş turu 30 sn, tek tur kaydı). İki kez çalıştırmak zarar vermez.
 2. Online'ı iki telefonda dene: [`store/ONLINE_TEST_LISTESI.md`](store/ONLINE_TEST_LISTESI.md).
 3. `supabase functions deploy transcribe`; Sentry → **Prevent Storing of IP Addresses**; Supabase depolama kontrolü (aşağıda).
 4. Play Console formları (Veri Güvenliği satırları Paket 23'le değişti — MAGAZA_PAKETI bölüm 4), 8 ekran görüntüsü, production `.aab`, **kapalı test** (15–18 kişi, 14 gün).
