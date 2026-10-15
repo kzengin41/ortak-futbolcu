@@ -288,7 +288,10 @@ function Vitrin({ mod, onPress }) {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFillObject}
       />
-      <Forma boyut={150} style={styles.vitrinForma} />
+      {/* Paket 35 (Kerem: "forma fazla mı oldu? sanki direkt galatasaray çıkacakmış gibi.
+          forma göz önünde olmasa, azcığı gözükse ve biraz da şeffaf olsa") — forma artık
+          köşeden taşan, yarı saydam bir filigran: kimlik hissi kalıyor, "GS sorusu" demiyor. */}
+      <Forma boyut={190} style={styles.vitrinForma} />
       <View style={styles.vitrinIc}>
         {/* Paket 31 (Kerem: "en üstte 3-2-1 Ortak Futbolcu'yu Bul yazsın") — başlık tam
             genişlikte iki satır; forma sağ altta, açıklama ve düğmenin yanında. */}
@@ -317,11 +320,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.marka, minHeight: 216,
     borderWidth: 1, borderColor: saydam(COLORS.markaUst, 0.14),
   },
-  vitrinForma: { position: "absolute", right: -30, bottom: -18, transform: [{ rotate: "9deg" }] },
+  vitrinForma: { position: "absolute", right: -78, bottom: -64, opacity: 0.22, transform: [{ rotate: "16deg" }] },
   vitrinIc: { padding: SPACING.xl, gap: 6 },
   vitrinUst: { color: COLORS.marka2, fontWeight: "900", fontSize: 12, letterSpacing: 2 },
   vitrinBaslik: { color: COLORS.markaUst, fontWeight: "900", fontSize: 30, lineHeight: 34, letterSpacing: -0.5, marginBottom: 2 },
-  vitrinAciklama: { color: COLORS.markaUst, opacity: 0.86, fontWeight: "600", fontSize: 14, lineHeight: 20, marginRight: 120 },
+  vitrinAciklama: { color: COLORS.markaUst, opacity: 0.86, fontWeight: "600", fontSize: 14, lineHeight: 20, marginRight: 64 },
   oyna: {
     marginTop: SPACING.md, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: COLORS.markaDugme, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 26,
