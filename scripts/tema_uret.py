@@ -19,6 +19,28 @@ YENİ KURAL — iki katman:
   Koyu zeminde YAZI/İKON olarak kullanılan renkler kulüp renginin OKUNUR hâli
   (L ≥ .64); büyük dolgular gerçek renk.
 
+PAKET 33 (15 Ekim 2026) — Kerem: "şu temalardaki kahverengi rengi diyorum. GS ile
+alakası yok ki kahverenginin. arkaplan ile zaten zıtlık yok." KÖK NEDEN (renk bilimi):
+  • Paket 30'un "nötre yakın, kulübün tonundan hafif ısı" yüzeyi = GS kırmızısının
+    tonu (OKLCH h 17) DÜŞÜK kroma (.016) ve DÜŞÜK açıklıkta. Kırmızı-turuncu tonun
+    (h ~15-95) kroması düşük koyu hâli göz için KAHVERENGİDİR (kahve = koyu, soluk
+    turuncu). #2A2020 kart, #0E0505 zemin tam olarak buydu.
+  • Arkaplan ışığı GS'de kırmızı + SARI iki parıltıyı üst üste koyuyordu; koyu
+    zeminde kırmızı+sarı karışımı = turuncu-kahve sis.
+  • Kart/zemin kontrastı 1.45: kartlar zeminden yeterince ayrışmıyordu.
+YENİ KURAL — "derin kulüp rengi" yüzeyleri:
+  1) Yüzeyler ya GERÇEKTEN RENKLİ ya da GERÇEKTEN NÖTR; arası (soluk renk) yok.
+     Renkli temada kart kroması .08-.09 (GS: şarap kırmızısı #4A0B1C ailesi,
+     FB: gece laciverti, TS: bordo, Saha: orman yeşili). Siyah-beyaz temalar
+     (BJK, Koyu) kroma 0.
+  2) KAHVE BANDI YASAK: yüzey tonu h 20-100 aralığına düşemez (kırmızı-turuncu-sarı-
+     zeytin bandı, düşük kromada kahve/zeytin görünür). Kırmızı kulüplerde yüzey
+     tonu kırmızının MOR tarafına (h ≤ 10, kızıl-şarap) kaydırılır. denetle()
+     bunu ölçer: "kahve bandı" hatası.
+  3) Kart/zemin kontrastı ≥ 1.55 (zemin L .12 · kart L .25 · çerçeve L .35).
+  4) Arkaplan ışığı yalnız kulübün ANA rengi (ikinci renk ışığı yok); forma
+     çubukları beyaz çok ince (sarı+lacivert karışıp yeşile dönmesin).
+
 Çıktı: lib/theme.js PALETLER renkleri + lib/temaOlusturucu.js ZEMINLER.
 Çalıştır: python3 scripts/tema_uret.py [cikti.json]
 """
@@ -86,26 +108,30 @@ def okunur(hexs, L_min=.70):
     return hexs if L >= L_min else hx(L_min, max(C, .02), h)
 
 
-# Okuma katmanı açıklıkları (OKLCH L). Kart/zemin kontrastı ~1.45.
-L_ZEMIN, L_SEKME, L_KART, L_CERCEVE = .13, .175, .255, .355
-C_YUZEY = .016
+# Okuma katmanı açıklıkları (OKLCH L). Paket 33: kart/zemin kontrastı ≥ 1.55.
+L_ZEMIN, L_SEKME, L_KART, L_CERCEVE = .12, .16, .25, .35
+# Paket 33: yüzey kroması kademeleri (zemin, sekme, kart, çerçeve) — renkli temalar.
+C_KADEME = (.56, .64, 1.0, 1.06)
+C_YUZEY = .085
+KAHVE_BANDI = (20, 100)
 
 # Temalar: marka = kulübün ana rengi (büyük dolgular), marka2 = ikinci rengi.
 #   accent = ana eylem rengi (butonlar, seçili sekme, ikonlar) — çoğunlukla marka2
 #   cta    = ikincil vurgu (koyu zeminde okunur)
 #   desen  = forma motifi: parcali (GS), cubuklu (FB/BJK/TS), cim (Saha), isik (diğer)
+# ton = YÜZEY tonu (h), kroma = kart kroması. Kırmızı kulüplerde ton < marka tonu (şarap tarafı).
 TEMALAR = {
-    "cim":  dict(ad="Saha", marka="#17602F", marka2="#F4F7F2", accent="#86E36B", cta="#F5CC58", desen="cim", ton=150),
-    "gece": dict(ad="Gece Mavisi", marka="#1A3A8F", marka2="#FFFFFF", accent="#6EB6FF", cta="#FDBA55", desen="isik", ton=262),
-    "koyu": dict(ad="Koyu", marka="#26292D", marka2="#FFFFFF", accent="#7EE8B0", cta="#E8C987", desen="isik", ton=250, kroma=0.004, siyah=True),
+    "cim":  dict(ad="Saha", marka="#17602F", marka2="#F4F7F2", accent="#86E36B", cta="#F5CC58", desen="cim", ton=160, kroma=.032),
+    "gece": dict(ad="Gece Mavisi", marka="#1A3A8F", marka2="#FFFFFF", accent="#6EB6FF", cta="#FDBA55", desen="isik", ton=266, kroma=.075),
+    "koyu": dict(ad="Koyu", marka="#26292D", marka2="#FFFFFF", accent="#7EE8B0", cta="#E8C987", desen="isik", ton=0, kroma=0, siyah=True),
     # Galatasaray: kırmızı PMS 187 #A90432, sarı PMS 123 #FDB912 (teamcolorcodes.com)
-    "gs":   dict(ad="Galatasaray", marka="#A90432", marka2="#FDB912", accent="#FDB912", cta=None, desen="parcali"),
+    "gs":   dict(ad="Galatasaray", marka="#A90432", marka2="#FDB912", accent="#FDB912", cta=None, desen="parcali", ton=8, kroma=.09),
     # Fenerbahçe: lacivert + sarı (kanarya sarısı)
-    "fb":   dict(ad="Fenerbahçe", marka="#0C2659", marka2="#FFE500", accent="#FFE500", cta=None, desen="cubuklu", ton=262),
+    "fb":   dict(ad="Fenerbahçe", marka="#0C2659", marka2="#FFE500", accent="#FFE500", cta=None, desen="cubuklu", ton=264, kroma=.08),
     # Beşiktaş: siyah + beyaz, gri YOK (Paket 25: "toz bulutu gibi gri")
     "bjk":  dict(ad="Beşiktaş", marka="#000000", marka2="#FFFFFF", accent="#FFFFFF", cta="#E30A17", desen="cubuklu", ton=0, kroma=0, siyah=True),
     # Trabzonspor: bordo + mavi
-    "ts":   dict(ad="Trabzonspor", marka="#8A1538", marka2="#5BB4E5", accent="#5BB4E5", cta=None, desen="cubuklu"),
+    "ts":   dict(ad="Trabzonspor", marka="#8A1538", marka2="#5BB4E5", accent="#5BB4E5", cta=None, desen="cubuklu", ton=6, kroma=.085),
 }
 
 
@@ -116,13 +142,15 @@ def palet(t):
     c = t.get("kroma", C_YUZEY)
     s = t.get("siyah")
     p = {}
-    p["bg"] = "#000000" if s and c == 0 else hx(.10 if s else L_ZEMIN, c * 1.2, h)
-    p["tabBar"] = hx(.15 if s else L_SEKME, c, h)
-    p["card"] = hx(.225 if s else L_KART, c, h)
-    p["cardBorder"] = p["border"] = hx(.33 if s else L_CERCEVE, c, h)
-    p["text"] = hx(.975, min(c, .006), h)
-    p["textMuted"] = hx(.78, min(c, .014), h)
-    p["textFaint"] = hx(.58, min(c, .014), h)
+    k0, k1, k2, k3 = C_KADEME
+    p["bg"] = "#000000" if s and c == 0 else hx(.10 if s else L_ZEMIN, c * k0, h)
+    p["tabBar"] = hx(.15 if s else L_SEKME, c * k1, h)
+    p["card"] = hx(.235 if s else L_KART, c * k2, h)
+    p["cardBorder"] = p["border"] = hx(.34 if s else L_CERCEVE, c * k3, h)
+    # Yazılar: beyaz + yüzeyin tonundan çok hafif (renkli temada soluk yazı tonla uyumlu)
+    p["text"] = hx(.975, min(c * .08, .008), h)
+    p["textMuted"] = hx(.81, min(c * .38, .032), h)
+    p["textFaint"] = hx(.64, min(c * .38, .032), h)
     p["accent"] = t["accent"]
     # Vurgu dolgusunun üstündeki yazı: okunursa KULÜBÜN rengi (GS sarı üstüne kırmızı,
     # FB sarı üstüne lacivert) — kimlik buradan da gelir; okunmazsa en koyu ton.
@@ -146,12 +174,18 @@ def palet(t):
 def denetle(ad, p):
     k = lambda a, b: kontrast(p[a], p[b])
     olc = {
-        "kart/zemin": k("card", "bg"), "yazi/kart": k("text", "card"), "soluk/kart": k("textMuted", "card"),
+        # Paket 33: koyu renklerde WCAG oranı sıkışır; kart/zemin ayrışması OKLCH açıklık farkıyla (×10)
+        "kart/zemin": (oklch(p["card"])[0] - oklch(p["bg"])[0]) * 10, "yazi/kart": k("text", "card"), "soluk/kart": k("textMuted", "card"),
         "vurgu/zemin": k("accent", "bg"), "vurguYazi": k("accent", "accentDark"), "cta/kart": k("cta", "card"),
         "markaYazi": k("marka", "markaUst"), "buton/vitrin": k("accent", "marka"),
     }
     sinir = {"kart/zemin": 1.2, "yazi/kart": 7, "soluk/kart": 4.5, "vurgu/zemin": 4.5, "vurguYazi": 4.0, "cta/kart": 3, "markaYazi": 4.5, "buton/vitrin": 3.5}
     kotu = [f"{a} {v:.2f}<{sinir[a]}" for a, v in olc.items() if v < sinir[a]]
+    # Paket 33 — kahve bandı: renkli ama soluk (C .01-.06) yüzey, ton h 20-100 → kahve/zeytin
+    for y in ("bg", "card", "cardBorder"):
+        L_, C_, h_ = oklch(p[y])
+        if .008 < C_ < .06 and KAHVE_BANDI[0] <= h_ <= KAHVE_BANDI[1]:
+            kotu.append(f"kahve bandı {y} {p[y]} (h {h_:.0f}, C {C_:.3f})")
     print(f"{ad:6}", " ".join(f"{a} {v:.2f}" for a, v in olc.items()), ("  !! " + ", ".join(kotu)) if kotu else "")
     return kotu
 
@@ -160,14 +194,16 @@ OUT = {k: palet(t) for k, t in TEMALAR.items()}
 
 # Özel tema zeminleri (TemaOlusturucu) — aynı okuma katmanı kuralı, farklı tonlar
 Z = [("lacivert", "Lacivert", 255, .02), ("gece", "Gece mavisi", 268, .022), ("siyah", "Siyah", 0, 0), ("grafit", "Grafit", 250, .006),
-     ("orman", "Orman", 152, .018), ("bordo", "Bordo", 12, .02), ("mor", "Mor", 300, .02), ("kahve", "Kahve", 60, .014)]
+     ("orman", "Orman", 158, .062), ("bordo", "Şarap", 6, .085), ("mor", "Mor", 300, .07), ("petrol", "Petrol", 215, .06)]
+# Paket 33: "Kahve" zemini kalktı (Kerem: kahverengi istemiyor) → "Petrol". Lacivert/gece de derinleşti.
+Z = [(i, a, h, (.07 if i == "lacivert" else .075 if i == "gece" else c)) for i, a, h, c in Z]
 zem = []
 for i, ad, h, c in Z:
     siyah = i == "siyah"
     zem.append(dict(id=i, ad=ad, renkler=dict(
-        bg="#000000" if siyah else hx(L_ZEMIN, c * 1.2, h), tabBar=hx(.15 if siyah else L_SEKME, c, h),
-        card=hx(.225 if siyah else L_KART, c, h), cardBorder=hx(.33 if siyah else L_CERCEVE, c, h),
-        text=hx(.975, min(c, .006), h), textMuted=hx(.78, min(c, .014), h), textFaint=hx(.58, min(c, .014), h))))
+        bg="#000000" if siyah else hx(L_ZEMIN, c * C_KADEME[0], h), tabBar=hx(.15 if siyah else L_SEKME, c * C_KADEME[1], h),
+        card=hx(.235 if siyah else L_KART, c, h), cardBorder=hx(.34 if siyah else L_CERCEVE, c * C_KADEME[3], h),
+        text=hx(.975, min(c * .08, .008), h), textMuted=hx(.81, min(c * .38, .032), h), textFaint=hx(.64, min(c * .38, .032), h))))
 
 if __name__ == "__main__":
     for k, p in OUT.items():

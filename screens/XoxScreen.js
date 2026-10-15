@@ -8,7 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import MacSonuKarti from "../components/MacSonuKarti";
 import { useOyuncuAdlari, OyuncuAdlariBolumu, IsimliSkorTablosu } from "../components/OyuncuAdlari";
-import { karakterSec, tepki } from "../lib/cpuKarakterleri";
+import { OyunUstCubugu, SkorSeridi, RakipTepkisi, rakipEtiketi } from "../components/MacCercevesi";
+import { karakterSec, tepki, kisaAd, bulunma } from "../lib/cpuKarakterleri";
 import { taninirlik } from "../lib/taninirlik";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
@@ -119,6 +120,8 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const [basladi, setBasladi] = useState(false);
   const [hazirlaniyor, setHazirlaniyor] = useState(false);
   const [durum, setDurum] = useState(null);
+  // Paket 31 — rakibin "düşünüyorum" sözü (hamle başına bir kez seçilir)
+  const dusunceSozu = useMemo(() => tepki(karakter, "dusunuyor"), [karakter, durum && durum.hamleNo]);
   const [girdi, setGirdi] = useState("");
   const [geriBildirim, setGeriBildirim] = useState(null);
   const [cpuDusunuyor, setCpuDusunuyor] = useState(false);
@@ -284,22 +287,22 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
       // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: (h.calma ? "ÇALDI! " : "") + (cpuHamlesi ? `${karakter.ad}: ${h.ad}` : h.ad) });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: (h.calma ? "ÇALDI! " : "") + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
     } else if (h.tip === "yanlis") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
         message: h.ayniIsim
           ? "Çalmak için FARKLI bir futbolcu gerekir"
-          : cpuHamlesi ? `${karakter.ad} bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
+          : cpuHamlesi ? `${kisaAd(karakter)} bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
       });
     } else if (h.tip === "pas") {
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? `${karakter.ad} pas geçti` : "Pas geçtin" });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? `${kisaAd(karakter)} pas geçti` : "Pas geçtin" });
     } else if (h.tip === "sure") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
-        message: cpuyaKarsi ? `Süre doldu, sıra ${karakter.ad}'da` : `Süre doldu, sıra ${h.kimden === X ? adlar[1] : adlar[0]} oyuncusunda`,
+        message: cpuyaKarsi ? `Süre doldu, sıra ${bulunma(kisaAd(karakter))}` : `Süre doldu, sıra ${h.kimden === X ? adlar[1] : adlar[0]} oyuncusunda`,
       });
     }
   }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong, playCpuCorrect, karakter]);
@@ -384,7 +387,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     kurulumaDon: () => setBasladi(false),
   });
   useEffect(() => {
-    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? "CPU" : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"], ["Çalma kuralı", calma ? "Açık" : "Kapalı"]] }) });
+    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? `${karakter.avatar} ${kisaAd(karakter)}` : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"], ["Çalma kuralı", calma ? "Açık" : "Kapalı"]] }) });
   }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru, calma]);
 
   function cevapGonder(ad) {
@@ -482,13 +485,19 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const siraEtiketi = durum.bitti
     ? sonucMetni(durum, cpuyaKarsi)
     : cpuyaKarsi
-    ? (durum.sira === X ? "Sıra sende" : cpuDusunuyor ? `${karakter.avatar} ${karakter.ad} düşünüyor…` : `${karakter.avatar} ${karakter.ad} oynuyor`)
+    ? (durum.sira === X ? "Sıra sende" : cpuDusunuyor ? `${kisaAd(karakter)} düşünüyor…` : `${kisaAd(karakter)} oynuyor`)
     : (durum.sira === X ? `${adlar[0]} (X)` : `${adlar[1]} (O)`);
 
   return (
     <GameBackground style={styles.kap}>
       <KlavyeAlani style={{ flex: 1 }}>
-        <BackButton onPress={onExitSilent || onExit} />
+        {/* Paket 31 — standart üst çubuk */}
+        <OyunUstCubugu
+          baslik="Futbolcu XOX"
+          alt={cpuyaKarsi ? `${kisaAd(karakter)} ile` : "2 kişi, aynı telefon"}
+          onCikis={onExitSilent || onExit}
+          style={{ paddingHorizontal: SPACING.xl, marginTop: 6 }}
+        />
 
         <KlavyeScroll
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
@@ -507,15 +516,14 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
             </Text>
           ) : null}
 
-          <View style={styles.siraSerit}>
-            <View style={[styles.isaretRozet, { backgroundColor: durum.sira === X ? VURGU.main : COLORS.card }]}>
-              <Text style={[styles.isaretRozetText, durum.sira === X && { color: COLORS.accentDark }]}>X</Text>
-            </View>
-            <Text style={styles.siraText}>{siraEtiketi}</Text>
-            <View style={[styles.isaretRozet, { backgroundColor: durum.sira === O ? VURGU.main : COLORS.card }]}>
-              <Text style={[styles.isaretRozetText, durum.sira === O && { color: COLORS.accentDark }]}>O</Text>
-            </View>
-          </View>
+          {/* Paket 31 — standart skor şeridi: X sen, O rakip; sıradaki taraf vurgulu */}
+          <SkorSeridi
+            style={{ marginHorizontal: SPACING.xl, width: "auto" }}
+            sol={{ etiket: cpuyaKarsi ? "X · SEN" : `X · ${String(adlar[0]).toLocaleUpperCase("tr")}`, aktif: !durum.bitti && durum.sira === X }}
+            sag={{ etiket: cpuyaKarsi ? `O · ${rakipEtiketi(karakter)}` : `O · ${String(adlar[1]).toLocaleUpperCase("tr")}`, karakter: cpuyaKarsi ? karakter : null, aktif: !durum.bitti && durum.sira === O }}
+            orta={siraEtiketi}
+          />
+          {cpuyaKarsi && cpuDusunuyor ? <RakipTepkisi karakter={karakter} metin={dusunceSozu} style={{ marginTop: -4, marginBottom: 8 }} /> : null}
 
           {kalanSure !== null && (
             <View style={styles.sureKutu}>
@@ -685,7 +693,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
               skorSen={durum.tahta.filter((t) => t === X).length}
               skorRakip={durum.tahta.filter((t) => t === O).length}
               skorEtiketi="kare"
-              rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: tepki(karakter, durum.kazanan === X ? "kaybetti" : "kazandi", () => (durum.hamleNo % 7) / 7) }}
+              rakip={{ ad: kisaAd(karakter), avatar: karakter.avatar, renk: karakter.renk }}
               turlar={durum.tahta.map((t) => (t === X ? "sen" : t === O ? "rakip" : "yok"))}
               kareSatir={3}
               enIyi={(() => {

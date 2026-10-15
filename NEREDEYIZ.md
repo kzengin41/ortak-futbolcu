@@ -1,4 +1,4 @@
-# Neredeyiz? (11 Ekim 2026)
+# Neredeyiz? (15 Ekim 2026)
 
 **Sürüm:** v5 (Android versionCode 5, yalnız arm64/armeabi) + OTA güncellemeleri.
 Bildirimler, ilk açılış, sesli cevap, günlük oyunlar ve EAS Update (OTA) çalışıyor.
@@ -10,12 +10,12 @@ Yayın öncesi tam liste: [`store/MAGAZA_PAKETI.md`](store/MAGAZA_PAKETI.md) →
 
 | Bölüm | İçerik |
 |---|---|
-| Ana sayfa | Hemen Oyna, günlük oyunlar, seri, seviye |
+| Ana sayfa | Hemen Oyna, tek satır günlük öneri (önce Günün Kadrosu), Tüm modlar, seri, seviye |
 | Tüm Modlar | Ortak Kulüp (kulüp×kulüp / kulüp×ülke / sen seç / çoktan seçmeli), 5 Kulüp, Futbolcu XOX, İlk Harften Bul, Harf Zinciri, Kim Bu Futbolcu? (Seri, Kadro Avı), Sunucu Modu (2–6 kişi) |
 | Günlük | Günün Bulmacası, Günün Kadrosu, Günlük Kim Bu, Günlük 5 Kulüp, Günlük Izgara |
-| Online | 7 mod (Ortak Kulüp + Takımı Sen Seç, 5 Kulüp, Futbolcu XOX, Kim Bu, İlk Harften Bul, Harfi Sen Seç). **Hızlı Eşleş**, rastgele rakip = **dereceli** (online puan / ELO, lig rozetleri, liderlik tablosu), arkadaş odası = dostluk, meydan okuma (çevrimdışı) |
+| Online | 8 mod (Ortak Kulüp: Kulüp × Kulüp / Kulüp × Ülke / Takımı Sen Seç, 5 Kulüp, Futbolcu XOX, Kim Bu, İlk Harften Bul, Harfi Sen Seç). **Hızlı Eşleş**, rastgele rakip = **dereceli** (online puan / ELO, lig rozetleri, liderlik tablosu), arkadaş odası = dostluk, meydan okuma (çevrimdışı) |
 | Ansiklopedi | ~46.000 futbolcu, takımlar ve sezon kadroları (307 sezonun ilk 11'i) |
-| Profilim | Seri, seviye, son açılanlar, istatistikler (açılır-kapanır), hesap |
+| Profilim | Seri, seviye, son açılanlar, istatistikler (açılır-kapanır, varsayılan kapalı), hesap |
 | Ayarlar | Ses, tema, eşleşme profili, sesli cevap, mod varsayılanları (üstte kısayollar) |
 
 ## Sırada ne var

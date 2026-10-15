@@ -3,8 +3,9 @@ import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "./GameBackground";
 import BackButton from "./BackButton";
+import { OyunUstCubugu } from "./MacCercevesi";
 import SoundPressable from "./SoundPressable";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, saydam, vurguZemini } from "../lib/theme";
 
 // ============================================================================
 // ORTAK MOD KURULUM EKRANI — 27 Eylül 2026
@@ -76,22 +77,26 @@ export default function ModKurulum({
     const satirlar = ((bilgi && bilgi.satirlar) || []).slice(0, 6);
     return (
       <GameBackground style={styles.kap}>
-        {onGeri ? <BackButton onPress={onGeri} /> : null}
+        {/* Paket 32 — maç ekranlarıyla aynı üst çubuk (✕), "‹ Geri" hapı yerine */}
+        <OyunUstCubugu onCikis={onGeri || null} />
         <ScrollView contentContainerStyle={styles.girisIcerik} showsVerticalScrollIndicator={false}>
           <Text style={styles.baslik}>{baslik}</Text>
-          <View style={[styles.cizgi, { backgroundColor: renk }]} />
+          {/* Paket 32 — standart: çizgi her modda temanın vurgu rengi (modun kendi rengi değil) */}
+          <View style={[styles.cizgi, { backgroundColor: COLORS.accent }]} />
           {aciklama ? <Text style={styles.aciklama}>{aciklama}</Text> : null}
           {girisSecimi ? <View style={styles.girisSecimi}>{girisSecimi}</View> : null}
 
+          {/* Paket 32 (Kerem: "mod giriş ekranı" renkleri) — ayar özeti gri tablo
+              değil, 3 sütunlu küçük künye; dokununca maç ayarları açılır. */}
           {satirlar.length ? (
-            <View style={styles.ozet}>
+            <SoundPressable style={styles.ozet} onPress={() => setAyarda(true)} accessibilityLabel="Maç ayarlarını aç">
               {satirlar.map(([k, v]) => (
-                <View key={k} style={styles.ozetSatir}>
+                <View key={k} style={styles.ozetHucre}>
                   <Text style={styles.ozetEtiket} numberOfLines={1}>{k}</Text>
-                  <Text style={styles.ozetDeger} numberOfLines={1}>{v}</Text>
+                  <Text style={styles.ozetDeger} numberOfLines={2}>{v}</Text>
                 </View>
               ))}
-            </View>
+            </SoundPressable>
           ) : null}
 
           <SoundPressable
@@ -180,7 +185,10 @@ function useAciklamaGorunur(aciklamaVar) {
 
 // Yan yana seçenek düğmeleri (rakip, galibiyet sınırı, cevap yöntemi...).
 // secenekler: [{ deger, etiket, ikon? }]
+// Paket 32: 4+ seçenek 2×2 dizilir (dörtlüde etiketler "Kulüp × …" diye kesiliyordu);
+// seçili çip dolu sarı değil, yumuşak vurgu (dolu vurgu yalnız birincil düğmede).
 export function SecimCipleri({ secenekler, secili, onSec }) {
+  const ikili = secenekler.length >= 4;
   return (
     <View style={styles.cipSatir}>
       {secenekler.map((s) => {
@@ -188,11 +196,12 @@ export function SecimCipleri({ secenekler, secili, onSec }) {
         return (
           <SoundPressable
             key={String(s.deger)}
-            style={[styles.cip, aktif && styles.cipAktif]}
+            style={[styles.cip, ikili && styles.cipIkili, aktif && styles.cipAktif]}
             onPress={() => onSec(s.deger)}
+            accessibilityState={{ selected: aktif }}
           >
             {s.ikon ? (
-              <Ionicons name={s.ikon} size={18} color={aktif ? COLORS.accentDark : COLORS.accent} />
+              <Ionicons name={s.ikon} size={18} color={aktif ? COLORS.accent : COLORS.textMuted} />
             ) : null}
             <Text style={[styles.cipYazi, aktif && styles.cipYaziAktif]} numberOfLines={2}>
               {s.etiket}
@@ -227,7 +236,7 @@ export function CokluSecim({ secenekler, secililer, onDegis, enAz = 1 }) {
             <Ionicons
               name={aktif ? "checkbox" : "square-outline"}
               size={16}
-              color={aktif ? COLORS.accentDark : COLORS.textMuted}
+              color={aktif ? COLORS.accent : COLORS.textMuted}
             />
             <Text style={[styles.cipYazi, aktif && styles.cipYaziAktif]} numberOfLines={2}>{s.etiket}</Text>
           </SoundPressable>
@@ -374,19 +383,18 @@ const styles = StyleSheet.create({
   cizgi: { alignSelf: "center", width: 48, height: 4, borderRadius: 2, marginTop: SPACING.sm },
   aciklama: { ...TYPE.bodyMuted, textAlign: "center", marginTop: SPACING.md, paddingHorizontal: SPACING.sm },
   ozet: {
-    marginTop: SPACING.xl, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
-    borderRadius: RADIUS.lg, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xl, flexDirection: "row", flexWrap: "wrap", rowGap: 14,
+    backgroundColor: saydam(COLORS.text, 0.045), borderRadius: 18, paddingVertical: 14, paddingHorizontal: SPACING.md,
   },
-  ozetSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACING.md, paddingVertical: 7 },
-  ozetEtiket: { ...TYPE.caption, flexShrink: 0 },
-  ozetDeger: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flexShrink: 1, textAlign: "right" },
+  ozetHucre: { width: "33.33%", paddingHorizontal: 4 },
+  ozetEtiket: { color: COLORS.textFaint, fontSize: 10.5, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
+  ozetDeger: { color: COLORS.text, fontSize: 14, fontWeight: "800", marginTop: 3 },
   girisBasla: { marginTop: SPACING.xl },
   girisSecimi: { marginTop: SPACING.xl },
   dugmeIc: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   ikincil: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm,
-    borderRadius: RADIUS.md, paddingVertical: SPACING.lg - 2, marginTop: SPACING.md,
-    borderWidth: 1.5, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
+    borderRadius: RADIUS.pill, paddingVertical: 15, marginTop: SPACING.md, backgroundColor: saydam(COLORS.text, 0.08),
   },
   ikincilYazi: { ...TYPE.button, color: COLORS.text },
 
@@ -404,14 +412,15 @@ const styles = StyleSheet.create({
 
   cipSatir: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm },
   cip: {
-    flexGrow: 1, flexBasis: 64, minHeight: 42,
+    flexGrow: 1, flexBasis: 64, minHeight: 44,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
-    borderRadius: RADIUS.md, paddingVertical: 6, paddingHorizontal: SPACING.sm,
+    backgroundColor: saydam(COLORS.text, 0.05), borderColor: "transparent", borderWidth: 1.5,
+    borderRadius: 14, paddingVertical: 6, paddingHorizontal: SPACING.sm,
   },
-  cipAktif: { borderColor: COLORS.accent, backgroundColor: COLORS.accent },
-  cipYazi: { ...TYPE.caption, fontSize: 13, color: COLORS.text, fontWeight: "800", textAlign: "center" },
-  cipYaziAktif: { color: COLORS.accentDark },
+  cipIkili: { flexBasis: "46%" },
+  cipAktif: { borderColor: COLORS.accent, backgroundColor: vurguZemini(0.14) },
+  cipYazi: { ...TYPE.caption, fontSize: 13, color: COLORS.textMuted, fontWeight: "800", textAlign: "center" },
+  cipYaziAktif: { color: COLORS.text },
 
   zorlukCubuk: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   zorlukOrta: { flex: 1, gap: 6 },
@@ -441,8 +450,8 @@ const styles = StyleSheet.create({
   kapsamDegis: { ...TYPE.caption, color: COLORS.accent, fontWeight: "800" },
 
   basla: {
-    backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingVertical: SPACING.lg,
-    alignItems: "center", marginTop: SPACING.xl, ...SHADOW.card,
+    backgroundColor: COLORS.accent, borderRadius: RADIUS.pill, paddingVertical: 16,
+    alignItems: "center", marginTop: SPACING.xl,
   },
   baslaYazi: { ...TYPE.button, fontSize: 17, color: COLORS.accentDark },
 });

@@ -1,6 +1,6 @@
-# Online test listesi — iki telefon (Paket 23, 11 Ekim 2026)
+# Online test listesi — iki telefon (Paket 23, 11 Ekim 2026 · Paket 32 eklemeleri 15 Ekim)
 
-Amaç: 7 online modu, dereceli puanı (ELO) ve kopma durumlarını gerçek iki cihazda bir kez baştan sona görmek.
+Amaç: 8 online modu, dereceli puanı (ELO) ve kopma durumlarını gerçek iki cihazda bir kez baştan sona görmek.
 Süre: ~45 dakika. Bir arkadaş ya da ikinci bir telefon yeterli.
 
 Her maddede **beklenen** yazıyor. Farklı bir şey olursa: mod adı + ne yaptın + ne oldu + mümkünse ekran görüntüsü.
@@ -17,14 +17,16 @@ Her maddede **beklenen** yazıyor. Farklı bir şey olursa: mod adı + ne yaptı
 - [ ] Rozete dokun → **Online Puan** penceresi: kart, "Yerleştirme maçları 0/10", Tüm zamanlar / Bu hafta sekmeleri.
 - [ ] İlk kez **Hızlı Eşleş**: önce **"Takma adını seç"** çıkar. "amk" gibi bir ad reddedilir; düzgün bir adla devam eder.
 
-## 2. Hızlı Eşleş ve 7 mod (hepsi dereceli)
+## 2. Hızlı Eşleş ve 8 mod (hepsi dereceli)
 
-Her mod için: Telefon A **Rastgele Rakip Bul**, Telefon B aynı modda **Rastgele Rakip Bul** (ya da **Hızlı Eşleş**).
+Her mod için: Telefon A mod kartına dokunur → (Ortak Kulüp'te NASIL? türünü seçer) → **RASTGELE RAKİP**; Telefon B aynı modda aynısını yapar (ya da **Hızlı Eşleş**).
+Paket 32: Tüm Modlar → 3-2-1 → **Online** → tür → **RASTGELE RAKİP** de doğrudan aramayı başlatmalı (lobide ayrıca pencere açılmaz).
 
 | Mod | Beklenen |
 |---|---|
 | Ortak Kulüp → Rastgele takımlar | Eşleşir, iki ekranda aynı iki takım, buzz/cevap sırası doğru, 5'e ulaşan kazanır |
-| Ortak Kulüp → Takımı Sen Seç | Sırayla takım seçilir, seçilen takım rakibin sorusu olur |
+| Ortak Kulüp → Kulüp × Ülke (YENİ) | İki ekranda aynı ülke + kulüp (kart yarıları bayrak/kulüp renginde); ikisi aynı anda yazar, ilk doğru yazan puanı alır; her turda 3 yanlış hakkı; 5'e ulaşan kazanır |
+| Ortak Kulüp → Takımı Sen Seç | Sırayla takım seçilir, seçilen takım rakibin sorusu olur. **Paket 32 düzeltmesi:** önceden her seçim "Bu takımdan tur çıkmadı" diye reddedilebiliyordu — artık tur çıkmalı |
 | 5 Kulüp | Aynı 5 kulüp, gizli cevaplar tur sonunda açılır |
 | Futbolcu XOX | Aynı ızgara, sırayla hamle, kazanan çizgi iki ekranda aynı |
 | Kim Bu Futbolcu? | Aynı masa, kartlar iki tarafta senkron |
@@ -47,8 +49,8 @@ Her maçın sonunda:
 
 ## 4. Arkadaş odası (dostluk)
 
-- [ ] A: herhangi bir mod → **Oda Kur** → kod çıkar, bekleme ekranında **Dostluk** yazar.
-- [ ] B: **Kodla Katıl** → kodu yaz → maç başlar.
+- [ ] A: herhangi bir mod → **ARKADAŞINLA OYNA** → kod çıkar, bekleme ekranında **Dostluk** yazar.
+- [ ] B: **Kodla Katıl** kartı (ya da mod sayfasındaki "kodla katıl") → kodu yaz → maç başlar.
 - [ ] Maç sonunda **"Dostluk maçı · puan değişmez"**.
 - [ ] Yanlış kod → "Bu kodla bekleyen bir oda bulunamadı".
 

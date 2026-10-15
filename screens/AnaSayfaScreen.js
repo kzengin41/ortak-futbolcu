@@ -7,6 +7,7 @@ import PressScale from "../components/ui/PressScale";
 import SoundPressable from "../components/SoundPressable";
 import TakimSorusuPenceresi from "../components/TakimSorusuPenceresi";
 import BilgiTestiPenceresi from "../components/BilgiTestiPenceresi";
+import { GunlukOneriSatiri } from "../components/GunlukSatiri";
 import { useAppSettings } from "../lib/SettingsContext";
 import { ayarlardanProfil, profilEtiketi, etkinAyar } from "../lib/eslesmeProfili";
 import { getProfile, xpProgress } from "../lib/profile";
@@ -92,7 +93,7 @@ export function rastgeleArma(rastgele = Math.random) {
   return { ana: ters ? b : a, ikinci: ters ? a : b, desen: DESENLER[Math.floor(rastgele() * DESENLER.length)] };
 }
 
-export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDailyPuzzle, onGunlukKadro }) {
+export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDailyPuzzle, onGunlukKadro, onGunlukOyun }) {
   const { settings } = useAppSettings();
   const profil = ayarlardanProfil(settings);
   const [cift, setCift] = useState(null);
@@ -170,7 +171,7 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
             accessibilityRole="button"
             accessibilityLabel="Oyna"
           >
-            <Ionicons name="play" size={24} color={COLORS.accentDark} />
+            <Ionicons name="play" size={24} color={COLORS.markaDugmeYazi} />
             <Text style={styles.oynaYazi}>OYNA</Text>
           </PressScale>
           <SoundPressable style={styles.ayarSatiri} onPress={onCustomize} hitSlop={8}>
@@ -184,15 +185,18 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
         {/* Paket 30 (14 Ekim 2026, Kerem: "günlükler … tüm modlar içinde tek satır
             olarak durması lazım. anasayfa'da durmasın") — Günün Kadrosu / Bulmacası
             satırı kalktı; günlük oyunların hepsi Tüm Modlar'daki "Günlük" satırında. */}
+        {/* Paket 32 (Kerem: "ana sayfada bir satır da günlük bulmacalardan birine
+            yönlendirme olabilir. efsane maç kadrosuna mesela") — tek satır. */}
+        <GunlukOneriSatiri onOyun={onGunlukOyun} style={{ marginTop: SPACING.lg }} />
         {/* 4 Ekim 2026 (Kerem: "anasayfadaki tüm modlar butonu da belli
             olmuyor") — artık günlük satırıyla aynı ağırlıkta bir kart. */}
         <SoundPressable style={styles.tumModlar} onPress={onAllModes} accessibilityRole="button" accessibilityLabel="Tüm modlar">
           <View style={styles.tumModlarIkon}>
-            <Ionicons name="grid" size={20} color={COLORS.accent} />
+            <Ionicons name="grid" size={20} color={COLORS.text} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.gunlukBaslik}>Tüm modlar</Text>
-            <Text style={styles.gunlukAlt} numberOfLines={1}>Günlük oyunlar, Kim Bu, 5 Kulüp, XOX, İlk Harf</Text>
+            <Text style={styles.gunlukAlt} numberOfLines={1}>Günlük meydan okumalar, Kim Bu, 5 Kulüp, XOX…</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
         </SoundPressable>
@@ -301,10 +305,10 @@ const styles = StyleSheet.create({
   carpi: { color: saydam(COLORS.markaUst, 0.6), fontSize: 26, fontWeight: "900" },
   kahramanAciklama: { ...TYPE.body, color: COLORS.markaUst, opacity: 0.85, textAlign: "center", marginTop: SPACING.lg },
   oyna: {
-    marginTop: SPACING.lg, height: 66, borderRadius: 18, backgroundColor: COLORS.accent,
+    marginTop: SPACING.lg, height: 66, borderRadius: 18, backgroundColor: COLORS.markaDugme,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
   },
-  oynaYazi: { color: COLORS.accentDark, fontSize: 30, fontWeight: "900", letterSpacing: 2 },
+  oynaYazi: { color: COLORS.markaDugmeYazi, fontSize: 30, fontWeight: "900", letterSpacing: 2 },
   ayarSatiri: {
     alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6,
     paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, marginTop: SPACING.sm,
@@ -322,12 +326,14 @@ const styles = StyleSheet.create({
   gunlukBaslik: { color: COLORS.text, fontSize: 16, fontWeight: "900" },
   gunlukAlt: { color: COLORS.textMuted, fontSize: 13, fontWeight: "600", marginTop: 2 },
 
+  // Paket 32 — liste kartı dili (günlük öneri satırıyla aynı ölçü, nötr ikon)
   tumModlar: {
-    marginTop: SPACING.md, flexDirection: "row", alignItems: "center", gap: SPACING.md,
-    padding: SPACING.lg, borderRadius: 20, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
+    marginTop: SPACING.sm, flexDirection: "row", alignItems: "center", gap: SPACING.md, minHeight: 76,
+    paddingVertical: 12, paddingHorizontal: SPACING.md, borderRadius: 20, borderWidth: 1,
+    borderColor: saydam(COLORS.text, 0.06), backgroundColor: COLORS.card,
   },
   tumModlarIkon: {
-    width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center",
-    backgroundColor: saydam(COLORS.accent, 0.14),
+    width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center",
+    backgroundColor: saydam(COLORS.text, 0.07),
   },
 });

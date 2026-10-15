@@ -5,6 +5,7 @@ import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
 import TeamBadge from "../components/TeamBadge";
+import EslesmeKarti from "../components/EslesmeKarti";
 import TimerBar from "../components/TimerBar";
 import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
@@ -260,17 +261,7 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
             </View>
           </View>
 
-          <View style={styles.takimKart}>
-            <View style={styles.takim}>
-              <TeamBadge name={teamA} size={56} />
-              <Text style={styles.takimAd} numberOfLines={2}>{teamA}</Text>
-            </View>
-            <Text style={styles.arti}>+</Text>
-            <View style={styles.takim}>
-              <TeamBadge name={teamB} size={56} />
-              <Text style={styles.takimAd} numberOfLines={2}>{teamB}</Text>
-            </View>
-          </View>
+          <EslesmeKarti sol={{ tip: "kulup", ad: teamA }} sag={{ tip: "kulup", ad: teamB }} />
 
           {phase === "racing" && (
             <>

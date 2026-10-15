@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image as HizliResim } from "expo-image";
 import SoundPressable from "./SoundPressable";
 import PlayerPhoto from "./PlayerPhoto";
-import { COLORS, SPACING, TYPE } from "../lib/theme";
+import { COLORS, SPACING, TYPE, saydam, vurguZemini, renkKaristir } from "../lib/theme";
 import { acilabilirMi, tumKartlar, ASGARI_PUAN } from "../lib/kimBuMasa";
 import { resolvePlayerPhotoUrl } from "../lib/playerPhotos";
 
@@ -66,12 +66,15 @@ export function Bedel({ kart, kilitli }) {
   return <Text style={s.kartBedel}>{sayi(kart.bedel)}</Text>;
 }
 
+// Paket 34: Wordle hücreleri tema tonlarından (eski sabit koyu yeşil/kırmızı/KAHVE ve
+// açık temada okunmayan açık yazılar). ↑↓ artık mavi (kahverengi değil).
+const HUCRE_RENK = (taban, koyuYazi, acikYazi) => ({ zemin: renkKaristir(COLORS.card, taban, COLORS.acik ? 0.16 : 0.26), renk: COLORS.acik ? koyuYazi : acikYazi });
 const HUCRE = {
-  evet: { y: "✓", zemin: "#1F5A33", renk: "#CFF7D6" },
-  hayir: { y: "✗", zemin: "#3A1A1E", renk: "#FF9A9A" },
-  asagi: { y: "↓", zemin: "#3D2C08", renk: "#FFE3A3" },
-  yukari: { y: "↑", zemin: "#3D2C08", renk: "#FFE3A3" },
-  esit: { y: "=", zemin: "#1F5A33", renk: "#CFF7D6" },
+  evet: { y: "✓", ...HUCRE_RENK("#22C55E", "#15803D", "#CFF7D6") },
+  hayir: { y: "✗", ...HUCRE_RENK("#EF4444", "#B91C1C", "#FFB0B0") },
+  asagi: { y: "↓", ...HUCRE_RENK("#3B82F6", "#1D4ED8", "#C7DCFF") },
+  yukari: { y: "↑", ...HUCRE_RENK("#3B82F6", "#1D4ED8", "#C7DCFF") },
+  esit: { y: "=", ...HUCRE_RENK("#22C55E", "#15803D", "#CFF7D6") },
   yok: { y: "—", zemin: COLORS.card, renk: COLORS.textMuted },
 };
 export function Hucre({ deger }) {
@@ -288,12 +291,12 @@ const s = StyleSheet.create({
   afis: {
     marginHorizontal: SPACING.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: 18,
-    backgroundColor: "#2A1F06", borderWidth: 1, borderColor: "#5A430E",
+    backgroundColor: COLORS.marka, borderWidth: 1, borderColor: saydam(COLORS.markaUst, 0.14),   // Paket 34: sabit kahverengi afiş → kulübün rengi
   },
-  afisUst: { fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: "#FFD98A" },
-  afisSayi: { fontSize: 40, fontWeight: "900", color: COLORS.cta, lineHeight: 44 },
-  afisCarpan: { fontSize: 22, fontWeight: "900", color: "#FFE3A3" },
-  afisAlt: { fontSize: 12, fontWeight: "700", color: "#FFD98A" },
+  afisUst: { fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: saydam(COLORS.markaUst, 0.8) },
+  afisSayi: { fontSize: 40, fontWeight: "900", color: COLORS.markaUst, lineHeight: 44 },
+  afisCarpan: { fontSize: 22, fontWeight: "900", color: COLORS.marka2 },
+  afisAlt: { fontSize: 12, fontWeight: "700", color: saydam(COLORS.markaUst, 0.8) },
   afisKucuk: { paddingVertical: 6 },
   afisSayiKucuk: { fontSize: 24, lineHeight: 28 },
 
@@ -314,9 +317,9 @@ const s = StyleSheet.create({
   izgara: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   kart: { borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 4 },
   kartKapali: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder },
-  kartAcik: { backgroundColor: COLORS.card, borderColor: "#2B6A8E" },
-  kartBaslangic: { backgroundColor: COLORS.card, borderColor: "#5EC8FF" },
-  kartBedava: { backgroundColor: "#0E2A18", borderColor: "#2F7A47" },
+  kartAcik: { backgroundColor: COLORS.card, borderColor: saydam(COLORS.accent, 0.55) },
+  kartBaslangic: { backgroundColor: COLORS.card, borderColor: COLORS.accent },
+  kartBedava: { backgroundColor: vurguZemini(0.14), borderColor: saydam(COLORS.accent, 0.5) },
   kartSon: { backgroundColor: COLORS.card, borderColor: COLORS.textFaint },
   kartKilitli: { backgroundColor: COLORS.card, borderColor: COLORS.card, opacity: 0.6 },
   kilitSatir: { flexDirection: "row", alignItems: "center", gap: 3 },
@@ -334,7 +337,7 @@ const s = StyleSheet.create({
   kalkanSoru: { fontSize: 15, fontWeight: "900", color: COLORS.textMuted },
   bedava: { fontSize: 12, fontWeight: "900", color: COLORS.accent },
   vitrinAd: { fontSize: 13, fontWeight: "800", color: COLORS.text, textAlign: "center" },
-  basari: { fontSize: 12, fontWeight: "700", color: "#FFE3A3", textAlign: "center", marginTop: 2 },
+  basari: { fontSize: 12, fontWeight: "700", color: COLORS.cta, textAlign: "center", marginTop: 2 },
   arkadasAlt: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
   siluetKutu: { alignItems: "center", marginTop: SPACING.md },
   siluet: { width: 140, height: 140, borderRadius: 70 },

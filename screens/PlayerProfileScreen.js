@@ -11,7 +11,7 @@ import PlayerMiniProfile from "../components/PlayerMiniProfile";
 import TakimlarListesi from "../components/TakimlarListesi";
 import SoundPressable from "../components/SoundPressable";
 
-import { COLORS } from "../lib/theme";
+import { COLORS, SPACING } from "../lib/theme";
 // 30 Ağustos 2026: Ansiklopedi artık kendi sekmesi (bottom tab) — bir üst
 // ekrana "çıkış" kavramı yok, tab bar'ın kendisi navigasyonu sağlıyor. Bu
 // yüzden onExit prop'u ve alttaki "Menüye Dön" butonu kaldırıldı (Kerem:
@@ -122,7 +122,7 @@ export default function PlayerProfileScreen({ navigation }) {
     return (
       <GameBackground style={styles.container}>
         <View style={styles.header}>
-          <TabHeader compact />
+          <TabHeader baslik="Ansiklopedi" />
           <Sekmeler sekme={sekme} setSekme={setSekme} />
         </View>
         <TakimlarListesi onKadro={(id) => navigation && navigation.navigate("kadro", { id })} />
@@ -134,7 +134,7 @@ export default function PlayerProfileScreen({ navigation }) {
   return (
     <GameBackground style={styles.container}>
       <View style={styles.header}>
-        <TabHeader compact />
+        <TabHeader baslik="Ansiklopedi" />
         <Sekmeler sekme={sekme} setSekme={setSekme} />
         <Text style={styles.title}>EFSANELER KOLEKSİYONU</Text>
         <Text style={styles.subtitle}>Oyun içinde açtığın karakterler bunlar!</Text>
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
   sekmeAktif: { backgroundColor: COLORS.accent },
   sekmeYazi: { color: COLORS.textMuted, fontWeight: "900", fontSize: 14 },
   bosYazi: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", lineHeight: 19 },
-  container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 40 },
-  header: { paddingHorizontal: 20, marginBottom: 10, alignItems: "center" },
+  container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl },
+  header: { paddingHorizontal: SPACING.xl, marginBottom: 10, alignItems: "stretch" },
   title: { color: COLORS.text, fontSize: 20, fontWeight: "900", textAlign: "center" },
   subtitle: { color: COLORS.textMuted, fontSize: 12, marginTop: 4, fontStyle: "italic", textAlign: "center" },
 

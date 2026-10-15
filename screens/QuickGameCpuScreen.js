@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import ModKurulum, { KurulumBolum, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
-import { COLORS, MODE_COLORS, SPACING, RADIUS, saydam } from "../lib/theme";
+import { COLORS, MODE_COLORS, SPACING, RADIUS, saydam, vurguZemini } from "../lib/theme";
 import GameBackground from "../components/GameBackground";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { useAppSettings } from "../lib/SettingsContext";
@@ -371,7 +371,7 @@ const s = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10,
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1.5, borderRadius: 14,
   },
-  sikDogru: { borderColor: COLORS.accent, backgroundColor: saydam(COLORS.accent, 0.12) },
+  sikDogru: { borderColor: COLORS.accent, backgroundColor: vurguZemini(0.12) },
   sikYanlis: { borderColor: COLORS.danger, backgroundColor: saydam(COLORS.danger, 0.12) },
   sikYazi: { flex: 1, color: COLORS.text, fontSize: 15, fontWeight: "800" },
   seviye: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: SPACING.md },

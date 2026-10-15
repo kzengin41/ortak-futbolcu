@@ -7,9 +7,10 @@ import SoundPressable from "../components/SoundPressable";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TimerBar from "../components/TimerBar";
 import TeamBadge from "../components/TeamBadge";
+import { KulupParlakligi } from "../components/EslesmeKarti";
 import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS, saydam, vurguZemini } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import {
   buildSuggestIndex, suggestPlayers, findMatchedPlayer, generateFiveClubRound, scoreFiveClubAnswer,
@@ -221,6 +222,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
               const rk = rakipKulup.has(c);
               return (
                 <View key={c} style={[styles.kulupHucre, (ben || rk) && styles.kulupHucreEslesti]}>
+                  <KulupParlakligi ad={c} guc={ben || rk ? 0.12 : 0.3} />
                   <View style={styles.rozetSarmal}><TeamBadge name={c} size={40} /></View>
                   <Text allowFontScaling={false} style={styles.kulupAd} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{c}</Text>
                   {ben || rk ? (
@@ -372,8 +374,8 @@ const styles = StyleSheet.create({
     flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 12, marginBottom: SPACING.md,
     backgroundColor: COLORS.card, borderColor: VURGU.main, borderWidth: 1.5, borderRadius: RADIUS.lg, padding: 14,
   },
-  kulupHucre: { width: "29%", alignItems: "center", paddingVertical: 10, borderRadius: 12, minHeight: 92 },
-  kulupHucreEslesti: { backgroundColor: "rgba(124,255,92,0.12)" },
+  kulupHucre: { width: "29%", alignItems: "center", paddingVertical: 10, borderRadius: 12, minHeight: 92, overflow: "hidden" },
+  kulupHucreEslesti: { backgroundColor: vurguZemini(0.16), borderWidth: 1, borderColor: saydam(COLORS.accent, 0.5) },
   rozetSarmal: { height: 40, width: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   kulupAd: { color: COLORS.text, fontSize: 12, fontWeight: "800", textAlign: "center", lineHeight: 16 },
   bulanSatir: { flexDirection: "row", gap: 4, position: "absolute", top: 4, right: 4 },

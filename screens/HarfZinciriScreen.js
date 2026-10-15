@@ -18,6 +18,7 @@ import { recordRound } from "../lib/stats";
 import { addXP } from "../lib/profile";
 import { gorevOlayi } from "../lib/dailyGoals";
 import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
+import { OyunUstCubugu } from "../components/MacCercevesi";
 
 // ============================================================================
 // HARF ZİNCİRİ — tek kişilik hayatta kalma (4 Ekim 2026, benchmark .28548)
@@ -127,19 +128,22 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
   return (
     <GameBackground style={s.kap} klavye="kaydir">
       {phase === "geri" ? <CountdownOverlay onComplete={() => { setPhase("oyun"); setTimeout(() => inputRef.current?.focus?.(), 50); }} /> : null}
-      <View style={s.ust}>
-        <BackButton onPress={phase === "bitti" ? (onExitSilent || onExit) : onExit} />
-        <View style={s.canlar}>
-          {Array.from({ length: CAN }, (_, i) => (
-            <Ionicons key={i} name={i < can ? "heart" : "heart-outline"} size={22} color={i < can ? COLORS.danger : COLORS.textFaint} />
-          ))}
-        </View>
-      </View>
+      {/* Paket 31 — standart üst çubuk: ✕ · mod adı · canlar */}
+      <OyunUstCubugu
+        baslik="Harf Zinciri"
+        alt={`Zincir ${zincir.length} · rekor ${rekor}`}
+        onCikis={phase === "bitti" ? (onExitSilent || onExit) : onExit}
+        sag={
+          <View style={s.canlar}>
+            {Array.from({ length: CAN }, (_, i) => (
+              <Ionicons key={i} name={i < can ? "heart" : "heart-outline"} size={18} color={i < can ? COLORS.danger : COLORS.textFaint} />
+            ))}
+          </View>
+        }
+      />
 
       {phase !== "bitti" ? (
         <>
-          <Text style={s.baslik}>HARF ZİNCİRİ</Text>
-          <Text style={s.rekor}>Zincir {zincir.length} · rekor {rekor}</Text>
           <View style={s.harfKutu}>
             <Text style={s.harfEtiket}>Bu harfle başlayan futbolcu</Text>
             <Text style={s.harf}>{harf}</Text>

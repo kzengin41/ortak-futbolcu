@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Animated, StyleSheet, Modal } from "react-native";
+import { View, Animated, StyleSheet, Modal, useWindowDimensions } from "react-native";
+import { COLORS } from "../lib/theme";
+import { ArkaplanDeseni } from "./FormaDeseni";
 // Tur başlamadan önce 3-2-1 geri sayımı.
 // Paket 25 (12 Ekim 2026, Kerem: "3-2-1 sayımından sonra hala bir aşama varmış
 // gibi gecikiyor. htalks'taki gibi 3-2-1 dedi mi takımlar gelmeli. ek bir süre
@@ -77,6 +79,7 @@ export default function CountdownOverlay({ onComplete, countPlayers, isMirrored 
     return (
       <Modal visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
       <View style={styles.overlay}>
+        <Desen />
         <View style={[styles.bg, { transform: [{ rotate: "180deg" }] }]}>
           <Animated.Text style={[styles.number, { transform: [{ scale }], opacity }]}>{display}</Animated.Text>
         </View>
@@ -91,6 +94,7 @@ export default function CountdownOverlay({ onComplete, countPlayers, isMirrored 
   return (
     <Modal visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
       <View style={styles.overlay}>
+        <Desen />
         <View style={styles.bg}>
           <Animated.Text style={[styles.number, { transform: [{ scale }], opacity }]}>{display}</Animated.Text>
         </View>
@@ -110,12 +114,18 @@ const styles = StyleSheet.create({
   // kaplıyor ve arka planı kendisi boyuyor.
   overlay: {
     flex: 1,
-    backgroundColor: "#0B1620",
+    backgroundColor: COLORS.bg,   // Paket 31 — eski sabit lacivert yerine tema
   },
   bg: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  number: { color: "#7CFF5C", fontSize: 110, fontWeight: "900" },
+  number: { color: COLORS.accent, fontSize: 110, fontWeight: "900" },
 });
+
+// Paket 31 — geri sayım da temanın arkaplanıyla (kulüp renginde ışık + forma deseni).
+function Desen() {
+  const { width, height } = useWindowDimensions();
+  return <ArkaplanDeseni genislik={width} yukseklik={height} />;
+}

@@ -6,10 +6,14 @@ import GameBackground from "../components/GameBackground";
 import BackButton from "../components/BackButton";
 import PressScale from "../components/ui/PressScale";
 // Paket 16 — kart, bölüm ve "Kiminle oynuyorsun?" penceresi Online lobiyle ortak.
-import { ModKarti, ModBolumu, ModSecimPenceresi } from "../components/ModKarti";
+import { ModKarti, ModBolumu } from "../components/ModKarti";
+import OyunBaslatPenceresi from "../components/OyunBaslat";
 import { Forma } from "../components/FormaDeseni";
-import GunlukSatiri from "../components/GunlukSatiri";
+import BugunKarti from "../components/BugunKarti";
+import { ModKaro, ModIzgarasi, BolumBasligi } from "../components/ModKaro";
+import { gununModu } from "../lib/gununModu";
 import { COLORS, RADIUS, SPACING, TYPE, saydam } from "../lib/theme";
+import TabHeader from "../components/TabHeader";
 // "Oyna" sekmesi — 30 Ağustos 2026'da alt menüye (bottom tab) geçişle birlikte
 // eski HomeScreen'den ayrıştırıldı: Online ve Ansiklopedi artık kendi
 // sekmeleri, oyuncu kartı + Ayarlar/Yardım artık Profilim sekmesinde — bu
@@ -30,6 +34,8 @@ const MODES = [
     ikon: "ortakKulup",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
     title: "Ortak Kulüp",
+    // Paket 31 (Kerem: "tüm modlarda en üstte 3-2-1 Ortak Futbolcu'yu Bul yazsın")
+    vitrinAdi: "3-2-1 Ortak Futbolcu'yu Bul",
     desc: "İki kulüp söylenir. İkisinde de oynamış futbolcuyu rakibinden önce bul.",
     icon: "shield-checkmark",
     colorKey: "teamTeam",
@@ -40,9 +46,13 @@ const MODES = [
       { id: "cpu", rakip: "cpu", label: "Kulüp × Kulüp", alt: "İki kulüpte oynamış futbolcu" },
       { id: "countryTeamCpu", rakip: "cpu", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcu" },
       { id: "draftCpu", rakip: "cpu", label: "Takımı sen seç", alt: "Bir kulübü sen yazarsın, ikincisini CPU seçer" },
-      { id: "local", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Ekran ikiye bölünür, ilk basan cevaplar" },
-      { id: "sunucu", rakip: "yanimdaki", label: "Yanımdakiler — Sunucu modu", alt: "2–6 kişi; sen okursun, onlar bağırır" },
-      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true, params: { mod: "classic" } },
+      { id: "local", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", kisaLabel: "2 kişi", alt: "Ekran ikiye bölünür, ilk basan cevaplar" },
+      { id: "sunucu", rakip: "yanimdaki", label: "Yanımdakiler — Sunucu modu", kisaLabel: "Sunucu · 2–6 kişi", alt: "Sen kulüpleri okursun, onlar bağırır" },
+      // Paket 32 (Kerem: "online'da ülke-takım ve kendin takımı söyle modu yok?") —
+      // online'da da üç tür; Kulüp × Ülke online yeni (screens/OnlineUlkeScreen.js).
+      { id: "online", rakip: "online", label: "Kulüp × Kulüp", alt: "İki kulüp çıkar, ortak futbolcuyu ilk yazan alır", sekme: true, params: { mod: "classic" } },
+      { id: "online", rakip: "online", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır", sekme: true, params: { mod: "country" } },
+      { id: "online", rakip: "online", label: "Takımı sen seç", alt: "Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur", sekme: true, params: { mod: "draft" } },
     ],
   },
   {
@@ -86,8 +96,8 @@ const MODES = [
     // Paket 13 — Kim Bu modları (benchmark): Seri, Kadro Avı, Online düello.
     // Günlük Kim Bu üstteki günlük kutularda.
     options: [
-      { id: "whoAmICpu", rakip: "cpu", label: "Seri", alt: "3 can, seviye seviye zorlaşır" },
-      { id: "kadroAvi", rakip: "cpu", label: "Kadro Avı", alt: "Bir kadronun gizli oyuncusu — bulunca kadroya eklenir" },
+      { id: "whoAmICpu", rakip: "tek", label: "Seri", alt: "3 can, seviye seviye zorlaşır" },
+      { id: "kadroAvi", rakip: "tek", label: "Kadro Avı", alt: "Bir kadronun gizli oyuncusu — bulunca kadroya eklenir" },
       { id: "online", rakip: "online", label: "Online", alt: "Aynı masada düello: ilk bilen alır", sekme: true, params: { mod: "whoami" } },
     ],
   },
@@ -204,6 +214,9 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
     }
   }
 
+  const gunun = gununModu();
+  const gunlukAc = (id) => (id === "dailyPuzzle" ? onDailyPuzzle && onDailyPuzzle() : onGunlukOyun && onGunlukOyun(id));
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
@@ -223,38 +236,40 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
       >
         <View style={styles.baslikSatiri}>
           {onBack ? <BackButton onPress={onBack} /> : null}
-          <Text style={styles.sayfaBaslik}>Tüm Modlar</Text>
+          <TabHeader baslik="Tüm Modlar" style={{ marginBottom: 0 }} />
         </View>
 
         <Vitrin mod={VITRIN} onPress={() => handleCardPress(VITRIN)} />
 
-        <View style={styles.gunluk}>
-          <GunlukSatiri onOyun={(id) => (id === "dailyPuzzle" ? onDailyPuzzle && onDailyPuzzle() : onGunlukOyun && onGunlukOyun(id))} />
-        </View>
+        {/* Paket 34 (Kerem: "oynamaya yönlendirsin … challenge'larla o modlara") —
+            BUGÜN kartı: günün modu (2× XP) · görevler (her biri OYNA) · günlük meydan okumalar */}
+        <BugunKarti
+          onGununModu={(gm) => { const m = MODES.find((x) => x.key === gm.modKey); if (m) handleCardPress(m); }}
+          onGorev={(g, gm) => {
+            if (g.git.rota) { handleSelect(g.git.rota, g.git.params); return; }
+            const m = MODES.find((x) => x.key === gm.modKey); if (m) handleCardPress(m);
+          }}
+          onGunlukOyun={gunlukAc}
+        />
 
-        <ModBolumu baslik="Diğer oyunlar">
+        {/* Paket 34 — modlar liste satırı değil OYUN KAROSU (components/ModKaro.js) */}
+        <BolumBasligi>Modlar</BolumBasligi>
+        <ModIzgarasi>
           {DIGERLERI.map((m) => (
-            <ModKarti key={m.key} mod={m} onPress={() => handleCardPress(m)} />
+            <ModKaro key={m.key} ikon={m.ikon} icon={m.icon} baslik={m.title} alt={m.kisa || m.desc} gunun={m.key === gunun.modKey} onPress={() => handleCardPress(m)} />
           ))}
-        </ModBolumu>
+        </ModIzgarasi>
       </Animated.ScrollView>
 
-      {/* 4 Ekim 2026 (.28743) — ilk soru "kiminle?": CPU / Yanımdaki / Online */}
-      <ModSecimPenceresi
+      {/* Paket 31 — "Kiminle? · Nasıl? · BAŞLA" alt sayfası (components/OyunBaslat.js) */}
+      <OyunBaslatPenceresi
         mod={pickerMode}
         onClose={() => setPickerMode(null)}
-        secenekler={(pickerMode?.options || []).map((opt, i) => ({
-          anahtar: `${opt.id}-${i}`,
-          grup: RAKIP_BASLIK[opt.rakip],
-          ikon: RAKIP_IKON[opt.rakip] || "play",
-          label: opt.label,
-          alt: opt.alt,
-          kapali: opt.kapali,
-          onPress: () => {
-            if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id, { ...(opt.params || {}), t: Date.now() }); return; }
-            handleSelect(opt.id, opt.params);
-          },
-        }))}
+        onBasla={(opt, eylem) => {
+          // Online: pencereden doğrudan "Rastgele rakip" / "Oda kur" / "Kodla katıl" — lobi o adımı açar.
+          if (opt.sekme) { setPickerMode(null); onSekme && onSekme(opt.id, { ...(opt.params || {}), eylem: eylem || null, t: Date.now() }); return; }
+          handleSelect(opt.id, opt.params);
+        }}
       />
     </GameBackground>
   );
@@ -265,7 +280,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
 // tek eylem: OYNA (temanın eylem rengi; GS'de sarı üstüne kırmızı yazı).
 function Vitrin({ mod, onPress }) {
   return (
-    <PressScale style={styles.vitrin} onPress={onPress} accessibilityRole="button" accessibilityLabel="3-2-1 Ortak Kulüp, oyna">
+    <PressScale style={styles.vitrin} onPress={onPress} accessibilityRole="button" accessibilityLabel="3-2-1 Ortak Futbolcu'yu Bul, oyna">
       <LinearGradient
         colors={[saydam("#FFFFFF", 0.12), saydam("#FFFFFF", 0), saydam("#000000", 0.32)]}
         locations={[0, 0.45, 1]}
@@ -273,13 +288,16 @@ function Vitrin({ mod, onPress }) {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFillObject}
       />
-      <Forma boyut={172} style={styles.vitrinForma} />
+      <Forma boyut={150} style={styles.vitrinForma} />
       <View style={styles.vitrinIc}>
-        <Text style={styles.vitrinUst}>3-2-1 · ANA OYUN</Text>
-        <Text style={styles.vitrinBaslik}>{mod.title}</Text>
+        {/* Paket 31 (Kerem: "en üstte 3-2-1 Ortak Futbolcu'yu Bul yazsın") — başlık tam
+            genişlikte iki satır; forma sağ altta, açıklama ve düğmenin yanında. */}
+        <Text style={styles.vitrinBaslik}>
+          <Text style={{ color: COLORS.marka2 }}>3-2-1 </Text>Ortak{"\n"}Futbolcu'yu Bul
+        </Text>
         <Text style={styles.vitrinAciklama}>{mod.desc}</Text>
         <View style={styles.oyna}>
-          <Ionicons name="play" size={18} color={COLORS.accentDark} />
+          <Ionicons name="play" size={18} color={COLORS.markaDugmeYazi} />
           <Text style={styles.oynaYazi}>OYNA</Text>
         </View>
       </View>
@@ -299,16 +317,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.marka, minHeight: 216,
     borderWidth: 1, borderColor: saydam(COLORS.markaUst, 0.14),
   },
-  vitrinForma: { position: "absolute", right: -40, top: 34, transform: [{ rotate: "9deg" }] },
-  vitrinIc: { padding: SPACING.xl, paddingRight: 120, gap: 6 },
+  vitrinForma: { position: "absolute", right: -30, bottom: -18, transform: [{ rotate: "9deg" }] },
+  vitrinIc: { padding: SPACING.xl, gap: 6 },
   vitrinUst: { color: COLORS.marka2, fontWeight: "900", fontSize: 12, letterSpacing: 2 },
-  vitrinBaslik: { color: COLORS.markaUst, fontWeight: "900", fontSize: 32, lineHeight: 36, letterSpacing: -0.5 },
-  vitrinAciklama: { color: COLORS.markaUst, opacity: 0.86, fontWeight: "600", fontSize: 14, lineHeight: 20 },
+  vitrinBaslik: { color: COLORS.markaUst, fontWeight: "900", fontSize: 30, lineHeight: 34, letterSpacing: -0.5, marginBottom: 2 },
+  vitrinAciklama: { color: COLORS.markaUst, opacity: 0.86, fontWeight: "600", fontSize: 14, lineHeight: 20, marginRight: 120 },
   oyna: {
     marginTop: SPACING.md, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: COLORS.accent, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 26,
+    backgroundColor: COLORS.markaDugme, borderRadius: RADIUS.pill, paddingVertical: 12, paddingHorizontal: 26,
   },
-  oynaYazi: { color: COLORS.accentDark, fontWeight: "900", fontSize: 16, letterSpacing: 1 },
+  oynaYazi: { color: COLORS.markaDugmeYazi, fontWeight: "900", fontSize: 16, letterSpacing: 1 },
 
   gunluk: { marginHorizontal: SPACING.xl, marginTop: SPACING.lg, marginBottom: SPACING.xl },
 });

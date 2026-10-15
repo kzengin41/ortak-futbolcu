@@ -128,6 +128,7 @@ function parca(id) {{
   if (i === undefined) return null;
   const k = i % ADET;
   return (_onbellek[id] = {{
+    id,
     kaynak: ATLASLAR[Math.floor(i / ADET)],
     x: (k % SUTUN) * ADIM + PAY,     // logo alaninin atlastaki sol ust kosesi (px)
     y: Math.floor(k / SUTUN) * ADIM + PAY,

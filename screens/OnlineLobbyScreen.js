@@ -7,6 +7,11 @@ import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import { ModKarti, ModBolumu, ModSecimPenceresi, modStilleri } from "../components/ModKarti";
+import OyunBaslatPenceresi from "../components/OyunBaslat";
+import { ModKaro, ModIzgarasi, BolumBasligi } from "../components/ModKaro";
+import { gununModu } from "../lib/gununModu";
+// Online mod kimliği → günün modu grubu (2× XP rozeti için)
+const ONLINE_GRUP = { classic: "ortak", five: "five", xox: "xox", whoami: "kimbu", letter: "harf", letter2: "harf" };
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import { standartProfil } from "../lib/eslesmeProfili";
 import {
@@ -17,7 +22,7 @@ import LiderlikPenceresi, { DereceRozeti } from "../components/LiderlikPenceresi
 import AdSecPenceresi from "../components/AdSecPenceresi";
 import { useDerece } from "../lib/derece";
 import { getProfile } from "../lib/profile";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, saydam } from "../lib/theme";
 
 // ============================================================================
 // ONLINE LOBİ — 5 Ekim 2026 yeniden tasarım (benchmark .29772 / .29682 / .29648)
@@ -59,14 +64,16 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
 //   ±150 ile başlar, beklerken her 10 sn'de +100 genişler, 30 sn sonra herkes.
 // ============================================================================
 export const GAME_MODES = [
-  { id: "classic", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takımda da oynamış futbolcuyu rakibinden önce bul. İstersen takımları sırayla siz seçin", icon: "shield-checkmark", colorKey: "teamTeam" },
+  { id: "classic", kisa: "Kulüp × Kulüp, Kulüp × Ülke ya da sen seç", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takımda da oynamış futbolcuyu rakibinden önce bul. İstersen takımları sırayla siz seçin", icon: "shield-checkmark", colorKey: "teamTeam" },
   // Kartı yok (Ortak Kulüp'ün içinde bir tür); bekleme ekranı ve modIstegi için listede duruyor.
   { id: "draft", ikon: "takimiSenSec", grup: "ortak", gizli: true, label: "Ortak Kulüp · Takımı Sen Seç", desc: "Sırayla takım seçersiniz: seçtiğin takım rakibin sorusu olur, bilemezse puan senin", icon: "create", colorKey: "teamCountry" },
-  { id: "five", ikon: "besKulup", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
-  { id: "xox", ikon: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
-  { id: "whoami", ikon: "kimBu", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
-  { id: "letter", ikon: "ilkHarf", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
-  { id: "letter2", ikon: "harfiSenSec", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
+  // Paket 32 — Online Kulüp × Ülke (screens/OnlineUlkeScreen.js); kartı yok, Ortak Kulüp'ün türü.
+  { id: "country", ikon: "ulkeKulup", grup: "ortak", gizli: true, label: "Ortak Kulüp · Kulüp × Ülke", desc: "O ülkeden, o kulüpte oynamış futbolcuyu rakibinden önce yaz", icon: "earth", colorKey: "teamCountry" },
+  { id: "five", kisa: "Aynı anda gizli cevap, 3 tur", ikon: "besKulup", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
+  { id: "xox", kisa: "3×3 ızgara, sırayla kare kap", ikon: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
+  { id: "whoami", kisa: "Aynı masada ipucu düellosu", ikon: "kimBu", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
+  { id: "letter", kisa: "Harfle başlayan futbolcuyu ilk sen bul", ikon: "ilkHarf", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
+  { id: "letter2", kisa: "Harfleri siz seçin, yarış başlasın", ikon: "harfiSenSec", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
 ].map((m) => ({ ...m, title: m.label }));
 const GRUPLAR = [
   { id: "ortak", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
@@ -76,6 +83,32 @@ const GRUPLAR = [
 const KULUPSUZ = new Set(["xox", "five"]);
 // Hızlı Eşleş'te aranacak modlar: bu sürümün oynayabildiği bütün online modlar.
 const HIZLI_MODLAR = GAME_MODES.map((m) => m.id);
+// Lobideki bir mod kartının başlat sayfası için mod nesnesi (OyunBaslat biçimi).
+const ORTAK_TURLER = [
+  { mod: "classic", label: "Kulüp × Kulüp", alt: "İki kulüp çıkar, ortak futbolcuyu ilk yazan alır" },
+  { mod: "country", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır" },
+  { mod: "draft", label: "Takımı sen seç", alt: "Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur" },
+];
+const _baslatOnbellek = new Map();   // aynı kart → aynı nesne (pencere her çizimde sıfırlanmasın)
+export function onlineBaslatModu(m) {
+  if (!m) return null;
+  if (!_baslatOnbellek.has(m.id)) _baslatOnbellek.set(m.id, baslatModuKur(m));
+  return _baslatOnbellek.get(m.id);
+}
+function baslatModuKur(m) {
+  const ortak = m.id === "classic" || m.id === "country" || m.id === "draft";
+  const options = ortak
+    ? ORTAK_TURLER.map((t) => ({ id: t.mod, rakip: "online", label: t.label, alt: t.alt, sekme: true, params: { mod: t.mod } }))
+    : [{ id: m.id, rakip: "online", label: m.label, alt: m.desc, sekme: true, params: { mod: m.id } }];
+  return {
+    key: `online-${ortak ? "ortak" : m.id}`,
+    title: ortak ? "Ortak Kulüp" : m.label,
+    ikon: ortak ? "ortakKulup" : m.ikon,
+    icon: m.icon,
+    options,
+    secili: ortak ? Math.max(0, ORTAK_TURLER.findIndex((t) => t.mod === m.id)) : 0,
+  };
+}
 const KODLA_KATIL = { ikon: "kodlaKatil", title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
 const MEYDAN = { ikon: "meydanOkuma", title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
@@ -87,6 +120,7 @@ export function eslesmePenceresi(gecenSn) {
 const YOKLAMA_MS = 6000;             // beklerken daha eski bir rastgele oda var mı?
 
 export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, modIstegi }) {
+  const gunun = gununModu();   // Paket 34: 2× XP rozeti
   const baslangicModu = modIstegi && modIstegi.mod;
   const eslesme = useEslesmeProfili();
   const [leagueModalOpen, setLeagueModalOpen] = useState(false);
@@ -114,11 +148,29 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
 
   // Tüm Modlar → "XOX Online" gibi girişler o modun penceresini açık getirir.
   // (modIstegi her girişte yeni bir nesne: aynı mod ikinci kez istense de uygulanır.)
+  // Paket 32: 3-2-1 penceresinden "eylem" de gelir (rastgele | oda | katil) —
+  // o zaman pencere açılmadan doğrudan o adım başlar. Dereceli aramada takma ad
+  // kontrolü derece kartına bakıyor; kart gelene kadar (en çok 1,5 sn) beklenir.
+  const islenenIstekRef = useRef(null);
   useEffect(() => {
-    let m = baslangicModu && GAME_MODES.find((x) => x.id === baslangicModu);
-    if (m && m.gizli) m = GAME_MODES.find((x) => x.id === "classic");   // draft -> Ortak Kulüp penceresi
-    if (m) { setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }
-  }, [modIstegi]);
+    if (!modIstegi || islenenIstekRef.current === modIstegi) return;
+    const m = baslangicModu && GAME_MODES.find((x) => x.id === baslangicModu);
+    if (!m) return;
+    const eylem = modIstegi.eylem;
+    const yap = () => {
+      if (islenenIstekRef.current === modIstegi) return;
+      islenenIstekRef.current = modIstegi;
+      setGameMode(m.id);
+      if (eylem === "rastgele") rastgeleAra(m.id);
+      else if (eylem === "oda") arkadasOdasiKur(m.id);
+      else if (eylem === "katil") { setHata(""); setPencere({ tip: "katil" }); }
+      else setPencere({ tip: "mod", mod: m });
+    };
+    if (eylem !== "rastgele" || derece) { yap(); return; }
+    const t = setTimeout(yap, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modIstegi, derece]);
 
   useEffect(() => {
     meydanGecmisi().then((g) => canliRef.current && setSonMeydan(g[0] || null)).catch(() => {});
@@ -312,27 +364,14 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
 
   // ---------------------------------------------------------------- ana ekran
   const meydanBasla = (kod) => { setPencere(null); onMeydanOkuma && onMeydanOkuma(kod); };
-  const pencereMod = pencere?.tip === "mod" ? pencere.mod : pencere?.tip === "katil" ? KODLA_KATIL : pencere?.tip === "meydan" ? MEYDAN : null;
+  const pencereMod = pencere?.tip === "katil" ? KODLA_KATIL : pencere?.tip === "meydan" ? MEYDAN : null;
   let pencereIcerik = null;
   let secenekler = [];
-  if (pencere?.tip === "mod" && pencere.mod.id === "classic") {
-    // Tüm Modlar'daki gibi tür seçimi pencerenin içinde: rastgele takımlar / takımı sen seç
-    const tur = "Dereceli";
-    secenekler = [
-      { anahtar: "c-rastgele", grup: "RASTGELE TAKIMLAR", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${tur} · iki takım gelir, ortak oyuncuyu ilk bulan alır`, kapali: calisiyor, onPress: () => rastgeleAra("classic") },
-      { anahtar: "c-oda", grup: "RASTGELE TAKIMLAR", ikon: "add-circle", label: "Oda Kur", alt: "Dostluk · kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur("classic") },
-      { anahtar: "d-rastgele", grup: "TAKIMI SEN SEÇ", ikon: "flash", label: "Rastgele Rakip Bul", alt: `${tur} · sırayla takım seçersiniz, seçtiğin takım rakibin sorusu olur`, kapali: calisiyor, onPress: () => rastgeleAra("draft") },
-      { anahtar: "d-oda", grup: "TAKIMI SEN SEÇ", ikon: "add-circle", label: "Oda Kur", alt: "Rakip bilemezse puan seçene — kodu arkadaşına gönder", kapali: calisiyor, onPress: () => arkadasOdasiKur("draft") },
-      { anahtar: "katil", grup: "ARKADAŞINLA", ikon: "key", label: "Kodla Katıl", alt: "Arkadaşının kodu sende mi?", onPress: () => { setHata(""); setPencere({ tip: "katil" }); } },
-    ];
-  } else if (pencere?.tip === "mod") {
-    const m = pencere.mod.id;
-    secenekler = [
-      { anahtar: "rastgele", grup: "RASTGELE RAKİP", ikon: "flash", label: "Rastgele Rakip Bul", alt: "Dereceli · puanına yakın rakip", kapali: calisiyor, onPress: () => rastgeleAra(m) },
-      { anahtar: "oda", grup: "ARKADAŞINLA", ikon: "add-circle", label: "Oda Kur", alt: "Dostluk · kodu arkadaşına gönder, o katılsın", kapali: calisiyor, onPress: () => arkadasOdasiKur(m) },
-      { anahtar: "katil", grup: "ARKADAŞINLA", ikon: "key", label: "Kodla Katıl", alt: "Arkadaşının kodu sende mi?", onPress: () => { setHata(""); setPencere({ tip: "katil" }); } },
-    ];
-  } else if (pencere?.tip === "meydan" && !pencere.kodGir) {
+  // Paket 32 — mod penceresi artık 3-2-1'deki başlat sayfası (components/OyunBaslat.js):
+  // Ortak Kulüp'te NASIL? (Kulüp × Kulüp / Kulüp × Ülke / Takımı sen seç), altında
+  // RASTGELE RAKİP + ARKADAŞINLA OYNA + "kodla katıl". Eskiden 5 satırlık liste.
+  const baslatMod = pencere?.tip === "mod" ? onlineBaslatModu(pencere.mod) : null;
+  if (pencere?.tip === "meydan" && !pencere.kodGir) {
     secenekler = [
       { anahtar: "yeni", grup: "ÇEVRİMDIŞI DA OLUR", ikon: "paper-plane", label: "Meydan Oku", alt: "10 soru çöz, kodunu gönder", onPress: () => meydanBasla() },
       { anahtar: "kod", grup: "ÇEVRİMDIŞI DA OLUR", ikon: "mail-open", label: "Kodu Gir", alt: "Sana gelen meydan okumayı kabul et", onPress: () => { setMeydanKod(""); setPencere({ tip: "meydan", kodGir: true }); } },
@@ -368,14 +407,13 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     <GameBackground style={styles.container} klavye="pay">
       <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.ustKisim}>
-          <TabHeader compact />
-          <Text style={styles.title}>Online 1v1</Text>
+          {/* Paket 34 — sekme başlığı standardı; derece rozeti sağ üstte */}
+          <TabHeader baslik="Online" sag={<DereceRozeti kart={derece} onPress={() => setLiderlikAcik(true)} />} />
           <View style={styles.ayarSatir}>
             <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
-              <Ionicons name="filter" size={16} color={COLORS.accent} />
+              <Ionicons name="options-outline" size={16} color={COLORS.textMuted} />
               <Text style={styles.presetRowText} numberOfLines={1}>Arkadaş odası: {eslesme.derlenmis.etiket}</Text>
             </SoundPressable>
-            <DereceRozeti kart={derece} onPress={() => setLiderlikAcik(true)} />
           </View>
           {/* Paket 22 — Hızlı Eşleş: her moddaki bekleyen ilk rakip */}
           <SoundPressable
@@ -386,13 +424,13 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
             accessibilityLabel="Hızlı Eşleş"
           >
             <View style={styles.hizliIkon}>
-              <Ionicons name="flash" size={24} color={COLORS.accentDark} />
+              <Ionicons name="flash" size={24} color={COLORS.markaDugmeYazi} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.hizliBaslik}>Hızlı Eşleş</Text>
               <Text style={styles.hizliAlt} numberOfLines={2}>Mod fark etmez — bekleyen ilk rakiple hemen başla</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.accentDark} />
+            <Ionicons name="chevron-forward" size={20} color={saydam(COLORS.markaUst, 0.8)} />
           </SoundPressable>
           {hata && !pencere ? (
             <View style={styles.errorCard}>
@@ -410,29 +448,52 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           onClose={() => setLeagueModalOpen(false)}
         />
 
-        {GRUPLAR.map((g) => (
-          <ModBolumu key={g.id} baslik={g.baslik} ikon={g.ikon}>
-            {GAME_MODES.filter((m) => m.grup === g.id && !m.gizli).map((m) => (
-              <ModKarti key={m.id} mod={m} rozet={m.rozet} onPress={() => { setHata(""); setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }} />
-            ))}
-          </ModBolumu>
-        ))}
+        {/* Paket 34 — Tüm Modlar ile aynı OYUN KAROLARI (components/ModKaro.js) */}
+        <BolumBasligi>Modlar</BolumBasligi>
+        <ModIzgarasi>
+          {GAME_MODES.filter((m) => !m.gizli).map((m) => (
+            <ModKaro
+              key={m.id}
+              ikon={m.ikon}
+              icon={m.icon}
+              baslik={m.kisaAd || m.label}
+              alt={m.kisa || m.desc}
+              rozet={m.rozet}
+              gunun={ONLINE_GRUP[m.id] === gunun.grup}
+              accessibilityLabel={m.label}
+              onPress={() => { setHata(""); setGameMode(m.id); setPencere({ tip: "mod", mod: m }); }}
+            />
+          ))}
+        </ModIzgarasi>
 
-        <ModBolumu baslik="Arkadaşınla" ikon="people">
-          <ModKarti mod={KODLA_KATIL} onPress={() => { setHata(""); setPencere({ tip: "katil" }); }} />
-          <ModKarti mod={MEYDAN} rozet="ÇEVRİMDIŞI" onPress={() => setPencere({ tip: "meydan" })} />
-        </ModBolumu>
+        <BolumBasligi>Arkadaşınla</BolumBasligi>
+        <ModIzgarasi>
+          <ModKaro ikon={KODLA_KATIL.ikon} baslik={KODLA_KATIL.title} alt="Arkadaşının 5 haneli kodu" accessibilityLabel={KODLA_KATIL.title} onPress={() => { setHata(""); setPencere({ tip: "katil" }); }} />
+          <ModKaro ikon={MEYDAN.ikon} baslik={MEYDAN.title} alt="10 soru, sonra kodunu gönder" rozet="ÇEVRİMDIŞI" accessibilityLabel={MEYDAN.title} onPress={() => setPencere({ tip: "meydan" })} />
+        </ModIzgarasi>
       </KlavyeScroll>
 
       <ModSecimPenceresi
         mod={pencereMod}
-        soru={pencere?.tip === "mod" ? "Nasıl eşleşmek istiyorsun?" : pencere?.tip === "meydan" ? "Ne yapmak istiyorsun?" : null}
+        soru={pencere?.tip === "meydan" ? "Ne yapmak istiyorsun?" : null}
         secenekler={secenekler}
         altYazi={pencere?.tip === "meydan" && sonMeydan ? `Son: ${sonMeydan.rakip ? `${sonMeydan.ben.dogru}-${sonMeydan.rakip.dogru}` : `${sonMeydan.ben.dogru}/10 gönderildi`}` : null}
         onClose={() => { setPencere(null); setHata(""); }}
       >
         {pencereIcerik}
       </ModSecimPenceresi>
+      <OyunBaslatPenceresi
+        mod={baslatMod}
+        mesgul={calisiyor}
+        hata={pencere?.tip === "mod" ? hata : null}
+        onClose={() => { setPencere(null); setHata(""); }}
+        onBasla={(opt, eylem) => {
+          const mod = (opt.params && opt.params.mod) || opt.id;
+          if (eylem === "rastgele") rastgeleAra(mod);
+          else if (eylem === "oda") arkadasOdasiKur(mod);
+          else { setHata(""); setPencere({ tip: "katil" }); }
+        }}
+      />
       <LiderlikPenceresi visible={liderlikAcik} onKapat={() => setLiderlikAcik(false)} />
       <AdSecPenceresi
         visible={!!adIstegi}
@@ -446,7 +507,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 50 },
+  container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl },
   // Bekleme ekranlarında yatay pay burada; ana ekranda bölümler (ModBolumu) kendi payını veriyor.
   scrollContent: { paddingBottom: 60 },
   ustKisim: { paddingHorizontal: SPACING.xl },
@@ -458,17 +519,19 @@ const styles = StyleSheet.create({
 
   ayarSatir: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.lg },
   presetRow: {
-    flex: 1, flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: COLORS.card,
-    borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 10, paddingHorizontal: SPACING.md,
+    flex: 1, flexDirection: "row", alignItems: "center", gap: SPACING.sm, backgroundColor: saydam(COLORS.text, 0.06),
+    borderRadius: RADIUS.pill, paddingVertical: 10, paddingHorizontal: SPACING.md,
   },
   presetRowText: { ...TYPE.caption, color: COLORS.text, fontWeight: "800", flex: 1 },
+  // Paket 32 (Kerem: liste kartlarının renkleri) — Hızlı Eşleş artık sarı şerit değil:
+  // 3-2-1 vitrini gibi kulüp renginde (KİMLİK katmanı), eylem rengi yalnız yuvarlak ikonda.
   hizliBtn: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.accent, borderRadius: RADIUS.lg,
-    paddingVertical: 14, paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg, ...SHADOW.card,
+    flexDirection: "row", alignItems: "center", gap: SPACING.md, backgroundColor: COLORS.marka, borderRadius: 20,
+    paddingVertical: 16, paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg, overflow: "hidden",
   },
-  hizliIkon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.28)" },
-  hizliBaslik: { color: COLORS.accentDark, fontSize: 17, fontWeight: "900" },
-  hizliAlt: { color: COLORS.accentDark, fontSize: 12, fontWeight: "700", opacity: 0.8, marginTop: 1 },
+  hizliIkon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.markaDugme },
+  hizliBaslik: { color: COLORS.markaUst, fontSize: 18, fontWeight: "900" },
+  hizliAlt: { color: saydam(COLORS.markaUst, 0.75), fontSize: 12.5, fontWeight: "600", marginTop: 2 },
 
 
 

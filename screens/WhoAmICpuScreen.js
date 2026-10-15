@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, useKlavyeAcik } from "../components/Klavye";
-import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS, saydam } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS, saydam, vurguZemini, renkKaristir } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
@@ -35,6 +35,7 @@ import {
 // Kim Bu, Kadro Avı ve Online düello aynı masayı kullanıyor).
 import { MasaKartlari, TahminTablosu, SimdiBilirsenAfis, AcilisAnimasyonu, sayi } from "../components/KimBuMasa";
 import { masaHazirla, karsilastirAd, guvenilirFotoVar, taninirlik } from "../lib/kimBuVeri";
+import { OyunUstCubugu } from "../components/MacCercevesi";
 
 // ============================================================================
 // KİM BU FUTBOLCU? — KART MASASI (3 Ekim 2026, baştan yazıldı)
@@ -424,19 +425,20 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
 
   // ======================================================================= ÜST ŞERİT
   const ustSerit = (
-    <View style={s.ust}>
-      <BackButton text="Menü" onPress={onExit} style={{ marginTop: 0, marginBottom: 0 }} />
-      <View style={s.canlar}>
-        {[...Array(AZAMI_CAN)].map((_, i) => (
-          <Ionicons key={i} name={i < lives ? "heart" : "heart-outline"} size={21} color={i < lives ? COLORS.danger : COLORS.textFaint} />
-        ))}
-      </View>
-      <View style={{ flex: 1 }} />
-      <View style={{ alignItems: "flex-end" }}>
-        <Text style={s.ustEtiket}>SEVİYE {level} · SERİ</Text>
-        <Text style={s.ustSayi}>{sayi(seriPuani)}</Text>
-      </View>
-    </View>
+    // Paket 31 — standart üst çubuk: ✕ · mod adı (seviye · seri) · canlar
+    <OyunUstCubugu
+      baslik="Kim Bu Futbolcu?"
+      alt={`Seviye ${level} · seri ${sayi(seriPuani)}`}
+      onCikis={onExit}
+      style={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm }}
+      sag={
+        <View style={s.canlar}>
+          {[...Array(AZAMI_CAN)].map((_, i) => (
+            <Ionicons key={i} name={i < lives ? "heart" : "heart-outline"} size={18} color={i < lives ? COLORS.danger : COLORS.textFaint} />
+          ))}
+        </View>
+      }
+    />
   );
 
   // ======================================================================= TUR SONU / OYUN SONU
@@ -617,12 +619,12 @@ const s = StyleSheet.create({
   afis: {
     marginHorizontal: SPACING.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: 18,
-    backgroundColor: "#2A1F06", borderWidth: 1, borderColor: "#5A430E",
+    backgroundColor: COLORS.marka, borderWidth: 1, borderColor: saydam(COLORS.markaUst, 0.14),   // Paket 34: sabit kahverengi afiş → kulübün rengi
   },
-  afisUst: { fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: "#FFD98A" },
-  afisSayi: { fontSize: 40, fontWeight: "900", color: COLORS.cta, lineHeight: 44 },
-  afisCarpan: { fontSize: 22, fontWeight: "900", color: "#FFE3A3" },
-  afisAlt: { fontSize: 12, fontWeight: "700", color: "#FFD98A" },
+  afisUst: { fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: saydam(COLORS.markaUst, 0.8) },
+  afisSayi: { fontSize: 40, fontWeight: "900", color: COLORS.markaUst, lineHeight: 44 },
+  afisCarpan: { fontSize: 22, fontWeight: "900", color: COLORS.marka2 },
+  afisAlt: { fontSize: 12, fontWeight: "700", color: saydam(COLORS.markaUst, 0.8) },
   afisKucuk: { paddingVertical: 6 },
   afisSayiKucuk: { fontSize: 24, lineHeight: 28 },
 
@@ -665,9 +667,9 @@ const s = StyleSheet.create({
   izgara: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   kart: { borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 4 },
   kartKapali: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder },
-  kartAcik: { backgroundColor: COLORS.card, borderColor: "#2B6A8E" },
-  kartBaslangic: { backgroundColor: COLORS.card, borderColor: "#5EC8FF" },
-  kartBedava: { backgroundColor: "#0E2A18", borderColor: "#2F7A47" },
+  kartAcik: { backgroundColor: COLORS.card, borderColor: saydam(COLORS.accent, 0.55) },
+  kartBaslangic: { backgroundColor: COLORS.card, borderColor: COLORS.accent },
+  kartBedava: { backgroundColor: vurguZemini(0.14), borderColor: saydam(COLORS.accent, 0.5) },
   kartKilitli: { backgroundColor: COLORS.card, borderColor: COLORS.card, opacity: 0.6 },
   kilitSatir: { flexDirection: "row", alignItems: "center", gap: 3 },
   kartBedelKilitli: { fontSize: 13, fontWeight: "900", color: COLORS.textMuted, textDecorationLine: "line-through" },
@@ -684,7 +686,7 @@ const s = StyleSheet.create({
   kalkanSoru: { fontSize: 15, fontWeight: "900", color: COLORS.textMuted },
   bedava: { fontSize: 12, fontWeight: "900", color: COLORS.accent },
   vitrinAd: { fontSize: 13, fontWeight: "800", color: COLORS.text, textAlign: "center" },
-  basari: { fontSize: 12, fontWeight: "700", color: "#FFE3A3", textAlign: "center", marginTop: 2 },
+  basari: { fontSize: 12, fontWeight: "700", color: COLORS.cta, textAlign: "center", marginTop: 2 },
   arkadasAlt: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
   siluetKutu: { alignItems: "center", marginTop: SPACING.md },
   siluet: { width: 140, height: 140, borderRadius: 70 },
@@ -709,8 +711,8 @@ const s = StyleSheet.create({
   sonucAd: { ...TYPE.h1, marginTop: SPACING.md, textAlign: "center" },
   sonucMeta: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted, marginTop: 2 },
   sonucKariyer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginTop: SPACING.md },
-  sonucKulup: { width: 70, minHeight: 60, borderRadius: 12, backgroundColor: COLORS.card, borderWidth: 1, borderColor: "#2B6A8E", alignItems: "center", justifyContent: "center", padding: 4 },
-  sonucKulupYil: { fontSize: 12, fontWeight: "800", color: "#9FCBE6" },
+  sonucKulup: { width: 70, minHeight: 60, borderRadius: 12, backgroundColor: COLORS.card, borderWidth: 1, borderColor: saydam(COLORS.accent, 0.45), alignItems: "center", justifyContent: "center", padding: 4 },
+  sonucKulupYil: { fontSize: 12, fontWeight: "800", color: COLORS.textMuted },
   sonucKulupAd: { fontSize: 12, fontWeight: "800", color: COLORS.text, textAlign: "center", marginTop: 2 },
   dokum: { alignSelf: "stretch", marginTop: SPACING.md, padding: SPACING.lg, borderRadius: 18, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder, gap: 7 },
   dokumSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },

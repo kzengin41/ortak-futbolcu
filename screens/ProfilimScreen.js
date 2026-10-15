@@ -7,6 +7,8 @@ import TabHeader from "../components/TabHeader";
 import SoundPressable from "../components/SoundPressable";
 import PlayerPhoto from "../components/PlayerPhoto";
 import AcilirBolum from "../components/AcilirBolum";
+import { RozetIzgarasi } from "../components/Rozetler";
+import { rozetDurumu, ozetCikar, toplamKademe } from "../lib/rozetler";
 import { getProfile, xpProgress } from "../lib/profile";
 import { getStreak, seriDurumu } from "../lib/streak";
 import { getStats, MODE_LABELS } from "../lib/stats";
@@ -14,7 +16,7 @@ import { getUnlockedPlayers } from "../lib/pokedex";
 import { tamamlananlar } from "../lib/kadroKoleksiyon";
 import { getCurrentUser } from "../lib/auth";
 import { pushFullProgressToCloud } from "../lib/cloudProfile";
-import { COLORS, RADIUS, SPACING, TYPE, SHADOW } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, SHADOW, saydam } from "../lib/theme";
 
 // ============================================================================
 // PROFİLİM — 4 Ekim 2026 yeniden düzenlendi (benchmark .29937 + .30026)
@@ -56,6 +58,9 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
   const sd = seriDurumu(streak);
   const seri = sd.gosterilen;
   const sonBes = acilanlar.slice(-5).reverse();
+  // Paket 34 — rozet koleksiyonu (lib/rozetler.js): mevcut verilerden hesaplanır
+  const rozetDurum = rozetDurumu(ozetCikar(stats, acilanlar.length, sd.enIyi || 0));
+  const rozetKazanilan = rozetDurum.filter((r) => r.kademe > 0).length;
   const modlar = stats ? Object.entries(stats.modes || {}).sort((a, b) => (b[1].wins + b[1].losses) - (a[1].wins + a[1].losses)) : [];
   const gorunenModlar = tumModlar ? modlar : modlar.slice(0, 3);
 
@@ -63,8 +68,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
     <GameBackground style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
         <View style={styles.headerArea}>
-          <TabHeader compact />
-          <Text style={styles.title}>Profilim</Text>
+          <TabHeader baslik="Profilim" />
         </View>
 
         {/* 5 Ekim 2026 — bütün başlıklar açılıp kapanabilir (components/AcilirBolum.js) */}
@@ -103,7 +107,11 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
         </AcilirBolum>
 
         {/* --- son açılan 5 futbolcu + koleksiyon --- */}
-        <AcilirBolum kimlik="profil-acilanlar" baslik="Son açılan futbolcular" ikon="book" ozet={`${acilanlar.length} futbolcu`}>
+        <AcilirBolum kimlik="profil-rozetler" baslik="Rozetler" ikon="ribbon" ozet={`${rozetKazanilan}/${rozetDurum.length} · ${toplamKademe(rozetDurum)}★`}>
+          <RozetIzgarasi durum={rozetDurum} />
+        </AcilirBolum>
+
+        <AcilirBolum kimlik="profil-acilanlar" baslik="Son açılanlar" ikon="book" ozet={`${acilanlar.length} futbolcu`}>
         <View style={styles.card}>
           {sonBes.length ? (
             <View style={styles.sonBes}>
@@ -170,7 +178,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
         <View style={styles.menuList}>
           <MenuSatiri ikon="person-circle-outline" yazi="Hesabım" onPress={onAccount} />
           <MenuSatiri ikon="settings-outline" yazi="Ayarlar" onPress={onSettings} />
-          <MenuSatiri ikon="help-circle-outline" yazi="Nasıl Oynanır?" onPress={onHelp} />
+          <MenuSatiri ikon="help-circle-outline" yazi="Nasıl Oynanır?" onPress={onHelp} son />
         </View>
       </ScrollView>
     </GameBackground>
@@ -187,19 +195,20 @@ function OzetKutu({ icon, color, label, value }) {
   );
 }
 
-function MenuSatiri({ ikon, yazi, onPress }) {
+// Paket 32 — menü tek liste kartı (üç ayrı kutu yerine), nötr ikon karoları.
+function MenuSatiri({ ikon, yazi, onPress, son }) {
   return (
-    <SoundPressable style={styles.menuRow} onPress={onPress} hitSlop={6}>
-      <Ionicons name={ikon} size={20} color={COLORS.accent} />
+    <SoundPressable style={[styles.menuRow, !son && styles.menuCizgi]} onPress={onPress} hitSlop={6}>
+      <View style={styles.menuIkon}><Ionicons name={ikon} size={19} color={COLORS.text} /></View>
       <Text style={styles.menuRowText}>{yazi}</Text>
-      <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
     </SoundPressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 50, paddingHorizontal: SPACING.xl },
-  headerArea: { marginBottom: SPACING.md, alignItems: "center" },
+  container: { flex: 1, backgroundColor: COLORS.bg, paddingTop: SPACING.xxl, paddingHorizontal: SPACING.xl },
+  headerArea: { marginBottom: SPACING.xs },
   title: { ...TYPE.h1 },
   bodyMuted: { ...TYPE.bodyMuted },
 
@@ -252,10 +261,12 @@ const styles = StyleSheet.create({
   tumunuGor: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingTop: 10 },
   tumunuGorYazi: { ...TYPE.caption, fontWeight: "800", color: COLORS.accent },
 
-  menuList: { gap: SPACING.sm },
-  menuRow: {
-    flexDirection: "row", alignItems: "center", gap: SPACING.md,
-    backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.lg,
+  menuList: {
+    marginTop: SPACING.md, backgroundColor: COLORS.card, borderRadius: 18, overflow: "hidden",
+    borderWidth: 1, borderColor: saydam(COLORS.text, 0.06),
   },
-  menuRowText: { ...TYPE.h3, flex: 1 },
+  menuRow: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingVertical: 12, paddingHorizontal: SPACING.md },
+  menuCizgi: { borderBottomWidth: 1, borderBottomColor: saydam(COLORS.text, 0.07) },
+  menuIkon: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.text, 0.07) },
+  menuRowText: { ...TYPE.h3, fontSize: 16, flex: 1 },
 });

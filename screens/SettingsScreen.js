@@ -18,7 +18,7 @@ import {
   HATIRLATMA_SAATI, expoGodaMiyiz,
 } from "../lib/notifications";
 
-import { COLORS, PALETLER, saydam } from "../lib/theme";
+import { COLORS, PALETLER, saydam, vurguZemini } from "../lib/theme";
 import { ARKAPLANLAR, ARKAPLAN_SECENEKLERI, arkaplanAnahtari, SahaDeseni } from "../components/GameBackground";
 import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   satir: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 14, overflow: "hidden" },
   satirAcik: { borderColor: COLORS.accent },
   satirUst: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 14, minHeight: 54 },
-  satirIkon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.accent, 0.14) },
+  satirIkon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: vurguZemini(0.14) },
   satirAd: { color: COLORS.text, fontWeight: "800", fontSize: 15, flexShrink: 0 },
   satirOzet: { flex: 1, textAlign: "right", color: COLORS.textMuted, fontSize: 12, fontWeight: "700" },
   satirIc: { paddingHorizontal: 14, paddingBottom: 14 },

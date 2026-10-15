@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import PressScale from "./ui/PressScale";
-import { COLORS, RADIUS, SPACING, TYPE, saydam } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, saydam, vurguZemini } from "../lib/theme";
 import { gunlukDurumOku, BES_KULUP_HAK, IZGARA_HAK } from "../lib/gunlukKayit";
 import { getBulmacaDurumu } from "../lib/dailyPuzzleStore";
 import { DENEME_HAKKI, gunNumarasi } from "../lib/dailyPuzzle";
@@ -82,16 +82,18 @@ export default function GunlukSatiri({ onOyun }) {
   const alt = !durum.hazir ? " " : biten === oyunlar.length ? "Bugünün hepsi bitti — yarın yenileri" : biten ? `${oyunlar.length} oyundan ${biten}'i bitti` : `#${gunNumarasi()} · ${oyunlar.length} oyun, seriyi korur`;
   return (
     <>
-      <PressScale style={s.satir} onPress={() => setAcik(true)} accessibilityRole="button" accessibilityLabel={`Günlük oyunlar, ${alt}`}>
+      <PressScale style={s.satir} onPress={() => setAcik(true)} accessibilityRole="button" accessibilityLabel={`Günlük Meydan Okumalar, ${alt}`}>
         <View style={s.ikon}>
           <Ionicons name="calendar" size={20} color={COLORS.accent} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={s.baslik}>Günlük</Text>
-          <Text style={s.alt} numberOfLines={1}>{alt}</Text>
-        </View>
-        <View style={s.noktalar}>
-          {oyunlar.map((o) => <View key={o.id} style={[s.nokta, o.bitti && s.noktaDolu]} />)}
+          <Text style={s.baslik} numberOfLines={1}>Günlük Meydan Okumalar</Text>
+          <View style={s.altSatir}>
+            <View style={s.noktalar}>
+              {oyunlar.map((o) => <View key={o.id} style={[s.nokta, o.bitti && s.noktaDolu]} />)}
+            </View>
+            <Text style={s.alt} numberOfLines={1}>{alt}</Text>
+          </View>
         </View>
         <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
       </PressScale>
@@ -100,7 +102,50 @@ export default function GunlukSatiri({ onOyun }) {
   );
 }
 
-function GunlukPenceresi({ acik, durum, onKapat, onOyun }) {
+// ============================================================================
+// ANA SAYFA ÖNERİ SATIRI — Paket 32 (15 Ekim 2026)
+// Kerem: "ana sayfada bir satır da günlük bulmacalardan birine yönlendirme
+// olabilir. efsane maç kadrosuna mesela." Tek satır, tek günlük oyun: önce
+// Günün Kadrosu (efsane maçın ilk 11'i); o bittiyse sıradaki bitmemiş günlük.
+// Hepsi bittiyse sakin "yarın yenileri" satırı.
+// ============================================================================
+const ONERI_SIRASI = ["gunlukKadro", "gunlukKimBu", "dailyPuzzle", "gunluk5", "gunlukIzgara"];
+export function gunlukOneriSec(oyunlar) {
+  const sirali = ONERI_SIRASI.map((id) => oyunlar.find((o) => o.id === id)).filter(Boolean);
+  const acik = sirali.find((o) => !o.bitti);
+  return acik ? { oyun: acik, hepsiBitti: false } : { oyun: sirali[0] || null, hepsiBitti: sirali.length > 0 };
+}
+
+export function GunlukOneriSatiri({ onOyun, style }) {
+  const durum = useGunlukDurum();
+  if (!durum.hazir) return <View style={[s.oneri, style, { opacity: 0 }]} />;
+  const { oyun, hepsiBitti } = gunlukOneriSec(durum.oyunlar);
+  if (!oyun) return null;
+  return (
+    <PressScale
+      style={[s.oneri, style]}
+      onPress={() => onOyun && onOyun(oyun.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`Günlük: ${oyun.ad}, ${hepsiBitti ? "bugünün hepsi bitti" : oyun.alt}`}
+    >
+      <View style={[s.oneriIkon, hepsiBitti && { backgroundColor: saydam(COLORS.text, 0.07) }]}>
+        <Ionicons name={hepsiBitti ? "checkmark" : oyun.ikon} size={20} color={hepsiBitti ? COLORS.textMuted : COLORS.accent} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={s.oneriUst} numberOfLines={1}>GÜNLÜK · #{gunNumarasi()}</Text>
+        <Text style={s.oneriBaslik} numberOfLines={1}>{oyun.ad}</Text>
+        <Text style={s.oneriAlt} numberOfLines={1}>{hepsiBitti ? "Bugünün hepsi bitti — yarın yenileri" : oyun.alt}</Text>
+      </View>
+      {!hepsiBitti ? (
+        <View style={s.oneriOyna}><Text style={s.oneriOynaYazi}>OYNA</Text></View>
+      ) : (
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
+      )}
+    </PressScale>
+  );
+}
+
+export function GunlukPenceresi({ acik, durum, onKapat, onOyun, gorevsiz }) {
   const { oyunlar, gorevler } = durum;
   const gorevBiten = gorevler.filter((g) => g.olan >= g.hedef).length;
   return (
@@ -108,7 +153,7 @@ function GunlukPenceresi({ acik, durum, onKapat, onOyun }) {
       <Pressable style={s.perde} onPress={onKapat}>
         <Pressable style={s.pencere} onPress={() => {}}>
           <View style={s.pencereUst}>
-            <Text style={s.pencereBaslik}>Günlük</Text>
+            <Text style={s.pencereBaslik}>Günlük Meydan Okumalar</Text>
             <Text style={s.pencereNo}>#{gunNumarasi()}</Text>
           </View>
           <Text style={s.pencereAlt}>Herkese aynı sorular, günde bir kez. Birini oynamak serini korur.</Text>
@@ -125,7 +170,7 @@ function GunlukPenceresi({ acik, durum, onKapat, onOyun }) {
                 {!o.bitti ? <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} /> : null}
               </PressScale>
             ))}
-            <View style={s.gorev}>
+            {gorevsiz ? null : <View style={s.gorev}>
               <View style={s.gorevUst}>
                 <Text style={s.gorevBaslik}>GÖREVLER</Text>
                 <Text style={s.gorevSayac}>{gorevBiten}/{gorevler.length} · +{GOREV_ODULU} XP</Text>
@@ -140,7 +185,7 @@ function GunlukPenceresi({ acik, durum, onKapat, onOyun }) {
                   </View>
                 );
               })}
-            </View>
+            </View>}
           </ScrollView>
           <Pressable style={s.kapat} onPress={onKapat} hitSlop={8}>
             <Text style={s.kapatYazi}>Kapat</Text>
@@ -157,22 +202,35 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder,
     borderRadius: RADIUS.lg, paddingVertical: 12, paddingHorizontal: SPACING.md,
   },
-  ikon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.accent, 0.14) },
+  ikon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: vurguZemini(0.14) },
   baslik: { ...TYPE.h3 },
-  alt: { fontSize: 12.5, fontWeight: "600", color: COLORS.textMuted, marginTop: 1 },
+  altSatir: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
+  alt: { flex: 1, fontSize: 12.5, fontWeight: "600", color: COLORS.textMuted },
   noktalar: { flexDirection: "row", gap: 4 },
   nokta: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.cardBorder },
   noktaDolu: { backgroundColor: COLORS.accent },
 
+  oneri: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md, minHeight: 76,
+    backgroundColor: COLORS.card, borderWidth: 1, borderColor: saydam(COLORS.text, 0.06),
+    borderRadius: 20, paddingVertical: 12, paddingHorizontal: SPACING.md,
+  },
+  oneriIkon: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: vurguZemini(0.14) },
+  oneriUst: { color: COLORS.accent, fontSize: 10.5, fontWeight: "900", letterSpacing: 1.2 },
+  oneriBaslik: { color: COLORS.text, fontSize: 16, fontWeight: "900", marginTop: 1 },
+  oneriAlt: { color: COLORS.textMuted, fontSize: 12.5, fontWeight: "600", marginTop: 1 },
+  oneriOyna: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: RADIUS.pill, backgroundColor: vurguZemini(0.16) },
+  oneriOynaYazi: { color: COLORS.accent, fontSize: 12.5, fontWeight: "900", letterSpacing: 0.8 },
+
   perde: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: SPACING.xl },
   pencere: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.xl, padding: SPACING.xl },
-  pencereUst: { flexDirection: "row", alignItems: "baseline", gap: 8 },
+  pencereUst: { flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" },
   pencereBaslik: { ...TYPE.h2 },
   pencereNo: { color: COLORS.textMuted, fontWeight: "800", fontSize: 14 },
   pencereAlt: { ...TYPE.bodyMuted, marginTop: 4, marginBottom: SPACING.lg },
   oyun: { flexDirection: "row", alignItems: "center", gap: SPACING.md, borderRadius: RADIUS.md, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: saydam(COLORS.text, 0.04), borderWidth: 1, borderColor: COLORS.cardBorder },
   oyunBitti: { opacity: 0.7 },
-  oyunIkon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.accent, 0.14) },
+  oyunIkon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: vurguZemini(0.14) },
   oyunAd: { color: COLORS.text, fontWeight: "900", fontSize: 15 },
   oyunAlt: { color: COLORS.textMuted, fontWeight: "600", fontSize: 12, marginTop: 1 },
   gorev: { marginTop: SPACING.sm, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: COLORS.cardBorder, gap: 8 },

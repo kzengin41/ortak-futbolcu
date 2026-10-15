@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SoundPressable from "./SoundPressable";
+import { MacSonuOdulleri } from "./Rozetler";
 import PlayerPhoto from "./PlayerPhoto";
 import MatchSummary from "./MatchSummary";
 import { COLORS, SPACING, RADIUS } from "../lib/theme";
@@ -15,7 +16,7 @@ import { gorevOlayi } from "../lib/dailyGoals";
 //
 //   turlar: ["sen" | "rakip" | "yok", ...]  → paylaşım karelerinde 🟩🟥⬜
 //   enIyi:  { ad, alt }  → "En nadir cevabın" kutusu (tanınırlığı en düşük doğru cevap)
-//   rakip:  { ad, avatar, tepki } (CPU karakteri) ya da { ad } (2. oyuncu)
+//   rakip:  { ad, avatar } (CPU karakteri, kısa ad) ya da { ad } (2. oyuncu)
 // ============================================================================
 export default function MacSonuKarti({
   modAdi, modeId, skorSen, skorRakip, rakip, turlar = [], enIyi, kazanilanXp,
@@ -57,10 +58,10 @@ export default function MacSonuKarti({
     ] : [
       `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
       kazandin
-        ? `${rakip?.ad || "Rakibimi"} ${skorSen}-${skorRakip} yendim!`
+        ? `${rakip?.ad || "Rakibim"} ile ${skorSen}-${skorRakip} — kazandım!`
         : berabere
-        ? `${rakip?.ad || "Rakibimle"} ${skorSen}-${skorRakip} berabere kaldık.`
-        : `${rakip?.ad || "Rakibime"} ${skorSen}-${skorRakip} kaybettim, rövanş var!`,
+        ? `${rakip?.ad || "Rakibim"} ile ${skorSen}-${skorRakip} berabere kaldık.`
+        : `${rakip?.ad || "Rakibim"} ile ${skorSen}-${skorRakip} — kaybettim, rövanş var!`,
       kareler,
       enIyi ? `En nadir cevabım: ${enIyi.ad}` : null,
       "Sen kaç yaparsın?",
@@ -103,7 +104,7 @@ export default function MacSonuKarti({
       )}
 
       {kareler ? <Text style={s.kareler}>{kareler}</Text> : null}
-      {rakip?.tepki ? <Text style={s.tepki}>{rakip.ad}: “{rakip.tepki}”</Text> : null}
+      {/* Paket 32: maç sonu rakip sözü kalktı (Kerem: "çaylar benden dedi… gereksiz"). */}
 
       {enIyi ? (
         <View style={s.enIyi}>
@@ -117,6 +118,8 @@ export default function MacSonuKarti({
       ) : null}
 
       {ekSatir}
+      {/* Paket 34 — günün modu 2× XP ve yeni rozetler (components/Rozetler.js) */}
+      <MacSonuOdulleri />
 
       {modeId ? <MatchSummary modeId={modeId} kazanildi={kazandin} kazanilanXp={kazanilanXp} /> : null}
 

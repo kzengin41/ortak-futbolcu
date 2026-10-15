@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PressScale from "./ui/PressScale";
 import ModIkon from "./ModIkon";
-import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro, saydam } from "../lib/theme";
+import { COLORS, MODE_COLORS, RADIUS, SPACING, TYPE, SHADOW, yumusakKaro, saydam, vurguZemini } from "../lib/theme";
 
 // ============================================================================
 // MOD KARTI + SEÇİM PENCERESİ — Paket 16, 5 Ekim 2026 (Kerem: "Online
@@ -42,6 +42,19 @@ export function ModIkonu({ mod, boyut = 26, renk }) {
 export function ModKarti({ mod, onPress, rozet, accessibilityLabel, son }) {
   const grupta = useContext(GrupBaglami);
   const c = { main: COLORS.accent };
+  // Paket 31 — "sade" bölüm: kutusuz, ikon karosuz, soluk; vitrinle yarışmaz.
+  if (grupta === "sade") {
+    return (
+      <PressScale style={[s.sadeSatir, !son && s.sadeCizgi]} onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel || mod.title}>
+        <View style={s.sadeIkon}><ModIkonu mod={mod} boyut={22} renk={COLORS.textMuted} /></View>
+        <View style={s.metin}>
+          <Text style={s.sadeBaslik} numberOfLines={1}>{mod.title}</Text>
+          <Text style={s.sadeAlt} numberOfLines={1}>{mod.kisa || mod.desc}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={COLORS.textFaint} />
+      </PressScale>
+    );
+  }
   return (
     <PressScale
       style={grupta ? [s.satir, !son && s.satirCizgi] : s.kart}
@@ -49,30 +62,33 @@ export function ModKarti({ mod, onPress, rozet, accessibilityLabel, son }) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || mod.title}
     >
-      <View style={[s.ikonKaro, yumusakKaro(c.main)]}>
-        <ModIkonu mod={mod} renk={c.main} />
+      {/* Paket 32 (Kerem: liste kartlarının renkleri) — ikon karosu nötr: sarı
+          çerçeveli kareler her satırda aynı vurguyu tekrarlayıp listeyi bağırtıyordu.
+          Vurgu rengi artık yalnız birincil eylemde. */}
+      <View style={grupta ? s.ikonNotr : [s.ikonKaro, yumusakKaro(c.main)]}>
+        <ModIkonu mod={mod} boyut={grupta ? 22 : 26} renk={grupta ? COLORS.text : c.main} />
       </View>
       <View style={s.metin}>
         <View style={s.baslikSatir}>
           <Text style={s.cardTitle} numberOfLines={1}>{mod.title}</Text>
           {rozet ? (
-            <View style={[s.rozet, { borderColor: c.main }]}><Text style={[s.rozetYazi, { color: c.main }]}>{rozet}</Text></View>
+            <View style={s.rozet}><Text style={s.rozetYazi}>{rozet}</Text></View>
           ) : null}
         </View>
         <Text style={s.cardDesc} numberOfLines={1}>{mod.kisa || mod.desc}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
     </PressScale>
   );
 }
 
-export function ModBolumu({ baslik, children, style }) {
+export function ModBolumu({ baslik, children, style, sade }) {
   const dizi = React.Children.toArray(children).filter(Boolean);
   return (
     <View style={[s.section, style]}>
       {baslik ? <Text style={s.sectionTitle}>{baslik}</Text> : null}
-      <GrupBaglami.Provider value={true}>
-        <View style={s.grup}>
+      <GrupBaglami.Provider value={sade ? "sade" : true}>
+        <View style={sade ? null : s.grup}>
           {dizi.map((c, i) => (React.isValidElement(c) ? React.cloneElement(c, { son: i === dizi.length - 1 }) : c))}
         </View>
       </GrupBaglami.Provider>
@@ -147,9 +163,17 @@ export const modStilleri = StyleSheet.create({
 const s = StyleSheet.create({
   section: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl },
   sectionTitle: { color: COLORS.textMuted, fontWeight: "900", fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: SPACING.sm, marginLeft: 4 },
-  grup: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.lg, overflow: "hidden" },
-  satir: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingVertical: 13, paddingHorizontal: SPACING.md },
-  satirCizgi: { borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  // Paket 32 — liste kartı dili (Online, Profilim, Ayarlar aynı): kart = tek yüzey,
+  // kenarlık yerine çok ince ışık çizgisi, satır araları kısık ayırıcı.
+  grup: { backgroundColor: COLORS.card, borderColor: saydam(COLORS.text, 0.06), borderWidth: 1, borderRadius: 18, overflow: "hidden" },
+  satir: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingVertical: 12, paddingHorizontal: SPACING.md },
+  satirCizgi: { borderBottomWidth: StyleSheet.hairlineWidth * 2, borderBottomColor: saydam(COLORS.text, 0.07) },
+  ikonNotr: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.text, 0.07) },
+  sadeSatir: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingVertical: 11, paddingHorizontal: 4 },
+  sadeCizgi: { borderBottomWidth: 1, borderBottomColor: saydam(COLORS.text, 0.07) },
+  sadeIkon: { width: 32, alignItems: "center" },
+  sadeBaslik: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
+  sadeAlt: { color: COLORS.textFaint, fontSize: 12, fontWeight: "600", marginTop: 1 },
   kart: {
     flexDirection: "row", alignItems: "center", gap: SPACING.md,
     backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1,
@@ -159,8 +183,8 @@ const s = StyleSheet.create({
   ikonKaro: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   metin: { flex: 1, minWidth: 0 },
   baslikSatir: { flexDirection: "row", alignItems: "center", gap: 6 },
-  rozet: { borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 6, paddingVertical: 2 },
-  rozetYazi: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
+  rozet: { borderRadius: RADIUS.pill, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: vurguZemini(0.16) },
+  rozetYazi: { fontSize: 9.5, fontWeight: "900", letterSpacing: 0.5, color: COLORS.accent },
 
   cardTitle: { ...TYPE.h3, flexShrink: 1 },
   cardDesc: { fontSize: 12.5, fontWeight: "600", color: COLORS.textMuted, lineHeight: 17, marginTop: 1 },

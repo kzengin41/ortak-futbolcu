@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { MODE_COLORS, COLORS, saydam } from "../lib/theme";
+import { MODE_COLORS, COLORS, saydam, vurguZemini } from "../lib/theme";
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
 import { useEslesmeProfili } from "../lib/useEslesmeProfili";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
@@ -37,10 +37,12 @@ import ReportModal from "../components/ReportModal";
 import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
+import { KulupParlakligi } from "../components/EslesmeKarti";
 import PlayerPhoto from "../components/PlayerPhoto";
 import MacSonuKarti from "../components/MacSonuKarti";
 import { useOyuncuAdlari, OyuncuAdlariBolumu, IsimliSkorTablosu } from "../components/OyuncuAdlari";
-import { karakterSec, tepki } from "../lib/cpuKarakterleri";
+import { OyunUstCubugu, SkorSeridi, RakipTepkisi, rakipEtiketi } from "../components/MacCercevesi";
+import { karakterSec, tepki, kisaAd } from "../lib/cpuKarakterleri";
 import SoundPressable from "../components/SoundPressable";
 import TimerBar from "../components/TimerBar";
 
@@ -83,14 +85,14 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   const karakter = useMemo(() => karakterSec(zorluk10), [zorluk10]);
   // 4 Ekim 2026 (.28810) — 2 kişilikte Ayarlar'daki oyuncu adları.
   const { adlar } = useOyuncuAdlari(2);
-  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: karakter.ad } : { p1: adlar[0], p2: adlar[1] };
+  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: kisaAd(karakter) } : { p1: adlar[0], p2: adlar[1] };
   const [turlar, setTurlar] = useState([]);
   const [dogrularim, setDogrularim] = useState([]);
-  const [macSonuSozu, setMacSonuSozu] = useState("");
   const difficulty = zorluk10 <= 3 ? "normal" : zorluk10 <= 7 ? "zor" : "cokZor";
 
   const [usedClubKeys, setUsedClubKeys] = useState(new Set());
   const [roundNumber, setRoundNumber] = useState(1);
+  const dusunceSozu = useMemo(() => tepki(karakter, "dusunuyor"), [karakter, roundNumber]);   // Paket 31
   const [round, setRound] = useState(null); // { clubs, key }
   const [phase, setPhase] = useState("countdown"); // countdown | racing | answering | result | gameOver
   const [buzzedBy, setBuzzedBy] = useState(null); // 'p1' | 'p2' — bu anda cevaplayan kişi
@@ -436,7 +438,6 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     const a = roundResults.p1?.gained || 0, b = roundResults.p2?.gained || 0;
     setTurlar((l) => [...l, a > b ? "sen" : b > a ? "rakip" : "yok"]);
     if (roundNumber >= turSayisi) {
-      setMacSonuSozu(tepki(karakter, scoreP1 > scoreP2 ? "kaybetti" : "kazandi"));
       setPhase("gameOver");
     } else {
       setRoundNumber((n) => n + 1);
@@ -466,7 +467,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     kurulumaDon: () => { setStarted(false); setScoreP1(0); setScoreP2(0); setRoundNumber(1); },
   });
   useEffect(() => {
-    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? `${karakter.avatar} ${karakter.ad}` : "2 kişi"], ["Tur sayısı", String(turSayisi)], ["Son tur altın", altinTur ? "Açık (×2)" : "Kapalı"]] }) });
+    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? `${karakter.avatar} ${kisaAd(karakter)}` : "2 kişi"], ["Tur sayısı", String(turSayisi)], ["Son tur altın", altinTur ? "Açık (×2)" : "Kapalı"]] }) });
   }, [zorluk10, roundSeconds, inputMode, vsCpu, turSayisi, altinTur, karakter]);
   // Tur sayısı ve altın tur da "son seçimler" arasında hatırlanır.
   const turAyariYuklendi = useRef(false);
@@ -731,19 +732,13 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         />
       )}
 
-      <View style={{ width: "100%", marginBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Pressable onPress={() => setShowReport(true)} hitSlop={20}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: saydam(COLORS.text, 0.08), paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}>
-            <Ionicons name="flag" size={13} color={COLORS.textMuted} />
-            <Text style={{ color: COLORS.textMuted, fontSize: 12, fontWeight: "800" }}>BİLDİR</Text>
-          </View>
-        </Pressable>
-        <Pressable onPress={onExit} hitSlop={20}>
-          <View style={{ backgroundColor: saydam(COLORS.danger, 0.15), borderRadius: 16, padding: 6 }}>
-            <Ionicons name="close" size={22} color={COLORS.danger} />
-          </View>
-        </Pressable>
-      </View>
+      {/* Paket 31 — standart üst çubuk */}
+      <OyunUstCubugu
+        baslik="5 Kulüp"
+        alt={phase === "gameOver" ? null : altinTurMu ? `★ Altın tur · ${roundNumber} / ${turSayisi}` : `Tur ${roundNumber} / ${turSayisi}`}
+        onCikis={onExit}
+        onBildir={() => setShowReport(true)}
+      />
 
       {phase === "countdown" && (
         <CountdownOverlay onComplete={handleCountdownComplete} countPlayers={[countPlayer3, countPlayer2, countPlayer1]} />
@@ -763,18 +758,12 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="always"
         >
-          <View style={styles.topInfoRow}>
-            <Text style={[styles.roundBadge, altinTurMu && { color: "#FFD700" }]}>
-              {altinTurMu ? `★ ALTIN TUR — puanlar ×2 · ${roundNumber} / ${turSayisi}` : `Tur ${roundNumber} / ${turSayisi}`}
-            </Text>
-            <View style={styles.scoreRow}>
-              {/* Renk kodu, kulüp rozetlerindeki 1/2 göstergeleriyle AYNI:
-                  Oyuncu 1 yeşil, Oyuncu 2 altın — kimin neyi bulduğu tek
-                  bakışta anlaşılsın diye. */}
-              <Text style={[styles.scoreText, { color: COLORS.accent }]}>{oyuncuEtiketi.p1}: {scoreP1}</Text>
-              <Text style={[styles.scoreText, { color: COLORS.cta }]}>{vsCpu ? `${karakter.avatar} ${karakter.ad}` : oyuncuEtiketi.p2}: {scoreP2}</Text>
-            </View>
-          </View>
+          <SkorSeridi
+            sol={{ etiket: vsCpu ? "SEN" : String(oyuncuEtiketi.p1).toLocaleUpperCase("tr"), puan: scoreP1, renk: COLORS.accent }}
+            sag={{ etiket: vsCpu ? rakipEtiketi(karakter) : String(oyuncuEtiketi.p2).toLocaleUpperCase("tr"), puan: scoreP2, karakter: vsCpu ? karakter : null, renk: COLORS.cta }}
+            orta={`${turSayisi} tur`}
+          />
+          {vsCpu && cpuDusunuyor ? <RakipTepkisi karakter={karakter} metin={dusunceSozu} style={{ marginTop: -4, marginBottom: 8 }} /> : null}
 
           <View style={styles.clubsGrid}>
             {round.clubs.map((c) => {
@@ -789,6 +778,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               const isMatched = byP1 || byP2;
               return (
                 <View key={c} style={[styles.clubCell, isMatched && styles.clubCellMatched]}>
+                  <KulupParlakligi ad={c} guc={isMatched ? 0.12 : 0.3} />
                   <View style={styles.clubBadgeWrap}>
                     <TeamBadge name={c} size={40} />
                   </View>
@@ -889,7 +879,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           modeId="fiveClubsCpu"
           skorSen={scoreP1}
           skorRakip={scoreP2}
-          rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: macSonuSozu }}
+          rakip={{ ad: kisaAd(karakter), avatar: karakter.avatar, renk: karakter.renk }}
           turlar={turlar}
           enIyi={(() => {
             if (!dogrularim.length) return null;
@@ -939,8 +929,8 @@ const styles = StyleSheet.create({
   // isme daha fazla üst boşluk verildi, TeamBadge.js'teki overflow fix'iyle
   // birlikte artık taşma/örtüşme olmuyor.
   clubsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 12, backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: 18, padding: 14 },
-  clubCell: { width: "30%", alignItems: "center", paddingVertical: 10, borderRadius: 12, position: "relative", minHeight: 92 },
-  clubCellMatched: { backgroundColor: saydam(COLORS.accent, 0.12) },
+  clubCell: { width: "30%", alignItems: "center", paddingVertical: 10, borderRadius: 12, position: "relative", minHeight: 92, overflow: "hidden" },
+  clubCellMatched: { backgroundColor: vurguZemini(0.16), borderWidth: 1, borderColor: saydam(COLORS.accent, 0.5) },
   clubBadgeWrap: { height: 40, width: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   clubName: { color: COLORS.text, fontSize: 12, fontWeight: "800", textAlign: "center", lineHeight: 16 },
   clubCheck: { position: "absolute", top: 2, right: 4, flexDirection: "row", gap: 3 },

@@ -18,7 +18,7 @@ import { clubLogo, ATLAS_HUCRE, ATLAS_GENISLIK, ATLAS_YUKSEKLIK } from "../lib/c
 // kulüp hâlâ isimden türetilmiş rastgele bir renge düşer (colorForName) —
 // tamamı için tek tek renk girmek (onbinlerce kulüp var) pratik değil, bu
 // yüzden en popüler/en sık görülen kulüpler önceliklendirildi.
-const KNOWN_COLORS = {
+export const KNOWN_COLORS = {
   "Galatasaray": ["#FDB913", "#A90432"],
   "Fenerbahçe": ["#FFEB00", "#00285E"],
   "Beşiktaş": ["#000000", "#FFFFFF"],

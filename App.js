@@ -11,6 +11,7 @@ import { Sentry, hataRaporla } from "./lib/hataRaporu";
 
 // --- Hafif ekranlar: doğrudan (statik) import edilir, açılışta hemen gerekir. ---
 import OynaScreen from "./screens/OynaScreen";
+import AltSekmeCubugu from "./components/AltSekmeCubugu";
 import AnaSayfaScreen from "./screens/AnaSayfaScreen";
 import ProfilimScreen from "./screens/ProfilimScreen";
 import HelpScreen from "./screens/HelpScreen";
@@ -58,6 +59,7 @@ const Stack = createNativeStackNavigator();
 import SekmeKaydirma from "./components/SekmeKaydirma";
 import CanliSesBalonu from "./components/CanliSesBalonu";
 import GuncellemeBandi from "./components/GuncellemeBandi";
+import { aktifModEkle } from "./lib/gununModu";
 const Tab = createBottomTabNavigator();
 
 function goHome(navigation) {
@@ -97,6 +99,7 @@ function OynaRoute({ navigation }) {
       onAllModes={() => navigation.navigate("tumModlar")}
       onDailyPuzzle={() => navigation.navigate("dailyPuzzle")}
       onGunlukKadro={() => navigation.navigate("gunlukKadro")}
+      onGunlukOyun={(id) => navigation.navigate(id)}
     />
   );
 }
@@ -185,12 +188,14 @@ function AccountRoute({ navigation }) {
 // confirm=false: sadece göz atma/kurulum ekranı, kaybedecek bir şey yok.
 // NOT: Screen burada zaten ÇÖZÜLMÜŞ (require edilmiş) bir component olarak gelir —
 // gecikmeli yükleme sorumluluğu withExit'te değil, bunu çağıran getComponent'te.
-function withExit(Screen, { confirm = true, mod = null, ekstraProps = null } = {}) {
+function withExit(Screen, { confirm = true, mod = null, ekstraProps = null, aktif = null } = {}) {
   return function Wrapped({ navigation, route }) {
     const handleExit = () => (confirm ? confirmedExit(navigation) : goHome(navigation));
     // 11 Eylül 2026 — mod rehberi (bkz. components/ModeGuide.js). Merkezî
     // olarak burada: 12 oyun ekranını tek tek değiştirmek yerine tek yer.
     const rehber = useModeGuide(mod);
+    // Paket 34 — günün modu 2× XP: hangi moddayız (lib/gununModu.js aktif mod)
+    React.useEffect(() => aktifModEkle(aktif || mod), []);
     // 31 Ağustos 2026 (Kerem: "oyun bitti ekranında geri butonuna basınca
     // uyarı çıkıyor. çıkmasına gerek yok ki.") — oyun zaten bittiyse
     // (galibiyet sınırına ulaşıldı, "Tekrar Oyna"/"Menüye Dön" ekranı)
@@ -252,7 +257,7 @@ const getXoxRoute = tekSefer(() => withExit(require("./screens/XoxScreen").defau
 // ve İlk Harf'in tek kişilik zinciri (kurulum yok, rehber yok: kurallar ekranda).
 const getGunluk5Route = tekSefer(() => withExit(require("./screens/GunlukBesKulupScreen").default, { confirm: false }));
 const getGunlukIzgaraRoute = tekSefer(() => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false }));
-const getHarfZinciriRoute = tekSefer(() => withExit(require("./screens/HarfZinciriScreen").default));
+const getHarfZinciriRoute = tekSefer(() => withExit(require("./screens/HarfZinciriScreen").default, { aktif: "letterZincir" }));
 // 4 Ekim 2026 (.28709) — Sunucu modu: 2–6 kişi, tek telefon, sunucu okur.
 // 4 Ekim 2026 (.29452/.29833) — Günün Kadrosu (günlük, ilerleme kaydedilir) ve
 // Ansiklopedi → Takımlar'dan açılan kadro sayfası.
@@ -275,6 +280,8 @@ function OnlineRoute({ navigation, route }) {
         const target =
           room.gameMode === "whoami" ? "onlineWhoAmI" :
           room.gameMode === "draft" ? "onlineDraft" :
+          // Paket 32 — Online Kulüp × Ülke
+          room.gameMode === "country" ? "onlineUlke" :
           // 5 Ekim 2026 (.29379) — Online XOX
           room.gameMode === "xox" ? "onlineXox" :
           // Paket 16 — Online 5 Kulüp
@@ -288,7 +295,7 @@ function OnlineRoute({ navigation, route }) {
       onCpu={(mod) => {
         if (mod === "xox") navigation.navigate("xox", { rakip: "cpu" });
         else if (mod === "five") navigation.navigate("fiveClubsCpu");
-        else navigation.navigate(mod === "whoami" ? "whoAmICpu" : mod === "draft" ? "draftCpu" : (mod === "letter" || mod === "letter2") ? "letterCpu" : "cpu");
+        else navigation.navigate(mod === "whoami" ? "whoAmICpu" : mod === "draft" ? "draftCpu" : mod === "country" ? "countryTeamCpu" : (mod === "letter" || mod === "letter2") ? "letterCpu" : "cpu");
       }}
       // 5 Ekim 2026 (.29648) — asenkron meydan okuma
       onMeydanOkuma={(kod) => navigation.navigate("meydanOkuma", kod ? { kod } : {})}
@@ -302,6 +309,7 @@ function OnlineRoute({ navigation, route }) {
 // geliyor, davranış offline modlarla birebir aynı.
 function RehberliOyun({ mod, children }) {
   const rehber = useModeGuide(mod);
+  React.useEffect(() => aktifModEkle(mod), []);   // Paket 34: 2× XP
   return (
     <View style={{ flex: 1 }}>
       {children}
@@ -344,6 +352,26 @@ function OnlineDraftRoute({ navigation, route }) {
     </RehberliOyun>
   );
 }
+// Paket 32 — Online Kulüp × Ülke (tembel yükleme)
+function getOnlineUlkeRoute() {
+  const Screen = require("./screens/OnlineUlkeScreen").default;
+  return function OnlineUlkeRoute({ navigation, route }) {
+    return (
+      <RehberliOyun mod="onlineUlke">
+        <Screen room={route.params?.room} onExit={() => onlineCikis(navigation, route.params?.room)} />
+      </RehberliOyun>
+    );
+  };
+}
+// Paket 32 — bu rotalar her çizimde YENİ bileşen türü dönüyordu (React Navigation
+// getComponent'i her render'da çağırır) → navigator yeniden çizilince ekran sıfırdan
+// kuruluyordu. withExit rotalarındaki gibi tekSefer ile tek bileşen.
+const getDailyPuzzleRouteBir = tekSefer(getDailyPuzzleRoute);
+const getAnsiklopediRouteBir = tekSefer(getAnsiklopediRoute);
+const getOnlineLetterRouteBir = tekSefer(getOnlineLetterRoute);
+const getOnlineXoxRouteBir = tekSefer(getOnlineXoxRoute);
+const getOnlineFiveRouteBir = tekSefer(getOnlineFiveRoute);
+const getOnlineUlkeRouteBir = tekSefer(getOnlineUlkeRoute);
 function getOnlineLetterRoute() {
   const Screen = require("./screens/OnlineLetterScreen").default;
   return function OnlineLetterRoute({ navigation, route }) {
@@ -397,6 +425,8 @@ function MainTabsRoute() {
       // Paket 18 — sekmeler arası sağa-sola kaydırma (components/SekmeKaydirma.js)
       // ve geçişte yana kayma animasyonu.
       screenLayout={(p) => <SekmeKaydirma {...p} />}
+      // Paket 31 — kendi sekme çubuğumuz (components/AltSekmeCubugu.js): seçili sekmede hap + dolu ikon.
+      tabBar={(p) => <AltSekmeCubugu {...p} />}
       screenOptions={({ route }) => ({
         headerShown: false,
         animation: "shift",
@@ -411,7 +441,7 @@ function MainTabsRoute() {
       <Tab.Screen name="oyna" component={OynaRoute} options={{ title: "Ana Sayfa" }} />
       <Tab.Screen name="tumModlar" component={TumModlarRoute} options={{ title: "Tüm Modlar" }} />
       <Tab.Screen name="online" component={OnlineRoute} options={{ title: "Online" }} />
-      <Tab.Screen name="ansiklopedi" getComponent={getAnsiklopediRoute} options={{ title: "Ansiklopedi" }} />
+      <Tab.Screen name="ansiklopedi" getComponent={getAnsiklopediRouteBir} options={{ title: "Ansiklopedi" }} />
       <Tab.Screen name="profilim" component={ProfilimRoute} options={{ title: "Profilim" }} />
     </Tab.Navigator>
   );
@@ -471,11 +501,12 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="onlineDuel" component={OnlineDuelRoute} />
       <Stack.Screen name="onlineWhoAmI" component={OnlineWhoAmIRoute} />
       <Stack.Screen name="onlineDraft" component={OnlineDraftRoute} />
-      <Stack.Screen name="onlineLetter" getComponent={getOnlineLetterRoute} />
-      <Stack.Screen name="onlineXox" getComponent={getOnlineXoxRoute} />
-      <Stack.Screen name="onlineFive" getComponent={getOnlineFiveRoute} />
+      <Stack.Screen name="onlineUlke" getComponent={getOnlineUlkeRouteBir} />
+      <Stack.Screen name="onlineLetter" getComponent={getOnlineLetterRouteBir} />
+      <Stack.Screen name="onlineXox" getComponent={getOnlineXoxRouteBir} />
+      <Stack.Screen name="onlineFive" getComponent={getOnlineFiveRouteBir} />
       <Stack.Screen name="meydanOkuma" getComponent={getMeydanOkumaRoute} />
-      <Stack.Screen name="dailyPuzzle" getComponent={getDailyPuzzleRoute} />
+      <Stack.Screen name="dailyPuzzle" getComponent={getDailyPuzzleRouteBir} />
       <Stack.Screen name="xox" getComponent={getXoxRoute} />
       <Stack.Screen name="gunluk5" getComponent={getGunluk5Route} />
       <Stack.Screen name="gunlukIzgara" getComponent={getGunlukIzgaraRoute} />
@@ -613,7 +644,7 @@ function App() {
             telefonda anlamlı bir değer taşımıyor — bu yüzden edges'ten
             kaldırıldı, olası hatalı değer artık HİÇ uygulanmıyor. */}
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }} edges={["top"]}>
-          <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
+          <StatusBar barStyle={COLORS.acik ? "dark-content" : "light-content"} backgroundColor={COLORS.bg} />
           <HataSiniri>
             <DokunmaSesiKatmani>
               <AppContent />

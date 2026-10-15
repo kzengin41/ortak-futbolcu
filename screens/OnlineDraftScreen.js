@@ -9,6 +9,7 @@ import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TeamBadge from "../components/TeamBadge";
+import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto from "../components/PlayerPhoto";
 import TimerBar from "../components/TimerBar";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
@@ -20,6 +21,8 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
+import { useEslesmeProfili } from "../lib/useEslesmeProfili";
+import { standartProfil } from "../lib/eslesmeProfili";
 import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
 import {
@@ -46,11 +49,14 @@ export default function OnlineDraftScreen({ room, onExit }) {
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
 
-  // Odaya lig filtresi uygulanmışsa ona saygı gösteriyoruz (lobide seçiliyor).
-  const izinliKulupler = useMemo(
-    () => (room.allowedClubs?.length ? new Set(room.allowedClubs) : null),
-    [room.allowedClubs]
-  );
+  // Paket 32 — HATA DÜZELTMESİ: burada `room.allowedClubs` kullanılıyordu, ama o
+  // alan sunucudaki kulüp KİMLİKLERİ (sayı); motor ise kulüp ADI bekliyor. Kimlik
+  // kümesiyle hiçbir kulüp eşleşmediği için her seçim "Bu takımdan tur çıkmadı"
+  // diye reddediliyordu. Artık Online 5 Kulüp gibi: dereceli maçta herkes aynı
+  // (Dengeli) havuz, arkadaş odasında kuranın (host — turu o üretiyor) profili.
+  const eslesme = useEslesmeProfili();
+  const profil = room && room.isRanked ? standartProfil() : eslesme.derlenmis;
+  const izinliKulupler = (profil && profil.kapsam) || null;
 
   const kulupIndeksi = useMemo(
     () => secilebilirKulupIndeksi(Object.keys(CLUB_INFO), PLAYERS),
@@ -275,17 +281,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
           {/* --- CEVAP FAZI --- */}
           {faz === "cevap" && (
             <>
-              <View style={styles.takimKart}>
-                <View style={styles.takimKutu}>
-                  <TeamBadge name={durum.teamA} size={52} />
-                  <Text style={styles.takimAd}>{durum.teamA}</Text>
-                </View>
-                <Text style={styles.arti}>+</Text>
-                <View style={styles.takimKutu}>
-                  <TeamBadge name={durum.teamB} size={52} />
-                  <Text style={styles.takimAd}>{durum.teamB}</Text>
-                </View>
-              </View>
+              <EslesmeKarti sol={{ tip: "kulup", ad: durum.teamA }} sag={{ tip: "kulup", ad: durum.teamB }} style={{ marginBottom: SPACING.md }} />
 
               <TimerBar current={kalanSn} total={Math.round(CEVAP_SURESI_MS / 1000)} />
               <Text style={styles.sayacText}>{kalanSn} sn</Text>

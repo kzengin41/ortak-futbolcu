@@ -85,12 +85,11 @@ export function ArkaplanDeseni({ genislik: w, yukseklik: h, cizgiKalinligi = 1.4
   const d = COLORS.desen || "isik";
   const isik = isikRengi();
   const koyu = karanlikMarka();
-  const cizgi = saydam(COLORS.text, 0.06);
+  const cizgi = saydam(COLORS.text, 0.05);
   const ustH = h * 0.5;                      // motifin söndüğü yer
   const serit = Math.max(6, Math.round(w / 52));
   const sw = w / serit;
   const merkezR = w * 0.27;
-  const kutuUst = h - h * 0.15, kx1 = w * 0.18, kx2 = w * 0.82;
   return (
     <Svg width={w} height={h} style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
@@ -104,22 +103,25 @@ export function ArkaplanDeseni({ genislik: w, yukseklik: h, cizgiKalinligi = 1.4
           <Stop offset="1" stopColor={COLORS.marka2} stopOpacity={0} />
         </RadialGradient>
         <LinearGradient id="motif" x1="0" y1="0" x2="0" y2={ustH} gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor={COLORS.marka2} stopOpacity={koyu ? 0.07 : 0.06} />
-          <Stop offset="1" stopColor={COLORS.marka2} stopOpacity={0} />
+          {/* Paket 33: çubuklar beyaz, çok ince — FB'de sarı çubuk lacivert üstünde yeşile kayıyordu */}
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={koyu ? 0.06 : 0.045} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={h} fill={COLORS.bg} />
-      {d === "cim" ? Array.from({ length: 10 }).map((_, i) => (i % 2 === 0 ? (
-        <Rect key={i} x={0} y={(i * h) / 10} width={w} height={h / 10} fill={COLORS.text} fillOpacity={0.025} />
+      {d === "cim" && !COLORS.acik ? Array.from({ length: 10 }).map((_, i) => (i % 2 === 0 ? (
+        <Rect key={i} x={0} y={(i * h) / 10} width={w} height={h / 10} fill={COLORS.text} fillOpacity={COLORS.acik ? 0.012 : 0.025} />
       ) : null)) : null}
       <Rect x={0} y={0} width={w} height={h} fill="url(#isik1)" />
-      {d === "parcali" ? <Rect x={0} y={0} width={w} height={h} fill="url(#isik2)" /> : null}
+      {/* Paket 33: ikinci renk (GS sarısı) ışığı kalktı — koyu zeminde kırmızı+sarı
+          ışık üst üste binince turuncu-kahve sis oluyordu. Sarı artık yalnız butonda/vurguda. */}
       {d === "cubuklu" ? Array.from({ length: serit }).map((_, i) => (i % 2 === 1 ? (
         <Rect key={i} x={i * sw} y={0} width={sw} height={ustH} fill="url(#motif)" />
       ) : null)) : null}
       <Circle cx={w / 2} cy={0} r={merkezR} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
-      <Path d={`M${kx1} ${h + 2} V${kutuUst} H${kx2} V${h + 2}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
-      <Path d={`M${w * 0.36} ${h + 2} V${h - h * 0.055} H${w * 0.64} V${h + 2}`} stroke={cizgi} strokeWidth={cizgiKalinligi} fill="none" />
+      {/* Paket 34: alttaki ceza sahası çizgileri kalktı — listelerin (Tüm Modlar,
+          Online, Profilim) arkasından geçip satırları kesiyor, ekranı "çizik" gösteriyordu.
+          Saha hissi üstteki orta yuvarlakla kalıyor. */}
     </Svg>
   );
 }

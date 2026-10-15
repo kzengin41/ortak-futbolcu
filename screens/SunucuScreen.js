@@ -6,6 +6,7 @@ import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
+import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto from "../components/PlayerPhoto";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import { useOyuncuAdlari, IsimliSkorTablosu, EN_FAZLA_OYUNCU, varsayilanAd } from "../components/OyuncuAdlari";
@@ -220,17 +221,7 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
   );
 
   const CiftKart = (
-    <View style={s.cift}>
-      <View style={s.kulup}>
-        <TeamBadge name={tur.teamA} size={64} />
-        <Text style={s.kulupAd} numberOfLines={2}>{tur.teamA}</Text>
-      </View>
-      <Text style={s.carpi}>×</Text>
-      <View style={s.kulup}>
-        <TeamBadge name={tur.teamB} size={64} />
-        <Text style={s.kulupAd} numberOfLines={2}>{tur.teamB}</Text>
-      </View>
-    </View>
+    <EslesmeKarti sol={{ tip: "kulup", ad: tur.teamA }} sag={{ tip: "kulup", ad: tur.teamB }} arma={72} style={{ marginBottom: SPACING.md }} />
   );
 
   const CevapListesi = ({ adet = GOSTERILEN_CEVAP }) => (

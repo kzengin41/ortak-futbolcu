@@ -16,7 +16,8 @@ import CountdownOverlay from "../components/CountdownOverlay";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PlayerPhoto from "../components/PlayerPhoto";
 import MacSonuKarti from "../components/MacSonuKarti";
-import { karakterSec, tepki } from "../lib/cpuKarakterleri";
+import { OyunUstCubugu, SkorSeridi, RakipTepkisi, rakipEtiketi } from "../components/MacCercevesi";
+import { karakterSec, tepki, kisaAd } from "../lib/cpuKarakterleri";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import { calculatePlayerPopularity } from "../lib/clubWeights";
@@ -95,10 +96,11 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
   // 4 Ekim 2026 — maç sonu kartı için tur kareleri ve doğru cevapların
   const [turlar, setTurlar] = useState([]);
   const [dogrularim, setDogrularim] = useState([]);
-  const [macSonuSozu, setMacSonuSozu] = useState("");
   const [userLetter, setUserLetter] = useState(null);
   const [cpuLetter, setCpuLetter] = useState(null);
   const [chainHistory, setChainHistory] = useState([]); // Zincir modundaki oyuncular
+  // Paket 31 — rakibin "düşünüyorum" sözü (hamle başına bir kez seçilir)
+  const dusunceSozu = useMemo(() => tepki(karakter, "dusunuyor"), [karakter, chainHistory.length]);
   
   const [inputMode, setInputMode] = useState("keyboard");
   const [showAnswers, setShowAnswers] = useState(false);
@@ -428,10 +430,10 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       const isPlayerTurn = chainHistory.length % 2 === 0;
       if (isPlayerTurn) {
         // Oyuncu cevaplayamadı, CPU puan alır
-        awardPoint("cpu", `Süren bitti! ${karakter.ad} kazandı.`);
+        awardPoint("cpu", `Süren bitti! ${kisaAd(karakter)} kazandı.`);
       } else {
         // CPU cevaplayamadı (Gerçekte CPU'nun timeoutu ayrı çalışır ama fallback)
-        awardPoint("p1", `${karakter.ad} cevap bulamadı! Sen kazandın.`);
+        awardPoint("p1", `${kisaAd(karakter)} cevap bulamadı! Sen kazandın.`);
       }
     }
   };
@@ -477,7 +479,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
         } else {
           // CPU bulamadı! Player kazandı!
           if (timerRef.current) clearInterval(timerRef.current);
-          awardPoint("p1", `${karakter.ad} isim bulamadı, sen kazandın!`);
+          awardPoint("p1", `${kisaAd(karakter)} isim bulamadı, sen kazandın!`);
         }
       }
     }, delay);
@@ -549,7 +551,6 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     setScores(prev => {
       const next = { ...prev, [who]: prev[who] + 1 };
       if (next[who] >= 3) {
-        setMacSonuSozu(tepki(karakter, who === "p1" ? "kaybetti" : "kazandi"));
         setPhase("gameOver");
         if (who === "p1") addXP(XP_MAC_GALIBIYETI);
       } else {
@@ -670,24 +671,26 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       <View style={{ flex: 1, width: "100%" }}>
         {/* 28 Eylül 2026 — tur sırasında da çıkış var (denetim bulgusu #2);
             BackButton onay soruyor, kazara çıkış olmuyor. */}
+        {/* Paket 31 — standart üst çubuk + skor şeridi (components/MacCercevesi.js) */}
         {phase !== "countdown" && (
-          <BackButton
-            onPress={phase === "gameOver" ? (onExitSilent || onExit) : onExit}
-            style={{ marginLeft: 20, marginTop: 10, marginBottom: 10 }}
+          <OyunUstCubugu
+            baslik="İlk Harf"
+            alt={phase === "setup" ? "Mod seç" : `${kisaAd(karakter)} ile · ilk 3 alan kazanır`}
+            onCikis={phase === "gameOver" ? (onExitSilent || onExit) : onExit}
+            style={{ paddingHorizontal: 20, marginTop: 6 }}
           />
         )}
       {phase === "countdown" && <CountdownOverlay onComplete={handleCountdownComplete} />}
       
-      <View style={styles.header}>
-        <Text style={styles.title}>Harf Eşleşmesi</Text>
-        {(phase !== "setup") && (
-          <View style={styles.scoreRow}>
-            <Text style={styles.scoreText}>Sen: {scores.p1}</Text>
-            <Text style={styles.scoreText}>Hedef: 3</Text>
-            <Text style={styles.scoreText}>{karakter.avatar} {karakter.ad}: {scores.cpu}</Text>
-          </View>
-        )}
-      </View>
+      {phase !== "setup" && phase !== "gameOver" && (
+        <SkorSeridi
+          style={{ marginHorizontal: 20, width: "auto" }}
+          sol={{ etiket: "SEN", puan: scores.p1 }}
+          sag={{ etiket: rakipEtiketi(karakter), puan: scores.cpu, karakter }}
+          orta="3'te biter"
+        />
+      )}
+      {subMode === "chain" && phase === "racing" && chainHistory.length % 2 !== 0 ? <RakipTepkisi karakter={karakter} metin={dusunceSozu} style={{ marginTop: -4, marginBottom: 8 }} /> : null}
 
       {/* SETUP PHASE */}
       {phase === "setup" && (
@@ -790,7 +793,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 <View style={styles.chainHistoryBox}>
                   {chainHistory.map((ch, i) => (
                     <Text key={i} style={styles.chainHistoryText}>
-                      {i % 2 === 0 ? "Sen" : karakter.ad}: {ch.name}
+                      {i % 2 === 0 ? "Sen" : kisaAd(karakter)}: {ch.name}
                     </Text>
                   ))}
                 </View>
@@ -851,7 +854,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10 }}>
                 <Ionicons name={subMode === "chain" && chainHistory.length % 2 !== 0 ? "time" : "pencil"} size={16} color="#FFD93D" />
                 <Text style={[styles.turnIndicator, { marginTop: 0 }]}>
-                  {subMode === "chain" && chainHistory.length % 2 !== 0 ? `${karakter.ad.toLocaleUpperCase("tr")} DÜŞÜNÜYOR…` : "SENİN SIRAN!"}
+                  {subMode === "chain" && chainHistory.length % 2 !== 0 ? `${kisaAd(karakter).toLocaleUpperCase("tr")} DÜŞÜNÜYOR…` : "SENİN SIRAN!"}
                 </Text>
               </View>
             </View>
@@ -872,7 +875,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
           modeId="letterCpu"
           skorSen={scores.p1}
           skorRakip={scores.cpu}
-          rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: macSonuSozu }}
+          rakip={{ ad: kisaAd(karakter), avatar: karakter.avatar, renk: karakter.renk }}
           turlar={turlar}
           enIyi={(() => {
             if (!dogrularim.length) return null;

@@ -21,12 +21,14 @@ import ReportModal from "../components/ReportModal";
 import AnswerFeedback from "../components/AnswerFeedback";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
+import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto, { oncedenYukle } from "../components/PlayerPhoto";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
 import BackButton from "../components/BackButton";
 import TimerBar from "../components/TimerBar";
 import { useOyuncuAdlari, OyuncuAdlariBolumu, IsimliSkorTablosu } from "../components/OyuncuAdlari";
+import { OyunUstCubugu, SkorSeridi } from "../components/MacCercevesi";
 
 const count3Source = require("../assets/sounds/count-3.mp3");
 const count2Source = require("../assets/sounds/count-2.mp3");
@@ -488,19 +490,14 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       {/* GLOBAL TOP HEADER — 31 Ağustos 2026 (Kerem: "üstteki butonların
           konumlandırması çirkin"): artık absolute/top:40 ile içerikle
           çakışmıyor, normal akışta kendi satırını alıyor. */}
-      <View style={{ width: "100%", paddingHorizontal: 16, paddingTop: 6, marginBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Pressable onPress={() => { if(typeof setShowReport === 'function') setShowReport(true); }} hitSlop={20}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: saydam(COLORS.text, 0.08), paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}>
-            <Ionicons name="flag" size={13} color={COLORS.textMuted} />
-            <Text style={{ color: COLORS.textMuted, fontSize: 12, fontWeight: "800" }}>BİLDİR</Text>
-          </View>
-        </Pressable>
-        <Pressable onPress={onExit} hitSlop={20}>
-          <View style={{ backgroundColor: saydam(COLORS.danger, 0.15), borderRadius: 16, padding: 6 }}>
-            <Ionicons name="close" size={22} color={COLORS.danger} />
-          </View>
-        </Pressable>
-      </View>
+      {/* Paket 31 — standart üst çubuk */}
+      <OyunUstCubugu
+        baslik="Ortak Kulüp"
+        alt="Yanımdaki · 2 kişi"
+        onCikis={onExit}
+        onBildir={() => setShowReport(true)}
+        style={{ paddingHorizontal: 16, marginTop: 6 }}
+      />
 
       {phase === "countdown" && (
         <CountdownOverlay onComplete={handleCountdownComplete} countPlayers={[countPlayer3, countPlayer2, countPlayer1]} isMirrored={viewMode === "mirror"} />
@@ -518,22 +515,13 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 
       {viewMode === "side" && (
         <>
-          <View style={styles.scoreRow}>
-            <Text style={styles.scoreText}>{adlar[0]}: {scoreP1}</Text>
-            <Text style={styles.scoreText}>{adlar[1]}: {scoreP2}</Text>
-          </View>
+          <SkorSeridi
+            sol={{ etiket: String(adlar[0]).toLocaleUpperCase("tr"), puan: scoreP1, renk: COLORS.accent }}
+            sag={{ etiket: String(adlar[1]).toLocaleUpperCase("tr"), puan: scoreP2, renk: COLORS.cta }}
+            orta={`${targetScore || 5}'te biter`}
+          />
 
-          <View style={styles.teamsCard}>
-            <View style={{ flex: 1, alignItems: "center" }}>
-              <TeamBadge name={round.teamA} />
-              <Text style={styles.teamName}>{round.teamA}</Text>
-            </View>
-            <Text style={styles.plus}>+</Text>
-            <View style={{ flex: 1, alignItems: "center" }}>
-              <TeamBadge name={round.teamB} />
-              <Text style={styles.teamName}>{round.teamB}</Text>
-            </View>
-          </View>
+          <EslesmeKarti sol={{ tip: "kulup", ad: round.teamA }} sag={{ tip: "kulup", ad: round.teamB }} style={{ marginBottom: 12 }} />
 
           {phase === "racing" && (
             <>
@@ -554,17 +542,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               <Text style={styles.scoreText}>Rakip: {scoreP2}</Text>
               <Text style={styles.scoreText}>Ben: {scoreP1}</Text>
             </View>
-            <View style={[styles.teamsCard, { paddingVertical: 12 }]}>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <TeamBadge name={round.teamA} />
-                <Text style={styles.teamName}>{round.teamA}</Text>
-              </View>
-              <Text style={styles.plus}>+</Text>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <TeamBadge name={round.teamB} />
-                <Text style={styles.teamName}>{round.teamB}</Text>
-              </View>
-            </View>
+            <EslesmeKarti kompakt sol={{ tip: "kulup", ad: round.teamA }} sag={{ tip: "kulup", ad: round.teamB }} style={{ marginBottom: 8 }} />
             <TimerBar current={timeLeft} total={roundSeconds} />
             <View style={{ flex: 1, justifyContent: "center" }}>
               {/* 12 Eylül 2026 — AYNA MODU OYNANAMIYORDU. renderAnsweringUI
@@ -582,17 +560,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               <Text style={styles.scoreText}>Ben: {scoreP2}</Text>
               <Text style={styles.scoreText}>Rakip: {scoreP1}</Text>
             </View>
-            <View style={[styles.teamsCard, { paddingVertical: 12 }]}>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <TeamBadge name={round.teamA} />
-                <Text style={styles.teamName}>{round.teamA}</Text>
-              </View>
-              <Text style={styles.plus}>+</Text>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <TeamBadge name={round.teamB} />
-                <Text style={styles.teamName}>{round.teamB}</Text>
-              </View>
-            </View>
+            <EslesmeKarti kompakt sol={{ tip: "kulup", ad: round.teamA }} sag={{ tip: "kulup", ad: round.teamB }} style={{ marginBottom: 8 }} />
             <TimerBar current={timeLeft} total={roundSeconds} />
             <View style={{ flex: 1, justifyContent: "center" }}>
               {phase === "answering" ? renderAnsweringUI("p2") : renderPlayerButtons("p2")}

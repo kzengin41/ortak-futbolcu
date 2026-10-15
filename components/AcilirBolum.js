@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, LayoutAnimation } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SoundPressable from "./SoundPressable";
-import { COLORS, SPACING, TYPE } from "../lib/theme";
+import { COLORS, SPACING, TYPE, saydam } from "../lib/theme";
 
 // ============================================================================
 // AÇILIR BÖLÜM — 5 Ekim 2026 (Kerem: "profilim sayfasında istatistikler de
@@ -11,7 +11,9 @@ import { COLORS, SPACING, TYPE } from "../lib/theme";
 // Başlığa dokununca içerik açılır/kapanır; tercih cihazda hatırlanır
 // (anahtar: `kimlik`). `ozet`: kapalıyken başlığın sağında görünen kısa bilgi.
 // ============================================================================
-const ANAHTAR = "acilir-bolumler-v1";
+// Paket 32 (Kerem: "profilim sayfasında tüm her şey default olarak kapalı gelmeli"):
+// varsayılan KAPALI; anahtar v2 — eski kayıtlar (hepsi açıktı) bir kez sıfırlanır.
+const ANAHTAR = "acilir-bolumler-v2";
 let _bellek = null;
 async function durumlar() {
   if (_bellek) return _bellek;
@@ -25,7 +27,7 @@ function kaydet(kimlik, acik) {
   });
 }
 
-export default function AcilirBolum({ kimlik, baslik, ikon, ozet, varsayilanAcik = true, children, style }) {
+export default function AcilirBolum({ kimlik, baslik, ikon, ozet, varsayilanAcik = false, children, style }) {
   const [acik, setAcik] = useState(varsayilanAcik);
   useEffect(() => {
     let iptal = false;
@@ -47,20 +49,27 @@ export default function AcilirBolum({ kimlik, baslik, ikon, ozet, varsayilanAcik
         accessibilityState={{ expanded: acik }}
         accessibilityLabel={`${baslik}, ${acik ? "kapat" : "aç"}`}
       >
-        {ikon ? <Ionicons name={ikon} size={18} color={COLORS.accent} /> : null}
-        <Text style={s.baslik}>{baslik}</Text>
+        {ikon ? <View style={s.ikon}><Ionicons name={ikon} size={18} color={COLORS.text} /></View> : null}
+        <Text style={s.baslik} numberOfLines={1}>{baslik}</Text>
         <View style={{ flex: 1 }} />
         {!acik && ozet ? <Text style={s.ozet} numberOfLines={1}>{ozet}</Text> : null}
-        <Ionicons name={acik ? "chevron-up" : "chevron-down"} size={18} color={COLORS.textMuted} />
+        <Ionicons name={acik ? "chevron-up" : "chevron-down"} size={18} color={COLORS.textFaint} />
       </SoundPressable>
-      {acik ? <View>{children}</View> : null}
+      {acik ? <View style={s.icerik}>{children}</View> : null}
     </View>
   );
 }
 
+// Paket 32 — liste kartı dili (ModKarti grup satırıyla aynı): kapalı başlık bir
+// kart satırı; nötr ikon karosu, sağda kısa özet. Açılınca içerik altında.
 const s = StyleSheet.create({
   kap: { marginBottom: SPACING.sm },
-  baslikSatir: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, marginBottom: 2 },
-  baslik: { ...TYPE.h3 },
+  baslikSatir: {
+    flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingVertical: 12, paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.card, borderRadius: 18, borderWidth: 1, borderColor: saydam(COLORS.text, 0.06),
+  },
+  ikon: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: saydam(COLORS.text, 0.07) },
+  baslik: { ...TYPE.h3, fontSize: 16, flexShrink: 1 },
   ozet: { ...TYPE.caption, maxWidth: "45%", fontWeight: "800" },
+  icerik: { marginTop: SPACING.sm },
 });

@@ -12,7 +12,7 @@ import {
 } from "../lib/eslesmeProfili";
 import { canonicalClub } from "../lib/clubAliases";
 import { weightForClubs } from "../lib/clubWeights";
-import { COLORS, RADIUS, SPACING, TYPE, saydam } from "../lib/theme";
+import { COLORS, RADIUS, SPACING, TYPE, saydam, vurguZemini } from "../lib/theme";
 
 // ============================================================================
 // EŞLEŞME PROFİLİ PENCERESİ — 2. sürüm (Paket 27, 12 Ekim 2026)
@@ -394,8 +394,8 @@ const styles = StyleSheet.create({
     width: "23%", flexGrow: 1, minHeight: 78, alignItems: "center", justifyContent: "center", paddingVertical: 8, paddingHorizontal: 4,
     borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card,
   },
-  karoAcik: { borderColor: saydam(COLORS.accent, 0.6), backgroundColor: saydam(COLORS.accent, 0.1) },
-  karoCok: { borderColor: COLORS.accent, borderWidth: 2, backgroundColor: saydam(COLORS.accent, 0.22) },
+  karoAcik: { borderColor: saydam(COLORS.accent, 0.6), backgroundColor: vurguZemini(0.1) },
+  karoCok: { borderColor: COLORS.accent, borderWidth: 2, backgroundColor: vurguZemini(0.22) },
   karoKapali: { opacity: 0.5 },
   karoBayrak: { fontSize: 22 },
   karoAd: { fontSize: 11, fontWeight: "800", color: COLORS.text, textAlign: "center", marginTop: 2 },
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
 
   onizleme: {
     marginTop: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: saydam(COLORS.accent, 0.45),
-    backgroundColor: saydam(COLORS.accent, 0.07), paddingVertical: SPACING.md, paddingHorizontal: SPACING.md, minHeight: 120,
+    backgroundColor: vurguZemini(0.07), paddingVertical: SPACING.md, paddingHorizontal: SPACING.md, minHeight: 120,
   },
   onizlemeUst: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: 4 },
   onizlemeBaslik: { fontSize: 11, fontWeight: "800", letterSpacing: 1.2, color: COLORS.textMuted, flex: 1 },

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari } from "../lib/modAyarlari";
-import { COLORS, MODE_COLORS, saydam } from "../lib/theme";
+import { COLORS, MODE_COLORS, saydam, vurguZemini } from "../lib/theme";
 import GameBackground from "../components/GameBackground";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
@@ -17,7 +17,8 @@ import {
 } from "../lib/gameEngine";
 import { recognitionScore } from "../lib/clubWeights";
 import { cpuCevabiSec, taninirlik } from "../lib/taninirlik";
-import { karakterSec, tepki, dusunmeSuresi, bilmeOlasiligi } from "../lib/cpuKarakterleri";
+import { karakterSec, tepki, dusunmeSuresi, bilmeOlasiligi, kisaAd, iyelik } from "../lib/cpuKarakterleri";
+import { OyunUstCubugu, SkorSeridi, RakipTepkisi, rakipEtiketi } from "../components/MacCercevesi";
 import { countryTr } from "../lib/countryNamesTr";
 import { flagForCountry } from "../lib/countryFlags";
 import { unlockPlayer } from "../lib/pokedex";
@@ -30,6 +31,7 @@ import AnswerFeedback from "../components/AnswerFeedback";
 import ReportModal from "../components/ReportModal";
 import CountdownOverlay from "../components/CountdownOverlay";
 import TeamBadge from "../components/TeamBadge";
+import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto, { oncedenYukle } from "../components/PlayerPhoto";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
@@ -69,7 +71,9 @@ const MOD_ID = { kulup: "cpu", ulke: "countryTeamCpu", secim: "draftCpu" };
 const GALIBIYET = [3, 5, 7, 10];
 const SURELER = [15, 20, 30, 45];
 const YANLIS_HAKKI = 3;
-const kisaAd = (ad) => String(ad).split(" ").slice(-1)[0];   // "Kahveci Kenan" → "Kenan"
+
+// Paket 31 — üst çubuğun alt satırı
+const TUR_ADLARI = { kulup: "Kulüp × Kulüp", ulke: "Kulüp × Ülke", secim: "Takımı sen seç", coktan: "Çoktan seçmeli" };
 
 export default function OrtakKulupScreen({
   onExit, onExitSilent, onModaGit, hemenBasla = false, ilkCift = null, tur: baslangicTuru = "kulup",
@@ -110,9 +114,10 @@ export default function OrtakKulupScreen({
   const [showAnswers, setShowAnswers] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [xpVerildi, setXpVerildi] = useState(false);
-  const [macSonuSozu, setMacSonuSozu] = useState("");
 
   const karakter = useMemo(() => karakterSec(difficulty), [difficulty]);
+  // Paket 31 — rakibin "düşünüyorum" sözü tur başına bir kez seçilir (her saniye değişmesin).
+  const dusunceSozu = useMemo(() => tepki(karakter, "dusunuyor"), [karakter, round]);
   const modId = MOD_ID[tur] || "cpu";
   // Eski zilli süreler (8–10 sn) yazarak cevaplamaya yetmez; 15'ten kısaysa 20.
   const turSuresi = roundSeconds >= 15 ? roundSeconds : 20;
@@ -320,13 +325,13 @@ export default function OrtakKulupScreen({
       setScoreP1((s) => s + 1);
       setDogrularim((l) => [...l, { oyuncu, etiket: turEtiketi(round) }]);
       setResultText(`Doğru! ${oyuncu.name}`);
-      setCpuSoz(tepki(karakter, "kaybetti"));
+      setCpuSoz(tepki(karakter, "kaptirdi"));
       playCorrect();
       setFeedback("correct");
       setShowResultPanel(false);
     } else if (kazanan === "cpu") {
       setScoreCpu((s) => s + 1);
-      setResultText(`${karakter.ad} buldu: ${oyuncu.name}`);
+      setResultText(`${kisaAd(karakter)} buldu: ${oyuncu.name}`);
       setCpuSoz(tepki(karakter, "dogru"));
       playWrong();
       setFeedback("wrong");
@@ -339,7 +344,6 @@ export default function OrtakKulupScreen({
 
   const macBitti = started && (scoreP1 >= targetScore || scoreCpu >= targetScore);
   function macSonunaGec() {
-    setMacSonuSozu(tepki(karakter, scoreP1 > scoreCpu ? "kaybetti" : "kazandi"));
     setPhase("gameOver");
     if (!xpVerildi) { setXpVerildi(true); addXP(scoreP1 > scoreCpu ? XP_MAC_GALIBIYETI : XP_MAC_MAGLUBIYETI); }
   }
@@ -380,7 +384,7 @@ export default function OrtakKulupScreen({
     oyunBilgisiniYaz(modId, {
       satirlar: ayarSatirlari({
         zorluk: difficulty, sure: turSuresi, galibiyet: targetScore, lig: presetLabel, yontem: inputMode,
-        ekstra: [["Tür", (TURLER.find((t) => t.deger === tur) || TURLER[0]).etiket], ["Rakip", `${karakter.avatar} ${karakter.ad}`], ["Yanlış hakkı", String(YANLIS_HAKKI)]],
+        ekstra: [["Tür", (TURLER.find((t) => t.deger === tur) || TURLER[0]).etiket], ["Rakip", `${karakter.avatar} ${kisaAd(karakter)}`], ["Yanlış hakkı", String(YANLIS_HAKKI)]],
       }),
     });
   }, [modId, difficulty, turSuresi, targetScore, presetLabel, inputMode, tur, karakter]);
@@ -460,26 +464,16 @@ export default function OrtakKulupScreen({
   }
 
   // ================================================================== OYUN
-  const Taraf = ({ x }) => (
-    <View style={{ flex: 1, alignItems: "center" }}>
-      {x.tip === "ulke" ? <Text style={styles.bayrak}>{flagForCountry(x.ad)}</Text> : <TeamBadge name={x.ad} />}
-      <Text style={styles.teamName} numberOfLines={2}>{x.tip === "ulke" ? countryTr(x.ad) : x.ad}</Text>
-    </View>
-  );
 
   return (
     <GameBackground style={styles.container} klavye="kaydir">
-      <View style={styles.ustSatir}>
-        <Pressable onPress={() => setShowReport(true)} hitSlop={20}>
-          <View style={styles.bildir}>
-            <Ionicons name="flag" size={13} color={COLORS.textMuted} />
-            <Text style={styles.bildirYazi}>BİLDİR</Text>
-          </View>
-        </Pressable>
-        <Pressable onPress={phase === "gameOver" ? (onExitSilent || onExit) : onExit} hitSlop={20}>
-          <View style={styles.kapat}><Ionicons name="close" size={22} color={COLORS.danger} /></View>
-        </Pressable>
-      </View>
+      {/* Paket 31 — standart üst çubuk (components/MacCercevesi.js) */}
+      <OyunUstCubugu
+        baslik="Ortak Kulüp"
+        alt={TUR_ADLARI[tur] || null}
+        onCikis={phase === "gameOver" ? (onExitSilent || onExit) : onExit}
+        onBildir={() => setShowReport(true)}
+      />
 
       {phase === "countdown" && (
         <CountdownOverlay onComplete={() => setPhase("racing")} countPlayers={[countPlayer3, countPlayer2, countPlayer1]} />
@@ -492,30 +486,22 @@ export default function OrtakKulupScreen({
       )}
 
       {phase !== "gameOver" && (
-        <View style={styles.skorSerit}>
-          <View style={styles.skorTaraf}>
-            <Text style={styles.skorEtiket}>SEN</Text>
-            <Text style={styles.skorSayi}>{scoreP1}</Text>
-          </View>
-          <Text style={styles.skorHedef}>{targetScore}'te biter</Text>
-          {/* 5 Ekim 2026 (Kerem: "kahveci kısmı tam oturmamış, gereksiz kalabalık") —
-              rakip artık skor şeridinde tek satır: emoji + kısa ad. Oyun sırasındaki
-              konuşma balonu ve tur sonundaki laf kalktı; karakter sadece maç sonunda
-              bir cümle söylüyor. */}
-          <View style={[styles.skorTaraf, { flexDirection: "row-reverse" }]}>
-            <Text style={styles.skorEtiket} numberOfLines={1}>{karakter.avatar} {kisaAd(karakter.ad).toLocaleUpperCase("tr")}</Text>
-            <Text style={styles.skorSayi}>{scoreCpu}</Text>
-          </View>
-        </View>
+        <SkorSeridi
+          sol={{ etiket: "SEN", puan: scoreP1 }}
+          sag={{ etiket: rakipEtiketi(karakter), puan: scoreCpu, karakter }}
+          orta={`${targetScore}'te biter`}
+        />
       )}
+      {/* Paket 31 — rakibin tek satırlık tepkisi her modda skor şeridinin altında */}
+      {phase === "racing" ? <RakipTepkisi karakter={karakter} metin={cpuKilitli ? "Pas geçiyorum." : dusunceSozu} style={{ marginTop: -4, marginBottom: 6 }} /> : null}
 
       {/* ---------------- Takımı sen seç ---------------- */}
       {(phase === "takimSec" || phase === "rakipSeciyor") && (
         <View style={styles.secimKutu}>
-          <Text style={styles.secimBaslik}>{phase === "rakipSeciyor" ? `${karakter.ad} rakip kulübü seçiyor…` : "Bir kulüp yaz"}</Text>
+          <Text style={styles.secimBaslik}>{phase === "rakipSeciyor" ? `${kisaAd(karakter)} rakip kulübü seçiyor…` : "Bir kulüp yaz"}</Text>
           {phase === "takimSec" ? (
             <>
-              <Text style={styles.secimAlt}>İkinci kulübü {karakter.ad} seçecek. Zor bir kulüp onu da zorlar.</Text>
+              <Text style={styles.secimAlt}>İkinci kulübü {kisaAd(karakter)} seçecek. Zor bir kulüp onu da zorlar.</Text>
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
@@ -549,11 +535,8 @@ export default function OrtakKulupScreen({
       {/* ---------------- Takım kartı ---------------- */}
       {round && (phase === "racing" || phase === "result") && (
         <>
-          <View style={styles.teamsCard}>
-            <Taraf x={round.sol} />
-            <Text style={styles.plus}>×</Text>
-            <Taraf x={round.sag} />
-          </View>
+          {/* Paket 32 — eşleşme kartı: her yarı kendi kulübünün/ülkesinin renginde */}
+          <EslesmeKarti sol={round.sol} sag={round.sag} />
           <View style={styles.bilgiSatir}>
             <View style={styles.ortakCip}>
               <Ionicons name="people" size={14} color={COLORS.accent} />
@@ -574,12 +557,9 @@ export default function OrtakKulupScreen({
             <Text style={[styles.sureYazi, timeLeft <= 5 && { color: COLORS.danger }]}>{timeLeft} sn</Text>
           </View>
 
-          <Text style={styles.cpuDurum} numberOfLines={1}>
-            {karakter.avatar} {kisaAd(karakter.ad)} {cpuKilitli ? "pas geçti" : "düşünüyor…"}
-          </Text>
 
           {p1Kilitli ? (
-            <Text style={styles.kilitYazi}>Hakkın bitti — {karakter.ad}'ın cevabı bekleniyor…</Text>
+            <Text style={styles.kilitYazi}>Hakkın bitti — {iyelik(kisaAd(karakter))} cevabı bekleniyor…</Text>
           ) : inputMode === "voice" ? (
             <>
               <SoundPressable style={[styles.micBuyuk, isRecording && styles.micAktif]} onPress={handleMicPress} disabled={isProcessing}>
@@ -686,7 +666,7 @@ export default function OrtakKulupScreen({
           modeId={modId}
           skorSen={scoreP1}
           skorRakip={scoreCpu}
-          rakip={{ ad: karakter.ad, avatar: karakter.avatar, renk: karakter.renk, tepki: macSonuSozu }}
+          rakip={{ ad: kisaAd(karakter), avatar: karakter.avatar, renk: karakter.renk }}
           turlar={turlar}
           enIyi={(() => {
             if (!dogrularim.length) return null;
@@ -723,7 +703,7 @@ const styles = StyleSheet.create({
   bayrak: { fontSize: 50 },
   plus: { color: COLORS.accent, fontWeight: "900", fontSize: 20, marginHorizontal: 8 },
   bilgiSatir: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
-  ortakCip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: saydam(COLORS.accent, 0.10), borderWidth: 1, borderColor: saydam(COLORS.accent, 0.35) },
+  ortakCip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: vurguZemini(0.10), borderWidth: 1, borderColor: saydam(COLORS.accent, 0.35) },
   ortakYazi: { color: COLORS.text, fontSize: 13, fontWeight: "800" },
   kural: { color: COLORS.textMuted, fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 6 },
 
