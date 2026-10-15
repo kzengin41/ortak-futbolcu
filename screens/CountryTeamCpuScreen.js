@@ -787,11 +787,11 @@ export default function CountryTeamCpuScreen({ onExit, onExitSilent }) {
           <TimerBar current={timeLeft} total={roundSeconds} />
           {inputMode === "voice" ? (
             <SoundPressable disabled={p1Locked} onPress={handleBuzzAndSpeak} style={[styles.buzzBtn, p1Locked && styles.buzzBtnDisabled]}>
-              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>BUZZ'LA VE KONUŞ</Text>
+              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>BİLİYORUM · SÖYLE</Text>
             </SoundPressable>
           ) : (
             <SoundPressable disabled={p1Locked} onPress={handleBuzz} style={[styles.buzzBtn, p1Locked && styles.buzzBtnDisabled]}>
-              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>BUZZ'LA</Text>
+              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>BİLİYORUM!</Text>
             </SoundPressable>
           )}
           <SoundPressable disabled={p1Locked} onPress={handlePass} style={styles.passBtn}>

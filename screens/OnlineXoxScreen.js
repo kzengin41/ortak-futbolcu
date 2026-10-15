@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TimerBar from "../components/TimerBar";
 import OnlineMacSonu from "../components/OnlineMacSonu";
@@ -33,7 +34,19 @@ const VURGU = MODE_COLORS.xox;
 const ZORLUK = 4;
 const SURE_PAYI_MS = 1500;   // ağ gecikmesi için ev sahibinin süreye eklediği pay
 
+// Paket 37 — ızgara türü odanın modundan: "xox" | "xox-ulke" | "xox-basari" | "xox-karma"
+// (offline'daki IZGARA_TURLERI ile aynı; lib/gridGame.izgaraUret).
+const TUR_ADLARI = { ulke: "Kulüp + Ülke", basari: "Kulüp + Başarı", karma: "Karma" };
+export function odaIzgaraTuru(gameMode) {
+  const t = String(gameMode || "xox").split("-")[1] || "kulup";
+  return TUR_ADLARI[t] ? t : "kulup";
+}
+
 export default function OnlineXoxScreen({ room, onExit }) {
+  const izgaraTuru = odaIzgaraTuru(room && room.gameMode);
+  const TUR_ADI = TUR_ADLARI[izgaraTuru] || null;
+  const turRef = useRef(izgaraTuru);
+  turRef.current = izgaraTuru;
   const benKimim = room.playerNumber;
   const benim = ISARET[benKimim];
   const playCorrect = useCorrectSound();
@@ -52,7 +65,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
       const h = new Set(haric);
       let enIyi = null, enAz = Infinity;
       for (let i = 0; i < (h.size ? 10 : 1); i++) {
-        const iz = izgaraUret(PLAYERS, zorlukAyari10(ZORLUK), Math.random, "kulup", profilRef.current);
+        const iz = izgaraUret(PLAYERS, zorlukAyari10(ZORLUK), Math.random, turRef.current, profilRef.current);
         if (!iz) continue;
         const ortak = [...iz.satirlar, ...iz.sutunlar].filter((k) => h.has(kosulAnahtari(k))).length;
         if (ortak < enAz) { enIyi = iz; enAz = ortak; }
@@ -245,6 +258,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
                   autoCapitalize="words"
                   autoFocus
                 />
+                <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
                 <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>
@@ -276,11 +290,11 @@ export default function OnlineXoxScreen({ room, onExit }) {
             <View style={styles.izgaraSatir}>
               <View style={styles.kose} />
               {oyun.izgara.sutunlar.map((k) => (
-                <View key={k} style={styles.baslikHucre}><BaslikRozeti baslik={k} boyut={logoBoyut} /></View>
+                <View key={kosulAnahtari(k)} style={styles.baslikHucre}><BaslikRozeti baslik={k} boyut={logoBoyut} /></View>
               ))}
             </View>
             {oyun.izgara.satirlar.map((satirK, r) => (
-              <View key={satirK} style={styles.izgaraSatir}>
+              <View key={kosulAnahtari(satirK)} style={styles.izgaraSatir}>
                 <View style={styles.baslikHucre}><BaslikRozeti baslik={satirK} boyut={logoBoyut} /></View>
                 {oyun.izgara.sutunlar.map((_, c) => {
                   const i = r * 3 + c;
@@ -320,7 +334,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
           {bitti ? (
             <OnlineMacSonu
               oda={room}
-              modAdi="Online Futbolcu XOX"
+              modAdi={`Online Futbolcu XOX${TUR_ADI ? " · " + TUR_ADI : ""}`}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}

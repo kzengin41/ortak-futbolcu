@@ -83,7 +83,7 @@ const SECTIONS = [
       "Tüm Modlar'da Ortak Kulüp, 5 Kulüp ya da XOX'a dokununca önce rakibini seçersin: CPU, Yanımdaki ya da Online.",
       "Ortak Kulüp'te 2 kişide telefon ortadan ikiye bölünür — her oyuncu kendi tarafından oynar.",
       "Sunucu Modu: 2–6 kişi. Telefonu tutan kulüpleri okur, ilk bağıranın adına dokunur, ekrandaki cevaplara bakıp ✓/✗ der.",
-      "Cevabı ilk bilen tarafa \"buzz\" basar ve sesli söyler; doğruysa puanı alır.",
+      "Cevabı ilk bilen BİLİYORUM düğmesine basar ve sesli söyler; doğruysa puanı alır.",
       "Sesli mod desteklenir: cevabını mikrofonla da söyleyebilirsin.",
     ],
   },
@@ -151,7 +151,7 @@ const SECTIONS = [
   },
 ];
 
-export default function HelpScreen({ onBack, onSources }) {
+export default function HelpScreen({ onBack, onSources, onKarsilama }) {
   const [openKey, setOpenKey] = useState(SECTIONS[0].key);
 
   const toggle = (key) => {
@@ -202,6 +202,13 @@ export default function HelpScreen({ onBack, onSources }) {
             </View>
           );
         })}
+        {/* Paket 37 — karşılama (canlı deneme turu) yeniden izlenebilsin */}
+        {onKarsilama ? (
+          <SoundPressable onPress={onKarsilama} style={styles.kaynakLink} hitSlop={10} accessibilityLabel="Tanıtımı tekrar izle">
+            <Ionicons name="play-circle-outline" size={16} color={COLORS.textMuted} />
+            <Text style={styles.kaynakLinkText}>Tanıtımı ve deneme turunu tekrar izle</Text>
+          </SoundPressable>
+        ) : null}
         {onSources ? (
           <SoundPressable onPress={onSources} style={styles.kaynakLink} hitSlop={10}>
             <Ionicons name="information-circle-outline" size={16} color={COLORS.textMuted} />

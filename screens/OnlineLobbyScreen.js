@@ -71,6 +71,12 @@ export const GAME_MODES = [
   { id: "country", ikon: "ulkeKulup", grup: "ortak", gizli: true, label: "Ortak Kulüp · Kulüp × Ülke", desc: "O ülkeden, o kulüpte oynamış futbolcuyu rakibinden önce yaz", icon: "earth", colorKey: "teamCountry" },
   { id: "five", kisa: "Aynı anda gizli cevap, 3 tur", ikon: "besKulup", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
   { id: "xox", kisa: "3×3 ızgara, sırayla kare kap", ikon: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
+  // Paket 37 (Kerem: "online xox'te de başarı x takım ülke x takım gibi modlar var mı?
+  // offlinedakilerin onlineda da olması lazım") — XOX ızgara türleri; kartı yok,
+  // XOX penceresinin türleri (game_mode "xox-ulke" …, ekran lib/onlineXox.js).
+  { id: "xox-ulke", ikon: "xox", grup: "ortak", gizli: true, label: "Futbolcu XOX · Kulüp + Ülke", desc: "Satır ve sütunlarda kulüpler ve ülkeler", icon: "grid", colorKey: "xox" },
+  { id: "xox-basari", ikon: "xox", grup: "ortak", gizli: true, label: "Futbolcu XOX · Kulüp + Başarı", desc: "Satır ve sütunlarda kulüpler ve kupalar", icon: "grid", colorKey: "xox" },
+  { id: "xox-karma", ikon: "xox", grup: "ortak", gizli: true, label: "Futbolcu XOX · Karma", desc: "Kulüp, ülke ve başarı karışık", icon: "grid", colorKey: "xox" },
   { id: "whoami", kisa: "Aynı masada ipucu düellosu", ikon: "kimBu", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
   { id: "letter", kisa: "Harfle başlayan futbolcuyu ilk sen bul", ikon: "ilkHarf", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
   { id: "letter2", kisa: "Harfleri siz seçin, yarış başlasın", ikon: "harfiSenSec", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
@@ -80,7 +86,7 @@ const GRUPLAR = [
   { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
 ];
 // Kulüp kimliği (allowedClubIds) gerektirmeyen modlar: kendi üreticileri var.
-const KULUPSUZ = new Set(["xox", "five"]);
+const KULUPSUZ = new Set(["xox", "xox-ulke", "xox-basari", "xox-karma", "five"]);
 // Hızlı Eşleş'te aranacak modlar: bu sürümün oynayabildiği bütün online modlar.
 const HIZLI_MODLAR = GAME_MODES.map((m) => m.id);
 // Lobideki bir mod kartının başlat sayfası için mod nesnesi (OyunBaslat biçimi).
@@ -88,6 +94,13 @@ const ORTAK_TURLER = [
   { mod: "classic", label: "Kulüp × Kulüp", alt: "İki kulüp çıkar, ortak futbolcuyu ilk yazan alır" },
   { mod: "country", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır" },
   { mod: "draft", label: "Takımı sen seç", alt: "Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur" },
+];
+// Paket 37 — XOX penceresinde NASIL? (offline'daki ızgara türleri)
+const XOX_TURLER = [
+  { mod: "xox", label: "Sadece kulüpler", alt: "Satır ve sütunlar kulüp; ortak futbolcuyu söyle, kareyi kap" },
+  { mod: "xox-ulke", label: "Kulüp + Ülke", alt: "Bazı satır/sütunlar ülke: o ülkeden, o kulüpte oynamış biri" },
+  { mod: "xox-basari", label: "Kulüp + Başarı", alt: "Bazı satır/sütunlar kupa: o kulüpte oynamış, o kupayı kazanmış biri" },
+  { mod: "xox-karma", label: "Karma", alt: "Kulüp, ülke ve başarı karışık" },
 ];
 const _baslatOnbellek = new Map();   // aynı kart → aynı nesne (pencere her çizimde sıfırlanmasın)
 export function onlineBaslatModu(m) {
@@ -97,18 +110,21 @@ export function onlineBaslatModu(m) {
 }
 function baslatModuKur(m) {
   const ortak = m.id === "classic" || m.id === "country" || m.id === "draft";
-  const options = ortak
-    ? ORTAK_TURLER.map((t) => ({ id: t.mod, rakip: "online", label: t.label, alt: t.alt, sekme: true, params: { mod: t.mod } }))
+  const xox = xoxMu(m.id);
+  const turler = ortak ? ORTAK_TURLER : xox ? XOX_TURLER : null;
+  const options = turler
+    ? turler.map((t) => ({ id: t.mod, rakip: "online", label: t.label, alt: t.alt, sekme: true, params: { mod: t.mod } }))
     : [{ id: m.id, rakip: "online", label: m.label, alt: m.desc, sekme: true, params: { mod: m.id } }];
   return {
-    key: `online-${ortak ? "ortak" : m.id}`,
-    title: ortak ? "Ortak Kulüp" : m.label,
+    key: `online-${ortak ? "ortak" : xox ? "xox" : m.id}`,
+    title: ortak ? "Ortak Kulüp" : xox ? "Futbolcu XOX" : m.label,
     ikon: ortak ? "ortakKulup" : m.ikon,
     icon: m.icon,
     options,
-    secili: ortak ? Math.max(0, ORTAK_TURLER.findIndex((t) => t.mod === m.id)) : 0,
+    secili: turler ? Math.max(0, turler.findIndex((t) => t.mod === m.id)) : 0,
   };
 }
+export const xoxMu = (id) => typeof id === "string" && (id === "xox" || id.startsWith("xox-"));
 const KODLA_KATIL = { ikon: "kodlaKatil", title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
 const MEYDAN = { ikon: "meydanOkuma", title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi

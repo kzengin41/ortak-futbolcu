@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import BackButton from "../components/BackButton";
 import PlayerPhoto from "../components/PlayerPhoto";
 import TimerBar from "../components/TimerBar";
@@ -168,6 +169,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
               blurOnSubmit={false}
               editable={phase === "oyun"}
             />
+            <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
             <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>

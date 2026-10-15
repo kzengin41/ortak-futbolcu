@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, Share, Pressable, useWindowDimension
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import TeamBadge from "../components/TeamBadge";
 import BackButton from "../components/BackButton";
 import { PLAYERS } from "../lib/players";
@@ -188,6 +189,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
               autoFocus
               returnKeyType="send"
             />
+            <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
             <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>

@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto from "../components/PlayerPhoto";
@@ -276,6 +277,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
                 returnKeyType="send"
                 autoCorrect={false}
               />
+              <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
               <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
                 <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
               </SoundPressable>

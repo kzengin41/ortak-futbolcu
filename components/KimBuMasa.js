@@ -129,10 +129,12 @@ export function SimdiBilirsenAfis({ puan, carp, kucuk, alt }) {
 
 // Masanın kartları. onKartCevir yoksa kartlar dokunulmaz (izleme / tur sonu).
 // durumGetir(k) verilirse kart durumu ondan okunur (açılış animasyonu için).
-export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd, durumGetir, kompakt }) {
+// kilitliGetir(k) verilirse "bu kart alınamaz" kararı ondan okunur (Paket 37:
+// online Kim Bu'da herkesin potu ayrı — alınabilirlik oyuncunun KENDİ potuna göre).
+export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd, durumGetir, kompakt, kilitliGetir }) {
   const [fotoBozuk, setFotoBozuk] = useState(false);
   const durum = (k) => (durumGetir ? durumGetir(k) : acik[k.id] || null);
-  const kilitli = (k) => !!onKartCevir && !acik[k.id] && !acilabilirMi(masa, acik, k);
+  const kilitli = (k) => !!onKartCevir && !acik[k.id] && (kilitliGetir ? kilitliGetir(k) : !acilabilirMi(masa, acik, k));
   const bas = (k) => (onKartCevir ? () => onKartCevir(k) : undefined);
   const fotoUrl = fotoAd ? resolvePlayerPhotoUrl(fotoAd) : null;
   const siluetAcik = masa.vitrin.some((k) => k.id === "siluet" && durum(k));

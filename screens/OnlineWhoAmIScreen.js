@@ -13,20 +13,22 @@ import { PLAYERS } from "../lib/players";
 import { PLAYER_LAST_ACTIVE_YEAR } from "../lib/playerYears";
 import { oyundaCikmasin } from "../lib/taninirlik";
 import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
-import { carpan, acilabilirMi, ASGARI_PUAN } from "../lib/kimBuMasa";
+import { ASGARI_PUAN } from "../lib/kimBuMasa";
 import { masaHazirla, karsilastirAd, gizliMi, oyuncuBul, taninmisHavuz } from "../lib/kimBuVeri";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
-import { baslangicDurumu, aksiyonuIsle, pot, TUR_ARASI_MS, HEDEF_TUR } from "../lib/onlineWhoAmI";
+import { baslangicDurumu, aksiyonuIsle, potu, carpani, alabilirMi, TUR_ARASI_MS, HEDEF_TUR, HAMLE_SURESI_SN, YANLIS_CEZA } from "../lib/onlineWhoAmI";
+import TimerBar from "../components/TimerBar";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 
 // ============================================================================
-// ONLINE — KİM BU FUTBOLCU? AYNI MASADA DÜELLO (Paket 13, 5 Ekim 2026)
-// Kurallar lib/onlineWhoAmI.js; masa çizimi components/KimBuMasa.js (tek
-// kişilik Kim Bu ile aynı). Gizli futbolcuyu ev sahibi seçer: fotoğraflı ve
-// en tanınmış ilk 600 futbolcudan.
+// ONLINE — KİM BU FUTBOLCU? SIRAYLA OYNANAN MASA (Paket 37, 16 Ekim 2026)
+// Kurallar lib/onlineWhoAmI.js (herkesin kendi potu, hamleler sırayla); masa
+// çizimi components/KimBuMasa.js (tek kişilik Kim Bu ile aynı). Gizli futbolcuyu
+// ev sahibi seçer (aşağıdaki havuz).
 // ============================================================================
 const VURGU = MODE_COLORS.whoAmI;
 
@@ -35,18 +37,24 @@ const VURGU = MODE_COLORS.whoAmI;
 // en tanınmış ilk ONLINE_HAVUZ (Türk futbolsever gözüyle tanınırlık), 1998'den
 // sonra oynamış (Puskás/Di Stéfano gibi efsaneler ipucuyla tahmin edilemiyor),
 // popülerlik panelinde "oyunda çıkmasın" denenler hariç.
-export const ONLINE_HAVUZ = 200;
+//
+// Paket 37 (Kerem: "200 futbolcu az değil mi? nakata … 5000'e at") — havuz 500'e
+// çıktı ama turlar kademeli: 1. tur en tanınmış 150'den, 2. tur 300'den, sonra
+// 500'den. Nakata tanınırlıkta 5000. sıraya indirildi (scripts/populerlik_ayar.json).
+export const ONLINE_HAVUZ = 500;
+export const TUR_KADEMESI = [150, 300, 500];
 let _onlineHavuz = null;
 export function onlineKimBuHavuzu() {
   if (!_onlineHavuz) {
-    _onlineHavuz = taninmisHavuz(1200)
-      .filter((p) => !oyundaCikmasin(p) && (PLAYER_LAST_ACTIVE_YEAR[p.name] || 0) >= 1998)
+    _onlineHavuz = taninmisHavuz(2000)
+      .filter((p) => !oyundaCikmasin(p) && (PLAYER_LAST_ACTIVE_YEAR[p.name] || 0) >= 1995)
       .slice(0, ONLINE_HAVUZ);
   }
   return _onlineHavuz;
 }
-function yeniMasa(kullanilanlar) {
-  const havuz = onlineKimBuHavuzu().filter((p) => !kullanilanlar.includes(p.name));
+function yeniMasa(kullanilanlar, turNo = 1) {
+  const ust = TUR_KADEMESI[Math.min(TUR_KADEMESI.length, Math.max(1, turNo)) - 1];
+  const havuz = onlineKimBuHavuzu().slice(0, ust).filter((p) => !kullanilanlar.includes(p.name));
   if (!havuz.length) return null;
   const p = havuz[Math.floor(Math.random() * havuz.length)];
   return { gizli: p.name, masa: masaHazirla(p) };
@@ -76,9 +84,9 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   const faz = durum?.faz;
   // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
   const ayrildi = <RakipAyrildi oda={room} benKimim={benKimim} rakipVar={rakipVar} aktif={!!faz && !["hazirlik", "macSonu", "hata"].includes(faz)} macNo={macSirasi(durum)} onExit={onExit} />;
-  const benKilitli = !!durum?.kilitli?.includes(benKimim);
-  const benPas = !!durum?.pas?.includes(benKimim);
+  const benPas = !!durum?.pes?.includes(benKimim);
   const rakipNo = benKimim === 1 ? 2 : 1;
+  const siraBende = faz === "oynaniyor" && durum?.sira === benKimim && !benPas;
 
   // --- Host: rakip gelince ilk tur; tur sonu → sıradaki tur ----------------
   useEffect(() => {
@@ -91,6 +99,22 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     const t = setTimeout(() => guncelle((d) => aksiyonIsle(d, { tip: "sonrakiTur" }, 1)), TUR_ARASI_MS);
     return () => clearTimeout(t);
   }, [hostMuyum, faz, durum?.turNo, guncelle, aksiyonIsle]);
+
+  // --- Host: hamle süresi (dolarsa sıradakinin yerine en ucuz kart çevrilir) ---
+  useEffect(() => {
+    if (!hostMuyum || faz !== "oynaniyor" || !durum) return;
+    const no = durum.hamleNo;
+    const t = setTimeout(() => guncelle((d) => aksiyonIsle(d, { tip: "sureDoldu", hamleNo: no }, 1)), HAMLE_SURESI_SN * 1000 + 1500);
+    return () => clearTimeout(t);
+  }, [hostMuyum, faz, durum?.hamleNo, durum?.turNo, guncelle, aksiyonIsle]);
+  // --- Herkes: görünen sayaç (her hamlede baştan) ---------------------------
+  const [kalan, setKalan] = useState(HAMLE_SURESI_SN);
+  useEffect(() => { setKalan(HAMLE_SURESI_SN); }, [durum?.hamleNo, durum?.turNo]);
+  useEffect(() => {
+    if (faz !== "oynaniyor" || kalan <= 0) return;
+    const t = setTimeout(() => setKalan((x) => Math.max(0, x - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [kalan, faz]);
 
   useEffect(() => { if (durum?.gizli) prefetchPlayerPhoto(durum.gizli); }, [durum?.gizli]);
   useEffect(() => { setGirdi(""); setUyari(null); }, [durum?.turNo]);
@@ -107,12 +131,14 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     if (o.tip === "yanlis") {
       if (ben) playWrong();
       setUyari(ben
-        ? (o.bedava ? `Ortak kulüp: ${o.ortak.join(", ")} — kart bedava açıldı. Bir kart çevrilene kadar bekle.` : `${o.ad} değil — bir kart çevrilene kadar tahmin yok`)
-        : `Rakip "${o.ad}" dedi, olmadı${o.bedava ? ` (ortak kulüp kartı açıldı)` : ""}`);
-    } else if (o.tip === "bilinmeyen" && ben) setUyari(`"${o.metin}" diye bir futbolcu bulamadım`);
-    else if (o.tip === "tekrar" && ben) setUyari(`${o.ad} zaten denendi`);
-    else if (o.tip === "kart") setUyari(ben ? null : "Rakip bir kart çevirdi — tahmin hakkın açıldı");
-    else if (o.tip === "pas") setUyari(ben ? "Bu turu pas geçtin" : "Rakip pas geçti");
+        ? `${o.ad} değil — potundan ${sayi(YANLIS_CEZA)} gitti${o.bedava ? ` (ortak kulüp: ${o.ortak.join(", ")} — kart bedava açıldı)` : ""}. Sıra rakipte.`
+        : `Rakip "${o.ad}" dedi, olmadı${o.bedava ? ` (ortak kulüp kartı bedava açıldı)` : ""}. Sıra sende!`);
+    } else if (o.tip === "bilinmeyen" && ben) setUyari(`"${o.metin}" diye bir futbolcu bulamadım — hamle sayılmadı`);
+    else if (o.tip === "tekrar" && ben) setUyari(`${o.ad} zaten denendi — hamle sayılmadı`);
+    else if (o.tip === "kart") setUyari(ben ? `Kartı aldın (−${sayi(o.bedel)}). Sıra rakipte.` : `Rakip bir kart çevirdi (kendi potundan ${sayi(o.bedel)}). Sıra sende!`);
+    else if (o.tip === "sureKart") setUyari(ben ? `Süren doldu — en ucuz kart senin potundan açıldı (−${sayi(o.bedel)}).` : "Rakibin süresi doldu, onun potundan bir kart açıldı. Sıra sende!");
+    else if (o.tip === "sure") setUyari(ben ? "Süren doldu — sıra rakipte." : "Rakibin süresi doldu. Sıra sende!");
+    else if (o.tip === "pes") setUyari(ben ? "Bu turdan çekildin — rakip tek başına devam ediyor" : "Rakip pes etti — sıra hep sende, potun eriyene kadar dene");
   }, [durum?.sonOlay, durum?.turNo, benKimim, playWrong]);
 
   // --- Tur / maç sonu: ses, koleksiyon, istatistik --------------------------
@@ -137,14 +163,16 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
 
   function tahminGonder(metin) {
     const yazi = String(metin ?? girdi).trim();
-    if (!yazi || benKilitli || benPas || faz !== "oynaniyor") return;
+    if (!yazi || faz !== "oynaniyor") return;
+    if (!siraBende) { setUyari(benPas ? "Bu turdan çekildin" : "Sıra rakipte — sıran gelince gönder"); return; }
     setGirdi("");
     gonder({ tip: "tahmin", metin: yazi });
   }
   function kartCevir(k) {
-    if (faz !== "oynaniyor" || benPas) return;
-    if (!acilabilirMi(durum.masa, durum.acik, k)) {
-      setUyari(`Pot yetmiyor: bu kart ${sayi(k.bedel)}, pot ${sayi(ASGARI_PUAN)}'in altına inemez.`);
+    if (faz !== "oynaniyor") return;
+    if (!siraBende) { setUyari(benPas ? "Bu turdan çekildin" : "Sıra rakipte — sıran gelince kart çevirebilirsin"); return; }
+    if (!alabilirMi(durum, benKimim, k)) {
+      setUyari(`Potun yetmiyor: bu kart ${sayi(k.bedel)}, potun ${sayi(ASGARI_PUAN)}'in altına inemez.`);
       return;
     }
     gonder({ tip: "kartCevir", id: k.id });
@@ -237,41 +265,61 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   }
 
   // ---------------------------------------------------------------- oyun
-  const carp = carpan(durum.acik);
+  const benimPot = potu(durum, benKimim);
+  const rakipPot = potu(durum, rakipNo);
+  const carp = carpani(durum, benKimim);
+  const rakipPes = durum.pes.includes(rakipNo);
   return (
     <GameBackground style={styles.kap}>
       {ayrildi}
       {skorSeridi}
       <KlavyeAlani style={{ flex: 1 }}>
-        <SimdiBilirsenAfis puan={pot(durum)} carp={carp} kucuk={klavyeAcik} alt="ilk bilen alır" />
+        <View style={styles.potSatir}>
+          <View style={[styles.potKutu, styles.benimPot]}>
+            <Text style={styles.benimPotEt}>SENİN POTUN</Text>
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+              <Text style={styles.benimPotSayi}>{sayi(benimPot)}</Text>
+              {carp > 1 ? <Text style={styles.benimPotCarpan}>×{String(carp).replace(".", ",")}</Text> : null}
+            </View>
+          </View>
+          <View style={styles.potKutu}>
+            <Text style={styles.rakipPotEt}>RAKİBİN POTU</Text>
+            <Text style={styles.rakipPotSayi}>{rakipPes ? "pes etti" : sayi(rakipPot)}</Text>
+          </View>
+        </View>
+        <View style={[styles.siraKutu, siraBende ? styles.siraBende : styles.siraRakipte]}>
+          <Ionicons name={siraBende ? "flash" : "hourglass-outline"} size={16} color={siraBende ? COLORS.accent : COLORS.textMuted} />
+          <Text style={[styles.siraYazi, siraBende && { color: COLORS.accent }]}>
+            {benPas ? "Bu turdan çekildin — izliyorsun" : siraBende ? "SIRA SENDE: bir kart çevir ya da tahmin et" : "Sıra rakipte — hamlesini bekle"}
+          </Text>
+          <Text style={[styles.siraSure, kalan <= 5 && { color: COLORS.danger }]}>{kalan} sn</Text>
+        </View>
+        <View style={{ marginHorizontal: SPACING.lg }}><TimerBar current={kalan} total={HAMLE_SURESI_SN} /></View>
         <View style={styles.cevap}>
-          {benPas ? (
-            <Text style={styles.kilitText}>Bu turu pas geçtin — rakibi izliyorsun</Text>
-          ) : benKilitli ? (
-            <Text style={styles.kilitText}>Yanlış tahmin — biri kart çevirince yeniden tahmin edebilirsin</Text>
-          ) : (
-            <View style={styles.cevapSatir}>
+          {benPas ? null : (
+            <View style={[styles.cevapSatir, !siraBende && styles.cevapPasif]}>
               <Ionicons name="search" size={18} color={COLORS.textMuted} style={{ marginLeft: 4 }} />
               <TextInput
                 style={styles.cevapGirdi}
                 autoCorrect={false}
                 autoCapitalize="words"
-                placeholder="Bu futbolcu kim?"
+                placeholder={siraBende ? "Bu futbolcu kim?" : "Düşün… sıran gelince gönder"}
                 placeholderTextColor={COLORS.textMuted}
                 value={girdi}
                 onChangeText={(t) => { setGirdi(t); if (uyari) setUyari(null); }}
                 onSubmitEditing={() => tahminGonder()}
                 returnKeyType="send"
               />
-              <SoundPressable onPress={() => tahminGonder()} style={styles.gonder} accessibilityLabel="Tahmini gönder">
+              <MikrofonDugmesi boyut={40} onMetin={(m) => setGirdi(m)} onGonder={(m) => tahminGonder(m)} />
+              <SoundPressable onPress={() => tahminGonder()} style={[styles.gonder, !siraBende && { opacity: 0.45 }]} accessibilityLabel="Tahmini gönder">
                 <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
           )}
-          {oneriler.length > 0 && !benKilitli && !benPas ? (
+          {oneriler.length > 0 && !benPas ? (
             <View style={styles.oneriler}>
               {oneriler.slice(0, klavyeAcik ? 3 : 4).map((ad) => (
-                <SoundPressable key={ad} style={styles.oneri} onPress={() => tahminGonder(ad)}>
+                <SoundPressable key={ad} style={styles.oneri} onPress={() => (siraBende ? tahminGonder(ad) : setGirdi(ad))}>
                   <Ionicons name="person-circle-outline" size={18} color={COLORS.textMuted} />
                   <Text style={styles.oneriYazi} numberOfLines={1}>{ad}</Text>
                 </SoundPressable>
@@ -287,14 +335,17 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
             masa={durum.masa}
             acik={durum.acik}
             onKartCevir={benPas ? undefined : kartCevir}
+            kilitliGetir={(k) => !alabilirMi(durum, benKimim, k)}
             turAnahtari={`${durum.turNo}:`}
             fotoAd={durum.gizli}
           />
-          <Text style={styles.not}>Çevirdiğin kart rakibe de açılır ve potu ikiniz için düşürür.</Text>
+          <Text style={styles.not}>
+            Herkesin potu kendine: çevirdiğin kartın bedeli SENİN potundan düşer ama kart ikinize de açılır. Yanlış tahmin −{sayi(YANLIS_CEZA)}. Her hamle {HAMLE_SURESI_SN} sn.
+          </Text>
           {!benPas ? (
-            <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pas" })}>
+            <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })}>
               <Ionicons name="flag-outline" size={16} color={COLORS.danger} />
-              <Text style={styles.pasYazi}>Bu turu pas geç</Text>
+              <Text style={styles.pasYazi}>Bu turdan çekil</Text>
             </SoundPressable>
           ) : null}
           <SoundPressable onPress={onExit} style={styles.cikisBtn}>
@@ -330,13 +381,33 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: COLORS.card, borderRadius: 14,
     borderWidth: 2, borderColor: COLORS.accent, paddingHorizontal: 6, height: 52,
   },
-  cevapGirdi: { flex: 1, color: COLORS.text, fontSize: 16, fontWeight: "600", paddingVertical: 0 },
+  cevapGirdi: { flex: 1, minWidth: 0, color: COLORS.text, fontSize: 16, fontWeight: "600", paddingVertical: 0 },
   gonder: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.accent },
   oneriler: { marginTop: 4, backgroundColor: COLORS.card, borderRadius: 12, borderWidth: 1, borderColor: COLORS.cardBorder },
   oneri: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 11, paddingHorizontal: SPACING.md },
   oneriYazi: { color: COLORS.text, fontSize: 15, fontWeight: "600", flex: 1 },
   uyari: { marginTop: 6, fontSize: 13, fontWeight: "700", color: COLORS.cta },
   kilitText: { ...TYPE.caption, color: COLORS.danger, textAlign: "center", paddingVertical: SPACING.md, fontWeight: "800" },
+  cevapPasif: { borderColor: COLORS.cardBorder },
+  potSatir: { flexDirection: "row", alignItems: "stretch", gap: SPACING.sm, marginHorizontal: SPACING.lg },
+  potKutu: {
+    flex: 1, borderRadius: 16, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, justifyContent: "center",
+    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.cardBorder,
+  },
+  benimPot: { flex: 1.3, backgroundColor: COLORS.marka, borderColor: COLORS.marka },
+  benimPotEt: { fontSize: 10, fontWeight: "900", letterSpacing: 1, color: COLORS.markaUst, opacity: 0.85 },
+  benimPotSayi: { fontSize: 24, fontWeight: "900", color: COLORS.markaUst, marginTop: 2 },
+  benimPotCarpan: { fontSize: 16, fontWeight: "900", color: COLORS.marka2 },
+  rakipPotEt: { fontSize: 10, fontWeight: "900", letterSpacing: 1.2, color: COLORS.textMuted },
+  rakipPotSayi: { fontSize: 20, fontWeight: "900", color: COLORS.cta, marginTop: 2 },
+  siraKutu: {
+    flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: SPACING.lg, marginTop: SPACING.sm,
+    paddingVertical: 8, paddingHorizontal: SPACING.md, borderRadius: 12, borderWidth: 1.5,
+  },
+  siraBende: { borderColor: COLORS.accent, backgroundColor: "rgba(0,0,0,0.12)" },
+  siraRakipte: { borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  siraYazi: { flex: 1, fontSize: 13, fontWeight: "900", color: COLORS.textMuted },
+  siraSure: { fontSize: 13, fontWeight: "900", color: COLORS.text },
 
   icerik: { paddingHorizontal: SPACING.lg, paddingBottom: 48 },
   not: { ...TYPE.caption, fontSize: 12, textAlign: "center", marginTop: SPACING.md },

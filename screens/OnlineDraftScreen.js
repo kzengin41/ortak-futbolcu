@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TeamBadge from "../components/TeamBadge";
 import EslesmeKarti from "../components/EslesmeKarti";
@@ -257,6 +258,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
                       returnKeyType="send"
                       autoCorrect={false}
                     />
+                    <MikrofonDugmesi onMetin={(m) => setKulupGirdi(m)} onGonder={(m) => kulupGonder(m)} />
                     <SoundPressable style={styles.gonderBtn} onPress={() => kulupGonder()}>
                       <Ionicons name="send" size={18} color={COLORS.accentDark} />
                     </SoundPressable>
@@ -368,6 +370,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
                 returnKeyType="send"
                 autoCorrect={false}
               />
+              <MikrofonDugmesi onMetin={(m) => setCevapGirdi(m)} onGonder={(m) => cevapGonder(m)} />
               <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()}>
                 <Ionicons name="send" size={18} color={COLORS.accentDark} />
               </SoundPressable>

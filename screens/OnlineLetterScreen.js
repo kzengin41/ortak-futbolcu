@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PlayerPhoto from "../components/PlayerPhoto";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
@@ -354,6 +355,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
                 autoCorrect={false}
                 autoFocus
               />
+              <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
               <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()}>
                 <Ionicons name="send" size={18} color={COLORS.accentDark} />
               </SoundPressable>

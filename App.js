@@ -147,12 +147,14 @@ function getAnsiklopediRoute() {
   return Screen;
 }
 
-function OnboardingRoute({ navigation }) {
+function OnboardingRoute({ navigation, route }) {
   return (
     <OnboardingScreen
       onDone={() => {
         AsyncStorage.setItem(ONBOARDING_KEY, "1").catch(() => {});
-        goHome(navigation);
+        // Paket 37: Yardım'dan "tekrar izle" ile açıldıysa geldiği yere dön.
+        if (route?.params?.tekrar && navigation.canGoBack()) navigation.goBack();
+        else goHome(navigation);
       }}
     />
   );
@@ -167,6 +169,7 @@ function HelpRoute({ navigation }) {
     <HelpScreen
       onBack={() => navigation.goBack()}
       onSources={() => navigation.navigate("sources")}
+      onKarsilama={() => navigation.navigate("onboarding", { tekrar: true })}
     />
   );
 }
@@ -285,7 +288,8 @@ function OnlineRoute({ navigation, route }) {
           // Paket 32 — Online Kulüp × Ülke
           room.gameMode === "country" ? "onlineUlke" :
           // 5 Ekim 2026 (.29379) — Online XOX
-          room.gameMode === "xox" ? "onlineXox" :
+          // Paket 37: XOX türleri ("xox-ulke", "xox-basari", "xox-karma") aynı ekran
+          (room.gameMode === "xox" || String(room.gameMode || "").startsWith("xox-")) ? "onlineXox" :
           // Paket 16 — Online 5 Kulüp
           room.gameMode === "five" ? "onlineFive" :
           // 12 Eylül 2026: "letter2" burada hiç yoktu — o modu seçen oyuncu
@@ -295,7 +299,7 @@ function OnlineRoute({ navigation, route }) {
       }}
       // 5 Ekim 2026 (.29682) — rastgele aramada 30 sn sonra "bu arada CPU'ya karşı oyna"
       onCpu={(mod) => {
-        if (mod === "xox") navigation.navigate("xox", { rakip: "cpu" });
+        if (mod === "xox" || String(mod || "").startsWith("xox-")) navigation.navigate("xox", { rakip: "cpu" });
         else if (mod === "five") navigation.navigate("fiveClubsCpu");
         else navigation.navigate(mod === "whoami" ? "whoAmICpu" : mod === "draft" ? "draftCpu" : mod === "country" ? "countryTeamCpu" : (mod === "letter" || mod === "letter2") ? "letterCpu" : "cpu");
       }}
@@ -468,7 +472,13 @@ function MainTabsRoute() {
 function useHardwareBackConfirm(navRef) {
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      const currentName = navRef.current?.getCurrentRoute()?.name;
+      const current = navRef.current?.getCurrentRoute();
+      const currentName = current?.name;
+      // Paket 37: Yardım'dan tekrar açılan karşılamada geri tuşu uygulamadan çıkarmasın.
+      if (currentName === "onboarding" && current?.params?.tekrar && navRef.current?.canGoBack()) {
+        navRef.current.goBack();
+        return true;
+      }
       if (!currentName || APP_EXIT_ROUTES.has(currentName)) {
         return false; // varsayılan davranış (uygulamadan çık)
       }

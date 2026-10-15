@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto from "../components/PlayerPhoto";
@@ -188,6 +189,7 @@ export default function DailyPuzzleScreen({ onExit }) {
                   returnKeyType="send"
                   autoCorrect={false}
                 />
+                <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => tahminEt(m)} />
                 <SoundPressable style={styles.gonderBtn} onPress={() => tahminEt()}>
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>

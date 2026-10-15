@@ -5,6 +5,7 @@ import { useAudioPlayer } from "expo-audio";
 import GameBackground from "../components/GameBackground";
 import PressScale from "../components/ui/PressScale";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import TeamBadge from "../components/TeamBadge";
 import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto from "../components/PlayerPhoto";
@@ -215,6 +216,7 @@ function DenemeTuru({ onBitti }) {
               style={s.girdi}
               accessibilityLabel="Futbolcu adı"
             />
+            <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
             <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
               <Ionicons name="send" size={18} color={COLORS.accentDark} />
             </SoundPressable>

@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, useKlavyeAcik } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import BackButton from "../components/BackButton";
 import { MasaKartlari, TahminTablosu, SimdiBilirsenAfis, AcilisAnimasyonu, sayi } from "../components/KimBuMasa";
 import { prefetchPlayerPhoto } from "../components/PlayerPhoto";
@@ -194,6 +195,7 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
               onSubmitEditing={() => tahminEt()}
               returnKeyType="send"
             />
+            <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => tahminEt(m)} />
             <SoundPressable onPress={() => tahminEt()} style={s.gonder} accessibilityLabel="Tahmini gönder">
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>

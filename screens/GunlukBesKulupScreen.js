@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, Share, Pressable } from "react-nativ
 import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import TeamBadge from "../components/TeamBadge";
 import PlayerPhoto from "../components/PlayerPhoto";
 import BackButton from "../components/BackButton";
@@ -125,6 +126,7 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
               autoCapitalize="words"
               returnKeyType="send"
             />
+            <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
             <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>

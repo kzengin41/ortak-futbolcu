@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TimerBar from "../components/TimerBar";
 import TeamBadge from "../components/TeamBadge";
@@ -253,6 +254,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
                   autoCorrect={false}
                   autoCapitalize="words"
                 />
+                <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
                 <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>

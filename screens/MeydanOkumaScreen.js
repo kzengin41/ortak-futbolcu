@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import TimerBar from "../components/TimerBar";
@@ -278,6 +279,7 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
               blurOnSubmit={false}
               autoFocus
             />
+            <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
             <SoundPressable style={s.gonderBtn} onPress={() => gonder()} accessibilityLabel="Gönder">
               <Ionicons name="send" size={18} color={COLORS.accentDark} />
             </SoundPressable>
