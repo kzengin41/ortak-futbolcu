@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -135,15 +136,18 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
               <Text style={styles.seviyeSayi}>{seviye ? seviye.level : "–"}</Text>
             </View>
             <View>
-              <Text style={styles.seviyeBaslik}>Seviye {seviye ? seviye.level : "–"}</Text>
+              <Text style={styles.seviyeBaslik}>{_t("Seviye")}{" "}{seviye ? seviye.level : "–"}</Text>
               <Text style={styles.seviyeAlt}>
-                {seviye ? `${seviye.acilan} futbolcu · ${seviye.level + 1}. seviyeye ${seviye.kalan}` : " "}
+                {seviye ? _t(
+                  "{0} futbolcu · {1}. seviyeye {2}",
+                  [seviye.acilan, seviye.level + 1, seviye.kalan]
+                ) : " "}
               </Text>
             </View>
           </View>
-          <View style={[styles.seriHap, sd.gosterilen > 0 && !bugunOynandi && styles.seriRiskte]} accessibilityLabel={`${sd.gosterilen} günlük seri. ${sd.mesaj}`}>
+          <View style={[styles.seriHap, sd.gosterilen > 0 && !bugunOynandi && styles.seriRiskte]} accessibilityLabel={_t("{0} günlük seri. {1}", [sd.gosterilen, sd.mesaj])}>
             <Ionicons name="flame" size={16} color={bugunOynandi ? COLORS.cta : COLORS.textMuted} />
-            <Text style={styles.seriYazi}>{sd.gosterilen} gün{sd.durum === "dondurma" ? " ❄️" : ""}</Text>
+            <Text style={styles.seriYazi}>{sd.gosterilen}{" "}{_t("gün")}{sd.durum === "dondurma" ? " ❄️" : ""}</Text>
           </View>
         </View>
 
@@ -158,26 +162,25 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={styles.kahramanUst}>SIRADAKİ MAÇIN HAZIR</Text>
+          <Text style={styles.kahramanUst}>{_t("SIRADAKİ MAÇIN HAZIR")}</Text>
           <View style={styles.takimlar}>
             <GizliTakim ad={sol} arma={armalar[0]} />
             <Text style={styles.carpi}>✕</Text>
             <GizliTakim ad={sag} arma={armalar[1]} />
           </View>
-          <Text style={styles.kahramanAciklama}>İki kulüp, bir ortak futbolcu. Önce sen bul.</Text>
+          <Text style={styles.kahramanAciklama}>{_t("İki kulüp, bir ortak futbolcu. Önce sen bul.")}</Text>
           <PressScale
             style={styles.oyna}
             onPress={() => onPlay(cift)}
             accessibilityRole="button"
-            accessibilityLabel="Oyna"
+            accessibilityLabel={_t("Oyna")}
           >
             <Ionicons name="play" size={24} color={COLORS.markaDugmeYazi} />
-            <Text style={styles.oynaYazi}>OYNA</Text>
+            <Text style={styles.oynaYazi}>{_t("OYNA")}</Text>
           </PressScale>
           <SoundPressable style={styles.ayarSatiri} onPress={onCustomize} hitSlop={8}>
             <Text style={styles.ayarYazi} numberOfLines={1}>
-              {profilEtiketi(profil)} · CPU'ya karşı
-            </Text>
+              {profilEtiketi(profil)}{" "}{_t("· CPU'ya karşı")}</Text>
             <Ionicons name="options-outline" size={15} color={saydam(COLORS.markaUst, 0.75)} />
           </SoundPressable>
         </View>
@@ -190,13 +193,13 @@ export default function AnaSayfaScreen({ onPlay, onCustomize, onAllModes, onDail
         <GunlukOneriSatiri onOyun={onGunlukOyun} style={{ marginTop: SPACING.lg }} />
         {/* 4 Ekim 2026 (Kerem: "anasayfadaki tüm modlar butonu da belli
             olmuyor") — artık günlük satırıyla aynı ağırlıkta bir kart. */}
-        <SoundPressable style={styles.tumModlar} onPress={onAllModes} accessibilityRole="button" accessibilityLabel="Tüm modlar">
+        <SoundPressable style={styles.tumModlar} onPress={onAllModes} accessibilityRole="button" accessibilityLabel={_t("Tüm modlar")}>
           <View style={styles.tumModlarIkon}>
             <Ionicons name="grid" size={20} color={COLORS.text} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.gunlukBaslik}>Tüm modlar</Text>
-            <Text style={styles.gunlukAlt} numberOfLines={1}>Günlük meydan okumalar, Kim Bu, 5 Kulüp, XOX…</Text>
+            <Text style={styles.gunlukBaslik}>{_t("Tüm modlar")}</Text>
+            <Text style={styles.gunlukAlt} numberOfLines={1}>{_t("Günlük meydan okumalar, Kim Bu, 5 Kulüp, XOX…")}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
         </SoundPressable>

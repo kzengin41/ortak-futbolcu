@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -72,7 +73,7 @@ export default function UnlockToast() {
       <View style={{ flex: 1 }}>
         <View style={styles.baslikSatiri}>
           <Ionicons name={aktif.seviye ? "trending-up" : "sparkles"} size={12} color={COLORS.cta} />
-          <Text style={styles.baslik}>{aktif.seviye ? `SEVİYE ${aktif.seviye}! · ANSİKLOPEDİYE EKLENDİ` : "ANSİKLOPEDİNE EKLENDİ"}</Text>
+          <Text style={styles.baslik}>{aktif.seviye ? _t("SEVİYE {0}! · ANSİKLOPEDİYE EKLENDİ", [aktif.seviye]) : _t("ANSİKLOPEDİNE EKLENDİ")}</Text>
         </View>
         <Text style={styles.ad} numberOfLines={1}>{aktif.ad}</Text>
       </View>

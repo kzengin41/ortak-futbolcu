@@ -23,6 +23,8 @@ import { COLORS, temayiUygula } from "./lib/theme";
 // Çökme raporlama (Sentry) en başta başlasın: App.js yüklenirken çıkan hatalar da
 // yakalanır. (App.js de aynı modülü içe aktarıyor; modül bir kez çalışır.)
 import { Sentry } from "./lib/hataRaporu";
+// Paket 39: dil de temayla aynı anda, App.js yüklenmeden ÖNCE belirlenir.
+import { diliAyarla, baslangicDili } from "./lib/dil";
 
 // lib/SettingsContext.js ile AYNI anahtar — tek bir ayar deposu var.
 const AYAR_ANAHTARI = "ortak-futbolcu-sound-settings";
@@ -36,8 +38,16 @@ function Kok() {
     (async () => {
       try {
         const ham = await AsyncStorage.getItem(AYAR_ANAHTARI);
+        let kayitli = null;
+        try { kayitli = ham ? JSON.parse(ham) || {} : null; } catch (e) { kayitli = null; }
+        // Dil: kayıtlıysa o; yoksa mevcut kullanıcı Türkçe, yeni kurulum telefonun dili.
+        // Karar ayarlara yazılır ki sonraki açılışlarda değişmesin.
+        const dilSecimi = diliAyarla(baslangicDili(kayitli));
+        if (!kayitli || !kayitli.dil) {
+          try { await AsyncStorage.setItem(AYAR_ANAHTARI, JSON.stringify({ ...(kayitli || {}), dil: dilSecimi })); } catch (e) {}
+        }
         if (ham) {
-          const ayarlar = JSON.parse(ham) || {};
+          const ayarlar = kayitli || {};
           if (ayarlar.themeId) {
             temayiUygula(ayarlar.themeId, {
               accent: ayarlar.customAccent,

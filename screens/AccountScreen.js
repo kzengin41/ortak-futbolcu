@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -75,7 +76,7 @@ export default function AccountScreen({ onBack }) {
     if (!user) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      setError("Fotoğraf seçebilmek için galeri izni gerekiyor.");
+      setError(_t("Fotoğraf seçebilmek için galeri izni gerekiyor."));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -93,18 +94,18 @@ export default function AccountScreen({ onBack }) {
     const { url, error: uploadErr } = await uploadAvatarPhoto(user.id, result.assets[0].uri);
     setUploadingPhoto(false);
     if (uploadErr) {
-      setError("Fotoğraf yüklenemedi: " + (uploadErr.message || "bilinmeyen hata"));
+      setError(_t("Fotoğraf yüklenemedi: ") + (uploadErr.message || _t("bilinmeyen hata")));
       return;
     }
     setCloudProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev));
-    setInfo("Fotoğraf güncellendi.");
+    setInfo(_t("Fotoğraf güncellendi."));
   }
 
   async function handleSubmit() {
     setError("");
     setInfo("");
     if (!email.trim() || !password) {
-      setError("E-posta ve şifre gerekli.");
+      setError(_t("E-posta ve şifre gerekli."));
       return;
     }
     setBusy(true);
@@ -112,11 +113,11 @@ export default function AccountScreen({ onBack }) {
     const { user: newUser, session, error: authError } = await fn(email, password);
     setBusy(false);
     if (authError) {
-      setError(authError.message || "Bir şeyler ters gitti.");
+      setError(authError.message || _t("Bir şeyler ters gitti."));
       return;
     }
     if (authMode === "signup" && !session) {
-      setInfo("Kayıt oldun! E-postana gelen onay linkine tıklayıp buraya geri dön.");
+      setInfo(_t("Kayıt oldun! E-postana gelen onay linkine tıklayıp buraya geri dön."));
       return;
     }
     if (newUser) {
@@ -126,9 +127,9 @@ export default function AccountScreen({ onBack }) {
       setCloudProfile(cp);
       setNameInput(cp?.display_name || "");
       if (result.winner === "local") {
-        setInfo("Giriş yapıldı — bu cihazdaki ilerleme buluta kaydedildi.");
+        setInfo(_t("Giriş yapıldı — bu cihazdaki ilerleme buluta kaydedildi."));
       } else {
-        setInfo("Giriş yapıldı — buluttaki hesabın gösteriliyor.");
+        setInfo(_t("Giriş yapıldı — buluttaki hesabın gösteriliyor."));
       }
     }
   }
@@ -151,7 +152,7 @@ export default function AccountScreen({ onBack }) {
     if (e) {
       setError(e.message);
     } else {
-      setInfo("İsim güncellendi.");
+      setInfo(_t("İsim güncellendi."));
       setCloudProfile((prev) => (prev ? { ...prev, display_name: nameInput.trim() } : prev));
       // 12 Eylül 2026: isim SADECE Supabase'e yazılıyordu; yerel profile hiç
       // işlenmediği için Profilim ekranı kullanıcıya hâlâ "Gizemli Forvet"
@@ -165,12 +166,14 @@ export default function AccountScreen({ onBack }) {
   // (supabase/functions/delete-account) yapılıyor; burada sadece onay alınıyor.
   function handleDeleteAccount() {
     Alert.alert(
-      "Hesabını sil",
-      "Hesabın, profilin ve bulut yedeğin kalıcı olarak silinecek. Bu işlem geri alınamaz.\n\nBu cihazdaki oyun ilerlemen (seviye, seri, ansiklopedi) silinmez — sadece buluttaki hesabın kaldırılır.",
+      _t("Hesabını sil"),
+      _t(
+        "Hesabın, profilin ve bulut yedeğin kalıcı olarak silinecek. Bu işlem geri alınamaz.\n\nBu cihazdaki oyun ilerlemen (seviye, seri, ansiklopedi) silinmez — sadece buluttaki hesabın kaldırılır."
+      ),
       [
-        { text: "Vazgeç", style: "cancel" },
+        { text: _t("Vazgeç"), style: "cancel" },
         {
-          text: "Hesabımı sil",
+          text: _t("Hesabımı sil"),
           style: "destructive",
           onPress: async () => {
             setBusy(true);
@@ -179,14 +182,14 @@ export default function AccountScreen({ onBack }) {
             const { error: e } = await deleteAccount();
             setBusy(false);
             if (e) {
-              setError("Hesap silinemedi: " + (e.message || "bilinmeyen hata"));
+              setError(_t("Hesap silinemedi: ") + (e.message || _t("bilinmeyen hata")));
               return;
             }
             setUser(null);
             setCloudProfile(null);
             setEmail("");
             setPassword("");
-            setInfo("Hesabın silindi.");
+            setInfo(_t("Hesabın silindi."));
           },
         },
       ]
@@ -213,27 +216,26 @@ export default function AccountScreen({ onBack }) {
       <KlavyeAlani style={{ flex: 1 }}>
         <KlavyeScroll contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <BackButton onPress={onBack} confirm={false} />
-          <Text style={styles.title}>Hesabım</Text>
+          <Text style={styles.title}>{_t("Hesabım")}</Text>
 
           {!user ? (
             <>
-              <Text style={styles.bodyMuted}>
-                Hesabın olmadan da her şey cihazında normal çalışmaya devam eder. Hesap açarsan seviyeni ve
-                ilerlemeni bulutta yedekleyip başka bir cihazda da görebilirsin.
-              </Text>
+              <Text style={styles.bodyMuted}>{_t(
+                "Hesabın olmadan da her şey cihazında normal çalışmaya devam eder. Hesap açarsan seviyeni ve ilerlemeni bulutta yedekleyip başka bir cihazda da görebilirsin."
+              )}</Text>
 
               <View style={styles.tabRow}>
                 <SoundPressable
                   style={[styles.tabBtn, authMode === "signin" && styles.tabBtnActive]}
                   onPress={() => { setAuthMode("signin"); setError(""); setInfo(""); }}
                 >
-                  <Text style={[styles.tabBtnText, authMode === "signin" && styles.tabBtnTextActive]}>Giriş Yap</Text>
+                  <Text style={[styles.tabBtnText, authMode === "signin" && styles.tabBtnTextActive]}>{_t("Giriş Yap")}</Text>
                 </SoundPressable>
                 <SoundPressable
                   style={[styles.tabBtn, authMode === "signup" && styles.tabBtnActive]}
                   onPress={() => { setAuthMode("signup"); setError(""); setInfo(""); }}
                 >
-                  <Text style={[styles.tabBtnText, authMode === "signup" && styles.tabBtnTextActive]}>Kayıt Ol</Text>
+                  <Text style={[styles.tabBtnText, authMode === "signup" && styles.tabBtnTextActive]}>{_t("Kayıt Ol")}</Text>
                 </SoundPressable>
               </View>
 
@@ -241,7 +243,7 @@ export default function AccountScreen({ onBack }) {
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="E-posta"
+                  placeholder={_t("E-posta")}
                   placeholderTextColor={COLORS.textFaint}
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -250,7 +252,7 @@ export default function AccountScreen({ onBack }) {
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Şifre"
+                  placeholder={_t("Şifre")}
                   placeholderTextColor={COLORS.textFaint}
                   secureTextEntry
                   style={[styles.input, { marginTop: SPACING.sm }]}
@@ -261,7 +263,7 @@ export default function AccountScreen({ onBack }) {
                   {busy ? (
                     <ActivityIndicator color={COLORS.accentDark} />
                   ) : (
-                    <Text style={styles.primaryBtnText}>{authMode === "signup" ? "Kayıt Ol" : "Giriş Yap"}</Text>
+                    <Text style={styles.primaryBtnText}>{authMode === "signup" ? _t("Kayıt Ol") : _t("Giriş Yap")}</Text>
                   )}
                 </SoundPressable>
               </View>
@@ -288,11 +290,10 @@ export default function AccountScreen({ onBack }) {
                   </View>
                 </SoundPressable>
                 <Text style={styles.emailText}>{user.email}</Text>
-                {localXp && <Text style={styles.levelText}>Seviye {localXp.level}</Text>}
+                {localXp && <Text style={styles.levelText}>{_t("Seviye")}{" "}{localXp.level}</Text>}
               </View>
 
-              <Text style={styles.sectionLabel}>
-                Avatar Rengi <Text style={{ color: COLORS.textMuted, textTransform: "none", letterSpacing: 0 }}>(fotoğraf yoksa kullanılır)</Text>
+              <Text style={styles.sectionLabel}>{_t("Avatar Rengi")}{" "}<Text style={{ color: COLORS.textMuted, textTransform: "none", letterSpacing: 0 }}>{_t("(fotoğraf yoksa kullanılır)")}</Text>
               </Text>
               <View style={styles.colorRow}>
                 {AVATAR_COLORS.map((hex) => (
@@ -308,12 +309,12 @@ export default function AccountScreen({ onBack }) {
                 ))}
               </View>
 
-              <Text style={styles.sectionLabel}>Görünen İsim</Text>
+              <Text style={styles.sectionLabel}>{_t("Görünen İsim")}</Text>
               <View style={styles.nameRow}>
                 <TextInput
                   value={nameInput}
                   onChangeText={setNameInput}
-                  placeholder="İsim"
+                  placeholder={_t("İsim")}
                   placeholderTextColor={COLORS.textFaint}
                   style={[styles.input, { flex: 1 }]}
                 />
@@ -326,11 +327,11 @@ export default function AccountScreen({ onBack }) {
 
               <SoundPressable style={styles.signOutBtn} onPress={handleSignOut} disabled={busy}>
                 <Ionicons name="log-out-outline" size={18} color={COLORS.danger} />
-                <Text style={styles.signOutText}>Çıkış Yap</Text>
+                <Text style={styles.signOutText}>{_t("Çıkış Yap")}</Text>
               </SoundPressable>
 
               <SoundPressable style={styles.deleteBtn} onPress={handleDeleteAccount} disabled={busy}>
-                <Text style={styles.deleteText}>Hesabımı kalıcı olarak sil</Text>
+                <Text style={styles.deleteText}>{_t("Hesabımı kalıcı olarak sil")}</Text>
               </SoundPressable>
             </>
           )}

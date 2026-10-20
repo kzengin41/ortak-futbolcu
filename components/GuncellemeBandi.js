@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,12 +19,12 @@ export default function GuncellemeBandi() {
     <View style={[s.kap, { bottom: 72 + alt }]} pointerEvents="box-none">
       <View style={s.bant}>
         <Ionicons name="cloud-download" size={18} color={COLORS.accent} />
-        <Text style={s.yazi}>Yeni sürüm hazır</Text>
-        <SoundPressable onPress={() => setKapali(true)} style={s.sonra} accessibilityLabel="Sonra">
-          <Text style={s.sonraYazi}>Sonra</Text>
+        <Text style={s.yazi}>{_t("Yeni sürüm hazır")}</Text>
+        <SoundPressable onPress={() => setKapali(true)} style={s.sonra} accessibilityLabel={_t("Sonra")}>
+          <Text style={s.sonraYazi}>{_t("Sonra")}</Text>
         </SoundPressable>
-        <SoundPressable onPress={yenidenBaslat} style={s.yenile} accessibilityLabel="Yenile">
-          <Text style={s.yenileYazi}>Yenile</Text>
+        <SoundPressable onPress={yenidenBaslat} style={s.yenile} accessibilityLabel={_t("Yenile")}>
+          <Text style={s.yenileYazi}>{_t("Yenile")}</Text>
         </SoundPressable>
       </View>
     </View>

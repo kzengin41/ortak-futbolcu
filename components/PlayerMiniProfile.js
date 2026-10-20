@@ -1,3 +1,4 @@
+import { _t, ingilizceMi } from "../lib/dil";
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Modal, Pressable, ScrollView, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -83,7 +84,9 @@ function buildInfo(name) {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+const AYLAR = ingilizceMi()
+  ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+  : ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
 function tarihYaz(t) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(t || ""));
   if (!m) return String(t || "").slice(0, 4);
@@ -120,7 +123,7 @@ function BasariRozetleri({ kodlar, sayilar }) {
   if (!kodlar || !kodlar.length) return null;
   return (
     <>
-      <Text style={styles.sectionTitle}>Başarılar</Text>
+      <Text style={styles.sectionTitle}>{_t("Başarılar")}</Text>
       <View style={styles.basariSatir}>
         {kodlar.map((k) => {
           const b = BASARILAR[k];
@@ -143,10 +146,10 @@ function BasariRozetleri({ kodlar, sayilar }) {
 function DurumKarti({ pr, active, lastYear, olumYili, age }) {
   if (!pr) return null;
   const satirlar = [];
-  if (pr.sb && active !== false && !olumYili) satirlar.push({ ikon: "person-outline", etiket: "DURUM", metin: "Şu an kulübü yok" });
-  if (pr.g && active) satirlar.push({ ikon: "shirt", etiket: pr.gk ? "ŞU ANKİ KULÜBÜ (KİRALIK)" : "ŞU ANKİ KULÜBÜ", kulup: pr.g });
-  else if (pr.s) satirlar.push({ ikon: "flag-outline", etiket: pr.sy || lastYear ? `SON KULÜBÜ (${pr.sy || lastYear})` : "SON KULÜBÜ", kulup: pr.s });
-  if (olumYili) satirlar.push({ ikon: "rose-outline", etiket: "VEFAT", metin: `${tarihYaz(pr.o)}${age ? ` · ${age} yaşında` : ""}` });
+  if (pr.sb && active !== false && !olumYili) satirlar.push({ ikon: "person-outline", etiket: _t("DURUM"), metin: _t("Şu an kulübü yok") });
+  if (pr.g && active) satirlar.push({ ikon: "shirt", etiket: pr.gk ? _t("ŞU ANKİ KULÜBÜ (KİRALIK)") : _t("ŞU ANKİ KULÜBÜ"), kulup: pr.g });
+  else if (pr.s) satirlar.push({ ikon: "flag-outline", etiket: pr.sy || lastYear ? _t("SON KULÜBÜ ({0})", [pr.sy || lastYear]) : _t("SON KULÜBÜ"), kulup: pr.s });
+  if (olumYili) satirlar.push({ ikon: "rose-outline", etiket: _t("VEFAT"), metin: `${tarihYaz(pr.o)}${age ? _t(" · {0} yaşında", [age]) : ""}` });
   if (!satirlar.length) return null;
   return (
     <View style={styles.durum}>
@@ -188,14 +191,14 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
   const mevki = positionTr(info?.position);
   if (mevki) chips.push({ icon: "football", text: mevki });
   if (dogumYili) chips.push({ icon: "calendar", text: olumYili ? `${dogumYili} – ${olumYili}` : `${dogumYili}${age ? ` (${age})` : ""}` });
-  if (pr?.b) chips.push({ icon: "resize", text: `${pr.b} cm` });
-  if (pr?.a) chips.push({ icon: "footsteps", text: pr.a === "İki ayak" ? "İki ayak" : `${pr.a} ayak` });
+  if (pr?.b) chips.push({ icon: "resize", text: _t("{0} cm", [pr.b]) });
+  if (pr?.a) chips.push({ icon: "footsteps", text: pr.a === "İki ayak" ? _t("İki ayak") : _t("{0} ayak", [pr.a]) });
   if (info?.national && info.national.length) chips.push({ icon: "flag", text: info.national.map(countryTr).join(", ") });
   if (info?.lastYear && !olumYili) {
     // sb: Wikipedia'da güncel kulüp alanı boş ya da "free agent" (serbest kalmış
     // ya da yeni bırakmış olabilir) — ikisi için de doğru olan ifade "kulüpsüz".
-    if (active && pr?.sb) chips.push({ icon: "person-outline", text: "Kulüpsüz" });
-    else chips.push({ icon: active ? "flash" : "time", text: active ? "Aktif" : `Son sezon ${info.lastYear}` });
+    if (active && pr?.sb) chips.push({ icon: "person-outline", text: _t("Kulüpsüz") });
+    else chips.push({ icon: active ? "flash" : "time", text: active ? _t("Aktif") : _t("Son sezon {0}", [info.lastYear]) });
   }
 
   return (
@@ -208,9 +211,9 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
           View, kaydırma alanının yüksekliği PİKSEL olarak (ekran − çubuklar)
           hesaplanıyor. */}
       <View style={[styles.backdrop, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Kapat" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={_t("Kapat")} />
         <View style={[styles.card, { maxHeight: kartMax }]}>
-          <Pressable onPress={onClose} hitSlop={16} style={styles.closeBtn} accessibilityLabel="Profili kapat">
+          <Pressable onPress={onClose} hitSlop={16} style={styles.closeBtn} accessibilityLabel={_t("Profili kapat")}>
             <Ionicons name="close" size={20} color={COLORS.textMuted} />
           </Pressable>
 
@@ -237,7 +240,7 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
             {info?.basarilar?.length ? <View style={{ height: 14 }} /> : null}
             {info?.clubs?.length > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Kulüpler ({info.clubs.length})</Text>
+                <Text style={styles.sectionTitle}>{_t("Kulüpler (")}{info.clubs.length})</Text>
                 {info.clubs.map((c, i) => {
                   const d = kariyer ? kariyer[i] : null;
                   return (
@@ -246,7 +249,7 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.clubName} numberOfLines={1}>{c}</Text>
                         {d && d.mac != null ? (
-                          <Text style={styles.clubStat}>{d.mac} maç{d.gol != null ? ` · ${d.gol} gol` : ""}</Text>
+                          <Text style={styles.clubStat}>{d.mac}{" "}{_t("maç")}{d.gol != null ? _t(" · {0} gol", [d.gol]) : ""}</Text>
                         ) : null}
                       </View>
                       {d && d.yillar ? <Text style={styles.clubYears} numberOfLines={2}>{d.yillar}</Text> : null}
@@ -258,7 +261,7 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
 
             {pr?.ku?.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Kupalar</Text>
+                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>{_t("Kupalar")}</Text>
                 {pr.ku.map(([grup, liste], gi) => (
                   <View key={gi} style={styles.kupaGrup}>
                     <Text style={styles.kupaGrupAd}>{grupAdi(grup)}</Text>
@@ -278,7 +281,7 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
 
             {pr?.od?.length > 0 && !(pr?.ku || []).some(([g]) => g === "Bireysel") && (
               <>
-                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Ödüller</Text>
+                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>{_t("Ödüller")}</Text>
                 {pr.od.map(([odul, yil], i) => (
                   <View key={i} style={styles.achRow}>
                     <Ionicons name="medal" size={13} color={COLORS.cta} />
@@ -290,7 +293,7 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
 
             {info?.achievements?.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Diğer ödüller</Text>
+                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>{_t("Diğer ödüller")}</Text>
                 {info.achievements.map((a, i) => (
                   <View key={i} style={styles.achRow}>
                     <Ionicons name="trophy" size={13} color={COLORS.cta} />
@@ -301,7 +304,7 @@ export default function PlayerMiniProfile({ name, visible, onClose }) {
             )}
 
             {!info?.clubs?.length && (
-              <Text style={styles.empty}>Bu futbolcu için ayrıntılı bilgi bulunamadı.</Text>
+              <Text style={styles.empty}>{_t("Bu futbolcu için ayrıntılı bilgi bulunamadı.")}</Text>
             )}
           </ScrollView>
         </View>

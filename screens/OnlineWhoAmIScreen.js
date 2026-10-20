@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -131,14 +132,27 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     if (o.tip === "yanlis") {
       if (ben) playWrong();
       setUyari(ben
-        ? `${o.ad} değil — potundan ${sayi(YANLIS_CEZA)} gitti${o.bedava ? ` (ortak kulüp: ${o.ortak.join(", ")} — kart bedava açıldı)` : ""}. Sıra rakipte.`
-        : `Rakip "${o.ad}" dedi, olmadı${o.bedava ? ` (ortak kulüp kartı bedava açıldı)` : ""}. Sıra sende!`);
-    } else if (o.tip === "bilinmeyen" && ben) setUyari(`"${o.metin}" diye bir futbolcu bulamadım — hamle sayılmadı`);
-    else if (o.tip === "tekrar" && ben) setUyari(`${o.ad} zaten denendi — hamle sayılmadı`);
-    else if (o.tip === "kart") setUyari(ben ? `Kartı aldın (−${sayi(o.bedel)}). Sıra rakipte.` : `Rakip bir kart çevirdi (kendi potundan ${sayi(o.bedel)}). Sıra sende!`);
-    else if (o.tip === "sureKart") setUyari(ben ? `Süren doldu — en ucuz kart senin potundan açıldı (−${sayi(o.bedel)}).` : "Rakibin süresi doldu, onun potundan bir kart açıldı. Sıra sende!");
-    else if (o.tip === "sure") setUyari(ben ? "Süren doldu — sıra rakipte." : "Rakibin süresi doldu. Sıra sende!");
-    else if (o.tip === "pes") setUyari(ben ? "Bu turdan çekildin — rakip tek başına devam ediyor" : "Rakip pes etti — sıra hep sende, potun eriyene kadar dene");
+        ? _t("{0} değil — potundan {1} gitti{2}. Sıra rakipte.", [
+        o.ad,
+        sayi(YANLIS_CEZA),
+        o.bedava ? _t(" (ortak kulüp: {0} — kart bedava açıldı)", [o.ortak.join(", ")]) : ""
+      ])
+        : _t(
+        "Rakip \"{0}\" dedi, olmadı{1}. Sıra sende!",
+        [o.ad, o.bedava ? _t(" (ortak kulüp kartı bedava açıldı)") : ""]
+      ));
+    } else if (o.tip === "bilinmeyen" && ben) setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — hamle sayılmadı", [o.metin]));
+    else if (o.tip === "tekrar" && ben) setUyari(_t("{0} zaten denendi — hamle sayılmadı", [o.ad]));
+    else if (o.tip === "kart") setUyari(ben ? _t("Kartı aldın (−{0}). Sıra rakipte.", [sayi(o.bedel)]) : _t(
+      "Rakip bir kart çevirdi (kendi potundan {0}). Sıra sende!",
+      [sayi(o.bedel)]
+    ));
+    else if (o.tip === "sureKart") setUyari(ben ? _t(
+      "Süren doldu — en ucuz kart senin potundan açıldı (−{0}).",
+      [sayi(o.bedel)]
+    ) : _t("Rakibin süresi doldu, onun potundan bir kart açıldı. Sıra sende!"));
+    else if (o.tip === "sure") setUyari(ben ? _t("Süren doldu — sıra rakipte.") : _t("Rakibin süresi doldu. Sıra sende!"));
+    else if (o.tip === "pes") setUyari(ben ? _t("Bu turdan çekildin — rakip tek başına devam ediyor") : _t("Rakip pes etti — sıra hep sende, potun eriyene kadar dene"));
   }, [durum?.sonOlay, durum?.turNo, benKimim, playWrong]);
 
   // --- Tur / maç sonu: ses, koleksiyon, istatistik --------------------------
@@ -164,15 +178,18 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   function tahminGonder(metin) {
     const yazi = String(metin ?? girdi).trim();
     if (!yazi || faz !== "oynaniyor") return;
-    if (!siraBende) { setUyari(benPas ? "Bu turdan çekildin" : "Sıra rakipte — sıran gelince gönder"); return; }
+    if (!siraBende) { setUyari(benPas ? _t("Bu turdan çekildin") : _t("Sıra rakipte — sıran gelince gönder")); return; }
     setGirdi("");
     gonder({ tip: "tahmin", metin: yazi });
   }
   function kartCevir(k) {
     if (faz !== "oynaniyor") return;
-    if (!siraBende) { setUyari(benPas ? "Bu turdan çekildin" : "Sıra rakipte — sıran gelince kart çevirebilirsin"); return; }
+    if (!siraBende) { setUyari(benPas ? _t("Bu turdan çekildin") : _t("Sıra rakipte — sıran gelince kart çevirebilirsin")); return; }
     if (!alabilirMi(durum, benKimim, k)) {
-      setUyari(`Potun yetmiyor: bu kart ${sayi(k.bedel)}, potun ${sayi(ASGARI_PUAN)}'in altına inemez.`);
+      setUyari(_t(
+        "Potun yetmiyor: bu kart {0}, potun {1}'in altına inemez.",
+        [sayi(k.bedel), sayi(ASGARI_PUAN)]
+      ));
       return;
     }
     gonder({ tip: "kartCevir", id: k.id });
@@ -181,16 +198,16 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   // ---------------------------------------------------------------- bekleme
   if (!durum || faz === "hazirlik" || faz === "hata") {
     const yazi = !durum
-      ? (senkronBekliyor ? "Odaya bağlanılıyor..." : "Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene.")
-      : faz === "hata" ? "Gizli futbolcu seçilemedi. Odadan çıkıp tekrar dene."
-      : rakipVar ? "Masa kuruluyor..." : "Rakip bekleniyor...";
+      ? (senkronBekliyor ? _t("Odaya bağlanılıyor...") : _t("Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene."))
+      : faz === "hata" ? _t("Gizli futbolcu seçilemedi. Odadan çıkıp tekrar dene.")
+      : rakipVar ? _t("Masa kuruluyor...") : _t("Rakip bekleniyor...");
     return (
       <GameBackground style={styles.merkez}>
         {(senkronBekliyor || faz === "hazirlik") && <ActivityIndicator color={VURGU.main} />}
         <Text style={styles.bekleme}>{yazi}</Text>
         {faz === "hazirlik" && room.code ? <Text style={styles.odaKodu}>{room.code}</Text> : null}
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -200,22 +217,22 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
   const rakipTur = benKimim === 1 ? durum.turlar.p2 : durum.turlar.p1;
   const benimPuan = benKimim === 1 ? durum.skorlar.p1 : durum.skorlar.p2;
   const rakipPuan = benKimim === 1 ? durum.skorlar.p2 : durum.skorlar.p1;
-  const kimEtiketi = (t) => (t.kimden === benKimim ? "SEN" : "RAKİP");
+  const kimEtiketi = (t) => (t.kimden === benKimim ? _t("SEN") : _t("RAKİP"));
 
   const skorSeridi = (
     <View style={styles.ustSerit}>
       <View style={styles.skorKutu}>
-        <Text style={styles.skorEtiket}>SEN</Text>
+        <Text style={styles.skorEtiket}>{_t("SEN")}</Text>
         <Text style={[styles.skorTur, { color: COLORS.accent }]}>{benimTur}</Text>
         <Text style={styles.skorPuan}>{sayi(benimPuan)} p</Text>
       </View>
       <View style={styles.turKutu}>
-        <Text style={styles.turEtiket}>TUR {durum.turNo}</Text>
-        <Text style={styles.hedefEtiket}>{HEDEF_TUR} turu alan kazanır</Text>
-        {!rakipVar && faz !== "macSonu" ? <Text style={styles.kopuk}>rakip bağlı değil</Text> : null}
+        <Text style={styles.turEtiket}>{_t("TUR")}{" "}{durum.turNo}</Text>
+        <Text style={styles.hedefEtiket}>{HEDEF_TUR}{" "}{_t("turu alan kazanır")}</Text>
+        {!rakipVar && faz !== "macSonu" ? <Text style={styles.kopuk}>{_t("rakip bağlı değil")}</Text> : null}
       </View>
       <View style={styles.skorKutu}>
-        <Text style={styles.skorEtiket}>RAKİP</Text>
+        <Text style={styles.skorEtiket}>{_t("RAKİP")}</Text>
         <Text style={[styles.skorTur, { color: COLORS.cta }]}>{rakipTur}</Text>
         <Text style={styles.skorPuan}>{sayi(rakipPuan)} p</Text>
       </View>
@@ -236,7 +253,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
             acik={durum.acik}
             ad={durum.gizli}
             dogru={kazandim}
-            baslik={durum.turKazanani === 0 ? "KİMSE BİLEMEDİ" : kazandim ? `TUR SENİN · +${sayi(durum.turPuani)}` : `RAKİP BİLDİ · +${sayi(durum.turPuani)}`}
+            baslik={durum.turKazanani === 0 ? _t("KİMSE BİLEMEDİ") : kazandim ? _t("TUR SENİN · +{0}", [sayi(durum.turPuani)]) : _t("RAKİP BİLDİ · +{0}", [sayi(durum.turPuani)])}
             baslikRengi={durum.turKazanani === 0 ? COLORS.text : kazandim ? COLORS.accent : COLORS.cta}
             altSatir={[durum.masa.kimlik.find((k) => k.id === "mevki")?.deger, durum.masa.kimlik.find((k) => k.id === "bayrak")?.deger].filter(Boolean).join(" · ")}
             kartlariGoster={faz !== "macSonu"}
@@ -244,7 +261,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
           {faz === "macSonu" ? (
             <OnlineMacSonu
               oda={room}
-              modAdi="Online — Kim Bu Futbolcu?"
+              modAdi={_t("Online — Kim Bu Futbolcu?")}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}
@@ -252,12 +269,12 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
               onExit={onExit}
               skorSen={benimTur}
               skorRakip={rakipTur}
-              skorEtiketi="tur"
+              skorEtiketi={_t("tur")}
               kazanan={benimTur > rakipTur ? "sen" : benimTur < rakipTur ? "rakip" : "berabere"}
-              ekSatir={<Text style={styles.bekleme}>Puan: sen {sayi(benimPuan)} · rakip {sayi(rakipPuan)}</Text>}
+              ekSatir={<Text style={styles.bekleme}>{_t("Puan: sen")}{" "}{sayi(benimPuan)}{" "}{_t("· rakip")}{" "}{sayi(rakipPuan)}</Text>}
             />
           ) : (
-            <Text style={styles.bekleme}>Sıradaki futbolcu birazdan...</Text>
+            <Text style={styles.bekleme}>{_t("Sıradaki futbolcu birazdan...")}</Text>
           )}
         </ScrollView>
       </GameBackground>
@@ -276,23 +293,23 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
       <KlavyeAlani style={{ flex: 1 }}>
         <View style={styles.potSatir}>
           <View style={[styles.potKutu, styles.benimPot]}>
-            <Text style={styles.benimPotEt}>SENİN POTUN</Text>
+            <Text style={styles.benimPotEt}>{_t("SENİN POTUN")}</Text>
             <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
               <Text style={styles.benimPotSayi}>{sayi(benimPot)}</Text>
               {carp > 1 ? <Text style={styles.benimPotCarpan}>×{String(carp).replace(".", ",")}</Text> : null}
             </View>
           </View>
           <View style={styles.potKutu}>
-            <Text style={styles.rakipPotEt}>RAKİBİN POTU</Text>
-            <Text style={styles.rakipPotSayi}>{rakipPes ? "pes etti" : sayi(rakipPot)}</Text>
+            <Text style={styles.rakipPotEt}>{_t("RAKİBİN POTU")}</Text>
+            <Text style={styles.rakipPotSayi}>{rakipPes ? _t("pes etti") : sayi(rakipPot)}</Text>
           </View>
         </View>
         <View style={[styles.siraKutu, siraBende ? styles.siraBende : styles.siraRakipte]}>
           <Ionicons name={siraBende ? "flash" : "hourglass-outline"} size={16} color={siraBende ? COLORS.accent : COLORS.textMuted} />
           <Text style={[styles.siraYazi, siraBende && { color: COLORS.accent }]}>
-            {benPas ? "Bu turdan çekildin — izliyorsun" : siraBende ? "SIRA SENDE: bir kart çevir ya da tahmin et" : "Sıra rakipte — hamlesini bekle"}
+            {benPas ? _t("Bu turdan çekildin — izliyorsun") : siraBende ? _t("SIRA SENDE: bir kart çevir ya da tahmin et") : _t("Sıra rakipte — hamlesini bekle")}
           </Text>
-          <Text style={[styles.siraSure, kalan <= 5 && { color: COLORS.danger }]}>{kalan} sn</Text>
+          <Text style={[styles.siraSure, kalan <= 5 && { color: COLORS.danger }]}>{kalan}{" "}{_t("sn")}</Text>
         </View>
         <View style={{ marginHorizontal: SPACING.lg }}><TimerBar current={kalan} total={HAMLE_SURESI_SN} /></View>
         <View style={styles.cevap}>
@@ -303,7 +320,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
                 style={styles.cevapGirdi}
                 autoCorrect={false}
                 autoCapitalize="words"
-                placeholder={siraBende ? "Bu futbolcu kim?" : "Düşün… sıran gelince gönder"}
+                placeholder={siraBende ? _t("Bu futbolcu kim?") : _t("Düşün… sıran gelince gönder")}
                 placeholderTextColor={COLORS.textMuted}
                 value={girdi}
                 onChangeText={(t) => { setGirdi(t); if (uyari) setUyari(null); }}
@@ -311,7 +328,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
                 returnKeyType="send"
               />
               <MikrofonDugmesi boyut={40} onMetin={(m) => setGirdi(m)} onGonder={(m) => tahminGonder(m)} />
-              <SoundPressable onPress={() => tahminGonder()} style={[styles.gonder, !siraBende && { opacity: 0.45 }]} accessibilityLabel="Tahmini gönder">
+              <SoundPressable onPress={() => tahminGonder()} style={[styles.gonder, !siraBende && { opacity: 0.45 }]} accessibilityLabel={_t("Tahmini gönder")}>
                 <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
@@ -330,7 +347,7 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.icerik} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <TahminTablosu tahminler={durum.tahminler} baslik="TAHMİNLER" etiket={kimEtiketi} />
+          <TahminTablosu tahminler={durum.tahminler} baslik={_t("TAHMİNLER")} etiket={kimEtiketi} />
           <MasaKartlari
             masa={durum.masa}
             acik={durum.acik}
@@ -339,17 +356,17 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
             turAnahtari={`${durum.turNo}:`}
             fotoAd={durum.gizli}
           />
-          <Text style={styles.not}>
-            Herkesin potu kendine: çevirdiğin kartın bedeli SENİN potundan düşer ama kart ikinize de açılır. Yanlış tahmin −{sayi(YANLIS_CEZA)}. Her hamle {HAMLE_SURESI_SN} sn.
-          </Text>
+          <Text style={styles.not}>{_t(
+              "Herkesin potu kendine: çevirdiğin kartın bedeli SENİN potundan düşer ama kart ikinize de açılır. Yanlış tahmin −"
+            )}{sayi(YANLIS_CEZA)}{_t(". Her hamle")}{" "}{HAMLE_SURESI_SN}{" "}{_t("sn.")}</Text>
           {!benPas ? (
             <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })}>
               <Ionicons name="flag-outline" size={16} color={COLORS.danger} />
-              <Text style={styles.pasYazi}>Bu turdan çekil</Text>
+              <Text style={styles.pasYazi}>{_t("Bu turdan çekil")}</Text>
             </SoundPressable>
           ) : null}
           <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-            <Text style={styles.ikincilBtnText}>Odadan çık</Text>
+            <Text style={styles.ikincilBtnText}>{_t("Odadan çık")}</Text>
           </SoundPressable>
         </ScrollView>
       </KlavyeAlani>

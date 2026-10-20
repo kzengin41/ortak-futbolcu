@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -85,7 +86,10 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
   function kartCevir(k) {
     if (faz !== "oyun" || acik[k.id]) return;
     if (!acilabilirMi(masa, acik, k)) {
-      setUyari(`Puanın yetmiyor: bu kart ${sayi(k.bedel)}, puanın ${sayi(ASGARI_PUAN)}'in altına inemez.`);
+      setUyari(_t(
+        "Puanın yetmiyor: bu kart {0}, puanın {1}'in altına inemez.",
+        [sayi(k.bedel), sayi(ASGARI_PUAN)]
+      ));
       return;
     }
     setUyari(null);
@@ -123,10 +127,10 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
       return;
     }
     const o = oyuncuBul(yazi);
-    if (!o) { setUyari(`"${yazi}" diye bir futbolcu bulamadım — can gitmedi`); return; }
-    if (tahminler.some((t) => t.ad === o.name)) { setUyari(`${o.name} zaten denendi`); return; }
+    if (!o) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — can gitmedi", [yazi])); return; }
+    if (tahminler.some((t) => t.ad === o.name)) { setUyari(_t("{0} zaten denendi", [o.name])); return; }
     const satir = karsilastirAd(o.name, gizli);
-    if (!satir) { setUyari(`"${yazi}" diye bir futbolcu bulamadım — can gitmedi`); return; }
+    if (!satir) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — can gitmedi", [yazi])); return; }
     const bedava = ortakKartlariAc(masa, acik, satir.ortakKulupler);
     setTahminler((l) => [satir, ...l]);
     if (bedava.length) setAcik((a) => { const n = { ...a }; for (const id of bedava) n[id] = "bedava"; return n; });
@@ -136,11 +140,11 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
     recordRound("kadroAvi", false);
     if (kalan <= 0) {
       setAtlanan((a) => [...a, gizli]);
-      setSonuc({ dogru: false, mesaj: `${o.name} değildi — canın bitti` });
+      setSonuc({ dogru: false, mesaj: _t("{0} değildi — canın bitti", [o.name]) });
       setFaz("bitti");
       return;
     }
-    setUyari(bedava.length ? `Ortak kulüp: ${satir.ortakKulupler.join(", ")} — kartı bedava açıldı` : `${o.name} değil — bir can gitti`);
+    setUyari(bedava.length ? _t("Ortak kulüp: {0} — kartı bedava açıldı", [satir.ortakKulupler.join(", ")]) : _t("{0} değil — bir can gitti", [o.name]));
   }
 
   const cikis = onExitSilent || onExit;
@@ -149,25 +153,27 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
       <GameBackground style={s.merkez}>
         <BackButton onPress={cikis} confirm={false} />
         <Ionicons name="ribbon" size={36} color={COLORS.accent} style={{ alignSelf: "center", marginTop: SPACING.xl }} />
-        <Text style={s.baslik}>Avlanacak oyuncu kalmadı</Text>
-        <Text style={s.aciklama}>Kadrolardaki bütün oyuncuları bulmuşsun. Ansiklopedi → Takımlar'dan kadrolarına bakabilirsin.</Text>
+        <Text style={s.baslik}>{_t("Avlanacak oyuncu kalmadı")}</Text>
+        <Text style={s.aciklama}>{_t(
+          "Kadrolardaki bütün oyuncuları bulmuşsun. Ansiklopedi → Takımlar'dan kadrolarına bakabilirsin."
+        )}</Text>
       </GameBackground>
     );
   }
   if (!kadro || !bulunan || faz === "yukleniyor") {
-    return <GameBackground style={s.merkez}><Text style={s.aciklama}>Kadro hazırlanıyor...</Text></GameBackground>;
+    return <GameBackground style={s.merkez}><Text style={s.aciklama}>{_t("Kadro hazırlanıyor...")}</Text></GameBackground>;
   }
 
   const t = tamamlanma(kadro, bulunan);
   const kalanHedef = hedefListesi(kadro, bulunan, oyuncuVarMi).filter((o) => !atlanan.includes(o.a)).length;
-  const altBaslik = kadro.tip === "sezon" ? `${kadro.sezon.sezon} sezonu` : `${kadro.mac.tur}${kadro.mac.yil ? ` ${kadro.mac.yil}` : ""}`;
+  const altBaslik = kadro.tip === "sezon" ? _t("{0} sezonu", [kadro.sezon.sezon]) : `${_t(kadro.mac.tur)}${kadro.mac.yil ? ` ${kadro.mac.yil}` : ""}`;
   const ust = (
     <View style={s.ust}>
       <BackButton onPress={cikis} confirm={false} style={{ marginTop: 0, marginBottom: 0 }} />
       {kadro.takimTip === "ulke" ? <Text style={{ fontSize: 26 }}>{flagForCountry(kadro.takim)}</Text> : <TeamBadge name={kadro.takim} size={34} />}
       <View style={{ flex: 1 }}>
-        <Text style={s.ustBaslik} numberOfLines={1}>KADRO AVI · {kadro.takimTip === "ulke" ? countryTr(kadro.takim) || kadro.takim : kadro.takim}</Text>
-        <Text style={s.ustAlt} numberOfLines={1}>{`${altBaslik} · ${t.bulunan}/${t.toplam} bulundu`}</Text>
+        <Text style={s.ustBaslik} numberOfLines={1}>{_t("KADRO AVI ·")}{" "}{kadro.takimTip === "ulke" ? countryTr(kadro.takim) || kadro.takim : kadro.takim}</Text>
+        <Text style={s.ustAlt} numberOfLines={1}>{_t("{0} · {1}/{2} bulundu", [altBaslik, t.bulunan, t.toplam])}</Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>
         <View style={{ flexDirection: "row", gap: 2 }}>
@@ -194,35 +200,35 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
               acik={acik}
               ad={gizli}
               dogru={sonuc.dogru}
-              baslik={sonuc.dogru ? `BULDUN! · +${sayi(sonuc.puan)}` : "BU SEFER OLMADI"}
+              baslik={sonuc.dogru ? _t("BULDUN! · +{0}", [sayi(sonuc.puan)]) : _t("BU SEFER OLMADI")}
               eklendiYazisi={`KADROYA EKLENDİ · ${t.bulunan}/${t.toplam}`}
               altSatir={sonuc.dogru ? null : sonuc.mesaj}
             />
           ) : null}
-          {t.tamam ? <Text style={s.tamam}>🏅 KADRO TAMAMLANDI</Text> : null}
+          {t.tamam ? <Text style={s.tamam}>{_t("🏅 KADRO TAMAMLANDI")}</Text> : null}
           {bitti ? (
             <View style={s.ozet}>
-              <Text style={s.ozetBaslik}>{can <= 0 ? "AV BİTTİ" : "BU KADRODA AVLANACAK KİMSE KALMADI"}</Text>
-              <Text style={s.ozetYazi}>{avlanan} oyuncu buldun · {sayi(puan)} puan</Text>
+              <Text style={s.ozetBaslik}>{can <= 0 ? _t("AV BİTTİ") : _t("BU KADRODA AVLANACAK KİMSE KALMADI")}</Text>
+              <Text style={s.ozetYazi}>{avlanan}{" "}{_t("oyuncu buldun ·")}{" "}{sayi(puan)}{" "}{_t("puan")}</Text>
             </View>
           ) : null}
           {!bitti && kalanHedef > 0 ? (
             <SoundPressable style={s.anaDugme} onPress={() => turBaslat()}>
-              <Text style={s.anaDugmeYazi}>SIRADAKİ GİZLİ OYUNCU</Text>
+              <Text style={s.anaDugmeYazi}>{_t("SIRADAKİ GİZLİ OYUNCU")}</Text>
             </SoundPressable>
           ) : null}
           {bitti || kalanHedef === 0 ? (
             <SoundPressable style={s.anaDugme} onPress={() => { setCan(AZAMI_CAN); setPuan(0); setAvlanan(0); setAtlanan([]); setKadroId(null); setFaz("yukleniyor"); bulunanKumesi().then((b) => { setBulunan(b); const id = rastgeleKadro(b, oyuncuVarMi); if (!id) setFaz("bos"); else setKadroId(id); }); }}>
-              <Text style={s.anaDugmeYazi}>BAŞKA KADRO</Text>
+              <Text style={s.anaDugmeYazi}>{_t("BAŞKA KADRO")}</Text>
             </SoundPressable>
           ) : null}
           {onModaGit ? (
             <SoundPressable style={s.ikinciDugme} onPress={() => onModaGit("kadro", { id: kadro.id })}>
-              <Text style={s.ikinciDugmeYazi}>Kadroya bak</Text>
+              <Text style={s.ikinciDugmeYazi}>{_t("Kadroya bak")}</Text>
             </SoundPressable>
           ) : null}
           <SoundPressable style={s.ikinciDugme} onPress={cikis}>
-            <Text style={s.ikinciDugmeYazi}>Menüye dön</Text>
+            <Text style={s.ikinciDugmeYazi}>{_t("Menüye dön")}</Text>
           </SoundPressable>
         </ScrollView>
       </GameBackground>
@@ -242,7 +248,7 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
               style={s.cevapGirdi}
               autoCorrect={false}
               autoCapitalize="words"
-              placeholder="Bu kadrodaki gizli oyuncu kim?"
+              placeholder={_t("Bu kadrodaki gizli oyuncu kim?")}
               placeholderTextColor={COLORS.textMuted}
               value={girdi}
               onChangeText={(x) => { setGirdi(x); if (uyari) setUyari(null); }}
@@ -250,7 +256,7 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
               returnKeyType="send"
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => tahminEt(m)} />
-            <SoundPressable onPress={() => tahminEt()} style={s.gonder} accessibilityLabel="Tahmini gönder">
+            <SoundPressable onPress={() => tahminEt()} style={s.gonder} accessibilityLabel={_t("Tahmini gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -269,9 +275,9 @@ export default function KadroAviScreen({ id: idProp, onExit, onExitSilent, onMod
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.icerik} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <TahminTablosu tahminler={tahminler} />
           <MasaKartlari masa={masa} acik={acik} onKartCevir={kartCevir} turAnahtari={gizli + ":"} fotoAd={gizli} />
-          <SoundPressable style={s.pesEt} onPress={() => kaybet("Pes ettin — bir can gitti")}>
+          <SoundPressable style={s.pesEt} onPress={() => kaybet(_t("Pes ettin — bir can gitti"))}>
             <Ionicons name="flag-outline" size={16} color={COLORS.danger} />
-            <Text style={s.pesEtYazi}>Pes et · 1 can</Text>
+            <Text style={s.pesEtYazi}>{_t("Pes et · 1 can")}</Text>
           </SoundPressable>
         </ScrollView>
       </KlavyeAlani>

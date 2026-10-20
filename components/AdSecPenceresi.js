@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, StyleSheet, Modal, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,7 +14,7 @@ import { COLORS, RADIUS, SPACING } from "../lib/theme";
 // ============================================================================
 const VARSAYILAN_ADLAR = ["Gizemli Forvet"];
 
-export default function AdSecPenceresi({ visible, oneri, baslik = "Takma adını seç", aciklama, onKaydet, onKapat }) {
+export default function AdSecPenceresi({ visible, oneri, baslik = _t("Takma adını seç"), aciklama, onKaydet, onKapat }) {
   const [ad, setAd] = useState("");
   const [hata, setHata] = useState("");
   const [calisiyor, setCalisiyor] = useState(false);
@@ -43,25 +44,25 @@ export default function AdSecPenceresi({ visible, oneri, baslik = "Takma adını
         <View style={st.kart}>
           <Ionicons name="person-circle" size={40} color={COLORS.accent} />
           <Text style={st.baslik}>{baslik}</Text>
-          <Text style={st.aciklama}>{aciklama || "Dereceli maçlarda rakibin ve liderlik tablosu seni bu adla görür."}</Text>
+          <Text style={st.aciklama}>{aciklama || _t("Dereceli maçlarda rakibin ve liderlik tablosu seni bu adla görür.")}</Text>
           <TextInput
             value={ad}
             onChangeText={(t) => { setAd(t); setHata(""); }}
-            placeholder="ör. Kerem10"
+            placeholder={_t("ör. Kerem10")}
             placeholderTextColor={COLORS.textFaint}
             maxLength={16}
             autoCorrect={false}
             autoFocus
             style={st.girdi}
             onSubmitEditing={kaydet}
-            accessibilityLabel="Takma ad"
+            accessibilityLabel={_t("Takma ad")}
           />
-          {hata ? <Text style={st.hata}>{hata}</Text> : <Text style={st.ipucu}>3–16 karakter · harf, rakam, boşluk, . _ -</Text>}
-          <SoundPressable style={[st.ana, calisiyor && { opacity: 0.6 }]} onPress={kaydet} disabled={calisiyor} accessibilityLabel="Adı kaydet">
-            {calisiyor ? <ActivityIndicator color={COLORS.accentDark} /> : <Text style={st.anaYazi}>Kaydet</Text>}
+          {hata ? <Text style={st.hata}>{hata}</Text> : <Text style={st.ipucu}>{_t("3–16 karakter · harf, rakam, boşluk, . _ -")}</Text>}
+          <SoundPressable style={[st.ana, calisiyor && { opacity: 0.6 }]} onPress={kaydet} disabled={calisiyor} accessibilityLabel={_t("Adı kaydet")}>
+            {calisiyor ? <ActivityIndicator color={COLORS.accentDark} /> : <Text style={st.anaYazi}>{_t("Kaydet")}</Text>}
           </SoundPressable>
-          <SoundPressable style={st.ikincil} onPress={onKapat} accessibilityLabel="Vazgeç">
-            <Text style={st.ikincilYazi}>Vazgeç</Text>
+          <SoundPressable style={st.ikincil} onPress={onKapat} accessibilityLabel={_t("Vazgeç")}>
+            <Text style={st.ikincilYazi}>{_t("Vazgeç")}</Text>
           </SoundPressable>
         </View>
       </View>

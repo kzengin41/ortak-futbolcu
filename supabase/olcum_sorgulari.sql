@@ -46,3 +46,17 @@ from public.derece where mac > 0 group by 1 order by min(puan) desc;
 
 -- 7) Hangi sürümler kullanılıyor (son 3 gün)
 select surum, count(distinct oyuncu) from public.olaylar where zaman > now() - interval '3 days' group by 1 order by 2 desc;
+
+-- ---------------------------------------------------------------- Paket 38: bildirimler
+-- Apple: bildirimlere 24 saat içinde bakılmalı. Yeni bildirimler (en yeni üstte):
+select s.id, s.olusturuldu, s.sebep, s.takma_ad, s.baglam, s.aciklama, s.durum,
+       (select count(*) from public.sikayetler x where x.sikayet_edilen = s.sikayet_edilen) as toplam_bildirim,
+       s.sikayet_edilen
+from public.sikayetler s
+where s.durum = 'yeni'
+order by s.olusturuldu desc
+limit 100;
+
+-- Bir oyuncunun takma adını elle kaldırmak (uuid'i yukarıdaki sorgudan al):
+-- update public.derece set takma_ad = null where oyuncu = '<uuid>';
+-- update public.sikayetler set durum = 'incelendi' where sikayet_edilen = '<uuid>' and durum = 'yeni';

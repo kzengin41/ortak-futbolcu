@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,9 +13,9 @@ import { COLORS, RADIUS, SPACING } from "../lib/theme";
 //   oda: odaNesnesi (id, isRanked)   kazananNo: 1 / 2 / 0   macNo: odadaki maç sırası
 // ============================================================================
 const SEBEP = {
-  cok_kisa: "Maç çok kısa sürdü, dereceye sayılmadı.",
-  gunluk_ikili_siniri: "Bu rakiple bugün 3 dereceli maç yaptın; bu maç puana sayılmadı.",
-  celiski: "İki tarafın sonucu uyuşmadı; puan değişmedi.",
+  cok_kisa: _t("Maç çok kısa sürdü, dereceye sayılmadı."),
+  gunluk_ikili_siniri: _t("Bu rakiple bugün 3 dereceli maç yaptın; bu maç puana sayılmadı."),
+  celiski: _t("İki tarafın sonucu uyuşmadı; puan değişmedi."),
 };
 
 export default function DereceSonucu({ oda, kazananNo, macNo = 1, rakipAyrildi = false }) {
@@ -38,16 +39,16 @@ export default function DereceSonucu({ oda, kazananNo, macNo = 1, rakipAyrildi =
     return (
       <View style={st.not}>
         <Ionicons name="people-outline" size={14} color={COLORS.textMuted} />
-        <Text style={st.notYazi}>Dostluk maçı · puan değişmez</Text>
+        <Text style={st.notYazi}>{_t("Dostluk maçı · puan değişmez")}</Text>
       </View>
     );
   }
 
   if (!s || s.durum === "gonderiliyor" || s.durum === "bekliyor") {
     return (
-      <View style={st.kutu} accessibilityLabel="Puan işleniyor">
+      <View style={st.kutu} accessibilityLabel={_t("Puan işleniyor")}>
         <ActivityIndicator color={COLORS.accent} size="small" />
-        <Text style={st.bekleYazi}>{s && s.durum === "bekliyor" ? "Rakibin sonucu bekleniyor…" : "Puan işleniyor…"}</Text>
+        <Text style={st.bekleYazi}>{s && s.durum === "bekliyor" ? _t("Rakibin sonucu bekleniyor…") : _t("Puan işleniyor…")}</Text>
       </View>
     );
   }
@@ -59,9 +60,15 @@ export default function DereceSonucu({ oda, kazananNo, macNo = 1, rakipAyrildi =
     const yukseldi = lig.alt > eskiLig.alt;
     const dustu = lig.alt < eskiLig.alt;
     const renk = fark > 0 ? COLORS.accent : fark < 0 ? COLORS.danger : COLORS.textMuted;
-    const yerlesme = kart && kart.mac <= YERLESTIRME_MAC ? `Yerleştirme ${Math.min(kart.mac, YERLESTIRME_MAC)}/${YERLESTIRME_MAC}` : null;
+    const yerlesme = kart && kart.mac <= YERLESTIRME_MAC ? _t(
+      "Yerleştirme {0}/{1}",
+      [Math.min(kart.mac, YERLESTIRME_MAC), YERLESTIRME_MAC]
+    ) : null;
     return (
-      <View style={[st.kutu, { borderColor: renk }]} accessibilityLabel={`Online puan ${fark >= 0 ? "artı" : "eksi"} ${Math.abs(fark)}, yeni puan ${s.sonra}`}>
+      <View style={[st.kutu, { borderColor: renk }]} accessibilityLabel={_t(
+        "Online puan {0} {1}, yeni puan {2}",
+        [fark >= 0 ? "artı" : "eksi", Math.abs(fark), s.sonra]
+      )}>
         <View style={st.satir}>
           <Text style={[st.fark, { color: renk }]}>{fark > 0 ? `+${fark}` : `${fark}`}</Text>
           <View style={{ flex: 1 }}>
@@ -75,7 +82,7 @@ export default function DereceSonucu({ oda, kazananNo, macNo = 1, rakipAyrildi =
         </View>
         <View style={st.cubuk}><View style={[st.dolu, { width: `${Math.round(ilerleme * 100)}%`, backgroundColor: lig.renk }]} /></View>
         <Text style={st.altYazi}>
-          {yukseldi ? `Tebrikler, ${lig.yonelme} yükseldin!` : dustu ? `${lig.yonelme} düştün.` : sonraki ? `${sonraki.yonelme} ${kalan} puan` : "En üst ligdesin!"}
+          {yukseldi ? _t("Tebrikler, {0} yükseldin!", [lig.yonelme]) : dustu ? _t("{0} düştün.", [lig.yonelme]) : sonraki ? _t("{0} {1} puan", [sonraki.yonelme, kalan]) : _t("En üst ligdesin!")}
         </Text>
       </View>
     );
@@ -84,7 +91,7 @@ export default function DereceSonucu({ oda, kazananNo, macNo = 1, rakipAyrildi =
   return (
     <View style={st.not}>
       <Ionicons name="information-circle-outline" size={14} color={COLORS.textMuted} />
-      <Text style={st.notYazi}>{SEBEP[s.sebep] || (s.durum === "hata" ? "Puan şu an işlenemedi; internet gelince Online sekmesinde güncellenir." : "Bu maç dereceye sayılmadı.")}</Text>
+      <Text style={st.notYazi}>{SEBEP[s.sebep] || (s.durum === "hata" ? _t("Puan şu an işlenemedi; internet gelince Online sekmesinde güncellenir.") : _t("Bu maç dereceye sayılmadı."))}</Text>
     </View>
   );
 }

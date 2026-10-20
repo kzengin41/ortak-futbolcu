@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -121,7 +122,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
     const anahtar = Date.now() + Math.random();
     if (o.kimden === benKimim && o.tip === "bilinmeyen") {
       playWrong();
-      setGeriBildirim({ anahtar, correct: false, message: `"${o.metin}" bulunamadı, tekrar yaz` });
+      setGeriBildirim({ anahtar, correct: false, message: _t("\"{0}\" bulunamadı, tekrar yaz", [o.metin]) });
     }
     // Rakibin cevap verdiği skor şeridinde "kilitledi ✓" olarak görünüyor
     // (kırmızı geri bildirim balonu yanlış cevap sanılıyordu).
@@ -164,16 +165,16 @@ export default function OnlineFiveScreen({ room, onExit }) {
   // ---------------------------------------------------------------- bekleme
   if (!durum || faz === "hazirlik" || faz === "hata") {
     const yazi = !durum
-      ? (senkronBekliyor ? "Odaya bağlanılıyor..." : "Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene.")
-      : faz === "hata" ? "Kulüpler hazırlanamadı. Odadan çıkıp tekrar dene."
-      : rakipVar ? "Kulüpler hazırlanıyor..." : "Rakip bekleniyor...";
+      ? (senkronBekliyor ? _t("Odaya bağlanılıyor...") : _t("Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene."))
+      : faz === "hata" ? _t("Kulüpler hazırlanamadı. Odadan çıkıp tekrar dene.")
+      : rakipVar ? _t("Kulüpler hazırlanıyor...") : _t("Rakip bekleniyor...");
     return (
       <GameBackground style={styles.merkez}>
         {(senkronBekliyor || faz === "hazirlik") && <ActivityIndicator color={VURGU.main} />}
         <Text style={styles.bekleme}>{yazi}</Text>
         {faz === "hazirlik" && room.code ? <Text style={styles.odaKodu}>{room.code}</Text> : null}
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -194,25 +195,25 @@ export default function OnlineFiveScreen({ room, onExit }) {
           {/* Skor şeridi */}
           <View style={styles.ustSerit}>
             <View style={[styles.oyuncuKutu, benimCevap && !acik && styles.oyuncuKutuKilit]}>
-              <Text style={styles.oyuncuAd}>SEN</Text>
+              <Text style={styles.oyuncuAd}>{_t("SEN")}</Text>
               <Text style={[styles.skor, { color: COLORS.accent }]}>{skorSen}</Text>
-              <Text style={styles.oyuncuDurum}>{acik ? "puan" : benimCevap ? "kilitlendi ✓" : "düşünüyor"}</Text>
+              <Text style={styles.oyuncuDurum}>{acik ? _t("puan") : benimCevap ? _t("kilitlendi ✓") : _t("düşünüyor")}</Text>
             </View>
             <View style={styles.ortaKutu}>
-              <Text style={styles.turYazi}>{bitti ? "Maç bitti" : `Tur ${turNo}/${durum.toplamTur}`}</Text>
-              {!rakipVar && !bitti ? <Text style={styles.kopuk}>rakip bağlı değil</Text> : null}
+              <Text style={styles.turYazi}>{bitti ? _t("Maç bitti") : _t("Tur {0}/{1}", [turNo, durum.toplamTur])}</Text>
+              {!rakipVar && !bitti ? <Text style={styles.kopuk}>{_t("rakip bağlı değil")}</Text> : null}
             </View>
             <View style={[styles.oyuncuKutu, rakipCevap && !acik && styles.oyuncuKutuKilitRakip]}>
-              <Text style={styles.oyuncuAd}>RAKİP</Text>
+              <Text style={styles.oyuncuAd}>{_t("RAKİP")}</Text>
               <Text style={[styles.skor, { color: COLORS.cta }]}>{skorRakip}</Text>
-              <Text style={styles.oyuncuDurum}>{acik ? "puan" : rakipCevap ? "kilitledi ✓" : "düşünüyor"}</Text>
+              <Text style={styles.oyuncuDurum}>{acik ? "puan" : rakipCevap ? _t("kilitledi ✓") : "düşünüyor"}</Text>
             </View>
           </View>
 
           {faz === "tur" && kalan !== null ? (
             <View style={styles.sureKutu}>
               <TimerBar current={kalan} total={TUR_SURESI_SN} />
-              <Text style={[styles.sureYazi, kalan <= 5 && { color: COLORS.danger }]}>{kalan} sn</Text>
+              <Text style={[styles.sureYazi, kalan <= 5 && { color: COLORS.danger }]}>{kalan}{" "}{_t("sn")}</Text>
             </View>
           ) : null}
 
@@ -240,12 +241,12 @@ export default function OnlineFiveScreen({ room, onExit }) {
           {/* Cevap paneli */}
           {faz === "tur" && !benimCevap ? (
             <View style={styles.cevapPaneli}>
-              <Text style={styles.hedefText}>En az 2 kulüpte oynamış TEK bir futbolcu</Text>
-              <Text style={styles.hedefAlt}>Rakip cevabını göremez — ikiniz de bitirince açılır</Text>
+              <Text style={styles.hedefText}>{_t("En az 2 kulüpte oynamış TEK bir futbolcu")}</Text>
+              <Text style={styles.hedefAlt}>{_t("Rakip cevabını göremez — ikiniz de bitirince açılır")}</Text>
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
-                  placeholder="Futbolcu adı yaz..."
+                  placeholder={_t("Futbolcu adı yaz...")}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
                   onChangeText={setGirdi}
@@ -255,7 +256,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
                   autoCapitalize="words"
                 />
                 <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
-                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
+                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel={_t("Gönder")}>
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>
               </View>
@@ -275,10 +276,10 @@ export default function OnlineFiveScreen({ room, onExit }) {
             <View style={styles.kilitKart}>
               <Ionicons name="lock-closed" size={18} color={VURGU.main} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.kilitBaslik}>Cevabın kilitlendi: {benimCevap.ad}</Text>
+                <Text style={styles.kilitBaslik}>{_t("Cevabın kilitlendi:")}{" "}{benimCevap.ad}</Text>
                 <Text style={styles.kilitAlt}>
-                  {benimCevap.puan > 0 ? `${benimCevap.puan} kulüp tuttu` : "2'den az kulüp tuttu — 0 puan"}
-                  {rakipCevap ? " · rakip de cevapladı" : " · rakip bekleniyor…"}
+                  {benimCevap.puan > 0 ? _t("{0} kulüp tuttu", [benimCevap.puan]) : _t("2'den az kulüp tuttu — 0 puan")}
+                  {rakipCevap ? _t(" · rakip de cevapladı") : _t(" · rakip bekleniyor…")}
                 </Text>
               </View>
             </View>
@@ -287,20 +288,20 @@ export default function OnlineFiveScreen({ room, onExit }) {
           {/* Tur sonu: iki cevap yan yana */}
           {acik ? (
             <View style={styles.acilisKart}>
-              <Text style={styles.acilisBaslik}>{bitti ? `Son tur (${turNo}/${durum.toplamTur})` : `Tur ${turNo} sonucu`}</Text>
-              <CevapSatiri etiket="SEN" renk={COLORS.accent} cevap={benimCevap} />
-              <CevapSatiri etiket="RAKİP" renk={COLORS.cta} cevap={rakipCevap} />
+              <Text style={styles.acilisBaslik}>{bitti ? _t("Son tur ({0}/{1})", [turNo, durum.toplamTur]) : _t("Tur {0} sonucu", [turNo])}</Text>
+              <CevapSatiri etiket={_t("SEN")} renk={COLORS.accent} cevap={benimCevap} />
+              <CevapSatiri etiket={_t("RAKİP")} renk={COLORS.cta} cevap={rakipCevap} />
               {enIyi ? (
-                <Text style={styles.enIyi}>En iyi cevap: <Text style={{ color: COLORS.text }}>{enIyi.player.name}</Text> ({enIyi.count} kulüp)</Text>
+                <Text style={styles.enIyi}>{_t("En iyi cevap:")}{" "}<Text style={{ color: COLORS.text }}>{enIyi.player.name}</Text>({enIyi.count}{" "}{_t("kulüp)")}</Text>
               ) : null}
-              {!bitti ? <Text style={styles.sonraki}>Sıradaki tur birazdan…</Text> : null}
+              {!bitti ? <Text style={styles.sonraki}>{_t("Sıradaki tur birazdan…")}</Text> : null}
             </View>
           ) : null}
 
           {bitti ? (
             <OnlineMacSonu
               oda={room}
-              modAdi="Online 5 Kulüp"
+              modAdi={_t("Online 5 Kulüp")}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}
@@ -309,7 +310,7 @@ export default function OnlineFiveScreen({ room, onExit }) {
               kazanan={sonuc(durum, benKimim)}
               skorSen={skorSen}
               skorRakip={skorRakip}
-              skorEtiketi="puan"
+              skorEtiketi={_t("puan")}
               turlar={durum.gecmis.map((g) => {
                 const a = g[pk(benKimim)]?.puan || 0, b = g[pk(rakipNo)]?.puan || 0;
                 return a > b ? "sen" : a < b ? "rakip" : "yok";
@@ -317,12 +318,12 @@ export default function OnlineFiveScreen({ room, onExit }) {
               enIyi={(() => {
                 const adlar = durum.gecmis.map((g) => g[pk(benKimim)]).filter((c) => c && c.puan > 0).map((c) => c.ad);
                 if (!adlar.length) return null;
-                return { ad: [...adlar].sort((a, b) => taninirlik(a) - taninirlik(b))[0], alt: "Verdiğin en nadir isim" };
+                return { ad: [...adlar].sort((a, b) => taninirlik(a) - taninirlik(b))[0], alt: _t("Verdiğin en nadir isim") };
               })()}
             />
           ) : (
             <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-              <Text style={styles.ikincilBtnText}>Odadan çık</Text>
+              <Text style={styles.ikincilBtnText}>{_t("Odadan çık")}</Text>
             </SoundPressable>
           )}
         </KlavyeScroll>
@@ -341,7 +342,7 @@ function CevapSatiri({ etiket, renk, cevap }) {
   return (
     <View style={styles.cevapSatir}>
       <Text style={[styles.cevapEtiket, { color: renk }]}>{etiket}</Text>
-      <Text style={styles.cevapAd} numberOfLines={1}>{cevap ? cevap.ad : "Cevap vermedi"}</Text>
+      <Text style={styles.cevapAd} numberOfLines={1}>{cevap ? cevap.ad : _t("Cevap vermedi")}</Text>
       <Text style={[styles.cevapPuan, { color: cevap && cevap.puan > 0 ? renk : COLORS.textMuted }]}>+{cevap ? cevap.puan : 0}</Text>
     </View>
   );

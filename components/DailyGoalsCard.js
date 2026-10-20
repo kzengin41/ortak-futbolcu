@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, Pressable, LayoutAnimation } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -59,7 +60,7 @@ export default function DailyGoalsCard() {
           size={15}
           color={hepsiBitti ? COLORS.accent : COLORS.cta}
         />
-        <Text style={[styles.baslik, hepsiBitti && { color: COLORS.accent }]}>GÜNLÜK GÖREV</Text>
+        <Text style={[styles.baslik, hepsiBitti && { color: COLORS.accent }]}>{_t("GÜNLÜK GÖREV")}</Text>
         <Text style={styles.sayac}>{biten}/{gorevler.length}</Text>
         <Ionicons
           name={acik ? "chevron-up" : "chevron-down"}
@@ -93,9 +94,9 @@ export default function DailyGoalsCard() {
       <Text style={styles.odul}>
         {hepsiBitti
           ? kayit?.odulAlindi
-            ? `Tamamlandı — +${GOREV_ODULU} XP aldın`
-            : `Tamamlandı! +${GOREV_ODULU} XP`
-          : `Üçünü de bitir: +${GOREV_ODULU} XP · günlük seriyi korur 🔥`}
+            ? _t("Tamamlandı — +{0} XP aldın", [GOREV_ODULU])
+            : _t("Tamamlandı! +{0} XP", [GOREV_ODULU])
+          : _t("Üçünü de bitir: +{0} XP · günlük seriyi korur 🔥", [GOREV_ODULU])}
       </Text>
       )}
     </View>

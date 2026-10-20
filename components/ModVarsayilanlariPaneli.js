@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,9 +36,9 @@ export default function ModVarsayilanlariPaneli() {
         const renk = (MODE_COLORS[tanim.renk] || {}).main || COLORS.accent;
         const ozet = [
           `Zorluk ${v.zorluk}/10`,
-          tanim.sure ? (v.sure == null ? "Süresiz" : `${v.sure} sn`) : null,
-          tanim.galibiyet != null ? (v.galibiyet === 0 ? "Sınırsız" : `${v.galibiyet} galibiyet`) : null,
-          tanim.yontem ? (v.yontem === "voice" ? "Mikrofon" : "Klavye") : null,
+          tanim.sure ? (v.sure == null ? _t("Süresiz") : _t("{0} sn", [v.sure])) : null,
+          tanim.galibiyet != null ? (v.galibiyet === 0 ? _t("Sınırsız") : _t("{0} galibiyet", [v.galibiyet])) : null,
+          tanim.yontem ? (v.yontem === "voice" ? _t("Mikrofon") : _t("Klavye")) : null,
           ...(tanim.ekler || []).map((e) => (e.ozet ? e.ozet(ekDegeri(settings, modId, e)) : null)),
         ].filter(Boolean).join(" · ");
         return (
@@ -52,7 +53,7 @@ export default function ModVarsayilanlariPaneli() {
             </SoundPressable>
             {acikMi ? (
               <View style={styles.icerik}>
-                <KurulumBolum baslik="ZORLUK">
+                <KurulumBolum baslik={_t("ZORLUK")}>
                   <ZorlukSecici
                     deger={v.zorluk}
                     onDegis={(z) => yaz(modId, "zorluk", z)}
@@ -74,7 +75,7 @@ export default function ModVarsayilanlariPaneli() {
                   </KurulumBolum>
                 ) : null}
                 {tanim.galibiyet != null ? (
-                  <KurulumBolum baslik="GALİBİYET SINIRI">
+                  <KurulumBolum baslik={_t("GALİBİYET SINIRI")}>
                     <SecimCipleri
                       secenekler={GALIBIYET_SECENEKLERI}
                       secili={v.galibiyet}
@@ -83,7 +84,7 @@ export default function ModVarsayilanlariPaneli() {
                   </KurulumBolum>
                 ) : null}
                 {tanim.yontem ? (
-                  <KurulumBolum baslik="CEVAP YÖNTEMİ">
+                  <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")}>
                     <SecimCipleri
                       secenekler={YONTEM_SECENEKLERI}
                       secili={v.yontem}
@@ -101,8 +102,9 @@ export default function ModVarsayilanlariPaneli() {
                   </KurulumBolum>
                 ))}
                 <Text style={styles.not}>
-                  {zorlukEtiketi(v.zorluk)} seviyede başlar. Oynamadan önce kurulum ekranında yine değiştirebilirsin.
-                </Text>
+                  {zorlukEtiketi(v.zorluk)}{" "}{_t(
+                    "seviyede başlar. Oynamadan önce kurulum ekranında yine değiştirebilirsin."
+                  )}</Text>
               </View>
             ) : null}
           </View>

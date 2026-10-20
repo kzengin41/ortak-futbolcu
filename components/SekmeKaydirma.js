@@ -1,3 +1,4 @@
+import { ekranGenisligi } from "../lib/ekran";
 import React, { useMemo, useRef } from "react";
 import { Animated, PanResponder, View, Dimensions } from "react-native";
 
@@ -44,7 +45,7 @@ export default function SekmeKaydirma({ navigation, route, children }) {
     },
     onPanResponderRelease: (_, g) => {
       const durum = navRef.current?.getState?.();
-      const genislik = Dimensions.get("window").width;
+      const genislik = ekranGenisligi();
       const i = durum ? durum.routes.findIndex((r) => r.key === routeRef.current?.key) : -1;
       const hedef = durum && i >= 0 ? hedefSekme(g.dx, g.vx, i, durum.routes.length, genislik) : null;
       if (hedef != null) {

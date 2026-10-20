@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -130,20 +131,22 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
     return (
       <ModKurulum
         modId="sunucu" girisYok
-        baslik="Sunucu Modu"
-        aciklama="2–6 kişi, tek telefon. Telefonu tutan sunucu iki kulübü okur; ilk bağıranın adına dokunur, ekrandaki doğru cevaplara bakıp ✓ ya da ✗ der. Kimse yazmaz."
+        baslik={_t("Sunucu Modu")}
+        aciklama={_t(
+          "2–6 kişi, tek telefon. Telefonu tutan sunucu iki kulübü okur; ilk bağıranın adına dokunur, ekrandaki doğru cevaplara bakıp ✓ ya da ✗ der. Kimse yazmaz."
+        )}
         vurgu={VURGU}
         onGeri={onExitSilent || onExit}
         onBasla={basla}
       >
-        <KurulumBolum baslik="OYUNCU SAYISI" vurgu={VURGU}>
+        <KurulumBolum baslik={_t("OYUNCU SAYISI")} vurgu={VURGU}>
           <SecimCipleri
             secenekler={[2, 3, 4, 5, 6].map((n) => ({ deger: n, etiket: String(n) }))}
             secili={oyuncuSayisi}
             onSec={setOyuncuSayisi}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="OYUNCU ADLARI" vurgu={VURGU} not="Adlar kaydedilir; bir dahaki sefere hazır gelir.">
+        <KurulumBolum baslik={_t("OYUNCU ADLARI")} vurgu={VURGU} not={_t("Adlar kaydedilir; bir dahaki sefere hazır gelir.")}>
           <View style={{ gap: 8 }}>
             {Array.from({ length: oyuncuSayisi }, (_, i) => (
               <View key={i} style={s.adSatir}>
@@ -157,19 +160,19 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
                   maxLength={16}
                   autoCorrect={false}
                   autoCapitalize="words"
-                  accessibilityLabel={`${i + 1}. oyuncunun adı`}
+                  accessibilityLabel={_t("{0}. oyuncunun adı", [i + 1])}
                 />
               </View>
             ))}
           </View>
         </KurulumBolum>
-        <KurulumBolum baslik="HEDEF PUAN" vurgu={VURGU}>
+        <KurulumBolum baslik={_t("HEDEF PUAN")} vurgu={VURGU}>
           <SecimCipleri secenekler={HEDEFLER.map((n) => ({ deger: n, etiket: String(n) }))} secili={hedef} onSec={setHedef} />
         </KurulumBolum>
-        <KurulumBolum baslik="ZORLUK" vurgu={VURGU}>
-          <ZorlukSecici deger={zorluk} onDegis={setZorluk} aciklama={(z) => (z <= 3 ? "Sadece efsaneler ve süper yıldızlar." : z <= 7 ? "Büyük liglerin bilinen oyuncuları." : "Az bilinen oyuncular da çıkar.")} />
+        <KurulumBolum baslik={_t("ZORLUK")} vurgu={VURGU}>
+          <ZorlukSecici deger={zorluk} onDegis={setZorluk} aciklama={(z) => (z <= 3 ? _t("Sadece efsaneler ve süper yıldızlar.") : z <= 7 ? _t("Büyük liglerin bilinen oyuncuları.") : _t("Az bilinen oyuncular da çıkar."))} />
         </KurulumBolum>
-        <KurulumBolum baslik="EŞLEŞME PROFİLİ" vurgu={VURGU}>
+        <KurulumBolum baslik={_t("EŞLEŞME PROFİLİ")} vurgu={VURGU}>
           <KapsamDugmesi etiket={eslesme.derlenmis.etiket} onPress={() => setProfilAcik(true)} />
         </KurulumBolum>
         <EslesmeProfiliPenceresi
@@ -189,9 +192,9 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
       <GameBackground style={s.kap}>
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           <IsimliSkorTablosu
-            modAdi="Sunucu Modu"
+            modAdi={_t("Sunucu Modu")}
             oyuncular={adlar.map((ad, i) => ({ ad, puan: skorlar[i] || 0 }))}
-            altYazi={`${turNo} tur · ${hedef} puana ilk ulaşan kazandı`}
+            altYazi={_t("{0} tur · {1} puana ilk ulaşan kazandı", [turNo, hedef])}
             onRovans={rovans}
             onMenu={onExitSilent || onExit}
           />
@@ -204,7 +207,9 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={s.kap}>
         <BackButton onPress={onExitSilent || onExit} />
-        <Text style={s.soru}>Bu ayarlarla kulüp çifti bulunamadı. Eşleşme profilini genişletmeyi dene.</Text>
+        <Text style={s.soru}>{_t(
+          "Bu ayarlarla kulüp çifti bulunamadı. Eşleşme profilini genişletmeyi dene."
+        )}</Text>
       </GameBackground>
     );
   }
@@ -232,7 +237,7 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
           <Text style={s.cevapAd} numberOfLines={1}>{p.name}</Text>
         </View>
       ))}
-      {cevaplar.length > adet ? <Text style={s.dahaFazla}>+{cevaplar.length - adet} doğru cevap daha</Text> : null}
+      {cevaplar.length > adet ? <Text style={s.dahaFazla}>+{cevaplar.length - adet}{" "}{_t("doğru cevap daha")}</Text> : null}
     </View>
   );
 
@@ -240,7 +245,7 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
     <GameBackground style={s.kap}>
       <View style={s.ust}>
         <BackButton onPress={onExit} />
-        <Text style={s.turNo}>TUR {turNo} · hedef {hedef}</Text>
+        <Text style={s.turNo}>{_t("TUR")}{" "}{turNo}{" "}{_t("· hedef")}{" "}{hedef}</Text>
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {SkorSeridi}
@@ -248,7 +253,7 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
 
         {phase === "tur" ? (
           <>
-            <Text style={s.soru}>Oku: "İkisinde de oynamış futbolcu?" İlk bağıranın adına dokun.</Text>
+            <Text style={s.soru}>{_t("Oku: \"İkisinde de oynamış futbolcu?\" İlk bağıranın adına dokun.")}</Text>
             <View style={s.oyuncular}>
               {adlar.map((ad, i) => {
                 const k = kilitli.has(i);
@@ -258,7 +263,7 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
                     disabled={k}
                     onPress={() => { setCevaplayan(i); setPhase("kontrol"); }}
                     style={[s.oyuncuBtn, k && s.oyuncuKilitli]}
-                    accessibilityLabel={k ? `${ad}, bu turda kilitli` : `${ad} cevap veriyor`}
+                    accessibilityLabel={k ? _t("{0}, bu turda kilitli", [ad]) : _t("{0} cevap veriyor", [ad])}
                   >
                     <Ionicons name={k ? "lock-closed" : "hand-right"} size={20} color={k ? COLORS.textFaint : COLORS.accentDark} />
                     <Text style={[s.oyuncuAd, k && { color: COLORS.textFaint }]} numberOfLines={1}>{ad}</Text>
@@ -269,11 +274,11 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
             <View style={s.altSatir}>
               <SoundPressable style={s.ikincil} onPress={() => setCevaplarAcik((a) => !a)}>
                 <Ionicons name={cevaplarAcik ? "eye-off" : "eye"} size={18} color={COLORS.text} />
-                <Text style={s.ikincilYazi}>{cevaplarAcik ? "Cevapları gizle" : "Cevapları gör"}</Text>
+                <Text style={s.ikincilYazi}>{cevaplarAcik ? _t("Cevapları gizle") : _t("Cevapları gör")}</Text>
               </SoundPressable>
               <SoundPressable style={s.ikincil} onPress={() => { setSonKazanan(null); setPhase("sonuc"); }}>
                 <Ionicons name="play-skip-forward" size={18} color={COLORS.text} />
-                <Text style={s.ikincilYazi}>Kimse bilemedi</Text>
+                <Text style={s.ikincilYazi}>{_t("Kimse bilemedi")}</Text>
               </SoundPressable>
             </View>
             {cevaplarAcik ? <CevapListesi /> : null}
@@ -282,32 +287,32 @@ export default function SunucuScreen({ onExit, onExitSilent }) {
 
         {phase === "kontrol" ? (
           <>
-            <Text style={s.kontrolBaslik}>{adlar[cevaplayan]} ne dedi?</Text>
-            <Text style={s.kontrolAlt}>Söylediği isim listede varsa ✓, yoksa ✗ ({cevaplar.length} doğru cevap)</Text>
+            <Text style={s.kontrolBaslik}>{adlar[cevaplayan]}{" "}{_t("ne dedi?")}</Text>
+            <Text style={s.kontrolAlt}>{_t("Söylediği isim listede varsa ✓, yoksa ✗ (")}{cevaplar.length}{" "}{_t("doğru cevap)")}</Text>
             <View style={s.kararSatir}>
-              <SoundPressable style={[s.karar, { backgroundColor: COLORS.danger }]} onPress={yanlis} accessibilityLabel="Yanlış">
+              <SoundPressable style={[s.karar, { backgroundColor: COLORS.danger }]} onPress={yanlis} accessibilityLabel={_t("Yanlış")}>
                 <Ionicons name="close" size={30} color="#fff" />
-                <Text style={s.kararYazi}>YANLIŞ</Text>
+                <Text style={s.kararYazi}>{_t("YANLIŞ")}</Text>
               </SoundPressable>
-              <SoundPressable style={[s.karar, { backgroundColor: COLORS.accent }]} onPress={dogru} accessibilityLabel="Doğru">
+              <SoundPressable style={[s.karar, { backgroundColor: COLORS.accent }]} onPress={dogru} accessibilityLabel={_t("Doğru")}>
                 <Ionicons name="checkmark" size={30} color={COLORS.accentDark} />
-                <Text style={[s.kararYazi, { color: COLORS.accentDark }]}>DOĞRU</Text>
+                <Text style={[s.kararYazi, { color: COLORS.accentDark }]}>{_t("DOĞRU")}</Text>
               </SoundPressable>
             </View>
             <CevapListesi adet={20} />
             <SoundPressable onPress={() => { setCevaplayan(null); setPhase("tur"); }} style={{ alignSelf: "center", marginTop: 12 }}>
-              <Text style={s.link}>Yanlış kişiye dokundum, geri dön</Text>
+              <Text style={s.link}>{_t("Yanlış kişiye dokundum, geri dön")}</Text>
             </SoundPressable>
           </>
         ) : null}
 
         {phase === "sonuc" ? (
           <>
-            <Text style={s.kontrolBaslik}>{sonKazanan !== null ? `${adlar[sonKazanan]} +1` : "Bu turu kimse alamadı"}</Text>
-            <Text style={s.kontrolAlt}>Bazı doğru cevaplar:</Text>
+            <Text style={s.kontrolBaslik}>{sonKazanan !== null ? `${adlar[sonKazanan]} +1` : _t("Bu turu kimse alamadı")}</Text>
+            <Text style={s.kontrolAlt}>{_t("Bazı doğru cevaplar:")}</Text>
             <CevapListesi adet={6} />
             <SoundPressable style={s.sonraki} onPress={() => yeniTur()}>
-              <Text style={s.sonrakiYazi}>SIRADAKİ TUR</Text>
+              <Text style={s.sonrakiYazi}>{_t("SIRADAKİ TUR")}</Text>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </>

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator } from "react-native";
@@ -22,7 +23,7 @@ import { COLORS, SPACING } from "../lib/theme";
 function Sekmeler({ sekme, setSekme }) {
   return (
     <View style={styles.sekmeler}>
-      {[["oyuncular", "Oyuncular", "person"], ["takimlar", "Takımlar", "shirt"]].map(([id, ad, ikon]) => (
+      {[["oyuncular", _t("Oyuncular"), "person"], ["takimlar", _t("Takımlar"), "shirt"]].map(([id, ad, ikon]) => (
         <SoundPressable key={id} style={[styles.sekme, sekme === id && styles.sekmeAktif]} onPress={() => setSekme(id)} accessibilityRole="tab" accessibilityState={{ selected: sekme === id }}>
           <Ionicons name={ikon} size={15} color={sekme === id ? COLORS.bg : COLORS.textMuted} />
           <Text style={[styles.sekmeYazi, sekme === id && { color: COLORS.bg }]}>{ad}</Text>
@@ -97,7 +98,7 @@ export default function PlayerProfileScreen({ navigation }) {
           )}
         </View>
         <Text style={styles.playerName} numberOfLines={2}>
-          {isUnlocked ? item.name : "KİLİTLİ"}
+          {isUnlocked ? item.name : _t("KİLİTLİ")}
         </Text>
       </Pressable>
     );
@@ -122,7 +123,7 @@ export default function PlayerProfileScreen({ navigation }) {
     return (
       <GameBackground style={styles.container}>
         <View style={styles.header}>
-          <TabHeader baslik="Ansiklopedi" />
+          <TabHeader baslik={_t("Ansiklopedi")} />
           <Sekmeler sekme={sekme} setSekme={setSekme} />
         </View>
         <TakimlarListesi onKadro={(id) => navigation && navigation.navigate("kadro", { id })} />
@@ -134,19 +135,17 @@ export default function PlayerProfileScreen({ navigation }) {
   return (
     <GameBackground style={styles.container}>
       <View style={styles.header}>
-        <TabHeader baslik="Ansiklopedi" />
+        <TabHeader baslik={_t("Ansiklopedi")} />
         <Sekmeler sekme={sekme} setSekme={setSekme} />
-        <Text style={styles.title}>EFSANELER KOLEKSİYONU</Text>
-        <Text style={styles.subtitle}>Oyun içinde açtığın karakterler bunlar!</Text>
+        <Text style={styles.title}>{_t("EFSANELER KOLEKSİYONU")}</Text>
+        <Text style={styles.subtitle}>{_t("Oyun içinde açtığın karakterler bunlar!")}</Text>
 
         <View style={styles.statsBox}>
-          <Text style={styles.statsText}>
-            Seviye {seviye.level} · <Text style={{color:COLORS.accent}}>{unlockedNames.size}</Text> futbolcu açıldı
-          </Text>
+          <Text style={styles.statsText}>{_t("Seviye")}{" "}{seviye.level}· <Text style={{color:COLORS.accent}}>{unlockedNames.size}</Text>{" "}{_t("futbolcu açıldı")}</Text>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${Math.round(seviye.fraction * 100)}%` }]} />
           </View>
-          <Text style={styles.seviyeNot}>{seviye.level + 1}. seviye için {seviye.kalan} futbolcu daha aç</Text>
+          <Text style={styles.seviyeNot}>{_t("{0}. seviye için {1} futbolcu daha aç", [seviye.level + 1, seviye.kalan])}</Text>
         </View>
 
         <TextInput
@@ -154,7 +153,7 @@ export default function PlayerProfileScreen({ navigation }) {
           autoCapitalize="words"
           spellCheck={false}
           style={styles.searchInput}
-          placeholder="Açtığın futbolcularda ara..."
+          placeholder={_t("Açtığın futbolcularda ara...")}
           placeholderTextColor={COLORS.textMuted}
           value={search}
           onChangeText={setSearch}
@@ -174,8 +173,10 @@ export default function PlayerProfileScreen({ navigation }) {
             <Ionicons name={!search.trim() ? "lock-closed-outline" : "search-outline"} size={28} color={COLORS.textMuted} />
             <Text style={styles.bosYazi}>
               {!search.trim()
-                ? "Henüz açılmış futbolcu yok. Oyunlarda doğru bildiğin her futbolcu buraya eklenir — kim olursa olsun."
-                : "Açtığın futbolcular arasında bu isim yok."}
+                ? _t(
+                "Henüz açılmış futbolcu yok. Oyunlarda doğru bildiğin her futbolcu buraya eklenir — kim olursa olsun."
+              )
+                : _t("Açtığın futbolcular arasında bu isim yok.")}
             </Text>
           </View>
         }

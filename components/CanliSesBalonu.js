@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,7 +29,7 @@ export default function CanliSesBalonu() {
         <Animated.View style={[s.nokta, { opacity: aktif ? nabiz : 1, backgroundColor: aktif ? COLORS.danger : COLORS.cta }]} />
         <Ionicons name={isleniyor ? "hourglass" : "mic"} size={16} color={COLORS.text} />
         <Text style={[s.yazi, !metin && s.bos]} numberOfLines={2}>
-          {metin || (isleniyor ? "Kontrol ediliyor…" : "Dinliyorum…")}
+          {metin || (isleniyor ? _t("Kontrol ediliyor…") : _t("Dinliyorum…"))}
         </Text>
       </View>
     </View>

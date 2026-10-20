@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,9 +43,9 @@ export default function RakipAyrildi({ oda, benKimim, rakipVar, aktif, macNo = 1
   if (!bitti) {
     const kalan = Math.max(0, BEKLEME_SN - Math.floor((simdi() - bas) / 1000));
     return (
-      <View style={st.serit} pointerEvents="none" accessibilityLabel={`Rakip bağlantıyı kaybetti, ${kalan} saniye`}>
+      <View style={st.serit} pointerEvents="none" accessibilityLabel={_t("Rakip bağlantıyı kaybetti, {0} saniye", [kalan])}>
         <Ionicons name="cloud-offline" size={16} color={COLORS.cta} />
-        <Text style={st.seritYazi}>Rakip bağlantıyı kaybetti · {kalan} sn içinde dönmezse galibiyet senin</Text>
+        <Text style={st.seritYazi}>{_t("Rakip bağlantıyı kaybetti ·")}{" "}{kalan}{" "}{_t("sn içinde dönmezse galibiyet senin")}</Text>
       </View>
     );
   }
@@ -54,14 +55,14 @@ export default function RakipAyrildi({ oda, benKimim, rakipVar, aktif, macNo = 1
       <View style={st.arka}>
         <View style={st.kart}>
           <Ionicons name="flag" size={34} color={COLORS.accent} />
-          <Text style={st.baslik}>RAKİP MAÇI BIRAKTI</Text>
-          <Text style={st.yazi}>Dereceli maçtan ayrılan oyuncu yenilmiş sayılır. Galibiyet senin.</Text>
+          <Text style={st.baslik}>{_t("RAKİP MAÇI BIRAKTI")}</Text>
+          <Text style={st.yazi}>{_t("Dereceli maçtan ayrılan oyuncu yenilmiş sayılır. Galibiyet senin.")}</Text>
           <DereceSonucu oda={oda} kazananNo={benKimim} macNo={macNo} rakipAyrildi />
-          <SoundPressable style={st.ana} onPress={onExit} accessibilityLabel="Lobiye dön">
-            <Text style={st.anaYazi}>Lobiye dön</Text>
+          <SoundPressable style={st.ana} onPress={onExit} accessibilityLabel={_t("Lobiye dön")}>
+            <Text style={st.anaYazi}>{_t("Lobiye dön")}</Text>
           </SoundPressable>
-          <SoundPressable style={st.ikincil} onPress={() => setKapali(true)} accessibilityLabel="Burada kal">
-            <Text style={st.ikincilYazi}>Burada kal</Text>
+          <SoundPressable style={st.ikincil} onPress={() => setKapali(true)} accessibilityLabel={_t("Burada kal")}>
+            <Text style={st.ikincilYazi}>{_t("Burada kal")}</Text>
           </SoundPressable>
         </View>
       </View>

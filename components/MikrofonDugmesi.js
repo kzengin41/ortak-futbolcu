@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,14 +30,14 @@ export default function MikrofonDugmesi({ onMetin, onGonder, ipucu, disabled, bo
     if (isRecording) {
       try {
         const metin = await stopRecording();
-        if (!metin) { setHata("Anlayamadım"); return; }
+        if (!metin) { setHata(_t("Anlayamadım")); return; }
         if (!onayli && onGonder) onGonder(metin);
         else onMetin && onMetin(metin);
       } catch (e) {
-        setHata("Ses tanınamadı");
+        setHata(_t("Ses tanınamadı"));
       }
     } else {
-      try { await startRecording(); } catch (e) { setHata("Mikrofon izni yok"); }
+      try { await startRecording(); } catch (e) { setHata(_t("Mikrofon izni yok")); }
     }
   }
 
@@ -51,7 +52,7 @@ export default function MikrofonDugmesi({ onMetin, onGonder, ipucu, disabled, bo
           isRecording && s.kayit,
           (disabled || isProcessing) && { opacity: 0.5 },
         ]}
-        accessibilityLabel={isRecording ? "Kaydı bitir" : "Sesle söyle"}
+        accessibilityLabel={isRecording ? _t("Kaydı bitir") : _t("Sesle söyle")}
         hitSlop={4}
       >
         {isProcessing ? (

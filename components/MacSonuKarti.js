@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,9 +21,9 @@ import { gorevOlayi } from "../lib/dailyGoals";
 // ============================================================================
 export default function MacSonuKarti({
   modAdi, modeId, skorSen, skorRakip, rakip, turlar = [], enIyi, kazanilanXp,
-  onRovans, onMenu, ekSatir, solo, rovansEtiketi = "RÖVANŞ", kazanan, kareSatir, skorEtiketi,
+  onRovans, onMenu, ekSatir, solo, rovansEtiketi = _t("RÖVANŞ"), kazanan, kareSatir, skorEtiketi,
   // 5 Ekim 2026 — online maç sonu: rövanş beklerken düğme pasif; "Menüye dön" yerine "Lobiye dön".
-  rovansPasif = false, menuEtiketi = "Menüye dön",
+  rovansPasif = false, menuEtiketi = _t("Menüye dön"),
 }) {
   // kazanan: "sen" | "rakip" | "berabere" — skordan çıkmayan sonuçlar için (XOX: üçlü sıra).
   // kareSatir: kareleri satırlara böl (XOX tahtası 3×3).
@@ -42,7 +43,7 @@ export default function MacSonuKarti({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const berabere = kazanan ? kazanan === "berabere" : skorSen === skorRakip;
-  const baslik = solo ? (solo.baslik || (solo.yeniRekor ? "YENİ REKOR!" : "SÜRE DOLDU")) : berabere ? "BERABERE" : kazandin ? "KAZANDIN!" : `${(rakip?.ad || "RAKİP").toLocaleUpperCase("tr")} KAZANDI`;
+  const baslik = solo ? (solo.baslik || (solo.yeniRekor ? _t("YENİ REKOR!") : _t("SÜRE DOLDU"))) : berabere ? _t("BERABERE") : kazandin ? _t("KAZANDIN!") : `${(rakip?.ad || _t("RAKİP")).toLocaleUpperCase("tr")} KAZANDI`;
   const kareDizi = turlar.map((t) => (t === "sen" ? "🟩" : t === "rakip" ? "🟥" : "⬜"));
   const kareler = kareSatir
     ? Array.from({ length: Math.ceil(kareDizi.length / kareSatir) }, (_, i) => kareDizi.slice(i * kareSatir, (i + 1) * kareSatir).join("")).join("\n")
@@ -51,20 +52,29 @@ export default function MacSonuKarti({
   async function paylas() {
     const satirlar = solo ? [
       `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
-      `${solo.puan} puan${solo.yeniRekor ? " — yeni rekorum!" : ""}`,
+      _t("{0} puan{1}", [solo.puan, solo.yeniRekor ? _t(" — yeni rekorum!") : ""]),
       kareler,
       ...(solo.satirlar || []).map(([a, b]) => `${a}: ${b}`),
-      "Sen kaç yaparsın?",
+      _t("Sen kaç yaparsın?"),
     ] : [
       `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
       kazandin
-        ? `${rakip?.ad || "Rakibim"} ile ${skorSen}-${skorRakip} — kazandım!`
+        ? _t(
+        "{0} ile {1}-{2} — kazandım!",
+        [rakip?.ad || _t("Rakibim"), skorSen, skorRakip]
+      )
         : berabere
-        ? `${rakip?.ad || "Rakibim"} ile ${skorSen}-${skorRakip} berabere kaldık.`
-        : `${rakip?.ad || "Rakibim"} ile ${skorSen}-${skorRakip} — kaybettim, rövanş var!`,
+        ? _t(
+        "{0} ile {1}-{2} berabere kaldık.",
+        [rakip?.ad || _t("Rakibim"), skorSen, skorRakip]
+      )
+        : _t(
+        "{0} ile {1}-{2} — kaybettim, rövanş var!",
+        [rakip?.ad || _t("Rakibim"), skorSen, skorRakip]
+      ),
       kareler,
-      enIyi ? `En nadir cevabım: ${enIyi.ad}` : null,
-      "Sen kaç yaparsın?",
+      enIyi ? _t("En nadir cevabım: {0}", [enIyi.ad]) : null,
+      _t("Sen kaç yaparsın?"),
     ].filter(Boolean);
     try { await Share.share({ message: satirlar.join("\n") }); } catch (e) {}
   }
@@ -76,7 +86,7 @@ export default function MacSonuKarti({
       {solo ? (
         <View style={s.soloKutu}>
           <Text style={s.soloPuan}>{solo.puan}</Text>
-          <Text style={s.soloEtiket}>PUAN · rekor {Math.max(solo.rekor || 0, solo.puan)}</Text>
+          <Text style={s.soloEtiket}>{_t("PUAN · rekor")}{" "}{Math.max(solo.rekor || 0, solo.puan)}</Text>
           {(solo.satirlar || []).map(([a, b]) => (
             <View key={a} style={s.soloSatir}>
               <Text style={s.soloSatirAd}>{a}</Text>
@@ -88,7 +98,7 @@ export default function MacSonuKarti({
       <View style={s.skorSatir}>
         <View style={s.taraf}>
           <View style={[s.avatar, { borderColor: COLORS.accent }]}><Ionicons name="person" size={24} color={COLORS.text} /></View>
-          <Text style={s.tarafAd}>Sen</Text>
+          <Text style={s.tarafAd}>{_t("Sen")}</Text>
         </View>
         <View style={{ alignItems: "center" }}>
           <Text style={s.skor}>{skorSen} – {skorRakip}</Text>
@@ -98,7 +108,7 @@ export default function MacSonuKarti({
           <View style={[s.avatar, { borderColor: rakip?.renk || COLORS.cardBorder }]}>
             {rakip?.avatar ? <Text style={s.avatarEmoji}>{rakip.avatar}</Text> : <Ionicons name="person" size={24} color={COLORS.text} />}
           </View>
-          <Text style={s.tarafAd} numberOfLines={1}>{rakip?.ad || "Rakip"}</Text>
+          <Text style={s.tarafAd} numberOfLines={1}>{rakip?.ad || _t("Rakip")}</Text>
         </View>
       </View>
       )}
@@ -110,7 +120,7 @@ export default function MacSonuKarti({
         <View style={s.enIyi}>
           <PlayerPhoto name={enIyi.ad} size={44} />
           <View style={{ flex: 1 }}>
-            <Text style={s.enIyiEtiket}>EN NADİR CEVABIN</Text>
+            <Text style={s.enIyiEtiket}>{_t("EN NADİR CEVABIN")}</Text>
             <Text style={s.enIyiAd} numberOfLines={1}>{enIyi.ad}</Text>
             {enIyi.alt ? <Text style={s.enIyiAlt} numberOfLines={1}>{enIyi.alt}</Text> : null}
           </View>
@@ -128,9 +138,9 @@ export default function MacSonuKarti({
           <Ionicons name={rovansPasif ? "hourglass-outline" : "refresh"} size={18} color={rovansPasif ? COLORS.textMuted : COLORS.accentDark} />
           <Text style={[s.rovansYazi, rovansPasif && { color: COLORS.textMuted, fontSize: 14 }]} numberOfLines={1} adjustsFontSizeToFit>{rovansEtiketi}</Text>
         </SoundPressable>
-        <SoundPressable style={s.paylas} onPress={paylas} accessibilityLabel="Sonucu paylaş">
+        <SoundPressable style={s.paylas} onPress={paylas} accessibilityLabel={_t("Sonucu paylaş")}>
           <Ionicons name="share-social" size={18} color={COLORS.text} />
-          <Text style={s.paylasYazi}>Paylaş</Text>
+          <Text style={s.paylasYazi}>{_t("Paylaş")}</Text>
         </SoundPressable>
       </View>
       <SoundPressable onPress={onMenu} style={s.menu}>

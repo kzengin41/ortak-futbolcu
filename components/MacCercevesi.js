@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,12 +33,12 @@ function Dugme({ ikon, onPress, etiket }) {
 export function OyunUstCubugu({ baslik, alt, onCikis, onBildir, sag, style }) {
   return (
     <View style={[s.ust, style]}>
-      {onCikis ? <Dugme ikon="close" onPress={onCikis} etiket="Oyundan çık" /> : <View style={s.bosDugme} />}
+      {onCikis ? <Dugme ikon="close" onPress={onCikis} etiket={_t("Oyundan çık")} /> : <View style={s.bosDugme} />}
       <View style={s.ustOrta}>
         {baslik ? <Text style={s.baslik} numberOfLines={1}>{baslik}</Text> : null}
         {alt ? <Text style={s.alt} numberOfLines={1}>{alt}</Text> : null}
       </View>
-      {sag !== undefined ? <View style={s.sagKutu}>{sag}</View> : onBildir ? <Dugme ikon="flag-outline" onPress={onBildir} etiket="Hatalı soru bildir" /> : <View style={s.bosDugme} />}
+      {sag !== undefined ? <View style={s.sagKutu}>{sag}</View> : onBildir ? <Dugme ikon="flag-outline" onPress={onBildir} etiket={_t("Hatalı soru bildir")} /> : <View style={s.bosDugme} />}
     </View>
   );
 }

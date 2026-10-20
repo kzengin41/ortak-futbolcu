@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,11 +20,13 @@ import { COLORS, SPACING, RADIUS, TYPE } from "../lib/theme";
 // mevcut yerleşimini bozmuyor.
 // ============================================================================
 export default function PoolEmpty({
-  baslik = "Yeni eşleşme kalmadı",
-  aciklama = "Bu lig seçimiyle sorulabilecek bütün eşleşmeleri gördün. Havuzu sıfırlayıp baştan oynayabilir ya da menüden başka bir kapsam seçebilirsin.",
+  baslik = _t("Yeni eşleşme kalmadı"),
+  aciklama = _t(
+    "Bu lig seçimiyle sorulabilecek bütün eşleşmeleri gördün. Havuzu sıfırlayıp baştan oynayabilir ya da menüden başka bir kapsam seçebilirsin."
+  ),
   onReset,
   onExit,
-  resetEtiketi = "Baştan Başla",
+  resetEtiketi = _t("Baştan Başla"),
 }) {
   return (
     <View style={styles.kutu}>
@@ -39,7 +42,7 @@ export default function PoolEmpty({
 
       {onExit ? (
         <Pressable onPress={onExit} hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}>
-          <Text style={styles.link}>Menüye dön</Text>
+          <Text style={styles.link}>{_t("Menüye dön")}</Text>
         </Pressable>
       ) : null}
     </View>

@@ -1,3 +1,5 @@
+import TabletCercevesi from "./components/TabletCercevesi";
+import { _t } from "./lib/dil";
 import React, { useState, useEffect, useRef } from "react";
 import { StatusBar, BackHandler, Platform, Alert, View, Text, Pressable } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -73,11 +75,11 @@ function goHome(navigation) {
 // böylece "bazı butonlar soruyor bazıları sormuyor" tutarsızlığı ortadan kalkar.
 function confirmedExit(navigation, mesaj) {
   Alert.alert(
-    "Çıkış",
-    mesaj || "Ana menüye dönmek istediğinize emin misiniz? İlerlemeniz kaybolacak.",
+    _t("Çıkış"),
+    mesaj || _t("Ana menüye dönmek istediğinize emin misiniz? İlerlemeniz kaybolacak."),
     [
-      { text: "Hayır", style: "cancel" },
-      { text: "Evet", style: "destructive", onPress: () => goHome(navigation) },
+      { text: _t("Hayır"), style: "cancel" },
+      { text: _t("Evet"), style: "destructive", onPress: () => goHome(navigation) },
     ]
   );
 }
@@ -331,7 +333,7 @@ function RehberliOyun({ mod, children }) {
     <View style={{ flex: 1 }}>
       {basladi ? children : (
         <GameBackground style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-          {rehber.hazir ? <Text style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: "700", textAlign: "center" }}>Rehberi kapatınca maç başlar — rakibin de seni bekliyor.</Text> : null}
+          {rehber.hazir ? <Text style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: "700", textAlign: "center" }}>{_t("Rehberi kapatınca maç başlar — rakibin de seni bekliyor.")}</Text> : null}
         </GameBackground>
       )}
       {rehber.varMi && <ModeGuideButton onPress={rehber.ac} />}
@@ -344,7 +346,9 @@ function RehberliOyun({ mod, children }) {
 // Paket 23: dereceli maçta yarıda çıkan oyuncu yenilmiş sayılır — uyarıda yazsın.
 function onlineCikis(navigation, room) {
   confirmedExit(navigation, room && room.isRanked
-    ? "Dereceli maç sürüyorsa çıkarsan yenilmiş sayılırsın. Maç bittiyse puanın işlendi. Çıkmak istiyor musun?"
+    ? _t(
+    "Dereceli maç sürüyorsa çıkarsan yenilmiş sayılırsın. Maç bittiyse puanın işlendi. Çıkmak istiyor musun?"
+  )
     : undefined);
 }
 function OnlineDuelRoute({ navigation, route }) {
@@ -457,11 +461,11 @@ function MainTabsRoute() {
         tabBarIcon: ({ color, size }) => <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />,
       })}
     >
-      <Tab.Screen name="oyna" component={OynaRoute} options={{ title: "Ana Sayfa" }} />
-      <Tab.Screen name="tumModlar" component={TumModlarRoute} options={{ title: "Tüm Modlar" }} />
-      <Tab.Screen name="online" component={OnlineRoute} options={{ title: "Online" }} />
-      <Tab.Screen name="ansiklopedi" getComponent={getAnsiklopediRouteBir} options={{ title: "Ansiklopedi" }} />
-      <Tab.Screen name="profilim" component={ProfilimRoute} options={{ title: "Profilim" }} />
+      <Tab.Screen name="oyna" component={OynaRoute} options={{ title: _t("Ana Sayfa") }} />
+      <Tab.Screen name="tumModlar" component={TumModlarRoute} options={{ title: _t("Tüm Modlar") }} />
+      <Tab.Screen name="online" component={OnlineRoute} options={{ title: _t("Online") }} />
+      <Tab.Screen name="ansiklopedi" getComponent={getAnsiklopediRouteBir} options={{ title: _t("Ansiklopedi") }} />
+      <Tab.Screen name="profilim" component={ProfilimRoute} options={{ title: _t("Profilim") }} />
     </Tab.Navigator>
   );
 }
@@ -634,19 +638,13 @@ class HataSiniri extends React.Component {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center", padding: 28 }}>
         <Ionicons name="alert-circle-outline" size={48} color={COLORS.danger} />
-        <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: "900", marginTop: 16, textAlign: "center" }}>
-          Bir şeyler ters gitti
-        </Text>
-        <Text style={{ color: COLORS.textMuted, fontSize: 14, marginTop: 8, textAlign: "center", lineHeight: 20 }}>
-          Beklenmedik bir hata oluştu. Ana menüye dönüp tekrar deneyebilirsin.
-        </Text>
+        <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: "900", marginTop: 16, textAlign: "center" }}>{_t("Bir şeyler ters gitti")}</Text>
+        <Text style={{ color: COLORS.textMuted, fontSize: 14, marginTop: 8, textAlign: "center", lineHeight: 20 }}>{_t("Beklenmedik bir hata oluştu. Ana menüye dönüp tekrar deneyebilirsin.")}</Text>
         <Pressable
           onPress={() => this.setState({ hata: null })}
           style={{ backgroundColor: COLORS.accent, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 28, marginTop: 24 }}
         >
-          <Text style={{ color: COLORS.accentDark, fontWeight: "900", fontSize: 15, letterSpacing: 0.5 }}>
-            TEKRAR DENE
-          </Text>
+          <Text style={{ color: COLORS.accentDark, fontWeight: "900", fontSize: 15, letterSpacing: 0.5 }}>{_t("TEKRAR DENE")}</Text>
         </Pressable>
       </View>
     );
@@ -672,6 +670,7 @@ function App() {
           <StatusBar barStyle={COLORS.acik ? "dark-content" : "light-content"} backgroundColor={COLORS.bg} />
           <HataSiniri>
             <DokunmaSesiKatmani>
+              <TabletCercevesi>
               <AppContent />
               {/* 12 Eylül 2026 — yeni futbolcu açılışı bildirimi. Tek yerde
                   monte; oyun ekranlarının haberi olmasına gerek yok. */}
@@ -680,6 +679,7 @@ function App() {
               <CanliSesBalonu />
               {/* 5 Ekim 2026 — yeni sürüm indirildiğinde "Yenile" bandı (lib/guncelleme.js) */}
               <GuncellemeBandi />
+              </TabletCercevesi>
             </DokunmaSesiKatmani>
           </HataSiniri>
         </SafeAreaView>

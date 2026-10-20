@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle } from "react-native-svg";
@@ -48,11 +49,11 @@ export function RozetIzgarasi({ durum }) {
       {durum.map((r) => {
         const k = r.kademe > 0 ? KADEMELER[r.kademe - 1] : null;
         return (
-          <View key={r.id} style={s.hucre} accessible accessibilityLabel={`${r.ad}: ${k ? k.ad : "henüz yok"}, ${r.deger} ${r.birim}${r.sonraki ? `, sonraki kademe ${r.sonraki}` : ""}`}>
+          <View key={r.id} style={s.hucre} accessible accessibilityLabel={`${r.ad}: ${k ? k.ad : _t("henüz yok")}, ${r.deger} ${r.birim}${r.sonraki ? _t(", sonraki kademe {0}", [r.sonraki]) : ""}`}>
             <RozetMadalyonu r={r} />
             <Text style={s.ad} numberOfLines={2}>{r.ad}</Text>
-            <Text style={[s.kademe, k && { color: k.renk }]}>{k ? k.ad.toLocaleUpperCase("tr") : "KİLİTLİ"}</Text>
-            <Text style={s.ilerleme}>{r.sonraki ? `${r.deger}/${r.sonraki}` : "tamamlandı"}</Text>
+            <Text style={[s.kademe, k && { color: k.renk }]}>{k ? k.ad.toLocaleUpperCase("tr") : _t("KİLİTLİ")}</Text>
+            <Text style={s.ilerleme}>{r.sonraki ? `${r.deger}/${r.sonraki}` : _t("tamamlandı")}</Text>
           </View>
         );
       })}
@@ -75,7 +76,7 @@ export function MacSonuOdulleri() {
       {carpan > 1 ? (
         <View style={s.xp}>
           <Ionicons name="flash" size={14} color={COLORS.accentDark} />
-          <Text style={s.xpYazi}>Günün modu · {carpan}× XP</Text>
+          <Text style={s.xpYazi}>{_t("Günün modu ·")}{" "}{carpan}{_t("× XP")}</Text>
         </View>
       ) : null}
       {yeni.map((r) => {
@@ -84,7 +85,7 @@ export function MacSonuOdulleri() {
           <View key={r.id} style={[s.yeni, { borderColor: k.renk }]}>
             <RozetMadalyonu r={r} boyut={44} />
             <View style={{ flex: 1 }}>
-              <Text style={[s.yeniUst, { color: k.renk }]}>YENİ ROZET · {k.ad.toLocaleUpperCase("tr")}</Text>
+              <Text style={[s.yeniUst, { color: k.renk }]}>{_t("YENİ ROZET ·")}{" "}{k.ad.toLocaleUpperCase("tr")}</Text>
               <Text style={s.yeniAd} numberOfLines={1}>{r.ad}</Text>
             </View>
           </View>

@@ -1,3 +1,5 @@
+import { useEkran } from "../lib/ekran";
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, StyleSheet, Share, Pressable, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -63,7 +65,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
   const playWrong = useWrongSound();
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
   const oneriler = useMemo(() => (girdi.trim().length > 2 ? suggestPlayers(suggestIndex, girdi).slice(0, 4) : []), [suggestIndex, girdi]);
-  const { width } = useWindowDimensions();
+  const { width } = useEkran();
   const hucre = Math.min(104, Math.floor((width - 40 - 8 * 3) / 4));
 
   useEffect(() => {
@@ -86,8 +88,8 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
     const kullanilmis = new Set(kareler.filter(Boolean).map((k) => k.ad));
     const dogruP = findMatchedPlayer(t, cevaplar[secili].filter((x) => !kullanilmis.has(x.name)));
     const p = dogruP || findMatchedPlayer(t, PLAYERS);
-    if (!p) { setUyari(`"${t}" diye bir futbolcu bulamadım — hak gitmedi`); return; }
-    if (kullanilmis.has(p.name)) { setUyari(`${p.name} başka bir karede zaten var — hak gitmedi`); return; }
+    if (!p) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — hak gitmedi", [t])); return; }
+    if (kullanilmis.has(p.name)) { setUyari(_t("{0} başka bir karede zaten var — hak gitmedi", [p.name])); return; }
     const yeniKullanilan = kullanilan + 1;
     let yeniKareler = kareler;
     if (dogruP) {
@@ -97,7 +99,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
       playCorrect();
       recordRound("gunlukIzgara", true);
     } else {
-      setUyari(`${p.name} bu iki koşulu birlikte sağlamıyor — 1 hak gitti`);
+      setUyari(_t("{0} bu iki koşulu birlikte sağlamıyor — 1 hak gitti", [p.name]));
       playWrong();
       recordRound("gunlukIzgara", false);
     }
@@ -118,7 +120,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={s.kap}>
         <BackButton onPress={onExitSilent || onExit} />
-        <Text style={s.baslik}>Bugünün ızgarası hazırlanamadı</Text>
+        <Text style={s.baslik}>{_t("Bugünün ızgarası hazırlanamadı")}</Text>
       </GameBackground>
     );
   }
@@ -127,11 +129,11 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
   return (
     <GameBackground style={s.kap} klavye="kaydir">
       <BackButton onPress={onExitSilent || onExit} />
-      <Text style={s.ust}>GÜNLÜK IZGARA #{bulmaca.no}</Text>
-      <Text style={s.baslik}>Dokuz kareyi doldur</Text>
+      <Text style={s.ust}>{_t("GÜNLÜK IZGARA #")}{bulmaca.no}</Text>
+      <Text style={s.baslik}>{_t("Dokuz kareyi doldur")}</Text>
       <View style={s.bilgiSatir}>
-        <Text style={s.bilgi}>Kalan hak <Text style={s.bilgiSayi}>{Math.max(0, IZGARA_HAK - kullanilan)}</Text></Text>
-        <Text style={s.bilgi}>Nadirlik <Text style={s.bilgiSayi}>{toplamNadirlik}</Text></Text>
+        <Text style={s.bilgi}>{_t("Kalan hak")}{" "}<Text style={s.bilgiSayi}>{Math.max(0, IZGARA_HAK - kullanilan)}</Text></Text>
+        <Text style={s.bilgi}>{_t("Nadirlik")}{" "}<Text style={s.bilgiSayi}>{toplamNadirlik}</Text></Text>
       </View>
 
       <View style={s.izgara}>
@@ -154,7 +156,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
                   disabled={!!k || bitti || !yuklendi}
                   onPress={() => { setSecili(sec ? null : i); setUyari(null); }}
                   style={[s.hucre, { width: hucre, height: hucre }, k && s.hucreDolu, sec && s.hucreSecili]}
-                  accessibilityLabel={k ? k.ad : `${kosulEtiketi(sk)} ve ${kosulEtiketi(sutunlar[c])}`}
+                  accessibilityLabel={k ? k.ad : _t("{0} ve {1}", [kosulEtiketi(sk), kosulEtiketi(sutunlar[c])])}
                 >
                   {k ? (
                     <>
@@ -182,7 +184,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
               value={girdi}
               onChangeText={(t) => { setGirdi(t); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder="Futbolcu adı"
+              placeholder={_t("Futbolcu adı")}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
@@ -190,7 +192,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
               returnKeyType="send"
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
-            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -202,20 +204,22 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
           ))}
         </>
       ) : !bitti && yuklendi ? (
-        <Text style={s.ipucu}>Bir kareye dokun, iki koşulu da sağlayan futbolcuyu yaz. Yanlış tahmin bir hak götürür.</Text>
+        <Text style={s.ipucu}>{_t(
+          "Bir kareye dokun, iki koşulu da sağlayan futbolcuyu yaz. Yanlış tahmin bir hak götürür."
+        )}</Text>
       ) : null}
       {uyari ? <Text style={s.uyari}>{uyari}</Text> : null}
 
       {bitti ? (
         <View style={s.sonuc}>
-          <Text style={s.sonucUst}>BUGÜNKÜ SONUCUN</Text>
+          <Text style={s.sonucUst}>{_t("BUGÜNKÜ SONUCUN")}</Text>
           <Text style={s.sonucSayi}>{dolu} <Text style={s.sonucBolu}>/ 9</Text></Text>
-          <Text style={s.sonucAlt}>Nadirlik puanı {toplamNadirlik} · boş karelerdeki sayı o karenin kaç doğru cevabı olduğunu gösterir</Text>
+          <Text style={s.sonucAlt}>{_t("Nadirlik puanı")}{" "}{toplamNadirlik}{" "}{_t("· boş karelerdeki sayı o karenin kaç doğru cevabı olduğunu gösterir")}</Text>
           <SoundPressable style={s.paylas} onPress={paylas}>
             <Ionicons name="share-social" size={18} color={COLORS.accentDark} />
-            <Text style={s.paylasYazi}>PAYLAŞ</Text>
+            <Text style={s.paylasYazi}>{_t("PAYLAŞ")}</Text>
           </SoundPressable>
-          <Text style={s.yarin}>Yarın yeni ızgara gelir.</Text>
+          <Text style={s.yarin}>{_t("Yarın yeni ızgara gelir.")}</Text>
         </View>
       ) : null}
     </GameBackground>

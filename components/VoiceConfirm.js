@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import SoundPressable from "./SoundPressable";
@@ -34,27 +35,27 @@ export default function VoiceConfirm({ istek, onOnayla, onTekrar, onYaz, onIptal
 
   return (
     <View style={styles.kap}>
-      <Text style={styles.ustYazi}>BUNU MU DEDİN?</Text>
+      <Text style={styles.ustYazi}>{_t("BUNU MU DEDİN?")}</Text>
 
       <Text style={styles.ad} numberOfLines={2}>{ad}</Text>
 
       <View style={styles.satir}>
         <SoundPressable style={[styles.btn, styles.btnOnay]} onPress={() => onOnayla(ad)}>
-          <Text style={styles.btnOnayText}>Gönder</Text>
+          <Text style={styles.btnOnayText}>{_t("Gönder")}</Text>
         </SoundPressable>
         <SoundPressable style={styles.btn} onPress={onTekrar}>
-          <Text style={styles.btnText}>Tekrar konuş</Text>
+          <Text style={styles.btnText}>{_t("Tekrar konuş")}</Text>
         </SoundPressable>
       </View>
 
       <View style={styles.satir}>
         <SoundPressable style={[styles.btn, styles.btnGenis]} onPress={() => onYaz(ad)}>
-          <Text style={styles.btnText}>Yazarak düzelt</Text>
+          <Text style={styles.btnText}>{_t("Yazarak düzelt")}</Text>
         </SoundPressable>
       </View>
 
       <SoundPressable style={styles.vazgec} onPress={onIptal}>
-        <Text style={styles.vazgecText}>Vazgeç</Text>
+        <Text style={styles.vazgecText}>{_t("Vazgeç")}</Text>
       </SoundPressable>
     </View>
   );

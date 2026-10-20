@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, Share, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -112,7 +113,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
       return;
     }
     if (findMatchedPlayer(t, kadro.ilk11.filter((o, i) => acik.has(i)).map((o) => ({ name: o.a })))) {
-      setUyari("Onu zaten buldun");
+      setUyari(_t("Onu zaten buldun"));
       return;
     }
     const yedekte = findMatchedPlayer(t, kadro.yedek.map((o) => ({ name: o.a })));
@@ -120,7 +121,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
     setYanlis(y);
     playWrong();
     recordRound("gunlukKadro", false);
-    setUyari(yedekte ? `${yedekte.name} o maçta yedekteydi — ilk 11'de değil` : "Bu isim ilk 11'de yok");
+    setUyari(yedekte ? _t("{0} o maçta yedekteydi — ilk 11'de değil", [yedekte.name]) : _t("Bu isim ilk 11'de yok"));
     kaydet({ yanlis: y });
   }
 
@@ -132,7 +133,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={s.kap}>
         <BackButton onPress={onExitSilent || onExit} />
-        <Text style={s.baslik}>Bugünün kadrosu hazırlanamadı</Text>
+        <Text style={s.baslik}>{_t("Bugünün kadrosu hazırlanamadı")}</Text>
       </GameBackground>
     );
   }
@@ -148,28 +149,26 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
         <BackButton onPress={onExitSilent || onExit} />
         <Text style={s.saat}>{sureYaz(gecen)}</Text>
       </View>
-      <Text style={s.ustBaslik}>GÜNÜN KADROSU #{kadro.no}</Text>
+      <Text style={s.ustBaslik}>{_t("GÜNÜN KADROSU #")}{kadro.no}</Text>
       {m ? (
         <View style={s.macKart}>
-          <Text style={s.macTur}>{m.tur}{m.yil ? ` · ${m.yil}` : ""}</Text>
+          <Text style={s.macTur}>{_t(m.tur)}{m.yil ? ` · ${m.yil}` : ""}</Text>
           {m.lakap ? <Text style={s.lakap} numberOfLines={2}>{m.lakap}</Text> : null}
           <View style={s.macSatir}>
             <TakimEtiketi ad={m.takimlar[0].ad} tip={m.takimlar[0].tip} vurgulu={hedefIndeks === 0} />
             <View style={{ alignItems: "center" }}>
               <Text style={s.skor}>{m.skor || "–"}</Text>
-              {m.penalti ? <Text style={s.penalti}>pen. {m.penalti}</Text> : m.uzatma ? <Text style={s.penalti}>uzatmada</Text> : null}
+              {m.penalti ? <Text style={s.penalti}>{_t("pen.")}{" "}{m.penalti}</Text> : m.uzatma ? <Text style={s.penalti}>{_t("uzatmada")}</Text> : null}
             </View>
             <TakimEtiketi ad={m.takimlar[1].ad} tip={m.takimlar[1].tip} vurgulu={hedefIndeks === 1} />
           </View>
-          <Text style={s.hedef}>
-            Bul: <Text style={{ color: COLORS.accent }}>{kadro.takimTip === "ulke" ? countryTr(kadro.takim) || kadro.takim : kadro.takim}</Text> ilk 11'i
-          </Text>
+          <Text style={s.hedef}>{_t("Bul:")}{" "}<Text style={{ color: COLORS.accent }}>{kadro.takimTip === "ulke" ? countryTr(kadro.takim) || kadro.takim : kadro.takim}</Text>{" "}{_t("ilk 11'i")}</Text>
         </View>
       ) : null}
 
       <View style={s.durumSatir}>
         <Text style={s.durum}><Text style={s.durumSayi}>{bulunan.length}</Text> / 11</Text>
-        <Text style={s.durumAlt}>{yanlis} yanlış</Text>
+        <Text style={s.durumAlt}>{yanlis}{" "}{_t("yanlış")}</Text>
       </View>
 
       <Saha satirlar={satirlar} bulundu={bulundu} acik={bitti} />
@@ -182,7 +181,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
               value={girdi}
               onChangeText={(t) => { setGirdi(t); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder="İlk 11'den bir isim"
+              placeholder={_t("İlk 11'den bir isim")}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
@@ -190,7 +189,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
               blurOnSubmit={false}
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
-            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -203,21 +202,21 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
           {uyari ? <Text style={s.uyari}>{uyari}</Text> : null}
           <SoundPressable style={s.pes} onPress={() => bitir(bulunan, yanlis)}>
             <Ionicons name="flag" size={16} color={COLORS.textMuted} />
-            <Text style={s.pesYazi}>Pes et, kadroyu göster</Text>
+            <Text style={s.pesYazi}>{_t("Pes et, kadroyu göster")}</Text>
           </SoundPressable>
         </>
       ) : null}
 
       {bitti ? (
         <View style={s.sonuc}>
-          <Text style={s.sonucUst}>BUGÜNKÜ SONUCUN</Text>
+          <Text style={s.sonucUst}>{_t("BUGÜNKÜ SONUCUN")}</Text>
           <Text style={s.sonucSayi}>{bulunan.length}<Text style={s.sonucBolu}> / 11 · {sureYaz(gecen)}</Text></Text>
           <Kulube yedek={kadro.yedek} bulundu={() => true} />
           <SoundPressable style={s.paylas} onPress={paylas}>
             <Ionicons name="share-social" size={18} color={COLORS.accentDark} />
-            <Text style={s.paylasYazi}>PAYLAŞ</Text>
+            <Text style={s.paylasYazi}>{_t("PAYLAŞ")}</Text>
           </SoundPressable>
-          <Text style={s.yarin}>Yarın başka bir efsane maç gelir.</Text>
+          <Text style={s.yarin}>{_t("Yarın başka bir efsane maç gelir.")}</Text>
         </View>
       ) : null}
     </GameBackground>

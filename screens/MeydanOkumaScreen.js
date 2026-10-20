@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -88,7 +89,7 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
     if (!m) {
       playWrong();
       setGirdi("");
-      setUyari(`"${yazi}" bu ikilide oynamadı`);
+      setUyari(_t("\"{0}\" bu ikilide oynamadı", [yazi]));
       return;
     }
     playCorrect();
@@ -118,9 +119,11 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
     return (
       <GameBackground style={s.merkez}>
         <Ionicons name="alert-circle" size={36} color={COLORS.danger} />
-        <Text style={s.baslik}>Kod geçersiz</Text>
-        <Text style={s.aciklama}>"{kod}" bir meydan okuma kodu değil. Arkadaşının gönderdiği 6 harfli kodu kontrol et.</Text>
-        <SoundPressable style={s.anaBtn} onPress={cikis}><Text style={s.anaBtnYazi}>GERİ DÖN</Text></SoundPressable>
+        <Text style={s.baslik}>{_t("Kod geçersiz")}</Text>
+        <Text style={s.aciklama}>"{kod}{_t(
+          "\" bir meydan okuma kodu değil. Arkadaşının gönderdiği 6 harfli kodu kontrol et."
+        )}</Text>
+        <SoundPressable style={s.anaBtn} onPress={cikis}><Text style={s.anaBtnYazi}>{_t("GERİ DÖN")}</Text></SoundPressable>
       </GameBackground>
     );
   }
@@ -132,27 +135,33 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
         <BackButton onPress={cikis} confirm={false} />
         <ScrollView contentContainerStyle={{ paddingBottom: SPACING.xxl }} showsVerticalScrollIndicator={false}>
           <View style={s.ikonDaire}><Ionicons name="paper-plane" size={30} color={VURGU.main} /></View>
-          <Text style={s.baslik}>{rakip ? "SANA MEYDAN OKUNDU!" : "MEYDAN OKUMA"}</Text>
+          <Text style={s.baslik}>{rakip ? _t("SANA MEYDAN OKUNDU!") : _t("MEYDAN OKUMA")}</Text>
           {rakip ? (
             <View style={s.rakipKart}>
-              <Text style={s.rakipEtiket}>ARKADAŞININ SKORU</Text>
+              <Text style={s.rakipEtiket}>{_t("ARKADAŞININ SKORU")}</Text>
               <Text style={s.rakipSkor}>{rakip.dogru} / {SORU_SAYISI}</Text>
-              <Text style={s.rakipSure}>{sureYaz(rakip.sure)} sürede</Text>
+              <Text style={s.rakipSure}>{sureYaz(rakip.sure)}{" "}{_t("sürede")}</Text>
             </View>
           ) : null}
           <Text style={s.aciklama}>
             {rakip
-              ? `Aynı ${SORU_SAYISI} soruyu sen çöz. Daha çok bilen kazanır; eşitlikte hızlı olan.`
-              : `${SORU_SAYISI} soru, her biri ${SORU_SURESI_SN} saniye: iki kulübün ikisinde de oynamış bir futbolcu yaz. Bitince kodunu arkadaşına gönder — o da aynı soruları çözsün, kim daha iyi görün.`}
+              ? _t(
+              "Aynı {0} soruyu sen çöz. Daha çok bilen kazanır; eşitlikte hızlı olan.",
+              [SORU_SAYISI]
+            )
+              : _t(
+              "{0} soru, her biri {1} saniye: iki kulübün ikisinde de oynamış bir futbolcu yaz. Bitince kodunu arkadaşına gönder — o da aynı soruları çözsün, kim daha iyi görün.",
+              [SORU_SAYISI, SORU_SURESI_SN]
+            )}
           </Text>
-          <SoundPressable style={s.anaBtn} onPress={basla} accessibilityLabel="Başla">
+          <SoundPressable style={s.anaBtn} onPress={basla} accessibilityLabel={_t("Başla")}>
             <Ionicons name="play" size={20} color={COLORS.accentDark} />
-            <Text style={s.anaBtnYazi}>{rakip ? "KABUL ET — BAŞLA" : "BAŞLA"}</Text>
+            <Text style={s.anaBtnYazi}>{rakip ? _t("KABUL ET — BAŞLA") : _t("BAŞLA")}</Text>
           </SoundPressable>
 
           {gecmis.length ? (
             <View style={{ marginTop: SPACING.xl }}>
-              <Text style={s.bolumBaslik}>SON MEYDAN OKUMALAR</Text>
+              <Text style={s.bolumBaslik}>{_t("SON MEYDAN OKUMALAR")}</Text>
               {gecmis.slice(0, 5).map((g) => {
                 const sonuc = g.rakip ? karsilastir(g.ben, g.rakip) : null;
                 return (
@@ -164,10 +173,10 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
                     </Text>
                     {sonuc ? (
                       <Text style={[s.gecmisSonuc, { color: sonuc === "sen" ? COLORS.accent : sonuc === "rakip" ? COLORS.danger : COLORS.textMuted }]}>
-                        {sonuc === "sen" ? "KAZANDIN" : sonuc === "rakip" ? "KAYBETTİN" : "BERABERE"}
+                        {sonuc === "sen" ? _t("KAZANDIN") : sonuc === "rakip" ? _t("KAYBETTİN") : _t("BERABERE")}
                       </Text>
                     ) : (
-                      <Text style={[s.gecmisSonuc, { color: COLORS.cta }]}>GÖNDERİLDİ</Text>
+                      <Text style={[s.gecmisSonuc, { color: COLORS.cta }]}>{_t("GÖNDERİLDİ")}</Text>
                     )}
                   </View>
                 );
@@ -201,38 +210,38 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
         <ScrollView contentContainerStyle={{ paddingBottom: SPACING.xxl }} showsVerticalScrollIndicator={false}>
           {rakip ? (
             <MacSonuKarti
-              modAdi="Meydan Okuma"
+              modAdi={_t("Meydan Okuma")}
               skorSen={dogru}
               skorRakip={rakip.dogru}
-              skorEtiketi="doğru"
+              skorEtiketi={_t("doğru")}
               kazanan={karsilastir({ dogru, sure }, rakip)}
-              rakip={{ ad: "Arkadaşın", avatar: "✉️", renk: COLORS.cta }}
+              rakip={{ ad: _t("Arkadaşın"), avatar: "✉️", renk: COLORS.cta }}
               turlar={sonuclar.map((x) => (x.ad ? "sen" : "yok"))}
-              ekSatir={<Text style={s.sureKarsilastir}>Süre: sen {sureYaz(sure)} · arkadaşın {sureYaz(rakip.sure)}</Text>}
-              rovansEtiketi="SEN DE MEYDAN OKU"
+              ekSatir={<Text style={s.sureKarsilastir}>{_t("Süre: sen")}{" "}{sureYaz(sure)}{" "}{_t("· arkadaşın")}{" "}{sureYaz(rakip.sure)}</Text>}
+              rovansEtiketi={_t("SEN DE MEYDAN OKU")}
               onRovans={yeniMeydanOkuma}
               onMenu={cikis}
             />
           ) : (
             <View style={s.sonucKart}>
-              <Text style={s.sonucBaslik}>MEYDAN OKUMAN HAZIR</Text>
+              <Text style={s.sonucBaslik}>{_t("MEYDAN OKUMAN HAZIR")}</Text>
               <Text style={s.sonucSkor}>{dogru} / {SORU_SAYISI}</Text>
-              <Text style={s.rakipSure}>{sureYaz(sure)} sürede</Text>
-              <Text style={s.kodEtiket}>ARKADAŞINA BU KODU GÖNDER</Text>
+              <Text style={s.rakipSure}>{sureYaz(sure)}{" "}{_t("sürede")}</Text>
+              <Text style={s.kodEtiket}>{_t("ARKADAŞINA BU KODU GÖNDER")}</Text>
               <Text style={s.kod} selectable>{kodGoster(benimKod)}</Text>
-              <SoundPressable style={[s.anaBtn, { alignSelf: "stretch" }]} onPress={paylas} accessibilityLabel="Kodu paylaş">
+              <SoundPressable style={[s.anaBtn, { alignSelf: "stretch" }]} onPress={paylas} accessibilityLabel={_t("Kodu paylaş")}>
                 <Ionicons name="share-social" size={20} color={COLORS.accentDark} />
-                <Text style={s.anaBtnYazi}>KODU PAYLAŞ</Text>
+                <Text style={s.anaBtnYazi}>{_t("KODU PAYLAŞ")}</Text>
               </SoundPressable>
               <SoundPressable style={s.ikincilBtn} onPress={yeniMeydanOkuma}>
-                <Text style={s.ikincilYazi}>Yeni meydan okuma</Text>
+                <Text style={s.ikincilYazi}>{_t("Yeni meydan okuma")}</Text>
               </SoundPressable>
               <SoundPressable style={s.ikincilBtn} onPress={cikis}>
-                <Text style={s.ikincilYazi}>Menüye dön</Text>
+                <Text style={s.ikincilYazi}>{_t("Menüye dön")}</Text>
               </SoundPressable>
             </View>
           )}
-          <Text style={[s.bolumBaslik, { marginTop: SPACING.lg }]}>SORULAR</Text>
+          <Text style={[s.bolumBaslik, { marginTop: SPACING.lg }]}>{_t("SORULAR")}</Text>
           {ozet}
         </ScrollView>
       </GameBackground>
@@ -246,10 +255,10 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
         <BackButton onPress={onExit} />
         <KlavyeScroll contentContainerStyle={{ paddingBottom: SPACING.xl }} keyboardShouldPersistTaps="handled">
           <View style={s.ustSatir}>
-            <Text style={s.soruNo}>SORU {no + 1} / {sorular.length}</Text>
-            <Text style={s.dogruSayac}>{sonuclar.filter((x) => x.ad).length} doğru</Text>
+            <Text style={s.soruNo}>{_t("SORU")}{" "}{no + 1}/ {sorular.length}</Text>
+            <Text style={s.dogruSayac}>{sonuclar.filter((x) => x.ad).length}{" "}{_t("doğru")}</Text>
           </View>
-          {rakip ? <Text style={s.hedefYazi}>Geçmen gereken: {rakip.dogru} doğru · {sureYaz(rakip.sure)}</Text> : null}
+          {rakip ? <Text style={s.hedefYazi}>{_t("Geçmen gereken:")}{" "}{rakip.dogru}{" "}{_t("doğru ·")}{" "}{sureYaz(rakip.sure)}</Text> : null}
           <View style={s.ciftKart}>
             <View style={s.takim}>
               <TeamBadge name={cift[0]} size={56} />
@@ -263,7 +272,7 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
           </View>
           <View style={{ marginTop: SPACING.md }}>
             <TimerBar current={kalan} total={SORU_SURESI_SN} />
-            <Text style={[s.sureYazi, kalan <= 5 && { color: COLORS.danger }]}>{kalan} sn</Text>
+            <Text style={[s.sureYazi, kalan <= 5 && { color: COLORS.danger }]}>{kalan}{" "}{_t("sn")}</Text>
           </View>
           <View style={s.girdiSatir}>
             <TextInput
@@ -271,7 +280,7 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
               value={girdi}
               onChangeText={(x) => { setGirdi(x); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder="İkisinde de oynamış futbolcu..."
+              placeholder={_t("İkisinde de oynamış futbolcu...")}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
@@ -280,7 +289,7 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
               autoFocus
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
-            <SoundPressable style={s.gonderBtn} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonderBtn} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="send" size={18} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -292,7 +301,7 @@ export default function MeydanOkumaScreen({ kod, onExit, onExitSilent }) {
           ))}
           {uyari ? <Text style={s.uyari}>{uyari}</Text> : null}
           <SoundPressable style={s.pasBtn} onPress={() => soruyuBitir(null)}>
-            <Text style={s.ikincilYazi}>Bilemedim, sıradaki soru</Text>
+            <Text style={s.ikincilYazi}>{_t("Bilemedim, sıradaki soru")}</Text>
           </SoundPressable>
         </KlavyeScroll>
       </KlavyeAlani>

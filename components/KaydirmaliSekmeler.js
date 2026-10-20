@@ -1,3 +1,4 @@
+import { useEkran } from "../lib/ekran";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, PanResponder, View, StyleSheet, useWindowDimensions, Easing } from "react-native";
 import { createNavigatorFactory, useNavigationBuilder, TabRouter } from "@react-navigation/native";
@@ -31,7 +32,7 @@ function KaydirmaliSekmeNavigator({ id, initialRouteName, children, layout, scre
   const { state, navigation, descriptors, NavigationContent } = useNavigationBuilder(TabRouter, {
     id, initialRouteName, children, layout, screenListeners, screenOptions, screenLayout, backBehavior, UNSTABLE_router,
   });
-  const { width: W } = useWindowDimensions();
+  const { width: W } = useEkran();
   const insets = useSafeAreaInsets();
   const [cubukYuksekligi, setCubukYuksekligi] = useState(0);
   const index = state.index;

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,10 +26,10 @@ import { COLORS, RADIUS, SPACING, saydam, vurguZemini } from "../lib/theme";
 // ============================================================================
 
 const RAKIPLER = {
-  cpu: { ad: "CPU", ikon: "hardware-chip-outline" },
-  yanimdaki: { ad: "Yanımdaki", ikon: "people-outline" },
-  online: { ad: "Online", ikon: "globe-outline" },
-  tek: { ad: "Tek başına", ikon: "person-outline" },
+  cpu: { ad: _t("CPU"), ikon: "hardware-chip-outline" },
+  yanimdaki: { ad: _t("Yanımdaki"), ikon: "people-outline" },
+  online: { ad: _t("Online"), ikon: "globe-outline" },
+  tek: { ad: _t("Tek başına"), ikon: "person-outline" },
 };
 const SIRA = ["cpu", "yanimdaki", "online", "tek"];
 const sonSecim = new Map();   // modKey -> { rakip, i }
@@ -70,27 +71,27 @@ export default function OyunBaslatPenceresi({ mod, onClose, onBasla, mesgul, hat
               {mod.ikon ? <ModIkon ad={mod.ikon} boyut={24} renk={COLORS.accent} /> : <Ionicons name={mod.icon || "play"} size={22} color={COLORS.accent} />}
             </View>
             <Text style={s.baslik} numberOfLines={2}>{mod.vitrinAdi || mod.title}</Text>
-            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Kapat" style={s.kapat}>
+            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel={_t("Kapat")} style={s.kapat}>
               <Ionicons name="close" size={20} color={COLORS.textMuted} />
             </Pressable>
           </View>
 
-          {rakipler.length > 1 ? <Text style={s.soru}>KİMİNLE?</Text> : null}
+          {rakipler.length > 1 ? <Text style={s.soru}>{_t("KİMİNLE?")}</Text> : null}
           {rakipler.length > 1 ? <View style={s.karolar}>
             {rakipler.map((r) => {
               const akt = r === rakip;
               return (
                 <View key={r} style={{ flex: 1 }}>
-                <PressScale
-                  style={[s.karo, akt && s.karoAktif]}
-                  onPress={() => { setRakip(r); setTur(0); }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: akt }}
-                  accessibilityLabel={`Rakip: ${RAKIPLER[r].ad}`}
-                >
-                  <Ionicons name={akt ? RAKIPLER[r].ikon.replace("-outline", "") : RAKIPLER[r].ikon} size={24} color={akt ? COLORS.accent : COLORS.textMuted} />
-                  <Text style={[s.karoYazi, akt && { color: COLORS.text }]}>{RAKIPLER[r].ad}</Text>
-                </PressScale>
+                  <PressScale
+                    style={[s.karo, akt && s.karoAktif]}
+                    onPress={() => { setRakip(r); setTur(0); }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: akt }}
+                    accessibilityLabel={_t("Rakip: {0}", [RAKIPLER[r].ad])}
+                  >
+                    <Ionicons name={akt ? RAKIPLER[r].ikon.replace("-outline", "") : RAKIPLER[r].ikon} size={24} color={akt ? COLORS.accent : COLORS.textMuted} />
+                    <Text style={[s.karoYazi, akt && { color: COLORS.text }]}>{RAKIPLER[r].ad}</Text>
+                  </PressScale>
                 </View>
               );
             })}
@@ -98,12 +99,12 @@ export default function OyunBaslatPenceresi({ mod, onClose, onBasla, mesgul, hat
 
           {turler.length > 1 ? (
             <>
-              <Text style={s.soru}>NASIL?</Text>
+              <Text style={s.soru}>{_t("NASIL?")}</Text>
               <View style={s.cipler}>
                 {turler.map((o, i) => {
                   const akt = o === secili;
                   return (
-                    <PressScale key={`${o.id}-${i}`} style={[s.cip, akt && s.cipAktif]} onPress={() => setTur(i)} accessibilityRole="button" accessibilityState={{ selected: akt }} accessibilityLabel={`Tür: ${o.kisaLabel || o.label}`}>
+                    <PressScale key={`${o.id}-${i}`} style={[s.cip, akt && s.cipAktif]} onPress={() => setTur(i)} accessibilityRole="button" accessibilityState={{ selected: akt }} accessibilityLabel={_t("Tür: {0}", [o.kisaLabel || o.label])}>
                       <Text style={[s.cipYazi, akt && { color: COLORS.text }]} numberOfLines={1}>{o.kisaLabel || o.label}</Text>
                     </PressScale>
                   );
@@ -116,23 +117,23 @@ export default function OyunBaslatPenceresi({ mod, onClose, onBasla, mesgul, hat
           {hata ? <Text style={s.hata}>{hata}</Text> : null}
           {online ? (
             <>
-              <PressScale style={[s.basla, mesgul && s.pasif]} onPress={() => basla("rastgele")} accessibilityRole="button" accessibilityLabel="Rastgele rakip bul">
+              <PressScale style={[s.basla, mesgul && s.pasif]} onPress={() => basla("rastgele")} accessibilityRole="button" accessibilityLabel={_t("Rastgele rakip bul")}>
                 <Ionicons name="flash" size={20} color={COLORS.accentDark} />
-                <Text style={s.baslaYazi}>RASTGELE RAKİP</Text>
+                <Text style={s.baslaYazi}>{_t("RASTGELE RAKİP")}</Text>
               </PressScale>
-              <Text style={s.dugmeNot}>Dereceli · puanına yakın biriyle eşleşirsin</Text>
-              <PressScale style={[s.ikincil, mesgul && s.pasif]} onPress={() => basla("oda")} accessibilityRole="button" accessibilityLabel="Arkadaşınla oda kur">
+              <Text style={s.dugmeNot}>{_t("Dereceli · puanına yakın biriyle eşleşirsin")}</Text>
+              <PressScale style={[s.ikincil, mesgul && s.pasif]} onPress={() => basla("oda")} accessibilityRole="button" accessibilityLabel={_t("Arkadaşınla oda kur")}>
                 <Ionicons name="people" size={18} color={COLORS.text} />
-                <Text style={s.ikincilYazi}>ARKADAŞINLA OYNA</Text>
+                <Text style={s.ikincilYazi}>{_t("ARKADAŞINLA OYNA")}</Text>
               </PressScale>
-              <Pressable onPress={() => basla("katil")} hitSlop={10} style={s.bag} accessibilityRole="button" accessibilityLabel="Kodla katıl">
-                <Text style={s.bagYazi}>Arkadaşın oda kurduysa <Text style={s.bagVurgu}>kodla katıl</Text></Text>
+              <Pressable onPress={() => basla("katil")} hitSlop={10} style={s.bag} accessibilityRole="button" accessibilityLabel={_t("Kodla katıl")}>
+                <Text style={s.bagYazi}>{_t("Arkadaşın oda kurduysa")}{" "}<Text style={s.bagVurgu}>{_t("kodla katıl")}</Text></Text>
               </Pressable>
             </>
           ) : (
-            <PressScale style={s.basla} onPress={() => basla()} accessibilityRole="button" accessibilityLabel="Başla">
+            <PressScale style={s.basla} onPress={() => basla()} accessibilityRole="button" accessibilityLabel={_t("Başla")}>
               <Ionicons name="play" size={20} color={COLORS.accentDark} />
-              <Text style={s.baslaYazi}>BAŞLA</Text>
+              <Text style={s.baslaYazi}>{_t("BAŞLA")}</Text>
             </PressScale>
           )}
         </Pressable>

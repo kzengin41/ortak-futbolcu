@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -57,11 +58,11 @@ const REKOR_ANAHTARI = "kimbu-kart-masasi-rekor";
 const BASLANGIC_SEVIYESI = { 1: 1, 2: 2, 3: 3, 4: 5, 5: 7, 6: 9, 7: 12, 8: 15, 9: 18, 10: 21 };
 const BU_YIL = new Date().getFullYear();
 const DONEMLER = [
-  { deger: "eski", etiket: "1980 ve öncesi", bas: 0, son: 1980 },
+  { deger: "eski", etiket: _t("1980 ve öncesi"), bas: 0, son: 1980 },
   { deger: "80-2000", etiket: "1980 – 2000", bas: 1980, son: 2000 },
   { deger: "2000-2010", etiket: "2000 – 2010", bas: 2000, son: 2010 },
   { deger: "2010-2020", etiket: "2010 – 2020", bas: 2010, son: 2020 },
-  { deger: "2020+", etiket: "2020 – günümüz", bas: 2020, son: 9999 },
+  { deger: "2020+", etiket: _t("2020 – günümüz"), bas: 2020, son: 9999 },
 ];
 const VARSAYILAN_DONEMLER = ["2010-2020", "2020+"];
 
@@ -218,7 +219,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     oyunBilgisiniYaz("whoAmICpu", {
       satirlar: ayarSatirlari({
         zorluk: zorlukId, sure: soruSuresi, yontem: inputMode,
-        ekstra: [["Dönem", DONEMLER.filter((d) => donemler.includes(d.deger)).map((d) => d.etiket).join(", ")], ["Can", "3 (doğru +1, yanlış −1)"]],
+        ekstra: [[_t("Dönem"), DONEMLER.filter((d) => donemler.includes(d.deger)).map((d) => d.etiket).join(", ")], [_t("Can"), _t("3 (doğru +1, yanlış −1)")]],
       }),
     });
   }, [zorlukId, soruSuresi, inputMode, donemler]);
@@ -254,7 +255,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   useEffect(() => {
     if (phase !== "playing" || kalanSure === null) return;
     if (isProcessing || sesOnayIstegi) return;
-    if (kalanSure <= 0) { turuKaybet("Süre doldu — bir can gitti"); return; }
+    if (kalanSure <= 0) { turuKaybet(_t("Süre doldu — bir can gitti")); return; }
     const t = setTimeout(() => setKalanSure((k) => (k === null ? null : k - 1)), 1000);
     return () => clearTimeout(t);
   }, [phase, kalanSure, isProcessing, sesOnayIstegi]);
@@ -262,7 +263,10 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   function kartCevir(kart) {
     if (phase !== "playing" || acik[kart.id]) return;
     if (!acilabilirMi(masa, acik, kart)) {
-      setUyari(`Puanın yetmiyor: bu kart ${sayi(kart.bedel)}, puanın ${sayi(ASGARI_PUAN)}'in altına inemez. Tahmin et ya da joker kullan.`);
+      setUyari(_t(
+        "Puanın yetmiyor: bu kart {0}, puanın {1}'in altına inemez. Tahmin et ya da joker kullan.",
+        [sayi(kart.bedel), sayi(ASGARI_PUAN)]
+      ));
       return;
     }
     if (uyari) setUyari(null);
@@ -280,11 +284,11 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
       const puan = Math.round(turPuani(masa, acik) * sikCarpani);
       const satin = Object.values(acik).filter((v) => v === "satin").length;
       const bedava = Object.values(acik).filter((v) => v === "bedava").length;
-      const dokum = [["Başlangıç", sayi(BASLANGIC_PUANI)]];
-      if (satin) dokum.push([`${satin} kart çevirdin`, `−${sayi(BASLANGIC_PUANI - taban)}`]);
-      if (bedava) dokum.push([`${bedava} ortak kulüp kartı`, "bedava"]);
-      if (carp > 1) dokum.push([satin === 0 ? "Kart çevirmeden bildin" : "Az kartla bildin", `×${String(carp).replace(".", ",")}`]);
-      if (siklar) dokum.push(["4 şık jokeri", "×0,5"]);
+      const dokum = [[_t("Başlangıç"), sayi(BASLANGIC_PUANI)]];
+      if (satin) dokum.push([_t("{0} kart çevirdin", [satin]), `−${sayi(BASLANGIC_PUANI - taban)}`]);
+      if (bedava) dokum.push([_t("{0} ortak kulüp kartı", [bedava]), "bedava"]);
+      if (carp > 1) dokum.push([satin === 0 ? _t("Kart çevirmeden bildin") : _t("Az kartla bildin"), `×${String(carp).replace(".", ",")}`]);
+      if (siklar) dokum.push([_t("4 şık jokeri"), "×0,5"]);
       recordRound("whoAmICpu", true);
       if (satin === 0 && !siklar) gorevOlayi("kimBuIpucusuz").catch(() => {});
       playCorrect();
@@ -300,23 +304,23 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     }
     // YANLIŞ: önce tahmin edilen futbolcuyu bul (bilinmeyen isim can yakmaz)
     const tahmin = findMatchedPlayer(metin, PLAYERS);
-    if (!tahmin) { setUyari(`"${metin}" diye bir futbolcu bulamadım — can gitmedi`); return; }
-    if (tahminler.some((t) => t.ad === tahmin.name)) { setUyari(`${tahmin.name} zaten denendi`); return; }
+    if (!tahmin) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — can gitmedi", [metin])); return; }
+    if (tahminler.some((t) => t.ad === tahmin.name)) { setUyari(_t("{0} zaten denendi", [tahmin.name])); return; }
     const kars = karsilastirAd(tahmin.name, player.name);
     const bedavaIdler = ortakKartlariAc(masa, acik, kars.ortakKulupler);
     setTahminler((l) => [kars, ...l]);
     if (bedavaIdler.length) {
       setAcik((a) => { const n = { ...a }; for (const id of bedavaIdler) n[id] = "bedava"; return n; });
-      setUyari(`Ortak kulüp: ${kars.ortakKulupler.join(", ")} — kartı bedava açıldı`);
+      setUyari(_t("Ortak kulüp: {0} — kartı bedava açıldı", [kars.ortakKulupler.join(", ")]));
     } else {
-      setUyari(`${tahmin.name} değil — bir can gitti`);
+      setUyari(_t("{0} değil — bir can gitti", [tahmin.name]));
     }
     playWrong();
     recordRound("whoAmICpu", false);
     const kalan = yeniCan(lives, false);
     setLives(kalan);
     if (kalan <= 0) {
-      setSonuc({ dogru: false, mesaj: `${tahmin.name} değildi — canın bitti` });
+      setSonuc({ dogru: false, mesaj: _t("{0} değildi — canın bitti", [tahmin.name]) });
       seriBitti(seriPuani);
       setPhase("gameOver");
     }
@@ -350,19 +354,19 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
 
   // -- ses
   async function sesBaslat() {
-    try { setVoiceError(null); await startRecording(); } catch (e) { setVoiceError("Mikrofona erişilemedi."); }
+    try { setVoiceError(null); await startRecording(); } catch (e) { setVoiceError(_t("Mikrofona erişilemedi.")); }
   }
   async function sesBitir() {
     setVoiceError(null);
     try {
       const text = await stopRecording([]);
-      if (!text) { setVoiceError("Sesi anlayamadım, tekrar dener misin?"); return; }
+      if (!text) { setVoiceError(_t("Sesi anlayamadım, tekrar dener misin?")); return; }
       const gonder = (a) => tahminEt(a);
       const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
       if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
       else gonder(text);
     } catch (e) {
-      setVoiceError(e.message || "Ses tanıma başarısız oldu");
+      setVoiceError(e.message || _t("Ses tanıma başarısız oldu"));
     }
   }
 
@@ -371,25 +375,32 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     return (
       <ModKurulum
         modId="whoAmICpu"
-        baslik="Kim Bu Futbolcu?"
-        aciklama="Gizli futbolcunun bilgileri kapalı kartlarda. İstediğin kartı çevir, ama her kart puanından düşer. Yanlış tahmin bir can götürür ama ipucu bırakır; doğru tahmin bir can geri verir."
+        baslik={_t("Kim Bu Futbolcu?")}
+        aciklama={_t(
+          "Gizli futbolcunun bilgileri kapalı kartlarda. İstediğin kartı çevir, ama her kart puanından düşer. Yanlış tahmin bir can götürür ama ipucu bırakır; doğru tahmin bir can geri verir."
+        )}
         vurgu={MODE_COLORS.whoAmI}
         onGeri={onExitSilent || onExit}
         onBasla={oyunuBaslat}
         baslaDevreDisi={sortedPlayers.length === 0}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorlukId, sure: soruSuresi, yontem: inputMode, donemler })}
       >
-        <KurulumBolum baslik="DÖNEM" not={`Seçtiğin yıllarda oynamış, fotoğrafı olan ${sortedPlayers.length} futbolcu var.`}>
+        <KurulumBolum baslik={_t("DÖNEM")} not={_t(
+          "Seçtiğin yıllarda oynamış, fotoğrafı olan {0} futbolcu var.",
+          [sortedPlayers.length]
+        )}>
           <CokluSecim secenekler={DONEMLER} secililer={donemler} onDegis={setDonemler} />
         </KurulumBolum>
-        <KurulumBolum baslik="ZORLUK">
+        <KurulumBolum baslik={_t("ZORLUK")}>
           <ZorlukSecici
             deger={zorlukId}
             onDegis={setZorlukId}
-            aciklama={(z) => `Seviye ${BASLANGIC_SEVIYESI[z]}'den başlar. ` + (z <= 3 ? "En bilinen yıldızlar." : z <= 6 ? "Bilinen oyuncular." : "Az bilinenler de gelir.")}
+            aciklama={(z) => _t("Seviye {0}'den başlar. ", [BASLANGIC_SEVIYESI[z]]) + (z <= 3 ? _t("En bilinen yıldızlar.") : z <= 6 ? _t("Bilinen oyuncular.") : _t("Az bilinenler de gelir."))}
           />
         </KurulumBolum>
-        <EslesmeProfiliBolumu eslesme={eslesme} not="Hangi kulüplerin oyuncularının sorulacağını belirler. Dönem seçimi yukarıda ayrıca geçerli." />
+        <EslesmeProfiliBolumu eslesme={eslesme} not={_t(
+          "Hangi kulüplerin oyuncularının sorulacağını belirler. Dönem seçimi yukarıda ayrıca geçerli."
+        )} />
         <KurulumBolum baslik={MOD_TANIMLARI.whoAmICpu.sure.etiket}>
           <SureSecici
             secenekler={MOD_TANIMLARI.whoAmICpu.sure.secenekler}
@@ -401,7 +412,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
             aciklama={MOD_TANIMLARI.whoAmICpu.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP YÖNTEMİ" not="İki yöntem de oyun sırasında her zaman kullanılabilir.">
+        <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")} not={_t("İki yöntem de oyun sırasında her zaman kullanılabilir.")}>
           <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
       </ModKurulum>
@@ -412,8 +423,10 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={s.kap}>
         <PoolEmpty
-          baslik="Uygun futbolcu kalmadı"
-          aciklama="Bu ayarlarla sorulacak fotoğraflı futbolcu kalmadı. Baştan başlayabilir ya da menüye dönebilirsin."
+          baslik={_t("Uygun futbolcu kalmadı")}
+          aciklama={_t(
+            "Bu ayarlarla sorulacak fotoğraflı futbolcu kalmadı. Baştan başlayabilir ya da menüye dönebilirsin."
+          )}
           onReset={() => { setUsedNames(new Set()); setPhase("setup"); }}
           onExit={onExitSilent || onExit}
         />
@@ -427,8 +440,8 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   const ustSerit = (
     // Paket 31 — standart üst çubuk: ✕ · mod adı (seviye · seri) · canlar
     <OyunUstCubugu
-      baslik="Kim Bu Futbolcu?"
-      alt={`Seviye ${level} · seri ${sayi(seriPuani)}`}
+      baslik={_t("Kim Bu Futbolcu?")}
+      alt={_t("Seviye {0} · seri {1}", [level, sayi(seriPuani)])}
       onCikis={onExit}
       style={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm }}
       sag={
@@ -454,7 +467,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
             acik={acik}
             ad={player.name}
             dogru={!!sonuc?.dogru}
-            baslik={sonuc?.dogru ? "DOĞRU!" : bitti ? "SERİ BİTTİ" : "BU SEFER OLMADI"}
+            baslik={sonuc?.dogru ? _t("DOĞRU!") : bitti ? _t("SERİ BİTTİ") : _t("BU SEFER OLMADI")}
             altSatir={[masa.kimlik.find((k) => k.id === "mevki")?.deger, masa.kimlik.find((k) => k.id === "bayrak")?.deger, bp.birthYear].filter(Boolean).join(" · ")}
           />
           {sonuc?.dogru ? (
@@ -467,37 +480,37 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
               ))}
               <View style={s.dokumCizgi} />
               <View style={s.dokumSatir}>
-                <Text style={[s.dokumAd, { fontWeight: "900", color: COLORS.text }]}>Bu tur</Text>
+                <Text style={[s.dokumAd, { fontWeight: "900", color: COLORS.text }]}>{_t("Bu tur")}</Text>
                 <Text style={s.dokumToplam}>+{sayi(sonuc.puan)}</Text>
               </View>
-              {sonuc.canGeldi ? <Text style={s.canGeldi}>+1 can</Text> : null}
+              {sonuc.canGeldi ? <Text style={s.canGeldi}>{_t("+1 can")}</Text> : null}
             </View>
           ) : (
             <Text style={s.sonucMesaj}>{sonuc?.mesaj}</Text>
           )}
           {bitti ? (
             <View style={s.istatlar}>
-              <View style={s.istat}><Text style={s.istatSayi}>{sayi(seriPuani)}</Text><Text style={s.istatAd}>seri puanı</Text></View>
-              <View style={s.istat}><Text style={s.istatSayi}>{dogruSayisi}</Text><Text style={s.istatAd}>futbolcu</Text></View>
-              <View style={s.istat}><Text style={s.istatSayi}>{sayi(Math.max(rekor, seriPuani))}</Text><Text style={s.istatAd}>rekor</Text></View>
+              <View style={s.istat}><Text style={s.istatSayi}>{sayi(seriPuani)}</Text><Text style={s.istatAd}>{_t("seri puanı")}</Text></View>
+              <View style={s.istat}><Text style={s.istatSayi}>{dogruSayisi}</Text><Text style={s.istatAd}>{_t("futbolcu")}</Text></View>
+              <View style={s.istat}><Text style={s.istatSayi}>{sayi(Math.max(rekor, seriPuani))}</Text><Text style={s.istatAd}>{_t("rekor")}</Text></View>
             </View>
           ) : null}
           {bitti ? (
             <>
               <SoundPressable style={s.anaDugme} onPress={oyunuBaslat}>
-                <Text style={s.anaDugmeYazi}>TEKRAR OYNA</Text>
+                <Text style={s.anaDugmeYazi}>{_t("TEKRAR OYNA")}</Text>
               </SoundPressable>
               <SoundPressable style={s.ikinciDugme} onPress={onExitSilent || onExit}>
-                <Text style={s.ikinciDugmeYazi}>Menüye dön</Text>
+                <Text style={s.ikinciDugmeYazi}>{_t("Menüye dön")}</Text>
               </SoundPressable>
             </>
           ) : (
             <>
               <SoundPressable style={s.anaDugme} onPress={sonrakiTur}>
-                <Text style={s.anaDugmeYazi}>SONRAKİ FUTBOLCU</Text>
+                <Text style={s.anaDugmeYazi}>{_t("SONRAKİ FUTBOLCU")}</Text>
               </SoundPressable>
               <SoundPressable style={s.ikinciDugme} onPress={() => setProfilAcik(true)}>
-                <Text style={s.ikinciDugmeYazi}>Profilini gör</Text>
+                <Text style={s.ikinciDugmeYazi}>{_t("Profilini gör")}</Text>
               </SoundPressable>
             </>
           )}
@@ -520,7 +533,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
         {kalanSure !== null && soruSuresi ? (
           <View style={s.sure}>
             <View style={{ flex: 1 }}><TimerBar current={kalanSure} total={soruSuresi} /></View>
-            <Text style={[s.sureYazi, kalanSure <= 5 && { color: COLORS.danger }]}>{kalanSure} sn</Text>
+            <Text style={[s.sureYazi, kalanSure <= 5 && { color: COLORS.danger }]}>{kalanSure}{" "}{_t("sn")}</Text>
           </View>
         ) : null}
 
@@ -532,7 +545,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
               autoCorrect={false}
               autoCapitalize="words"
               spellCheck={false}
-              placeholder="Bu futbolcu kim?"
+              placeholder={_t("Bu futbolcu kim?")}
               placeholderTextColor={COLORS.textMuted}
               value={answerInput}
               onChangeText={(t) => { setAnswerInput(t); if (uyari) setUyari(null); }}
@@ -543,11 +556,11 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
               onPress={() => (isRecording ? sesBitir() : sesBaslat())}
               disabled={isProcessing}
               style={[s.ikonDugme, isRecording && s.ikonDugmeKayit]}
-              accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle cevap ver"}
+              accessibilityLabel={isRecording ? _t("Kaydı durdur") : _t("Sesle cevap ver")}
             >
               <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={20} color={isRecording ? COLORS.accentDark : COLORS.text} />
             </SoundPressable>
-            <SoundPressable onPress={() => tahminEt(answerInput)} style={[s.ikonDugme, s.gonder]} accessibilityLabel="Tahmini gönder">
+            <SoundPressable onPress={() => tahminEt(answerInput)} style={[s.ikonDugme, s.gonder]} accessibilityLabel={_t("Tahmini gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -562,8 +575,8 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
             </View>
           ) : null}
           {uyari ? <Text style={s.uyari}>{uyari}</Text> : null}
-          {isRecording ? <Text style={s.sesDurum}>Dinliyorum — bitince kırmızı düğmeye dokun</Text> : null}
-          {isProcessing ? <Text style={s.sesDurum}>Yazıya çevriliyor...</Text> : null}
+          {isRecording ? <Text style={s.sesDurum}>{_t("Dinliyorum — bitince kırmızı düğmeye dokun")}</Text> : null}
+          {isProcessing ? <Text style={s.sesDurum}>{_t("Yazıya çevriliyor...")}</Text> : null}
           {voiceError ? <Text style={[s.sesDurum, { color: COLORS.danger }]}>{voiceError}</Text> : null}
           <VoiceConfirm
             istek={sesOnayIstegi}
@@ -592,16 +605,16 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
           <View style={s.jokerler}>
             <SoundPressable style={[s.joker, !jokers.pas && s.jokerPasif]} disabled={!jokers.pas} onPress={pasJokeri}>
               <Ionicons name="play-skip-forward" size={16} color={jokers.pas ? COLORS.text : COLORS.textMuted} />
-              <Text style={[s.jokerYazi, !jokers.pas && { color: COLORS.textMuted }]}>Pas · {jokers.pas ? "1 hak" : "kullanıldı"}</Text>
+              <Text style={[s.jokerYazi, !jokers.pas && { color: COLORS.textMuted }]}>{_t("Pas ·")}{" "}{jokers.pas ? _t("1 hak") : _t("kullanıldı")}</Text>
             </SoundPressable>
             <SoundPressable style={[s.joker, (!jokers.sik || siklar) && s.jokerPasif]} disabled={!jokers.sik || !!siklar} onPress={sikJokeri}>
               <Ionicons name="list" size={16} color={jokers.sik ? COLORS.text : COLORS.textMuted} />
-              <Text style={[s.jokerYazi, !jokers.sik && { color: COLORS.textMuted }]}>4 Şık · {jokers.sik ? "puan ½" : "kullanıldı"}</Text>
+              <Text style={[s.jokerYazi, !jokers.sik && { color: COLORS.textMuted }]}>{_t("4 Şık ·")}{" "}{jokers.sik ? _t("puan ½") : "kullanıldı"}</Text>
             </SoundPressable>
           </View>
-          <SoundPressable style={s.pesEt} onPress={() => turuKaybet("Pes ettin — bir can gitti")}>
+          <SoundPressable style={s.pesEt} onPress={() => turuKaybet(_t("Pes ettin — bir can gitti"))}>
             <Ionicons name="flag-outline" size={16} color={COLORS.danger} />
-            <Text style={s.pesEtYazi}>Pes et · 1 can</Text>
+            <Text style={s.pesEtYazi}>{_t("Pes et · 1 can")}</Text>
           </SoundPressable>
         </ScrollView>
       </KlavyeAlani>

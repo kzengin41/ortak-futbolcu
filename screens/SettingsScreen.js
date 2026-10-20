@@ -1,3 +1,4 @@
+import { _t, yerel, dil, DILLER } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Switch, Image, LayoutAnimation, Modal } from "react-native";
 import GameBackground from "../components/GameBackground";
@@ -25,10 +26,10 @@ import TemaOlusturucu from "../components/TemaOlusturucu";
 import { uygulamayiYenile } from "../lib/temaYenile";
 import { guncellemeBilgisi, guncellemeDenetle, yenidenBaslat } from "../lib/guncelleme";
 const ITEMS = [
-  { key: "background", label: "Arka Plan Sesi", desc: "Durmadan çalan tribün uğultusu" },
-  { key: "correctWrong", label: "Doğru / Yanlış Sesi", desc: "Cevap verince çalan tepki sesi" },
-  { key: "click", label: "Tıklama Sesi", desc: "Butonlara basınca çıkan kısa tık" },
-  { key: "whistle", label: "Açılış Düdüğü", desc: "Uygulama açıldığında bir kez çalar" },
+  { key: "background", label: _t("Arka Plan Sesi"), desc: _t("Durmadan çalan tribün uğultusu") },
+  { key: "correctWrong", label: _t("Doğru / Yanlış Sesi"), desc: _t("Cevap verince çalan tepki sesi") },
+  { key: "click", label: _t("Tıklama Sesi"), desc: _t("Butonlara basınca çıkan kısa tık") },
+  { key: "whistle", label: _t("Açılış Düdüğü"), desc: _t("Uygulama açıldığında bir kez çalar") },
 ];
 
 // Paket 24 (12 Ekim 2026, Kerem: "ayarlar ekranını açtığımız gibi yukarıdan bir
@@ -69,6 +70,20 @@ export default function SettingsScreen({ onBack }) {
     await setSetting("customCta", palet.cta);
     await setSetting("customCtaDark", palet.ctaDark);
     await temaSec("ozel");
+  }
+
+  // Paket 39 — dil seçimi: kaydet + yeniden yükle (ekranların sabit metinleri yeni dilde kurulsun).
+  const [dilYenileniyor, setDilYenileniyor] = useState(null);
+  async function dilSec(id) {
+    if (id === dil() || dilYenileniyor === "yukleniyor") return;
+    setDilYenileniyor("yukleniyor");
+    try {
+      await setSetting("dil", id);
+      const oldu = await uygulamayiYenile();
+      if (!oldu) setDilYenileniyor("elle");
+    } catch (e) {
+      setDilYenileniyor("elle");
+    }
   }
 
   async function temaSec(id) {
@@ -112,19 +127,21 @@ export default function SettingsScreen({ onBack }) {
     }
   }
 
-  const temaAdi = (PALETLER.find((p) => p.id === (settings.themeId || "cim")) || PALETLER[0]).ad;
+  const temaAdi = _t((PALETLER.find((p) => p.id === (settings.themeId || "cim")) || PALETLER[0]).ad);
   const sesOzet = ITEMS.filter((i) => (settings[i.key] || 0) > 0).length;
 
   return (
     <GameBackground style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingVertical: 24 }}>
         <BackButton onPress={onBack} confirm={false} />
-        <Text style={styles.title}>Ayarlar</Text>
+        <Text style={styles.title}>{_t("Ayarlar")}</Text>
 
-        <Text style={styles.grup}>Sen</Text>
+        <Text style={styles.grup}>{_t("Sen")}</Text>
         <View style={styles.liste}>
-          <Satir id="takim" ikon="shield" ad="Tuttuğun Takım" ozet={genelProfil.takim || "Seçilmedi"} acik={acik} ac={ac}>
-            <Text style={styles.sectionDesc}>Takımın turlarda daha sık çıkar. Ne sıklıkla çıkacağını eşleşme profilinden ayarlarsın.</Text>
+          <Satir id="takim" ikon="shield" ad={_t("Tuttuğun Takım")} ozet={genelProfil.takim || _t("Seçilmedi")} acik={acik} ac={ac}>
+            <Text style={styles.sectionDesc}>{_t(
+              "Takımın turlarda daha sık çıkar. Ne sıklıkla çıkacağını eşleşme profilinden ayarlarsın."
+            )}</Text>
             <TakimSecici
               secili={genelProfil.takim}
               kompakt
@@ -137,7 +154,32 @@ export default function SettingsScreen({ onBack }) {
             />
           </Satir>
 
-          <Satir id="tema" ikon="color-palette" ad="Tema ve Arkaplan" ozet={temaAdi} acik={acik} ac={ac}>
+          {/* Paket 39 — dil. Etiket bilerek iki dilde: dili bilmeyen de bulabilsin. */}
+          <Satir id="dil" ikon="language" ad="Dil · Language" ozet={(DILLER.find((d) => d.id === dil()) || DILLER[0]).ad} acik={acik} ac={ac}>
+            <View style={styles.dilSatir}>
+              {DILLER.map((d) => {
+                const secili = d.id === dil();
+                return (
+                  <SoundPressable
+                    key={d.id}
+                    onPress={() => dilSec(d.id)}
+                    style={[styles.dilKart, secili && styles.dilKartAktif]}
+                    accessibilityLabel={d.ad}
+                    accessibilityState={{ selected: secili }}
+                  >
+                    <Text style={styles.dilBayrak}>{d.bayrak}</Text>
+                    <Text style={[styles.presetLabel, { flex: 1 }, secili && styles.presetLabelActive]}>{d.ad}</Text>
+                    {secili ? <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} /> : null}
+                  </SoundPressable>
+                );
+              })}
+            </View>
+            <Text style={styles.sectionDesc}>
+              {dilYenileniyor === "elle" ? _t("Kaydedildi. Uygulamayı kapatıp açınca yeni dil görünür.") : _t("Dil değişince uygulama bir an yeniden yüklenir.")}
+            </Text>
+          </Satir>
+
+          <Satir id="tema" ikon="color-palette" ad={_t("Tema ve Arkaplan")} ozet={temaAdi} acik={acik} ac={ac}>
           <View style={styles.temaIzgara}>
             {PALETLER.map((p) => {
               const secili = (settings.themeId || "cim") === p.id;
@@ -158,7 +200,7 @@ export default function SettingsScreen({ onBack }) {
                       <View key={i} style={[styles.temaSerit, { backgroundColor: renk, flex: i === 0 ? 3 : 1 }]} />
                     ))}
                   </View>
-                  <Text style={[styles.temaAd, secili && styles.temaAdAktif]} numberOfLines={1}>{p.ad}</Text>
+                  <Text style={[styles.temaAd, secili && styles.temaAdAktif]} numberOfLines={1}>{_t(p.ad)}</Text>
                   {secili ? (
                     <View style={styles.temaTik}>
                       <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} />
@@ -170,7 +212,7 @@ export default function SettingsScreen({ onBack }) {
           </View>
 
           {/* Paket 18 — tema renkleri yeniden açılışta değişir ama arkaplan HEMEN değişir. */}
-          <Text style={styles.altBaslik}>Arkaplan</Text>
+          <Text style={styles.altBaslik}>{_t("Arkaplan")}</Text>
           <View style={styles.arkaIzgara}>
             {ARKAPLAN_SECENEKLERI.map((a) => {
               // Paket 25: eski takım fotoğrafı seçimleri (gs/fb/...) artık "Temaya uygun"
@@ -182,7 +224,7 @@ export default function SettingsScreen({ onBack }) {
                   key={a.id}
                   onPress={() => setSetting("arkaplan", a.id)}
                   style={[styles.arkaKart, secili && styles.arkaKartAktif]}
-                  accessibilityLabel={`Arkaplan: ${a.ad}`}
+                  accessibilityLabel={_t("Arkaplan: {0}", [a.ad])}
                   accessibilityState={{ selected: secili }}
                 >
                   <View style={[styles.arkaResim, { backgroundColor: COLORS.bg }]}>
@@ -199,7 +241,7 @@ export default function SettingsScreen({ onBack }) {
 
           <SoundPressable style={styles.profilKart} onPress={() => setOlusturucuAcik(true)}>
             <Ionicons name="color-palette" size={20} color={COLORS.accent} />
-            <Text style={[styles.presetLabel, { flex: 1 }]}>{settings.customPalet ? "Kendi temanı düzenle" : "Kendi temanı oluştur"}</Text>
+            <Text style={[styles.presetLabel, { flex: 1 }]}>{settings.customPalet ? _t("Kendi temanı düzenle") : _t("Kendi temanı oluştur")}</Text>
             <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
           </SoundPressable>
 
@@ -211,13 +253,13 @@ export default function SettingsScreen({ onBack }) {
             />
             <Text style={styles.temaNotYazi}>
               {temaYenileniyor
-                ? "Tema uygulanıyor…"
-                : "Tema seçince uygulama kendini yeniler; ilerlemen ve ayarların korunur."}
+                ? _t("Tema uygulanıyor…")
+                : _t("Tema seçince uygulama kendini yeniler; ilerlemen ve ayarların korunur.")}
             </Text>
           </View>
           </Satir>
 
-          <Satir id="ses" ikon="volume-high" ad="Ses" ozet={sesOzet ? `${sesOzet}/${ITEMS.length} açık` : "Kapalı"} acik={acik} ac={ac}>
+          <Satir id="ses" ikon="volume-high" ad={_t("Ses")} ozet={sesOzet ? _t("{0}/{1} açık", [sesOzet, ITEMS.length]) : _t("Kapalı")} acik={acik} ac={ac}>
           {ITEMS.map((item) => (
             <View key={item.key} style={styles.sesSatir}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -240,59 +282,68 @@ export default function SettingsScreen({ onBack }) {
           ))}
           </Satir>
 
-          <Satir id="hatirlatma" ikon="notifications" ad="Hatırlatma" ozet={bildirimVar ? (bildirimAcik ? "Açık" : "Kapalı") : "Yok"} acik={acik} ac={ac}>
+          <Satir id="hatirlatma" ikon="notifications" ad={_t("Hatırlatma")} ozet={bildirimVar ? (bildirimAcik ? _t("Açık") : _t("Kapalı")) : _t("Yok")} acik={acik} ac={ac}>
             <Text style={styles.sectionDesc}>
               {bildirimVar
-                ? `Günün bulmacasını ve görevlerini kaçırmamak için akşam ${HATIRLATMA_SAATI}:00'de tek bir hatırlatma.`
+                ? _t(
+                "Günün bulmacasını ve görevlerini kaçırmamak için akşam {0}:00'de tek bir hatırlatma.",
+                [HATIRLATMA_SAATI]
+              )
                 : expoGodaMiyiz()
-                  ? "Bildirimler Expo Go'da denenemiyor. Uygulamanın derlenmiş sürümünde (APK) çalışır."
-                  : "Bildirim modülü bu sürümde kurulu değil."}
+                  ? _t(
+                "Bildirimler Expo Go'da denenemiyor. Uygulamanın derlenmiş sürümünde (APK) çalışır."
+              )
+                  : _t("Bildirim modülü bu sürümde kurulu değil.")}
             </Text>
             {bildirimVar && (
-              <AnahtarSatir etiket="Akşam Hatırlatması" alt="Günde bir kez, sadece bu cihazda" deger={bildirimAcik} kapali={bildirimMesgul} onDegis={bildirimDegistir} />
+              <AnahtarSatir etiket={_t("Akşam Hatırlatması")} alt={_t("Günde bir kez, sadece bu cihazda")} deger={bildirimAcik} kapali={bildirimMesgul} onDegis={bildirimDegistir} />
             )}
           </Satir>
         </View>
 
-        <Text style={styles.grup}>Oyun</Text>
+        <Text style={styles.grup}>{_t("Oyun")}</Text>
         <View style={styles.liste}>
           {/* 4 Ekim 2026 — futbol bilgisi testi: seviye bütün modların varsayılan zorluğu */}
           <Satir
-            id="bilgi" ikon="school" ad="Futbol Bilgin" git
-            ozet={Number.isFinite(settings.bilgiSeviyesi) ? `${settings.bilgiSeviyesi}/10 · ${seviyeEtiketi(settings.bilgiSeviyesi)}` : "Test çözülmedi"}
+            id="bilgi" ikon="school" ad={_t("Futbol Bilgin")} git
+            ozet={Number.isFinite(settings.bilgiSeviyesi) ? `${settings.bilgiSeviyesi}/10 · ${seviyeEtiketi(settings.bilgiSeviyesi)}` : _t("Test çözülmedi")}
             onPress={() => setTestAcik(true)}
           />
           {/* 28 Eylül 2026 — bütün modların varsayılan eşleşme profili */}
-          <Satir id="eslesme" ikon="options" ad="Eşleşme Profili" git ozet={profilEtiketi(genelProfil)} onPress={() => setProfilAcik(true)} />
-          <Satir id="sesli" ikon="mic" ad="Sesli Cevap" ozet={settings.voiceConfirm !== false ? "Onaylı" : "Doğrudan"} acik={acik} ac={ac}>
+          <Satir id="eslesme" ikon="options" ad={_t("Eşleşme Profili")} git ozet={profilEtiketi(genelProfil)} onPress={() => setProfilAcik(true)} />
+          <Satir id="sesli" ikon="mic" ad={_t("Sesli Cevap")} ozet={settings.voiceConfirm !== false ? _t("Onaylı") : _t("Doğrudan")} acik={acik} ac={ac}>
             <AnahtarSatir
-              etiket="Göndermeden Önce Onayla"
-              alt="Mikrofonla verdiğin cevap önce ekranda gösterilir; yanlış anlaşılan cevap turu kaybettirmez."
+              etiket={_t("Göndermeden Önce Onayla")}
+              alt={_t(
+                "Mikrofonla verdiğin cevap önce ekranda gösterilir; yanlış anlaşılan cevap turu kaybettirmez."
+              )}
               deger={settings.voiceConfirm !== false}
               onDegis={(val) => setSetting("voiceConfirm", val)}
             />
           </Satir>
-          <Satir id="mod" ikon="game-controller" ad="Mod Varsayılanları" ozet="HIZLI BAŞLA ayarları" acik={acik} ac={ac}>
-            <Text style={styles.sectionDesc}>
-              Her modun HIZLI BAŞLA ile açılan ayarları: zorluk (10 üzerinden), süre ve moda özel kurallar. Modu açınca MAÇ AYARLARI'ndan o maç için de değiştirebilirsin.
-            </Text>
+          <Satir id="mod" ikon="game-controller" ad={_t("Mod Varsayılanları")} ozet={_t("HIZLI BAŞLA ayarları")} acik={acik} ac={ac}>
+            <Text style={styles.sectionDesc}>{_t(
+              "Her modun HIZLI BAŞLA ile açılan ayarları: zorluk (10 üzerinden), süre ve moda özel kurallar. Modu açınca MAÇ AYARLARI'ndan o maç için de değiştirebilirsin."
+            )}</Text>
             <ModVarsayilanlariPaneli />
           </Satir>
         </View>
 
-        <Text style={styles.grup}>Diğer</Text>
+        <Text style={styles.grup}>{_t("Diğer")}</Text>
         <View style={styles.liste}>
           {/* Paket 23 — hafif ölçüm (lib/olcum.js) */}
-          <Satir id="gizlilik" ikon="shield-checkmark" ad="Gizlilik" ozet={settings.olcum !== false ? "Kullanım verisi açık" : "Kullanım verisi kapalı"} acik={acik} ac={ac}>
+          <Satir id="gizlilik" ikon="shield-checkmark" ad={_t("Gizlilik")} ozet={settings.olcum !== false ? _t("Kullanım verisi açık") : _t("Kullanım verisi kapalı")} acik={acik} ac={ac}>
             <AnahtarSatir
-              etiket="Kullanım verisi gönder"
-              alt="Hangi modların oynandığını anonim olarak sayar; oyunu geliştirmemize yardım eder. Kişisel bilgi içermez."
+              etiket={_t("Kullanım verisi gönder")}
+              alt={_t(
+                "Hangi modların oynandığını anonim olarak sayar; oyunu geliştirmemize yardım eder. Kişisel bilgi içermez."
+              )}
               deger={settings.olcum !== false}
               onDegis={(val) => setSetting("olcum", val)}
             />
           </Satir>
           {/* 5 Ekim 2026 — OTA güncellemesinin gelip gelmediği buradan görülür (lib/guncelleme.js) */}
-          <Satir id="surum" ikon="information-circle" ad="Sürüm" ozet={guncellemeBilgisi().runtime || ""} acik={acik} ac={ac}>
+          <Satir id="surum" ikon="information-circle" ad={_t("Sürüm")} ozet={guncellemeBilgisi().runtime || ""} acik={acik} ac={ac}>
             <SurumKutusu />
           </Satir>
         </View>
@@ -419,6 +470,10 @@ const styles = StyleSheet.create({
   presetRowActive: { borderColor: COLORS.accent },
   presetFlag: { fontSize: 18 },
   presetLabel: { color: COLORS.text, fontWeight: "700", fontSize: 14 },
+  dilSatir: { gap: 8, marginTop: 4, marginBottom: 8 },
+  dilKart: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.cardBorder, backgroundColor: COLORS.card },
+  dilKartAktif: { borderColor: COLORS.accent },
+  dilBayrak: { fontSize: 20 },
   presetLabelActive: { color: COLORS.accent },
   row: {
     flexDirection: "row",
@@ -472,25 +527,25 @@ const styles = StyleSheet.create({
 function SurumKutusu() {
   const [durum, setDurum] = useState(null);
   const b = guncellemeBilgisi();
-  const tarih = b.tarih ? `${b.tarih.toLocaleDateString("tr-TR")} ${b.tarih.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}` : null;
+  const tarih = b.tarih ? `${b.tarih.toLocaleDateString(yerel())} ${b.tarih.toLocaleTimeString(yerel(), { hour: "2-digit", minute: "2-digit" })}` : null;
   const satirlar = [
-    ["Sürüm", b.runtime || "—"],
-    ["Kanal", b.kanal || (b.etkin ? "—" : "güncelleme kapalı")],
-    ["Çalışan paket", b.gomulu ? "APK'nın kendi paketi" : `güncelleme · ${tarih || "?"}`],
-    ["Paket kimliği", b.kimlik ? b.kimlik.slice(0, 8) : "—"],
+    [_t("Sürüm"), b.runtime || "—"],
+    [_t("Kanal"), b.kanal || (b.etkin ? "—" : _t("güncelleme kapalı"))],
+    [_t("Çalışan paket"), b.gomulu ? _t("APK'nın kendi paketi") : _t("güncelleme · {0}", [tarih || "?"])],
+    [_t("Paket kimliği"), b.kimlik ? b.kimlik.slice(0, 8) : "—"],
   ];
   async function denetle() {
     setDurum("denetleniyor");
     const r = await guncellemeDenetle();
-    setDurum(r.durum === "hata" ? `hata: ${r.mesaj}` : r.durum);
+    setDurum(r.durum === "hata" ? _t("hata: {0}", [r.mesaj]) : r.durum);
   }
-  const yazi = { denetleniyor: "Denetleniyor…", guncel: "En yeni sürümdesin", hazir: "Yeni sürüm indirildi", kapali: "Bu kurulumda güncelleme kapalı" }[durum] || durum;
+  const yazi = { denetleniyor: _t("Denetleniyor…"), guncel: _t("En yeni sürümdesin"), hazir: _t("Yeni sürüm indirildi"), kapali: _t("Bu kurulumda güncelleme kapalı") }[durum] || durum;
   return (
     <View style={{ marginBottom: 26 }}>
       {b.acil ? (
-        <Text style={[styles.sectionDesc, { color: COLORS.danger }]}>
-          Son indirilen güncelleme açılırken hata verdi; APK'nın kendi paketiyle açıldı. (Hata raporu gönderildi.)
-        </Text>
+        <Text style={[styles.sectionDesc, { color: COLORS.danger }]}>{_t(
+          "Son indirilen güncelleme açılırken hata verdi; APK'nın kendi paketiyle açıldı. (Hata raporu gönderildi.)"
+        )}</Text>
       ) : null}
       {satirlar.map(([k, v]) => (
         <View key={k} style={styles.row}>
@@ -498,10 +553,10 @@ function SurumKutusu() {
           <Text style={styles.rowDesc} selectable>{v}</Text>
         </View>
       ))}
-      <SoundPressable style={[styles.profilKart, { marginTop: 10 }]} onPress={durum === "hazir" ? yenidenBaslat : denetle} accessibilityLabel="Güncellemeleri denetle">
+      <SoundPressable style={[styles.profilKart, { marginTop: 10 }]} onPress={durum === "hazir" ? yenidenBaslat : denetle} accessibilityLabel={_t("Güncellemeleri denetle")}>
         <Ionicons name={durum === "hazir" ? "refresh" : "cloud-download-outline"} size={20} color={COLORS.accent} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.presetLabelActive}>{durum === "hazir" ? "Şimdi yenile" : "Güncellemeleri denetle"}</Text>
+          <Text style={styles.presetLabelActive}>{durum === "hazir" ? _t("Şimdi yenile") : _t("Güncellemeleri denetle")}</Text>
           {yazi ? <Text style={styles.sectionDesc}>{yazi}</Text> : null}
         </View>
       </SoundPressable>

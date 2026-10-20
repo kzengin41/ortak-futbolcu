@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, LayoutAnimation } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,7 +48,7 @@ export default function AcilirBolum({ kimlik, baslik, ikon, ozet, varsayilanAcik
         onPress={degistir}
         accessibilityRole="button"
         accessibilityState={{ expanded: acik }}
-        accessibilityLabel={`${baslik}, ${acik ? "kapat" : "aç"}`}
+        accessibilityLabel={`${baslik}, ${acik ? _t("kapat") : _t("aç")}`}
       >
         {ikon ? <View style={s.ikon}><Ionicons name={ikon} size={18} color={COLORS.text} /></View> : null}
         <Text style={s.baslik} numberOfLines={1}>{baslik}</Text>

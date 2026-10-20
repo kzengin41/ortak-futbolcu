@@ -1,3 +1,5 @@
+import { useEkran } from "../lib/ekran";
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import {
@@ -129,7 +131,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const [cevapSuresi, setCevapSuresi] = useState(VARSAYILAN_SURE);
   const [kalanSure, setKalanSure] = useState(null);
   const [cevaplarAcik, setCevaplarAcik] = useState(true);
-  const { width: ekranGenislik } = useWindowDimensions();
+  const { width: ekranGenislik } = useEkran();
 
   // Sesli cevap durumu — süre sayacı bunlara baktığı için yukarıda tanımlı.
   const seciliRef = useRef(null);
@@ -287,22 +289,22 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
       // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: (h.calma ? "ÇALDI! " : "") + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: (h.calma ? _t("ÇALDI! ") : "") + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
     } else if (h.tip === "yanlis") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
         message: h.ayniIsim
-          ? "Çalmak için FARKLI bir futbolcu gerekir"
-          : cpuHamlesi ? `${kisaAd(karakter)} bilemedi: ${h.metin}` : "Bu futbolcu bu ikilide oynamadı",
+          ? _t("Çalmak için FARKLI bir futbolcu gerekir")
+          : cpuHamlesi ? _t("{0} bilemedi: {1}", [kisaAd(karakter), h.metin]) : _t("Bu futbolcu bu ikilide oynamadı"),
       });
     } else if (h.tip === "pas") {
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? `${kisaAd(karakter)} pas geçti` : "Pas geçtin" });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? _t("{0} pas geçti", [kisaAd(karakter)]) : _t("Pas geçtin") });
     } else if (h.tip === "sure") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
-        message: cpuyaKarsi ? `Süre doldu, sıra ${bulunma(kisaAd(karakter))}` : `Süre doldu, sıra ${h.kimden === X ? adlar[1] : adlar[0]} oyuncusunda`,
+        message: cpuyaKarsi ? _t("Süre doldu, sıra {0}", [bulunma(kisaAd(karakter))]) : _t("Süre doldu, sıra {0} oyuncusunda", [h.kimden === X ? adlar[1] : adlar[0]]),
       });
     }
   }, [durum?.sonHamle, cpuyaKarsi, playCorrect, playWrong, playCpuCorrect, karakter]);
@@ -332,7 +334,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     // Bu karede kullanılmamış geçerli cevap kalmadıysa dokunmak boşuna —
     // oyuncu bilmediği için değil, cevap KALMADIĞI için kaybediyor olurdu.
     if (kareTukendiMi(durum, satir, sutun, PLAYERS)) {
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: "Bu karenin cevapları tükendi" });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: _t("Bu karenin cevapları tükendi") });
       return;
     }
     const yeni = aksiyonuIsle(durum, { tip: "hucreSec", satir, sutun }, baglam);
@@ -348,23 +350,23 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     if (isRecording) {
       try {
         const metin = await stopRecording();
-        if (!metin) { setSesHatasi("Sesi anlayamadım, tekrar dener misin?"); return; }
+        if (!metin) { setSesHatasi(_t("Sesi anlayamadım, tekrar dener misin?")); return; }
         const gonder = (a) => cevapGonder(a);
         const yaz = (a) => { setGirdi(a); setInputMode("keyboard"); };
         if (sesOnayiAcik) setSesOnayIstegi({ duyulan: metin, ad: metin, gonder, yaz });
         else gonder(metin);
       } catch (err) {
-        setSesHatasi(err.message || "Ses tanıma başarısız oldu");
+        setSesHatasi(err.message || _t("Ses tanıma başarısız oldu"));
       }
     } else {
-      try { await startRecording(); } catch (err) { setSesHatasi(err.message || "Mikrofona erişilemedi"); }
+      try { await startRecording(); } catch (err) { setSesHatasi(err.message || _t("Mikrofona erişilemedi")); }
     }
   }
   function sesOnayla(a) { const i = sesOnayIstegi; setSesOnayIstegi(null); if (i && i.gonder) i.gonder(a); }
   function sesYaz(a) { const i = sesOnayIstegi; setSesOnayIstegi(null); if (i && i.yaz) i.yaz(a); }
   async function sesTekrar() {
     setSesOnayIstegi(null);
-    try { await startRecording(); } catch (err) { setSesHatasi(err.message || "Mikrofona erişilemedi"); }
+    try { await startRecording(); } catch (err) { setSesHatasi(err.message || _t("Mikrofona erişilemedi")); }
   }
   // Sıra değişince açık kalan kayıt/onay temizlensin.
   useEffect(() => {
@@ -387,7 +389,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     kurulumaDon: () => setBasladi(false),
   });
   useEffect(() => {
-    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [["Rakip", cpuyaKarsi ? `${karakter.avatar} ${kisaAd(karakter)}` : "2 kişi"], ["Izgara", (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || "Kulüpler"], ["Çalma kuralı", calma ? "Açık" : "Kapalı"]] }) });
+    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [[_t("Rakip"), cpuyaKarsi ? `${karakter.avatar} ${kisaAd(karakter)}` : _t("2 kişi")], [_t("Izgara"), (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || _t("Kulüpler")], [_t("Çalma kuralı"), calma ? _t("Açık") : _t("Kapalı")]] }) });
   }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru, calma]);
 
   function cevapGonder(ad) {
@@ -408,19 +410,21 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     return (
       <ModKurulum
         modId="xox"
-        baslik="Futbolcu XOX"
-        aciklama="Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan kazanır."
+        baslik={_t("Futbolcu XOX")}
+        aciklama={_t(
+          "Izgaranın satır ve sütunlarında kulüpler var. Bir kareyi almak için o karenin iki kulübünde de oynamış bir futbolcu söyle. Üçlü sırayı yapan kazanır."
+        )}
         vurgu={VURGU}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode, calmaKurali: calma })}
         onBasla={yeniOyun}
         baslaYukleniyor={hazirlaniyor}
       >
-        <KurulumBolum baslik="RAKİP">
+        <KurulumBolum baslik={_t("RAKİP")}>
           <SecimCipleri
             secenekler={[
-              { deger: "cpu", etiket: "CPU'ya karşı", ikon: "hardware-chip" },
-              { deger: "iki", etiket: "2 Kişi (aynı telefon)", ikon: "people" },
+              { deger: "cpu", etiket: _t("CPU'ya karşı"), ikon: "hardware-chip" },
+              { deger: "iki", etiket: _t("2 Kişi (aynı telefon)"), ikon: "people" },
             ]}
             secili={rakipTipi}
             onSec={setRakipTipi}
@@ -428,26 +432,32 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
         </KurulumBolum>
         {!cpuyaKarsi ? <OyuncuAdlariBolumu adet={2} /> : null}
         <KurulumBolum
-          baslik="ZORLUK"
+          baslik={_t("ZORLUK")}
           not={cpuyaKarsi
-            ? "Zorluk hem ızgaradaki kulüpleri hem CPU'nun ne kadar iyi oynadığını belirler."
-            : "Zorluk ızgaradaki kulüpleri ve karelerin ne kadar kolay doldurulacağını belirler."}
+            ? _t(
+            "Zorluk hem ızgaradaki kulüpleri hem CPU'nun ne kadar iyi oynadığını belirler."
+          )
+            : _t(
+            "Zorluk ızgaradaki kulüpleri ve karelerin ne kadar kolay doldurulacağını belirler."
+          )}
         >
           <ZorlukSecici
             deger={zorluk}
             onDegis={setZorluk}
-            aciklama={(z) => (z <= 2 ? "Bol ortak isimli dev kulüpler." : z <= 4 ? "Tanıdık kulüpler, rahat kareler." : z <= 6 ? "Dengeli." : z <= 8 ? "Az ortak isimli kareler." : "İğne deliği kareler.")}
+            aciklama={(z) => (z <= 2 ? _t("Bol ortak isimli dev kulüpler.") : z <= 4 ? _t("Tanıdık kulüpler, rahat kareler.") : z <= 6 ? _t("Dengeli.") : z <= 8 ? _t("Az ortak isimli kareler.") : _t("İğne deliği kareler."))}
           />
         </KurulumBolum>
         <KurulumBolum
-          baslik="IZGARA TÜRÜ"
+          baslik={_t("IZGARA TÜRÜ")}
           not={izgaraTuru === "kulup"
-            ? "Satır ve sütunlarda sadece kulüpler."
+            ? _t("Satır ve sütunlarda sadece kulüpler.")
             : izgaraTuru === "ulke"
-            ? "Bazı sütunlarda ülke olur: \"Brezilyalı + Real Madrid'de oynamış\"."
+            ? _t("Bazı sütunlarda ülke olur: \"Brezilyalı + Real Madrid'de oynamış\".")
             : izgaraTuru === "basari"
-            ? "Bazı sütunlarda başarı olur: \"Ballon d'Or sahibi + Real Madrid'de oynamış\"."
-            : "Ülke ve başarı sütunları karışık gelir."}
+            ? _t(
+            "Bazı sütunlarda başarı olur: \"Ballon d'Or sahibi + Real Madrid'de oynamış\"."
+          )
+            : _t("Ülke ve başarı sütunları karışık gelir.")}
         >
           <SecimCipleri
             secenekler={IZGARA_TURLERI.filter((t) => (t.deger !== "basari" && t.deger !== "karma") || basariVerisiVarMi() || t.deger === "karma")}
@@ -455,10 +465,13 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
             onSec={setIzgaraTuru}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="ÇALMA KURALI" not={`Açıkken rakibin aldığı kareye dokunup o kare için FARKLI bir futbolcu söylersen kare senin olur. Herkesin ${CALMA_HAKKI} çalma hakkı var.`}>
-          <SecimCipleri secenekler={[{ deger: false, etiket: "Kapalı" }, { deger: true, etiket: "Açık" }]} secili={calma} onSec={setCalma} />
+        <KurulumBolum baslik={_t("ÇALMA KURALI")} not={_t(
+          "Açıkken rakibin aldığı kareye dokunup o kare için FARKLI bir futbolcu söylersen kare senin olur. Herkesin {0} çalma hakkı var.",
+          [CALMA_HAKKI]
+        )}>
+          <SecimCipleri secenekler={[{ deger: false, etiket: _t("Kapalı") }, { deger: true, etiket: _t("Açık") }]} secili={calma} onSec={setCalma} />
         </KurulumBolum>
-        <EslesmeProfiliBolumu eslesme={eslesme} not="Izgaradaki kulüpler profilin bölge ve kulüp ayarlarına göre seçilir." />
+        <EslesmeProfiliBolumu eslesme={eslesme} not={_t("Izgaradaki kulüpler profilin bölge ve kulüp ayarlarına göre seçilir.")} />
         <KurulumBolum baslik={MOD_TANIMLARI.xox.sure.etiket}>
           <SureSecici
             secenekler={MOD_TANIMLARI.xox.sure.secenekler}
@@ -469,7 +482,9 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
             aciklama={MOD_TANIMLARI.xox.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP YÖNTEMİ" not="İki yöntem de oyun sırasında her zaman kullanılabilir; bu seçim hangisinin öne çıkacağını belirler.">
+        <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")} not={_t(
+          "İki yöntem de oyun sırasında her zaman kullanılabilir; bu seçim hangisinin öne çıkacağını belirler."
+        )}>
           <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
       </ModKurulum>
@@ -485,7 +500,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   const siraEtiketi = durum.bitti
     ? sonucMetni(durum, cpuyaKarsi)
     : cpuyaKarsi
-    ? (durum.sira === X ? "Sıra sende" : cpuDusunuyor ? `${kisaAd(karakter)} düşünüyor…` : `${kisaAd(karakter)} oynuyor`)
+    ? (durum.sira === X ? _t("Sıra sende") : cpuDusunuyor ? _t("{0} düşünüyor…", [kisaAd(karakter)]) : _t("{0} oynuyor", [kisaAd(karakter)]))
     : (durum.sira === X ? `${adlar[0]} (X)` : `${adlar[1]} (O)`);
 
   return (
@@ -493,8 +508,8 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
       <KlavyeAlani style={{ flex: 1 }}>
         {/* Paket 31 — standart üst çubuk */}
         <OyunUstCubugu
-          baslik="Futbolcu XOX"
-          alt={cpuyaKarsi ? `${kisaAd(karakter)} ile` : "2 kişi, aynı telefon"}
+          baslik={_t("Futbolcu XOX")}
+          alt={cpuyaKarsi ? _t("{0} ile", [kisaAd(karakter)]) : _t("2 kişi, aynı telefon")}
           onCikis={onExitSilent || onExit}
           style={{ paddingHorizontal: SPACING.xl, marginTop: 6 }}
         />
@@ -506,21 +521,20 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
           {!secili && !durum.bitti && benimSiram && (
             <Text style={styles.ipucu}>
               {durum.calmaHakki && durum.calmaHakki[durum.sira] > 0
-                ? "Boş bir kareye dokun — ya da rakibin karesini çal"
-                : "Almak istediğin kareye dokun"}
+                ? _t("Boş bir kareye dokun — ya da rakibin karesini çal")
+                : _t("Almak istediğin kareye dokun")}
             </Text>
           )}
           {durum.calmaHakki ? (
-            <Text style={styles.calmaSatir}>
-              Çalma hakkı · X: {durum.calmaHakki[X]} · O: {durum.calmaHakki[O]}
+            <Text style={styles.calmaSatir}>{_t("Çalma hakkı · X:")}{" "}{durum.calmaHakki[X]}· O: {durum.calmaHakki[O]}
             </Text>
           ) : null}
 
           {/* Paket 31 — standart skor şeridi: X sen, O rakip; sıradaki taraf vurgulu */}
           <SkorSeridi
             style={{ marginHorizontal: SPACING.xl, width: "auto" }}
-            sol={{ etiket: cpuyaKarsi ? "X · SEN" : `X · ${String(adlar[0]).toLocaleUpperCase("tr")}`, aktif: !durum.bitti && durum.sira === X }}
-            sag={{ etiket: cpuyaKarsi ? `O · ${rakipEtiketi(karakter)}` : `O · ${String(adlar[1]).toLocaleUpperCase("tr")}`, karakter: cpuyaKarsi ? karakter : null, aktif: !durum.bitti && durum.sira === O }}
+            sol={{ etiket: cpuyaKarsi ? _t("X · SEN") : _t("X · {0}", [String(adlar[0]).toLocaleUpperCase("tr")]), aktif: !durum.bitti && durum.sira === X }}
+            sag={{ etiket: cpuyaKarsi ? _t("O · {0}", [rakipEtiketi(karakter)]) : _t("O · {0}", [String(adlar[1]).toLocaleUpperCase("tr")]), karakter: cpuyaKarsi ? karakter : null, aktif: !durum.bitti && durum.sira === O }}
             orta={siraEtiketi}
           />
           {cpuyaKarsi && cpuDusunuyor ? <RakipTepkisi karakter={karakter} metin={dusunceSozu} style={{ marginTop: -4, marginBottom: 8 }} /> : null}
@@ -529,8 +543,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
             <View style={styles.sureKutu}>
               <TimerBar current={kalanSure} total={cevapSuresi} />
               <Text style={[styles.sureYazi, kalanSure <= 5 && { color: COLORS.danger }]}>
-                {kalanSure} sn
-              </Text>
+                {kalanSure}{" "}{_t("sn")}</Text>
             </View>
           )}
 
@@ -549,14 +562,17 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
               </Text>
               <Text style={styles.hedefAlt}>
                 {secili.calma
-                  ? `ÇALMA · "${durum.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""}" dışında bir futbolcu söyle (1 çalma hakkı gider)`
-                  : `${seciliCevapSayisi} olası cevap`}
+                  ? _t(
+                  "ÇALMA · \"{0}\" dışında bir futbolcu söyle (1 çalma hakkı gider)",
+                  [durum.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""]
+                )
+                  : _t("{0} olası cevap", [seciliCevapSayisi])}
               </Text>
 
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
-                  placeholder={inputMode === "voice" ? "Konuş ya da yaz..." : "Futbolcu adı yaz..."}
+                  placeholder={inputMode === "voice" ? _t("Konuş ya da yaz...") : _t("Futbolcu adı yaz...")}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
                   onChangeText={setGirdi}
@@ -571,7 +587,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                   style={[styles.mikrofonBtn, isRecording && styles.mikrofonBtnAktif]}
                   onPress={mikrofonaBas}
                   disabled={isProcessing}
-                  accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle cevap ver"}
+                  accessibilityLabel={isRecording ? _t("Kaydı durdur") : _t("Sesle cevap ver")}
                 >
                   {isProcessing ? (
                     <ActivityIndicator color={COLORS.text} />
@@ -579,12 +595,12 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                     <Ionicons name={isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#fff" : COLORS.text} />
                   )}
                 </SoundPressable>
-                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
+                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel={_t("Gönder")}>
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>
               </View>
-              {isRecording ? <Text style={styles.sesIpucu}>Dinliyorum — bitince kırmızı düğmeye dokun</Text> : null}
-              {isProcessing ? <Text style={styles.sesIpucu}>Yazıya çevriliyor...</Text> : null}
+              {isRecording ? <Text style={styles.sesIpucu}>{_t("Dinliyorum — bitince kırmızı düğmeye dokun")}</Text> : null}
+              {isProcessing ? <Text style={styles.sesIpucu}>{_t("Yazıya çevriliyor...")}</Text> : null}
               {sesHatasi ? <Text style={[styles.sesIpucu, { color: COLORS.danger }]}>{sesHatasi}</Text> : null}
               <VoiceConfirm
                 istek={sesOnayIstegi}
@@ -613,12 +629,12 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                 <SoundPressable
                   onPress={() => setDurum(aksiyonuIsle(durum, { tip: "secimiIptal" }, baglam) || durum)}
                 >
-                  <Text style={styles.kucukLink}>Başka kare seç</Text>
+                  <Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text>
                 </SoundPressable>
                 <SoundPressable
                   onPress={() => setDurum(aksiyonuIsle(durum, { tip: "pas" }, baglam) || durum)}
                 >
-                  <Text style={styles.kucukLink}>Pas geç</Text>
+                  <Text style={styles.kucukLink}>{_t("Pas geç")}</Text>
                 </SoundPressable>
               </View>
             </View>
@@ -666,7 +682,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                       {sahip ? (
                         <>
                           <Text style={[styles.hucreIsaret, sahip === O && { color: COLORS.cta }]}>
-                            {sahip === X ? "X" : "O"}
+                            {sahip === X ? _t("X") : _t("O")}
                           </Text>
                           <Text style={styles.hucreAd} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{sahipBilgi?.ad}</Text>
                         </>
@@ -687,12 +703,12 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
           {/* --- MAÇ SONU --- */}
           {durum.bitti && cpuyaKarsi && (
             <MacSonuKarti
-              modAdi="Futbolcu XOX"
+              modAdi={_t("Futbolcu XOX")}
               modeId="xoxCpu"
               kazanan={durum.kazanan === "berabere" ? "berabere" : durum.kazanan === X ? "sen" : "rakip"}
               skorSen={durum.tahta.filter((t) => t === X).length}
               skorRakip={durum.tahta.filter((t) => t === O).length}
-              skorEtiketi="kare"
+              skorEtiketi={_t("kare")}
               rakip={{ ad: kisaAd(karakter), avatar: karakter.avatar, renk: karakter.renk }}
               turlar={durum.tahta.map((t) => (t === X ? "sen" : t === O ? "rakip" : "yok"))}
               kareSatir={3}
@@ -700,10 +716,10 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                 const benim = Object.values(durum.hucreSahipleri || {}).filter((h) => h.oyuncu === X && h.ad).map((h) => h.ad);
                 if (!benim.length) return null;
                 const en = [...benim].sort((a, b) => taninirlik(a) - taninirlik(b))[0];
-                return { ad: en, alt: "Izgarada verdiğin en nadir isim" };
+                return { ad: en, alt: _t("Izgarada verdiğin en nadir isim") };
               })()}
               kazanilanXp={0}
-              rovansEtiketi="YENİ IZGARA"
+              rovansEtiketi={_t("YENİ IZGARA")}
               onRovans={yeniOyun}
               onMenu={onExitSilent || onExit}
             />
@@ -711,21 +727,21 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
           {durum.bitti && !cpuyaKarsi && (
             <View>
               <IsimliSkorTablosu
-                modAdi="Futbolcu XOX"
+                modAdi={_t("Futbolcu XOX")}
                 oyuncular={[
                   { ad: adlar[0], puan: durum.tahta.filter((t) => t === X).length },
                   { ad: adlar[1], puan: durum.tahta.filter((t) => t === O).length },
                 ]}
                 // Üçlü sıra yapan, kare sayısı az olsa da kazanır.
                 kazanan={durum.kazanan === "berabere" ? "berabere" : durum.kazanan === X ? 0 : 1}
-                skorEtiketi="kare"
-                altYazi={`${durum.kullanilanlar.length} doğru cevap`}
-                rovansEtiketi="RÖVANŞ — YENİ IZGARA"
+                skorEtiketi={_t("kare")}
+                altYazi={_t("{0} doğru cevap", [durum.kullanilanlar.length])}
+                rovansEtiketi={_t("RÖVANŞ — YENİ IZGARA")}
                 onRovans={yeniOyun}
                 onMenu={onExitSilent || onExit}
               />
               <SoundPressable style={{ alignSelf: "center", marginTop: 4 }} onPress={() => setBasladi(false)}>
-                <Text style={styles.ikincilBtnText}>Ayarlar</Text>
+                <Text style={styles.ikincilBtnText}>{_t("Ayarlar")}</Text>
               </SoundPressable>
             </View>
           )}
@@ -733,7 +749,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
           {macSonuCevaplari && (
             <View style={styles.cevaplarKutu}>
               <SoundPressable style={styles.cevaplarBaslikSatir} onPress={() => setCevaplarAcik((a) => !a)}>
-                <Text style={styles.cevaplarBaslik}>DOĞRU CEVAPLAR</Text>
+                <Text style={styles.cevaplarBaslik}>{_t("DOĞRU CEVAPLAR")}</Text>
                 <Ionicons name={cevaplarAcik ? "chevron-up" : "chevron-down"} size={16} color={COLORS.textMuted} />
               </SoundPressable>
               {cevaplarAcik && macSonuCevaplari.map((k) => (
@@ -742,14 +758,14 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                     <Text style={styles.cevapKartBaslik} numberOfLines={2}>{k.satir} × {k.sutun}</Text>
                     {k.sahip ? (
                       <Text style={[styles.cevapKartSahip, k.sahip === O && { color: COLORS.cta }]}>
-                        {k.sahip === X ? "X" : "O"}
+                        {k.sahip === X ? _t("X") : _t("O")}
                       </Text>
                     ) : null}
                   </View>
-                  {k.verilen ? <Text style={styles.cevapVerilen}>Verilen: {k.verilen}</Text> : null}
+                  {k.verilen ? <Text style={styles.cevapVerilen}>{_t("Verilen:")}{" "}{k.verilen}</Text> : null}
                   <Text style={styles.cevapListe}>
                     {k.adlar.slice(0, 8).join(" · ")}
-                    {k.adlar.length > 8 ? `  (+${k.adlar.length - 8} daha)` : ""}
+                    {k.adlar.length > 8 ? _t("  (+{0} daha)", [k.adlar.length - 8]) : ""}
                   </Text>
                 </View>
               ))}
@@ -760,7 +776,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
               oyuncunun bunu görmesi gerekiyor. */}
           {durum.kullanilanlar.length > 0 && !durum.bitti && (
             <View style={styles.kullanilanKutu}>
-              <Text style={styles.kullanilanBaslik}>KULLANILANLAR</Text>
+              <Text style={styles.kullanilanBaslik}>{_t("KULLANILANLAR")}</Text>
               <Text style={styles.kullanilanText}>{durum.kullanilanlar.join(" · ")}</Text>
             </View>
           )}

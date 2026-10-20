@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, TextInput, Pressable, Animated, Easing, Keyboard } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,7 +57,7 @@ export default function OnboardingScreen({ onDone }) {
   }
   const ad = ADIMLAR[adim];
   const soluk = ad === "deneme" && !denemeBitti;
-  const ileriYazi = ad === "merhaba" ? "Hemen dene" : ad === "deneme" ? (denemeBitti ? "Devam" : "Atla") : adim === ADIMLAR.length - 1 ? "Oynamaya başla" : "Devam";
+  const ileriYazi = ad === "merhaba" ? _t("Hemen dene") : ad === "deneme" ? (denemeBitti ? _t("Devam") : _t("Atla")) : adim === ADIMLAR.length - 1 ? _t("Oynamaya başla") : _t("Devam");
 
   return (
     <GameBackground style={s.kap}>
@@ -73,8 +74,8 @@ export default function OnboardingScreen({ onDone }) {
             {ADIMLAR.map((_, i) => <View key={i} style={[s.nokta, i === adim && s.noktaAktif]} />)}
           </View>
           <View style={s.dugmeSatir}>
-            <SoundPressable onPress={onDone} hitSlop={12} accessibilityLabel="Karşılamayı geç">
-              <Text style={s.gec}>Geç</Text>
+            <SoundPressable onPress={onDone} hitSlop={12} accessibilityLabel={_t("Karşılamayı geç")}>
+              <Text style={s.gec}>{_t("Geç")}</Text>
             </SoundPressable>
             <PressScale onPress={ileri} style={[s.ileri, soluk && s.ileriSoluk]} accessibilityLabel={ileriYazi}>
               <Text style={[s.ileriYazi, soluk && { color: COLORS.text }]}>{ileriYazi}</Text>
@@ -90,7 +91,7 @@ export default function OnboardingScreen({ onDone }) {
 // --------------------------------------------------------------------------
 // 1) Hoş geldin — döngüdeki 3-2-1 sahnesi
 // --------------------------------------------------------------------------
-const DONGU = ["3", "2", "1", "BİTİR İŞİ!"];
+const DONGU = ["3", "2", "1", _t("BİTİR İŞİ!")];
 function Merhaba() {
   const [i, setI] = useState(0);
   const pop = useRef(new Animated.Value(1)).current;
@@ -113,12 +114,11 @@ function Merhaba() {
   const son = i === DONGU.length - 1;
   return (
     <View style={s.sayfa}>
-      <Text style={s.ust}>HOŞ GELDİN</Text>
-      <Text style={s.baslik}>3-2-1: Bitir İşi</Text>
-      <Text style={s.metin}>
-        İki takım gelir. İkisinde de forma giymiş bir futbolcuyu rakibinden önce söyleyen turu alır. Kural bu kadar —
-        gerisi futbol hafızan.
-      </Text>
+      <Text style={s.ust}>{_t("HOŞ GELDİN")}</Text>
+      <Text style={s.baslik}>{_t("3-2-1: Bitir İşi")}</Text>
+      <Text style={s.metin}>{_t(
+        "İki takım gelir. İkisinde de forma giymiş bir futbolcuyu rakibinden önce söyleyen turu alır. Kural bu kadar — gerisi futbol hafızan."
+      )}</Text>
       <View style={s.sahne} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Animated.View style={{ opacity: gel, transform: [{ translateX: gel.interpolate({ inputRange: [0, 1], outputRange: [-90, 0] }) }] }}>
           <TeamBadge name={DENEME.a} size={72} />
@@ -131,9 +131,9 @@ function Merhaba() {
         </Animated.View>
       </View>
       <View style={s.maddeler}>
-        <Madde ikon="flash" yazi="Bildiğin an “BİLİYORUM”a bas; yaz ya da sesle söyle." />
-        <Madde ikon="people" yazi="CPU'ya karşı, yanındaki arkadaşınla ya da online rakiple oyna." />
-        <Madde ikon="trophy" yazi="Her doğru cevap XP, rozet ve futbolcu koleksiyonu demek." />
+        <Madde ikon="flash" yazi={_t("Bildiğin an “BİLİYORUM”a bas; yaz ya da sesle söyle.")} />
+        <Madde ikon="people" yazi={_t("CPU'ya karşı, yanındaki arkadaşınla ya da online rakiple oyna.")} />
+        <Madde ikon="trophy" yazi={_t("Her doğru cevap XP, rozet ve futbolcu koleksiyonu demek.")} />
       </View>
     </View>
   );
@@ -188,7 +188,7 @@ function DenemeTuru({ onBitti }) {
     if (!m) return;
     const p = findMatchedPlayer(m, cevaplar);
     if (p) { playCorrect(); bitir(p.name, true); }
-    else { playWrong(); setUyari(`“${m}” bu iki takımda birlikte oynamadı — bir daha dene.`); }
+    else { playWrong(); setUyari(_t("“{0}” bu iki takımda birlikte oynamadı — bir daha dene.", [m])); }
     setGirdi("");
   }
 
@@ -197,8 +197,8 @@ function DenemeTuru({ onBitti }) {
   return (
     <View style={s.sayfa}>
       {faz === "sayim" ? <CountdownOverlay onComplete={() => setFaz("oyun")} countPlayers={[c3, c2, c1]} /> : null}
-      <Text style={s.ust}>DENEME TURU</Text>
-      <Text style={s.baslikKucuk}>İkisinde de oynamış bir futbolcu yaz</Text>
+      <Text style={s.ust}>{_t("DENEME TURU")}</Text>
+      <Text style={s.baslikKucuk}>{_t("İkisinde de oynamış bir futbolcu yaz")}</Text>
       <EslesmeKarti sol={{ tip: "kulup", ad: DENEME.a }} sag={{ tip: "kulup", ad: DENEME.b }} style={{ marginTop: SPACING.md }} />
 
       {faz === "oyun" ? (
@@ -208,16 +208,16 @@ function DenemeTuru({ onBitti }) {
               value={girdi}
               onChangeText={(t) => { setGirdi(t); if (uyari) setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder="Futbolcu adı…"
+              placeholder={_t("Futbolcu adı…")}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
               spellCheck={false}
               style={s.girdi}
-              accessibilityLabel="Futbolcu adı"
+              accessibilityLabel={_t("Futbolcu adı")}
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
-            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="send" size={18} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -236,36 +236,38 @@ function DenemeTuru({ onBitti }) {
               <Ionicons name="bulb" size={16} color={COLORS.cta} />
               <Text style={s.ipucuYazi}>
                 {ipucu === 1
-                  ? `${ulke ? "Uyruğu " + ulke + "; " : ""}adı “${ornek.name[0]}” ile başlıyor.`
+                  ? _t(
+                  "{0}adı “{1}” ile başlıyor.",
+                  [ulke ? "Uyruğu " + ulke + "; " : "", ornek.name[0]]
+                )
                   : `${ornek.name.slice(0, Math.ceil(ornek.name.length / 2))}…`}
               </Text>
             </View>
           ) : null}
           <View style={s.yardimSatir}>
             {ipucu < 2 ? (
-              <SoundPressable onPress={() => setIpucu(ipucu + 1)} style={s.yardim} accessibilityLabel="İpucu">
+              <SoundPressable onPress={() => setIpucu(ipucu + 1)} style={s.yardim} accessibilityLabel={_t("İpucu")}>
                 <Ionicons name="bulb-outline" size={16} color={COLORS.textMuted} />
-                <Text style={s.yardimYazi}>{ipucu === 0 ? "İpucu" : "Bir ipucu daha"}</Text>
+                <Text style={s.yardimYazi}>{ipucu === 0 ? _t("İpucu") : _t("Bir ipucu daha")}</Text>
               </SoundPressable>
             ) : (
-              <SoundPressable onPress={() => ornek && bitir(ornek.name, false)} style={s.yardim} accessibilityLabel="Cevabı göster">
+              <SoundPressable onPress={() => ornek && bitir(ornek.name, false)} style={s.yardim} accessibilityLabel={_t("Cevabı göster")}>
                 <Ionicons name="eye-outline" size={16} color={COLORS.textMuted} />
-                <Text style={s.yardimYazi}>Cevabı göster</Text>
+                <Text style={s.yardimYazi}>{_t("Cevabı göster")}</Text>
               </SoundPressable>
             )}
           </View>
-          <Text style={s.not}>Gerçek maçta önce “BİLİYORUM”a basarsın; rakibin de aynı anda yarışır.</Text>
+          <Text style={s.not}>{_t("Gerçek maçta önce “BİLİYORUM”a basarsın; rakibin de aynı anda yarışır.")}</Text>
         </View>
       ) : null}
 
       {faz === "dogru" && bulunan ? (
         <Animated.View style={[s.kutlama, { opacity: kutla, transform: [{ scale: kutla.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
-          <Text style={s.kutlamaUst}>{kendiBuldu ? "GOOOL!" : "CEVAP"}</Text>
+          <Text style={s.kutlamaUst}>{kendiBuldu ? _t("GOOOL!") : _t("CEVAP")}</Text>
           <PlayerPhoto name={bulunan} size={88} />
           <Text style={s.kutlamaAd}>{bulunan}</Text>
           <Text style={s.kutlamaAlt}>
-            {kendiBuldu ? "Tam isabet. " : ""}{DENEME.a} ve {DENEME.b} formasını giydi. Bu ikilinin {cevaplar.length} doğru cevabı var — her turda başka bir ikili gelir.
-          </Text>
+            {kendiBuldu ? _t("Tam isabet. ") : ""}{DENEME.a}{" "}{_t("ve")}{" "}{DENEME.b}{" "}{_t("formasını giydi. Bu ikilinin")}{" "}{cevaplar.length}{" "}{_t("doğru cevabı var — her turda başka bir ikili gelir.")}</Text>
         </Animated.View>
       ) : null}
     </View>
@@ -316,7 +318,7 @@ const XOX_SIRA = [4, 0, 6, 8, 2];
 function XoxAnim() {
   const i = useDongu(XOX_SIRA.length + 3, 600);
   const tahta = Array(9).fill(null);
-  XOX_SIRA.slice(0, i).forEach((h, n) => (tahta[h] = n % 2 === 0 ? "X" : "O"));
+  XOX_SIRA.slice(0, i).forEach((h, n) => (tahta[h] = n % 2 === 0 ? _t("X") : _t("O")));
   const bitti = i >= XOX_SIRA.length;
   return (
     <View style={s.xox}>
@@ -329,7 +331,7 @@ function XoxAnim() {
   );
 }
 
-const KIMBU_IPUCU = ["Brezilya", "Forvet", "Barcelona", "Real Madrid", "1976"];
+const KIMBU_IPUCU = [_t("Brezilya"), _t("Forvet"), "Barcelona", "Real Madrid", "1976"];
 function KimBuAnim() {
   const i = useDongu(KIMBU_IPUCU.length + 3, 650);
   return (
@@ -337,7 +339,7 @@ function KimBuAnim() {
       {KIMBU_IPUCU.map((t, n) => (
         <View key={t} style={[s.cip, { opacity: n < i ? 1 : 0.1 }]}><Text style={s.cipYazi}>{t}</Text></View>
       ))}
-      <Text style={[s.animSonuc, { opacity: i > KIMBU_IPUCU.length ? 1 : 0 }]}>Ronaldo!</Text>
+      <Text style={[s.animSonuc, { opacity: i > KIMBU_IPUCU.length ? 1 : 0 }]}>{_t("Ronaldo!")}</Text>
     </View>
   );
 }
@@ -345,18 +347,18 @@ function KimBuAnim() {
 function Modlar() {
   return (
     <View style={s.sayfa}>
-      <Text style={s.ust}>DAHA FAZLASI</Text>
-      <Text style={s.baslikKucuk}>3-2-1'in yanında dört oyun daha</Text>
-      <ModKarti ikon="besKulup" baslik="5 Kulüp" metin="Beş kulübün hepsinde oynamış futbolcuyu bul.">
+      <Text style={s.ust}>{_t("DAHA FAZLASI")}</Text>
+      <Text style={s.baslikKucuk}>{_t("3-2-1'in yanında dört oyun daha")}</Text>
+      <ModKarti ikon="besKulup" baslik={_t("5 Kulüp")} metin={_t("Beş kulübün hepsinde oynamış futbolcuyu bul.")}>
         <BesKulupAnim />
       </ModKarti>
-      <ModKarti ikon="xox" baslik="Futbolcu XOX" metin="Satır ile sütunun ortak futbolcusunu söyle, kareyi kap.">
+      <ModKarti ikon="xox" baslik={_t("Futbolcu XOX")} metin={_t("Satır ile sütunun ortak futbolcusunu söyle, kareyi kap.")}>
         <XoxAnim />
       </ModKarti>
-      <ModKarti ikon="kimBu" baslik="Kim Bu Futbolcu?" metin="İpuçları teker teker açılır; erken bilen çok puan alır.">
+      <ModKarti ikon="kimBu" baslik={_t("Kim Bu Futbolcu?")} metin={_t("İpuçları teker teker açılır; erken bilen çok puan alır.")}>
         <KimBuAnim />
       </ModKarti>
-      <Text style={s.not}>Bir de İlk Harf var. Her gün biri “Günün modu” olur ve 2× XP verir.</Text>
+      <Text style={s.not}>{_t("Bir de İlk Harf var. Her gün biri “Günün modu” olur ve 2× XP verir.")}</Text>
     </View>
   );
 }
@@ -376,21 +378,23 @@ function Online() {
   }, []);
   return (
     <View style={s.sayfa}>
-      <Text style={s.ust}>KAPIŞMA ZAMANI</Text>
-      <Text style={s.baslikKucuk}>Arkadaşına ya da rastgele bir rakibe meydan oku</Text>
+      <Text style={s.ust}>{_t("KAPIŞMA ZAMANI")}</Text>
+      <Text style={s.baslikKucuk}>{_t("Arkadaşına ya da rastgele bir rakibe meydan oku")}</Text>
       <View style={s.vs} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <View style={s.oyuncu}><Ionicons name="person" size={34} color={COLORS.text} /><Text style={s.oyuncuAd}>Sen</Text></View>
+        <View style={s.oyuncu}><Ionicons name="person" size={34} color={COLORS.text} /><Text style={s.oyuncuAd}>{_t("Sen")}</Text></View>
         <Animated.View style={{ transform: [{ scale: nabiz.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }) }] }}>
           <View style={s.vsRozet}><Ionicons name="flame" size={26} color={COLORS.accentDark} /></View>
         </Animated.View>
-        <View style={s.oyuncu}><Ionicons name="person" size={34} color={COLORS.cta} /><Text style={s.oyuncuAd}>Rakip</Text></View>
+        <View style={s.oyuncu}><Ionicons name="person" size={34} color={COLORS.cta} /><Text style={s.oyuncuAd}>{_t("Rakip")}</Text></View>
       </View>
       <View style={s.maddeler}>
-        <Madde ikon="shuffle" yazi="Hızlı Eşleş: saniyeler içinde bir rakip, puanlı maç." />
-        <Madde ikon="key" yazi="Arkadaşınla: kodu gönder, aynı odada kapışın." />
-        <Madde ikon="calendar" yazi="Her gün yeni bulmaca: serini bozma, rozetleri topla." />
+        <Madde ikon="shuffle" yazi={_t("Hızlı Eşleş: saniyeler içinde bir rakip, puanlı maç.")} />
+        <Madde ikon="key" yazi={_t("Arkadaşınla: kodu gönder, aynı odada kapışın.")} />
+        <Madde ikon="calendar" yazi={_t("Her gün yeni bulmaca: serini bozma, rozetleri topla.")} />
       </View>
-      <Text style={s.metin}>Hazırsan başlayalım. Önce tuttuğun takımı soracağız — turlarda biraz daha sık çıksın diye.</Text>
+      <Text style={s.metin}>{_t(
+        "Hazırsan başlayalım. Önce tuttuğun takımı soracağız — turlarda biraz daha sık çıksın diye."
+      )}</Text>
     </View>
   );
 }

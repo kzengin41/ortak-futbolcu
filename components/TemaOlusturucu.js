@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,10 +35,10 @@ export default function TemaOlusturucu({ visible, baslangic, onKaydet, onKapat }
     <Modal visible={!!visible} animationType="slide" onRequestClose={onKapat}>
       <View style={[s.kap, { backgroundColor: COLORS.bg }]}>
         <View style={s.ust}>
-          <SoundPressable onPress={onKapat} hitSlop={12} accessibilityLabel="Kapat">
+          <SoundPressable onPress={onKapat} hitSlop={12} accessibilityLabel={_t("Kapat")}>
             <Ionicons name="close" size={26} color={COLORS.text} />
           </SoundPressable>
-          <Text style={s.baslik}>Temanı oluştur</Text>
+          <Text style={s.baslik}>{_t("Temanı oluştur")}</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -49,42 +50,42 @@ export default function TemaOlusturucu({ visible, baslangic, onKaydet, onKapat }
                 <Text style={[s.halkaYazi, { color: p.text }]}>7</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.onBaslik, { color: p.text }]}>Seviye 7</Text>
-                <Text style={[s.onAlt, { color: p.textMuted }]}>320 / 500 XP</Text>
+                <Text style={[s.onBaslik, { color: p.text }]}>{_t("Seviye 7")}</Text>
+                <Text style={[s.onAlt, { color: p.textMuted }]}>{_t("320 / 500 XP")}</Text>
               </View>
               <View style={[s.hap, { backgroundColor: p.card, borderColor: p.cardBorder }]}>
                 <Ionicons name="flame" size={13} color={p.cta} />
-                <Text style={[s.hapYazi, { color: p.text }]}>4 gün</Text>
+                <Text style={[s.hapYazi, { color: p.text }]}>{_t("4 gün")}</Text>
               </View>
             </View>
 
             <View style={[s.kahraman, { backgroundColor: p.card, borderColor: p.cardBorder }]}>
-              <Text style={[s.kahramanUst, { color: p.accent }]}>SIRADAKİ MAÇIN HAZIR</Text>
+              <Text style={[s.kahramanUst, { color: p.accent }]}>{_t("SIRADAKİ MAÇIN HAZIR")}</Text>
               <Text style={[s.kahramanAd, { color: p.text }]}>G······ ✕ R···</Text>
-              <Text style={[s.onAlt, { color: p.textMuted, textAlign: "center" }]}>İki kulüp, bir ortak futbolcu</Text>
+              <Text style={[s.onAlt, { color: p.textMuted, textAlign: "center" }]}>{_t("İki kulüp, bir ortak futbolcu")}</Text>
               <View style={[s.oyna, { backgroundColor: p.accent }]}>
                 <Ionicons name="play" size={16} color={p.accentDark} />
-                <Text style={[s.oynaYazi, { color: p.accentDark }]}>OYNA</Text>
+                <Text style={[s.oynaYazi, { color: p.accentDark }]}>{_t("OYNA")}</Text>
               </View>
             </View>
 
             <View style={[s.satir, { backgroundColor: p.card, borderColor: p.cta }]}>
               <Ionicons name="calendar" size={18} color={p.cta} />
               <View style={{ flex: 1 }}>
-                <Text style={[s.satirBaslik, { color: p.text }]}>Günün Bulmacası</Text>
-                <Text style={[s.onAlt, { color: p.textMuted }]}>3 deneme hakkın var</Text>
+                <Text style={[s.satirBaslik, { color: p.text }]}>{_t("Günün Bulmacası")}</Text>
+                <Text style={[s.onAlt, { color: p.textMuted }]}>{_t("3 deneme hakkın var")}</Text>
               </View>
               <View style={[s.mini, { backgroundColor: p.cta }]}>
-                <Text style={[s.miniYazi, { color: p.ctaDark }]}>OYNA</Text>
+                <Text style={[s.miniYazi, { color: p.ctaDark }]}>{_t("OYNA")}</Text>
               </View>
             </View>
 
             <View style={s.ikiKart}>
-              {["Kim Bu?", "5 Kulüp"].map((ad, i) => (
+              {[_t("Kim Bu?"), _t("5 Kulüp")].map((ad, i) => (
                 <View key={ad} style={[s.modKart, { backgroundColor: p.card, borderColor: p.cardBorder }]}>
                   <Ionicons name={i ? "grid" : "help"} size={16} color={i ? p.cta : p.accent} />
                   <Text style={[s.satirBaslik, { color: p.text }]}>{ad}</Text>
-                  <Text style={[s.onAlt, { color: p.textFaint }]}>CPU'ya karşı</Text>
+                  <Text style={[s.onAlt, { color: p.textFaint }]}>{_t("CPU'ya karşı")}</Text>
                 </View>
               ))}
             </View>
@@ -98,7 +99,7 @@ export default function TemaOlusturucu({ visible, baslangic, onKaydet, onKapat }
           ) : null}
 
           {/* ---------------- ZEMİN ---------------- */}
-          <Text style={s.bolum}>ZEMİN</Text>
+          <Text style={s.bolum}>{_t("ZEMİN")}</Text>
           <View style={s.izgara}>
             {ZEMINLER.map((z) => {
               const aktif = secim.zemin === z.id;
@@ -109,15 +110,15 @@ export default function TemaOlusturucu({ visible, baslangic, onKaydet, onKapat }
                   style={[s.zemin, { backgroundColor: z.renkler.card, borderColor: aktif ? COLORS.text : z.renkler.cardBorder }, aktif && s.zeminAktif]}
                 >
                   <View style={[s.zeminNokta, { backgroundColor: z.renkler.bg, borderColor: z.renkler.cardBorder }]} />
-                  <Text style={[s.zeminAd, { color: z.renkler.text }]} numberOfLines={1}>{z.ad}</Text>
+                  <Text style={[s.zeminAd, { color: z.renkler.text }]} numberOfLines={1}>{_t(z.ad)}</Text>
                 </SoundPressable>
               );
             })}
           </View>
 
           {/* ---------------- ANA VURGU ---------------- */}
-          <Text style={s.bolum}>ANA VURGU</Text>
-          <Text style={s.bolumAlt}>Butonlar, aktif durumlar, ikonlar</Text>
+          <Text style={s.bolum}>{_t("ANA VURGU")}</Text>
+          <Text style={s.bolumAlt}>{_t("Butonlar, aktif durumlar, ikonlar")}</Text>
           <RenkSecici
             kutular={VURGU_KUTULARI}
             deger={secim.accent}
@@ -126,8 +127,8 @@ export default function TemaOlusturucu({ visible, baslangic, onKaydet, onKapat }
           />
 
           {/* ---------------- İKİNCİL ---------------- */}
-          <Text style={s.bolum}>İKİNCİL RENK</Text>
-          <Text style={s.bolumAlt}>Günlük görevler, ödüller, öne çıkan satırlar</Text>
+          <Text style={s.bolum}>{_t("İKİNCİL RENK")}</Text>
+          <Text style={s.bolumAlt}>{_t("Günlük görevler, ödüller, öne çıkan satırlar")}</Text>
           <RenkSecici
             kutular={IKINCIL_KUTULARI}
             deger={secim.cta}
@@ -137,15 +138,15 @@ export default function TemaOlusturucu({ visible, baslangic, onKaydet, onKapat }
 
           <SoundPressable style={s.sifirla} onPress={() => setSecim(VARSAYILAN_SECIM)}>
             <Ionicons name="refresh" size={16} color={COLORS.textMuted} />
-            <Text style={s.sifirlaYazi}>Varsayılan renklere dön</Text>
+            <Text style={s.sifirlaYazi}>{_t("Varsayılan renklere dön")}</Text>
           </SoundPressable>
         </ScrollView>
 
         <View style={[s.alt, { borderTopColor: COLORS.cardBorder }]}>
           <SoundPressable style={[s.kaydet, { backgroundColor: p.accent }]} onPress={() => onKaydet?.(secim, p)}>
-            <Text style={[s.kaydetYazi, { color: p.accentDark }]}>TEMAYI UYGULA</Text>
+            <Text style={[s.kaydetYazi, { color: p.accentDark }]}>{_t("TEMAYI UYGULA")}</Text>
           </SoundPressable>
-          <Text style={s.not}>Uygulama kendini bir saniyede yeniler; ilerlemen korunur.</Text>
+          <Text style={s.not}>{_t("Uygulama kendini bir saniyede yeniler; ilerlemen korunur.")}</Text>
         </View>
       </View>
     </Modal>
@@ -168,7 +169,7 @@ function RenkSecici({ kutular, deger, onDegis, tondan }) {
             key={r}
             onPress={() => onDegis(r)}
             style={[s.kutu, { backgroundColor: r }, deger === r && s.kutuAktif]}
-            accessibilityLabel={`Renk ${r}`}
+            accessibilityLabel={_t("Renk {0}", [r])}
           >
             {deger === r ? <Ionicons name="checkmark" size={16} color={r === "#FFFFFF" ? "#000" : "#0B1620"} /> : null}
           </SoundPressable>
@@ -177,7 +178,7 @@ function RenkSecici({ kutular, deger, onDegis, tondan }) {
       <View style={s.tonSatir}>
         <View style={[s.tonOrnek, { backgroundColor: deger }, !kutuda && s.kutuAktif]} />
         <View style={{ flex: 1 }}>
-          <Text style={s.tonEtiket}>Kendi tonun</Text>
+          <Text style={s.tonEtiket}>{_t("Kendi tonun")}</Text>
           <Slider
             minimumValue={0}
             maximumValue={359}

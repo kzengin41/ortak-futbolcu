@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, StyleSheet, ActivityIndicator, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -64,26 +65,30 @@ import { COLORS, RADIUS, SPACING, TYPE, SHADOW, saydam } from "../lib/theme";
 //   ±150 ile başlar, beklerken her 10 sn'de +100 genişler, 30 sn sonra herkes.
 // ============================================================================
 export const GAME_MODES = [
-  { id: "classic", kisa: "Kulüp × Kulüp, Kulüp × Ülke ya da sen seç", ikon: "ortakKulup", grup: "ortak", label: "Ortak Kulüp", desc: "İki takımda da oynamış futbolcuyu rakibinden önce bul. İstersen takımları sırayla siz seçin", icon: "shield-checkmark", colorKey: "teamTeam" },
+  { id: "classic", kisa: _t("Kulüp × Kulüp, Kulüp × Ülke ya da sen seç"), ikon: "ortakKulup", grup: "ortak", label: _t("Ortak Kulüp"), desc: _t(
+    "İki takımda da oynamış futbolcuyu rakibinden önce bul. İstersen takımları sırayla siz seçin"
+  ), icon: "shield-checkmark", colorKey: "teamTeam" },
   // Kartı yok (Ortak Kulüp'ün içinde bir tür); bekleme ekranı ve modIstegi için listede duruyor.
-  { id: "draft", ikon: "takimiSenSec", grup: "ortak", gizli: true, label: "Ortak Kulüp · Takımı Sen Seç", desc: "Sırayla takım seçersiniz: seçtiğin takım rakibin sorusu olur, bilemezse puan senin", icon: "create", colorKey: "teamCountry" },
+  { id: "draft", ikon: "takimiSenSec", grup: "ortak", gizli: true, label: _t("Ortak Kulüp · Takımı Sen Seç"), desc: _t(
+    "Sırayla takım seçersiniz: seçtiğin takım rakibin sorusu olur, bilemezse puan senin"
+  ), icon: "create", colorKey: "teamCountry" },
   // Paket 32 — Online Kulüp × Ülke (screens/OnlineUlkeScreen.js); kartı yok, Ortak Kulüp'ün türü.
-  { id: "country", ikon: "ulkeKulup", grup: "ortak", gizli: true, label: "Ortak Kulüp · Kulüp × Ülke", desc: "O ülkeden, o kulüpte oynamış futbolcuyu rakibinden önce yaz", icon: "earth", colorKey: "teamCountry" },
-  { id: "five", kisa: "Aynı anda gizli cevap, 3 tur", ikon: "besKulup", grup: "ortak", label: "5 Kulüp", desc: "Aynı anda gizli cevap, en çok kulübü tutturan alır", icon: "podium", colorKey: "fiveClubs", rozet: "YENİ" },
-  { id: "xox", kisa: "3×3 ızgara, sırayla kare kap", ikon: "xox", grup: "ortak", label: "Futbolcu XOX", desc: "3×3 ızgara, sırayla kare kap", icon: "grid", colorKey: "xox" },
+  { id: "country", ikon: "ulkeKulup", grup: "ortak", gizli: true, label: _t("Ortak Kulüp · Kulüp × Ülke"), desc: _t("O ülkeden, o kulüpte oynamış futbolcuyu rakibinden önce yaz"), icon: "earth", colorKey: "teamCountry" },
+  { id: "five", kisa: _t("Aynı anda gizli cevap, 3 tur"), ikon: "besKulup", grup: "ortak", label: _t("5 Kulüp"), desc: _t("Aynı anda gizli cevap, en çok kulübü tutturan alır"), icon: "podium", colorKey: "fiveClubs", rozet: _t("YENİ") },
+  { id: "xox", kisa: _t("3×3 ızgara, sırayla kare kap"), ikon: "xox", grup: "ortak", label: _t("Futbolcu XOX"), desc: _t("3×3 ızgara, sırayla kare kap"), icon: "grid", colorKey: "xox" },
   // Paket 37 (Kerem: "online xox'te de başarı x takım ülke x takım gibi modlar var mı?
   // offlinedakilerin onlineda da olması lazım") — XOX ızgara türleri; kartı yok,
   // XOX penceresinin türleri (game_mode "xox-ulke" …, ekran lib/onlineXox.js).
-  { id: "xox-ulke", ikon: "xox", grup: "ortak", gizli: true, label: "Futbolcu XOX · Kulüp + Ülke", desc: "Satır ve sütunlarda kulüpler ve ülkeler", icon: "grid", colorKey: "xox" },
-  { id: "xox-basari", ikon: "xox", grup: "ortak", gizli: true, label: "Futbolcu XOX · Kulüp + Başarı", desc: "Satır ve sütunlarda kulüpler ve kupalar", icon: "grid", colorKey: "xox" },
-  { id: "xox-karma", ikon: "xox", grup: "ortak", gizli: true, label: "Futbolcu XOX · Karma", desc: "Kulüp, ülke ve başarı karışık", icon: "grid", colorKey: "xox" },
-  { id: "whoami", kisa: "Aynı masada ipucu düellosu", ikon: "kimBu", grup: "bilgi", label: "Kim Bu Futbolcu?", desc: "İpuçlarından gizli futbolcuyu bil", icon: "help-circle", colorKey: "whoAmI" },
-  { id: "letter", kisa: "Harfle başlayan futbolcuyu ilk sen bul", ikon: "ilkHarf", grup: "bilgi", label: "İlk Harften Bul", desc: "Harfle başlayan futbolcuyu bul", icon: "text", colorKey: "letters" },
-  { id: "letter2", kisa: "Harfleri siz seçin, yarış başlasın", ikon: "harfiSenSec", grup: "bilgi", label: "Harfi Sen Seç", desc: "Harfleri siz belirleyin, yarış başlasın", icon: "create-outline", colorKey: "letters" },
+  { id: "xox-ulke", ikon: "xox", grup: "ortak", gizli: true, label: _t("Futbolcu XOX · Kulüp + Ülke"), desc: _t("Satır ve sütunlarda kulüpler ve ülkeler"), icon: "grid", colorKey: "xox" },
+  { id: "xox-basari", ikon: "xox", grup: "ortak", gizli: true, label: _t("Futbolcu XOX · Kulüp + Başarı"), desc: _t("Satır ve sütunlarda kulüpler ve kupalar"), icon: "grid", colorKey: "xox" },
+  { id: "xox-karma", ikon: "xox", grup: "ortak", gizli: true, label: _t("Futbolcu XOX · Karma"), desc: _t("Kulüp, ülke ve başarı karışık"), icon: "grid", colorKey: "xox" },
+  { id: "whoami", kisa: _t("Aynı masada ipucu düellosu"), ikon: "kimBu", grup: "bilgi", label: _t("Kim Bu Futbolcu?"), desc: _t("İpuçlarından gizli futbolcuyu bil"), icon: "help-circle", colorKey: "whoAmI" },
+  { id: "letter", kisa: _t("Harfle başlayan futbolcuyu ilk sen bul"), ikon: "ilkHarf", grup: "bilgi", label: _t("İlk Harften Bul"), desc: _t("Harfle başlayan futbolcuyu bul"), icon: "text", colorKey: "letters" },
+  { id: "letter2", kisa: _t("Harfleri siz seçin, yarış başlasın"), ikon: "harfiSenSec", grup: "bilgi", label: _t("Harfi Sen Seç"), desc: _t("Harfleri siz belirleyin, yarış başlasın"), icon: "create-outline", colorKey: "letters" },
 ].map((m) => ({ ...m, title: m.label }));
 const GRUPLAR = [
-  { id: "ortak", baslik: "Ortak Futbolcu Oyunları", ikon: "shield-checkmark" },
-  { id: "bilgi", baslik: "Bilgi & Hız", ikon: "bulb" },
+  { id: "ortak", baslik: _t("Ortak Futbolcu Oyunları"), ikon: "shield-checkmark" },
+  { id: "bilgi", baslik: _t("Bilgi & Hız"), ikon: "bulb" },
 ];
 // Kulüp kimliği (allowedClubIds) gerektirmeyen modlar: kendi üreticileri var.
 const KULUPSUZ = new Set(["xox", "xox-ulke", "xox-basari", "xox-karma", "five"]);
@@ -91,16 +96,16 @@ const KULUPSUZ = new Set(["xox", "xox-ulke", "xox-basari", "xox-karma", "five"])
 const HIZLI_MODLAR = GAME_MODES.map((m) => m.id);
 // Lobideki bir mod kartının başlat sayfası için mod nesnesi (OyunBaslat biçimi).
 const ORTAK_TURLER = [
-  { mod: "classic", label: "Kulüp × Kulüp", alt: "İki kulüp çıkar, ortak futbolcuyu ilk yazan alır" },
-  { mod: "country", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır" },
-  { mod: "draft", label: "Takımı sen seç", alt: "Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur" },
+  { mod: "classic", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüp çıkar, ortak futbolcuyu ilk yazan alır") },
+  { mod: "country", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır") },
+  { mod: "draft", label: _t("Takımı sen seç"), alt: _t("Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur") },
 ];
 // Paket 37 — XOX penceresinde NASIL? (offline'daki ızgara türleri)
 const XOX_TURLER = [
-  { mod: "xox", label: "Sadece kulüpler", alt: "Satır ve sütunlar kulüp; ortak futbolcuyu söyle, kareyi kap" },
-  { mod: "xox-ulke", label: "Kulüp + Ülke", alt: "Bazı satır/sütunlar ülke: o ülkeden, o kulüpte oynamış biri" },
-  { mod: "xox-basari", label: "Kulüp + Başarı", alt: "Bazı satır/sütunlar kupa: o kulüpte oynamış, o kupayı kazanmış biri" },
-  { mod: "xox-karma", label: "Karma", alt: "Kulüp, ülke ve başarı karışık" },
+  { mod: "xox", label: _t("Sadece kulüpler"), alt: _t("Satır ve sütunlar kulüp; ortak futbolcuyu söyle, kareyi kap") },
+  { mod: "xox-ulke", label: _t("Kulüp + Ülke"), alt: _t("Bazı satır/sütunlar ülke: o ülkeden, o kulüpte oynamış biri") },
+  { mod: "xox-basari", label: _t("Kulüp + Başarı"), alt: _t("Bazı satır/sütunlar kupa: o kulüpte oynamış, o kupayı kazanmış biri") },
+  { mod: "xox-karma", label: _t("Karma"), alt: _t("Kulüp, ülke ve başarı karışık") },
 ];
 const _baslatOnbellek = new Map();   // aynı kart → aynı nesne (pencere her çizimde sıfırlanmasın)
 export function onlineBaslatModu(m) {
@@ -117,7 +122,7 @@ function baslatModuKur(m) {
     : [{ id: m.id, rakip: "online", label: m.label, alt: m.desc, sekme: true, params: { mod: m.id } }];
   return {
     key: `online-${ortak ? "ortak" : xox ? "xox" : m.id}`,
-    title: ortak ? "Ortak Kulüp" : xox ? "Futbolcu XOX" : m.label,
+    title: ortak ? _t("Ortak Kulüp") : xox ? _t("Futbolcu XOX") : m.label,
     ikon: ortak ? "ortakKulup" : m.ikon,
     icon: m.icon,
     options,
@@ -125,8 +130,8 @@ function baslatModuKur(m) {
   };
 }
 export const xoxMu = (id) => typeof id === "string" && (id === "xox" || id.startsWith("xox-"));
-const KODLA_KATIL = { ikon: "kodlaKatil", title: "Kodla Katıl", desc: "Arkadaşın oda kurduysa 5 haneli kodunu yaz", icon: "key", colorKey: "online" };
-const MEYDAN = { ikon: "meydanOkuma", title: "Meydan Okuma", desc: "10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün", icon: "paper-plane", colorKey: "dailyPuzzle" };
+const KODLA_KATIL = { ikon: "kodlaKatil", title: _t("Kodla Katıl"), desc: _t("Arkadaşın oda kurduysa 5 haneli kodunu yaz"), icon: "key", colorKey: "online" };
+const MEYDAN = { ikon: "meydanOkuma", title: _t("Meydan Okuma"), desc: _t("10 soruyu çöz, kodunu gönder. Arkadaşın müsait olunca çözsün"), icon: "paper-plane", colorKey: "dailyPuzzle" };
 export const ONERI_SN = 30;          // rastgele aramada öneri kartının çıkış süresi
 // Puana göre eşleşme penceresi (sn cinsinden bekleme -> izin verilen puan farkı; null = herkes)
 export function eslesmePenceresi(gecenSn) {
@@ -210,7 +215,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   }
 
   function hataGoster(e) {
-    setHata(e?.message || String(e || "Bir şeyler ters gitti"));
+    setHata(e?.message || String(e || _t("Bir şeyler ters gitti")));
     setCalisiyor(false);
   }
 
@@ -309,7 +314,10 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   function koduPaylas() {
     if (!oda) return;
     const mod = GAME_MODES.find((m) => m.id === gameMode);
-    Share.share({ message: `⚽ 3-2-1: Bitir İşi — benimle online ${mod ? mod.label : ""} oyna!\nUygulamada Online → Kodla Katıl: ${oda.code}` }).catch(() => {});
+    Share.share({ message: _t(
+      "⚽ 3-2-1: Bitir İşi — benimle online {0} oyna!\nUygulamada Online → Kodla Katıl: {1}",
+      [mod ? mod.label : "", oda.code]
+    ) }).catch(() => {});
   }
 
   function cpuyaGec() {
@@ -331,24 +339,24 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           <View style={styles.waitCard}>
             <View style={styles.modRozet}>
               <Ionicons name={seciliMod.icon} size={14} color={COLORS.accent} />
-              <Text style={styles.modRozetYazi}>{rastgele && hizli ? "Hızlı Eşleş · her mod" : seciliMod.label} · {rastgele ? "Dereceli" : "Dostluk"}</Text>
+              <Text style={styles.modRozetYazi}>{rastgele && hizli ? _t("Hızlı Eşleş · her mod") : seciliMod.label} · {rastgele ? _t("Dereceli") : _t("Dostluk")}</Text>
             </View>
             {rastgele ? (
               <>
                 <ActivityIndicator color={COLORS.accent} size="large" style={{ marginTop: SPACING.lg }} />
-                <Text style={styles.waitTitle}>{oda ? "Rakip aranıyor…" : "Bağlanılıyor…"}</Text>
+                <Text style={styles.waitTitle}>{oda ? _t("Rakip aranıyor…") : _t("Bağlanılıyor…")}</Text>
                 {oda ? <Text style={styles.sayac}>{`${Math.floor(gecen / 60)}:${String(gecen % 60).padStart(2, "0")}`}</Text> : null}
               </>
             ) : (
               <>
-                <Text style={styles.label}>Bu kodu arkadaşına gönder</Text>
+                <Text style={styles.label}>{_t("Bu kodu arkadaşına gönder")}</Text>
                 <Text style={styles.codeText} selectable>{oda ? oda.code : "·····"}</Text>
                 <SoundPressable style={[styles.primaryBtn, { alignSelf: "stretch", marginTop: SPACING.md }]} onPress={koduPaylas} disabled={!oda}>
                   <Ionicons name="share-social" size={20} color={COLORS.accentDark} />
-                  <Text style={styles.primaryBtnText}>Kodu Paylaş</Text>
+                  <Text style={styles.primaryBtnText}>{_t("Kodu Paylaş")}</Text>
                 </SoundPressable>
                 <ActivityIndicator color={COLORS.accent} style={{ marginTop: SPACING.lg }} />
-                <Text style={styles.waitingText}>Arkadaşın bekleniyor...</Text>
+                <Text style={styles.waitingText}>{_t("Arkadaşın bekleniyor...")}</Text>
               </>
             )}
           </View>
@@ -356,22 +364,24 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           {oneri ? (
             <View style={styles.oneriKart}>
               <Ionicons name="people" size={22} color={COLORS.cta} />
-              <Text style={styles.oneriBaslik}>Şu an çevrimiçi rakip az</Text>
-              <Text style={styles.oneriYazi}>Arkadaşını çağır: aşağıdaki kodu gönder, o da Kodla Katıl'a yazsın. Ya da bu arada CPU'ya karşı oyna.</Text>
+              <Text style={styles.oneriBaslik}>{_t("Şu an çevrimiçi rakip az")}</Text>
+              <Text style={styles.oneriYazi}>{_t(
+                "Arkadaşını çağır: aşağıdaki kodu gönder, o da Kodla Katıl'a yazsın. Ya da bu arada CPU'ya karşı oyna."
+              )}</Text>
               <Text style={styles.oneriKod} selectable>{oda?.code}</Text>
               <SoundPressable style={[styles.primaryBtn, { alignSelf: "stretch" }]} onPress={koduPaylas}>
                 <Ionicons name="share-social" size={20} color={COLORS.accentDark} />
-                <Text style={styles.primaryBtnText}>Arkadaşına Gönder</Text>
+                <Text style={styles.primaryBtnText}>{_t("Arkadaşına Gönder")}</Text>
               </SoundPressable>
               <SoundPressable style={[styles.secondaryBtn, { alignSelf: "stretch" }]} onPress={cpuyaGec}>
                 <Ionicons name="hardware-chip" size={18} color={COLORS.text} />
-                <Text style={styles.secondaryBtnText}>Bu arada CPU'ya karşı oyna</Text>
+                <Text style={styles.secondaryBtnText}>{_t("Bu arada CPU'ya karşı oyna")}</Text>
               </SoundPressable>
             </View>
           ) : null}
 
           <SoundPressable onPress={bekleyiIptal} style={styles.cancelPill}>
-            <Text style={styles.cancelPillText}>{rastgele ? "Aramayı İptal Et" : "İptal Et"}</Text>
+            <Text style={styles.cancelPillText}>{rastgele ? _t("Aramayı İptal Et") : _t("İptal Et")}</Text>
           </SoundPressable>
         </KlavyeScroll>
       </GameBackground>
@@ -389,8 +399,8 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
   const baslatMod = pencere?.tip === "mod" ? onlineBaslatModu(pencere.mod) : null;
   if (pencere?.tip === "meydan" && !pencere.kodGir) {
     secenekler = [
-      { anahtar: "yeni", grup: "ÇEVRİMDIŞI DA OLUR", ikon: "paper-plane", label: "Meydan Oku", alt: "10 soru çöz, kodunu gönder", onPress: () => meydanBasla() },
-      { anahtar: "kod", grup: "ÇEVRİMDIŞI DA OLUR", ikon: "mail-open", label: "Kodu Gir", alt: "Sana gelen meydan okumayı kabul et", onPress: () => { setMeydanKod(""); setPencere({ tip: "meydan", kodGir: true }); } },
+      { anahtar: "yeni", grup: _t("ÇEVRİMDIŞI DA OLUR"), ikon: "paper-plane", label: _t("Meydan Oku"), alt: _t("10 soru çöz, kodunu gönder"), onPress: () => meydanBasla() },
+      { anahtar: "kod", grup: _t("ÇEVRİMDIŞI DA OLUR"), ikon: "mail-open", label: _t("Kodu Gir"), alt: _t("Sana gelen meydan okumayı kabul et"), onPress: () => { setMeydanKod(""); setPencere({ tip: "meydan", kodGir: true }); } },
     ];
   } else if (pencere?.tip === "katil" || pencere?.tip === "meydan") {
     const katil = pencere.tip === "katil";
@@ -398,11 +408,11 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
     const gonder = () => { if (!deger.trim()) return; if (katil) koduylaGir(); else meydanBasla(deger.trim()); };
     pencereIcerik = (
       <View style={modStilleri.modalOptions}>
-        <Text style={modStilleri.kiminle}>{katil ? "Oda kodu" : "Meydan okuma kodu"}</Text>
+        <Text style={modStilleri.kiminle}>{katil ? _t("Oda kodu") : _t("Meydan okuma kodu")}</Text>
         <TextInput
           value={deger}
           onChangeText={(t) => { (katil ? setJoinCode : setMeydanKod)(t); setHata(""); }}
-          placeholder={katil ? "ODA KODU" : "MEYDAN OKUMA KODU"}
+          placeholder={katil ? _t("ODA KODU") : _t("MEYDAN OKUMA KODU")}
           placeholderTextColor={COLORS.textFaint}
           autoCapitalize="characters"
           autoCorrect={false}
@@ -413,7 +423,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
         {hata ? <Text style={styles.pencereHata}>{hata}</Text> : null}
         <SoundPressable style={modStilleri.modalOptionBtn} onPress={gonder} disabled={calisiyor}>
           <Ionicons name={katil ? "enter" : "checkmark-circle"} size={20} color={COLORS.accentDark} />
-          <Text style={modStilleri.modalOptionText}>{katil ? (calisiyor ? "Katılıyor..." : "Katıl") : "Kabul Et"}</Text>
+          <Text style={modStilleri.modalOptionText}>{katil ? (calisiyor ? _t("Katılıyor...") : _t("Katıl")) : _t("Kabul Et")}</Text>
         </SoundPressable>
       </View>
     );
@@ -424,11 +434,11 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
       <KlavyeScroll contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.ustKisim}>
           {/* Paket 34 — sekme başlığı standardı; derece rozeti sağ üstte */}
-          <TabHeader baslik="Online" sag={<DereceRozeti kart={derece} onPress={() => setLiderlikAcik(true)} />} />
+          <TabHeader baslik={_t("Online")} sag={<DereceRozeti kart={derece} onPress={() => setLiderlikAcik(true)} />} />
           <View style={styles.ayarSatir}>
             <SoundPressable onPress={() => setLeagueModalOpen(true)} style={styles.presetRow}>
               <Ionicons name="options-outline" size={16} color={COLORS.textMuted} />
-              <Text style={styles.presetRowText} numberOfLines={1}>Arkadaş odası: {eslesme.derlenmis.etiket}</Text>
+              <Text style={styles.presetRowText} numberOfLines={1}>{_t("Arkadaş odası:")}{" "}{eslesme.derlenmis.etiket}</Text>
             </SoundPressable>
           </View>
           {/* Paket 22 — Hızlı Eşleş: her moddaki bekleyen ilk rakip */}
@@ -437,14 +447,14 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
             disabled={calisiyor}
             style={styles.hizliBtn}
             accessibilityRole="button"
-            accessibilityLabel="Hızlı Eşleş"
+            accessibilityLabel={_t("Hızlı Eşleş")}
           >
             <View style={styles.hizliIkon}>
               <Ionicons name="flash" size={24} color={COLORS.markaDugmeYazi} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.hizliBaslik}>Hızlı Eşleş</Text>
-              <Text style={styles.hizliAlt} numberOfLines={2}>Mod fark etmez — bekleyen ilk rakiple hemen başla</Text>
+              <Text style={styles.hizliBaslik}>{_t("Hızlı Eşleş")}</Text>
+              <Text style={styles.hizliAlt} numberOfLines={2}>{_t("Mod fark etmez — bekleyen ilk rakiple hemen başla")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={saydam(COLORS.markaUst, 0.8)} />
           </SoundPressable>
@@ -465,7 +475,7 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
         />
 
         {/* Paket 34 — Tüm Modlar ile aynı OYUN KAROLARI (components/ModKaro.js) */}
-        <BolumBasligi>Modlar</BolumBasligi>
+        <BolumBasligi>{_t("Modlar")}</BolumBasligi>
         <ModIzgarasi>
           {GAME_MODES.filter((m) => !m.gizli).map((m) => (
             <ModKaro
@@ -482,18 +492,20 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
           ))}
         </ModIzgarasi>
 
-        <BolumBasligi>Arkadaşınla</BolumBasligi>
+        <BolumBasligi>{_t("Arkadaşınla")}</BolumBasligi>
         <ModIzgarasi>
-          <ModKaro ikon={KODLA_KATIL.ikon} baslik={KODLA_KATIL.title} alt="Arkadaşının 5 haneli kodu" accessibilityLabel={KODLA_KATIL.title} onPress={() => { setHata(""); setPencere({ tip: "katil" }); }} />
-          <ModKaro ikon={MEYDAN.ikon} baslik={MEYDAN.title} alt="10 soru, sonra kodunu gönder" rozet="ÇEVRİMDIŞI" accessibilityLabel={MEYDAN.title} onPress={() => setPencere({ tip: "meydan" })} />
+          <ModKaro ikon={KODLA_KATIL.ikon} baslik={KODLA_KATIL.title} alt={_t("Arkadaşının 5 haneli kodu")} accessibilityLabel={KODLA_KATIL.title} onPress={() => { setHata(""); setPencere({ tip: "katil" }); }} />
+          <ModKaro ikon={MEYDAN.ikon} baslik={MEYDAN.title} alt={_t("10 soru, sonra kodunu gönder")} rozet={_t("ÇEVRİMDIŞI")} accessibilityLabel={MEYDAN.title} onPress={() => setPencere({ tip: "meydan" })} />
         </ModIzgarasi>
       </KlavyeScroll>
 
       <ModSecimPenceresi
         mod={pencereMod}
-        soru={pencere?.tip === "meydan" ? "Ne yapmak istiyorsun?" : null}
+        soru={pencere?.tip === "meydan" ? _t("Ne yapmak istiyorsun?") : null}
         secenekler={secenekler}
-        altYazi={pencere?.tip === "meydan" && sonMeydan ? `Son: ${sonMeydan.rakip ? `${sonMeydan.ben.dogru}-${sonMeydan.rakip.dogru}` : `${sonMeydan.ben.dogru}/10 gönderildi`}` : null}
+        altYazi={pencere?.tip === "meydan" && sonMeydan ? _t("Son: {0}", [
+          sonMeydan.rakip ? `${sonMeydan.ben.dogru}-${sonMeydan.rakip.dogru}` : _t("{0}/10 gönderildi", [sonMeydan.ben.dogru])
+        ]) : null}
         onClose={() => { setPencere(null); setHata(""); }}
       >
         {pencereIcerik}
@@ -514,7 +526,9 @@ export default function OnlineLobbyScreen({ onRoomReady, onCpu, onMeydanOkuma, m
       <AdSecPenceresi
         visible={!!adIstegi}
         oneri={adOnerisi}
-        aciklama="Dereceli maçlarda rakibin ve liderlik tablosu seni bu adla görür. Sonra Online Puan ekranından değiştirebilirsin."
+        aciklama={_t(
+          "Dereceli maçlarda rakibin ve liderlik tablosu seni bu adla görür. Sonra Online Puan ekranından değiştirebilirsin."
+        )}
         onKaydet={() => { const f = adIstegi; setAdIstegi(null); f && f(); }}
         onKapat={() => setAdIstegi(null)}
       />

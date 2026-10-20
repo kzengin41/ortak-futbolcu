@@ -1,3 +1,5 @@
+import { useEkran } from "../lib/ekran";
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +13,7 @@ import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
 import { BaslikRozeti } from "./XoxScreen";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
+import { rakipMetniYaz } from "../lib/guvenlik";
 import { PLAYERS } from "../lib/players";
 import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
 import { izgaraUret, zorlukAyari10, kosulEtiketi, calinabilirMi, hucreCevaplari, X, O } from "../lib/gridGame";
@@ -36,7 +39,7 @@ const SURE_PAYI_MS = 1500;   // ağ gecikmesi için ev sahibinin süreye ekledi�
 
 // Paket 37 — ızgara türü odanın modundan: "xox" | "xox-ulke" | "xox-basari" | "xox-karma"
 // (offline'daki IZGARA_TURLERI ile aynı; lib/gridGame.izgaraUret).
-const TUR_ADLARI = { ulke: "Kulüp + Ülke", basari: "Kulüp + Başarı", karma: "Karma" };
+const TUR_ADLARI = { ulke: _t("Kulüp + Ülke"), basari: _t("Kulüp + Başarı"), karma: "Karma" };
 export function odaIzgaraTuru(gameMode) {
   const t = String(gameMode || "xox").split("-")[1] || "kulup";
   return TUR_ADLARI[t] ? t : "kulup";
@@ -88,7 +91,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
   const [kalan, setKalan] = useState(null);
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
   const oneriler = useMemo(() => (girdi.trim().length < 3 ? [] : suggestPlayers(suggestIndex, girdi)), [suggestIndex, girdi]);
-  const { width } = useWindowDimensions();
+  const { width } = useEkran();
   const logoBoyut = Math.round(Math.max(28, Math.min(58, ((width - SPACING.lg * 2 - 12) / 4) * 0.55)));
 
   const faz = durum?.faz;
@@ -136,14 +139,14 @@ export default function OnlineXoxScreen({ room, onExit }) {
     const anahtar = Date.now() + Math.random();
     if (h.tip === "dogru") {
       if (benimki) { playCorrect(); unlockPlayer(h.ad); } else playWrong();
-      setGeriBildirim({ anahtar, correct: benimki, message: (h.calma ? "ÇALDI! " : "") + (benimki ? h.ad : `Rakip: ${h.ad}`) });
+      setGeriBildirim({ anahtar, correct: benimki, message: (h.calma ? _t("ÇALDI! ") : "") + (benimki ? h.ad : _t("Rakip: {0}", [h.ad])) });
     } else if (h.tip === "yanlis") {
       if (benimki) playWrong();
-      setGeriBildirim({ anahtar, correct: false, message: benimki ? (h.ayniIsim ? "Çalmak için FARKLI bir futbolcu gerekir" : "Bu futbolcu bu ikilide oynamadı") : `Rakip bilemedi: ${h.metin}` });
+      setGeriBildirim({ anahtar, correct: false, message: benimki ? (h.ayniIsim ? _t("Çalmak için FARKLI bir futbolcu gerekir") : _t("Bu futbolcu bu ikilide oynamadı")) : _t("Rakip bilemedi: {0}", [rakipMetniYaz(h.metin)]) });
     } else if (h.tip === "pas") {
-      setGeriBildirim({ anahtar, correct: false, message: benimki ? "Pas geçtin" : "Rakip pas geçti" });
+      setGeriBildirim({ anahtar, correct: false, message: benimki ? _t("Pas geçtin") : _t("Rakip pas geçti") });
     } else if (h.tip === "sure") {
-      setGeriBildirim({ anahtar, correct: false, message: benimki ? "Süre doldu, sıra rakipte" : "Rakibin süresi doldu" });
+      setGeriBildirim({ anahtar, correct: false, message: benimki ? _t("Süre doldu, sıra rakipte") : _t("Rakibin süresi doldu") });
     }
   }, [oyun?.sonHamle, oyun?.hamleNo, durum?.macNo, benim, playCorrect, playWrong]);
 
@@ -175,16 +178,16 @@ export default function OnlineXoxScreen({ room, onExit }) {
   // ---------------------------------------------------------------- bekleme
   if (!durum || faz === "hazirlik" || faz === "hata") {
     const yazi = !durum
-      ? (senkronBekliyor ? "Odaya bağlanılıyor..." : "Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene.")
-      : faz === "hata" ? "Izgara kurulamadı. Odadan çıkıp tekrar dene."
-      : rakipVar ? "Izgara hazırlanıyor..." : "Rakip bekleniyor...";
+      ? (senkronBekliyor ? _t("Odaya bağlanılıyor...") : _t("Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene."))
+      : faz === "hata" ? _t("Izgara kurulamadı. Odadan çıkıp tekrar dene.")
+      : rakipVar ? _t("Izgara hazırlanıyor...") : _t("Rakip bekleniyor...");
     return (
       <GameBackground style={styles.merkez}>
         {(senkronBekliyor || faz === "hazirlik") && <ActivityIndicator color={VURGU.main} />}
         <Text style={styles.bekleme}>{yazi}</Text>
         {faz === "hazirlik" && room.code ? <Text style={styles.odaKodu}>{room.code}</Text> : null}
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -203,36 +206,36 @@ export default function OnlineXoxScreen({ room, onExit }) {
           {/* Skor şeridi */}
           <View style={styles.ustSerit}>
             <View style={[styles.oyuncuKutu, oyun.sira === benim && !bitti && styles.oyuncuKutuAktif]}>
-              <Text style={[styles.isaret, { color: COLORS.accent }]}>{benim === X ? "X" : "O"}</Text>
-              <Text style={styles.oyuncuAd}>SEN</Text>
-              <Text style={styles.oyuncuKare}>{sayi.sen} kare</Text>
+              <Text style={[styles.isaret, { color: COLORS.accent }]}>{benim === X ? _t("X") : _t("O")}</Text>
+              <Text style={styles.oyuncuAd}>{_t("SEN")}</Text>
+              <Text style={styles.oyuncuKare}>{sayi.sen}{" "}{_t("kare")}</Text>
             </View>
             <View style={styles.ortaKutu}>
               <Text style={styles.siraYazi} numberOfLines={2}>
-                {bitti ? "Maç bitti" : siraBende ? "Sıra sende" : "Rakip düşünüyor…"}
+                {bitti ? _t("Maç bitti") : siraBende ? _t("Sıra sende") : _t("Rakip düşünüyor…")}
               </Text>
-              {!rakipVar && !bitti ? <Text style={styles.kopuk}>rakip bağlı değil</Text> : null}
+              {!rakipVar && !bitti ? <Text style={styles.kopuk}>{_t("rakip bağlı değil")}</Text> : null}
             </View>
             <View style={[styles.oyuncuKutu, oyun.sira !== benim && !bitti && styles.oyuncuKutuAktifRakip]}>
-              <Text style={[styles.isaret, { color: COLORS.cta }]}>{benim === X ? "O" : "X"}</Text>
-              <Text style={styles.oyuncuAd}>RAKİP</Text>
-              <Text style={styles.oyuncuKare}>{sayi.rakip} kare</Text>
+              <Text style={[styles.isaret, { color: COLORS.cta }]}>{benim === X ? _t("O") : _t("X")}</Text>
+              <Text style={styles.oyuncuAd}>{_t("RAKİP")}</Text>
+              <Text style={styles.oyuncuKare}>{sayi.rakip}{" "}{_t("kare")}</Text>
             </View>
           </View>
           {oyun.calmaHakki ? (
-            <Text style={styles.calmaSatir}>Çalma hakkı · sen {oyun.calmaHakki[benim]} · rakip {oyun.calmaHakki[benim === X ? O : X]}</Text>
+            <Text style={styles.calmaSatir}>{_t("Çalma hakkı · sen")}{" "}{oyun.calmaHakki[benim]}{" "}{_t("· rakip")}{" "}{oyun.calmaHakki[benim === X ? O : X]}</Text>
           ) : null}
 
           {kalan !== null && !bitti ? (
             <View style={styles.sureKutu}>
               <TimerBar current={kalan} total={HAMLE_SURESI_SN} />
-              <Text style={[styles.sureYazi, kalan <= 5 && { color: COLORS.danger }]}>{kalan} sn</Text>
+              <Text style={[styles.sureYazi, kalan <= 5 && { color: COLORS.danger }]}>{kalan}{" "}{_t("sn")}</Text>
             </View>
           ) : null}
 
           {siraBende && !secili ? (
             <Text style={styles.ipucu}>
-              {oyun.calmaHakki && oyun.calmaHakki[benim] > 0 ? "Boş bir kareye dokun — ya da rakibin karesini çal" : "Almak istediğin kareye dokun"}
+              {oyun.calmaHakki && oyun.calmaHakki[benim] > 0 ? _t("Boş bir kareye dokun — ya da rakibin karesini çal") : _t("Almak istediğin kareye dokun")}
             </Text>
           ) : null}
 
@@ -243,12 +246,15 @@ export default function OnlineXoxScreen({ room, onExit }) {
                 {kosulEtiketi(oyun.izgara.satirlar[secili.satir])} + {kosulEtiketi(oyun.izgara.sutunlar[secili.sutun])}
               </Text>
               <Text style={styles.hedefAlt}>
-                {secili.calma ? `ÇALMA · "${oyun.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""}" dışında bir futbolcu söyle` : `${seciliCevap} olası cevap`}
+                {secili.calma ? _t(
+                  "ÇALMA · \"{0}\" dışında bir futbolcu söyle",
+                  [oyun.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""]
+                ) : _t("{0} olası cevap", [seciliCevap])}
               </Text>
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
-                  placeholder="Futbolcu adı yaz..."
+                  placeholder={_t("Futbolcu adı yaz...")}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
                   onChangeText={setGirdi}
@@ -259,7 +265,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
                   autoFocus
                 />
                 <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
-                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
+                <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel={_t("Gönder")}>
                   <Ionicons name="send" size={18} color={COLORS.accentDark} />
                 </SoundPressable>
               </View>
@@ -273,15 +279,14 @@ export default function OnlineXoxScreen({ room, onExit }) {
                 </ScrollView>
               ) : null}
               <View style={styles.altBtnSatir}>
-                <SoundPressable onPress={() => hamle({ tip: "secimiIptal" })}><Text style={styles.kucukLink}>Başka kare seç</Text></SoundPressable>
-                <SoundPressable onPress={() => hamle({ tip: "pas" })}><Text style={styles.kucukLink}>Pas geç</Text></SoundPressable>
+                <SoundPressable onPress={() => hamle({ tip: "secimiIptal" })}><Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text></SoundPressable>
+                <SoundPressable onPress={() => hamle({ tip: "pas" })}><Text style={styles.kucukLink}>{_t("Pas geç")}</Text></SoundPressable>
               </View>
             </View>
           ) : null}
 
           {!siraBende && secili && !bitti ? (
-            <Text style={styles.ipucu}>
-              Rakip şu kareyi deniyor: {kosulEtiketi(oyun.izgara.satirlar[secili.satir])} + {kosulEtiketi(oyun.izgara.sutunlar[secili.sutun])}
+            <Text style={styles.ipucu}>{_t("Rakip şu kareyi deniyor:")}{" "}{kosulEtiketi(oyun.izgara.satirlar[secili.satir])}+ {kosulEtiketi(oyun.izgara.sutunlar[secili.sutun])}
             </Text>
           ) : null}
 
@@ -306,7 +311,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
                   return (
                     <SoundPressable
                       key={c}
-                      accessibilityLabel={`Kare ${r + 1}-${c + 1}`}
+                      accessibilityLabel={_t("Kare {0}-{1}", [r + 1, c + 1])}
                       style={[
                         styles.hucre,
                         seciliMi && styles.hucreSecili,
@@ -318,7 +323,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
                     >
                       {sahip ? (
                         <>
-                          <Text style={[styles.hucreIsaret, !benimKare && { color: COLORS.cta }]}>{sahip === X ? "X" : "O"}</Text>
+                          <Text style={[styles.hucreIsaret, !benimKare && { color: COLORS.cta }]}>{sahip === X ? _t("X") : _t("O")}</Text>
                           <Text style={styles.hucreAd} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{bilgi?.ad}</Text>
                         </>
                       ) : (
@@ -334,7 +339,7 @@ export default function OnlineXoxScreen({ room, onExit }) {
           {bitti ? (
             <OnlineMacSonu
               oda={room}
-              modAdi={`Online Futbolcu XOX${TUR_ADI ? " · " + TUR_ADI : ""}`}
+              modAdi={_t("Online Futbolcu XOX{0}", [TUR_ADI ? " · " + TUR_ADI : ""])}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}
@@ -343,18 +348,18 @@ export default function OnlineXoxScreen({ room, onExit }) {
               kazanan={sonucBenim(durum, benKimim)}
               skorSen={sayi.sen}
               skorRakip={sayi.rakip}
-              skorEtiketi="kare"
+              skorEtiketi={_t("kare")}
               turlar={oyun.tahta.map((t) => (t === benim ? "sen" : t ? "rakip" : "yok"))}
               kareSatir={3}
               enIyi={(() => {
                 const adlar = Object.values(oyun.hucreSahipleri || {}).filter((h) => h.oyuncu === benim && h.ad).map((h) => h.ad);
                 if (!adlar.length) return null;
-                return { ad: [...adlar].sort((a, b) => taninirlik(a) - taninirlik(b))[0], alt: "Izgarada verdiğin en nadir isim" };
+                return { ad: [...adlar].sort((a, b) => taninirlik(a) - taninirlik(b))[0], alt: _t("Izgarada verdiğin en nadir isim") };
               })()}
             />
           ) : (
             <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-              <Text style={styles.ikincilBtnText}>Odadan çık</Text>
+              <Text style={styles.ikincilBtnText}>{_t("Odadan çık")}</Text>
             </SoundPressable>
           )}
         </KlavyeScroll>

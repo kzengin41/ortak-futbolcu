@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -89,7 +90,7 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
             <View style={styles.cardInner}>
               <PlayerPhoto name={player.name} size={180} />
               <Text style={styles.cardName} numberOfLines={2}>{player.name}</Text>
-              <Text style={styles.cardSubtitle}>DOĞRU CEVAP!</Text>
+              <Text style={styles.cardSubtitle}>{_t("DOĞRU CEVAP!")}</Text>
             </View>
           </LinearGradient>
         ) : (

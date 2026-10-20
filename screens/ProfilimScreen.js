@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -68,27 +69,29 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
     <GameBackground style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
         <View style={styles.headerArea}>
-          <TabHeader baslik="Profilim" />
+          <TabHeader baslik={_t("Profilim")} />
         </View>
 
         {/* 5 Ekim 2026 — bütün başlıklar açılıp kapanabilir (components/AcilirBolum.js) */}
         {/* --- TEK BÜYÜK SAYI: günlük seri --- */}
-        <AcilirBolum kimlik="profil-seri" baslik="Günlük Seri" ikon="flame" ozet={`🔥 ${seri} gün`}>
+        <AcilirBolum kimlik="profil-seri" baslik={_t("Günlük Seri")} ikon="flame" ozet={_t("🔥 {0} gün", [seri])}>
         <View style={styles.buyukKart}>
           <Ionicons name="flame" size={30} color={seri > 0 ? COLORS.cta : COLORS.textFaint} />
-          <Text style={[styles.buyukSayi, seri > 0 && { color: COLORS.cta }]} accessibilityLabel={`${seri} günlük seri`}>{seri}</Text>
-          <Text style={styles.buyukEtiket}>GÜNLÜK SERİ</Text>
+          <Text style={[styles.buyukSayi, seri > 0 && { color: COLORS.cta }]} accessibilityLabel={_t("{0} günlük seri", [seri])}>{seri}</Text>
+          <Text style={styles.buyukEtiket}>{_t("GÜNLÜK SERİ")}</Text>
           <Text style={styles.buyukAlt}>{sd.mesaj}</Text>
           <View style={styles.seriBilgi}>
-            <Text style={styles.seriBilgiYazi}>❄️ Dondurma {sd.dondurmaHakki}/1 bu hafta</Text>
-            <Text style={styles.seriBilgiYazi}>🏆 En iyi {sd.enIyi} gün</Text>
+            <Text style={styles.seriBilgiYazi}>{_t("❄️ Dondurma {0}/1 bu hafta", [sd.dondurmaHakki])}</Text>
+            <Text style={styles.seriBilgiYazi}>{_t("🏆 En iyi")}{" "}{sd.enIyi}{" "}{_t("gün")}</Text>
           </View>
-          <Text style={styles.seriKural}>Seri, günlük oyunlardan birini bitirince sürer: Günün Kadrosu, Günlük Kim Bu, Günün Bulmacası, Günlük 5 Kulüp, Günlük Izgara ya da günlük görevlerin üçü. Haftada kaçırdığın bir gün kendiliğinden dondurulur.</Text>
+          <Text style={styles.seriKural}>{_t(
+            "Seri, günlük oyunlardan birini bitirince sürer: Günün Kadrosu, Günlük Kim Bu, Günün Bulmacası, Günlük 5 Kulüp, Günlük Izgara ya da günlük görevlerin üçü. Haftada kaçırdığın bir gün kendiliğinden dondurulur."
+          )}</Text>
         </View>
         </AcilirBolum>
 
         {/* --- seviye --- */}
-        <AcilirBolum kimlik="profil-seviye" baslik="Seviye" ikon="trending-up" ozet={`${progress.level}. seviye`}>
+        <AcilirBolum kimlik="profil-seviye" baslik={_t("Seviye")} ikon="trending-up" ozet={_t("{0}. seviye", [progress.level])}>
         <View style={styles.playerCard}>
           <View style={styles.levelBadge}>
             <Text style={styles.levelBadgeText}>{progress.level}</Text>
@@ -96,7 +99,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
           <View style={{ flex: 1 }}>
             <View style={styles.playerRow}>
               <Text style={styles.playerName} numberOfLines={1}>{profile.name}</Text>
-              <Text style={styles.playerXpLabel}>{progress.level + 1}. seviyeye {progress.kalan} futbolcu</Text>
+              <Text style={styles.playerXpLabel}>{_t("{0}. seviyeye {1} futbolcu", [progress.level + 1, progress.kalan])}</Text>
             </View>
             <View style={styles.xpTrack}>
               <View style={[styles.xpFill, { width: `${progress.fraction * 100}%` }]} />
@@ -107,11 +110,11 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
         </AcilirBolum>
 
         {/* --- son açılan 5 futbolcu + koleksiyon --- */}
-        <AcilirBolum kimlik="profil-rozetler" baslik="Rozetler" ikon="ribbon" ozet={`${rozetKazanilan}/${rozetDurum.length} · ${toplamKademe(rozetDurum)}★`}>
+        <AcilirBolum kimlik="profil-rozetler" baslik={_t("Rozetler")} ikon="ribbon" ozet={`${rozetKazanilan}/${rozetDurum.length} · ${toplamKademe(rozetDurum)}★`}>
           <RozetIzgarasi durum={rozetDurum} />
         </AcilirBolum>
 
-        <AcilirBolum kimlik="profil-acilanlar" baslik="Son açılanlar" ikon="book" ozet={`${acilanlar.length} futbolcu`}>
+        <AcilirBolum kimlik="profil-acilanlar" baslik={_t("Son açılanlar")} ikon="book" ozet={_t("{0} futbolcu", [acilanlar.length])}>
         <View style={styles.card}>
           {sonBes.length ? (
             <View style={styles.sonBes}>
@@ -123,30 +126,32 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
               ))}
             </View>
           ) : (
-            <Text style={styles.bodyMuted}>Henüz futbolcu açmadın. Oyunlarda doğru bildiğin her tanınmış isim ansiklopedine eklenir.</Text>
+            <Text style={styles.bodyMuted}>{_t(
+              "Henüz futbolcu açmadın. Oyunlarda doğru bildiğin her tanınmış isim ansiklopedine eklenir."
+            )}</Text>
           )}
           <View style={styles.koleksiyonSatir}>
             <Ionicons name="book" size={16} color={COLORS.accent} />
-            <Text style={styles.koleksiyonYazi}>Ansiklopedi: {acilanlar.length} futbolcu</Text>
-            <Text style={[styles.koleksiyonYazi, { marginLeft: "auto" }]}>🏅 {kadroSayi} kadro tamam</Text>
+            <Text style={styles.koleksiyonYazi}>{_t("Ansiklopedi:")}{" "}{acilanlar.length}{" "}{_t("futbolcu")}</Text>
+            <Text style={[styles.koleksiyonYazi, { marginLeft: "auto" }]}>🏅 {kadroSayi}{" "}{_t("kadro tamam")}</Text>
           </View>
         </View>
 
         </AcilirBolum>
 
         {/* --- istatistikler (eski İstatistikler ekranı) --- */}
-        <AcilirBolum kimlik="profil-istatistik" baslik="İstatistikler" ikon="stats-chart" ozet={stats ? `${stats.totalCorrect || 0} doğru` : null}>
+        <AcilirBolum kimlik="profil-istatistik" baslik={_t("İstatistikler")} ikon="stats-chart" ozet={stats ? _t("{0} doğru", [stats.totalCorrect || 0]) : null}>
         {!stats ? (
-          <Text style={styles.bodyMuted}>Yükleniyor...</Text>
+          <Text style={styles.bodyMuted}>{_t("Yükleniyor...")}</Text>
         ) : (
           <>
             <View style={styles.summaryRow}>
-              <OzetKutu icon="checkmark-circle" color={COLORS.accent} label="Doğru" value={stats.totalCorrect || 0} />
-              <OzetKutu icon="close-circle" color={COLORS.danger} label="Yanlış" value={stats.totalWrong || 0} />
-              <OzetKutu icon="trending-up" color={COLORS.cta} label="Doğru serisi" value={stats.bestStreak || 0} />
+              <OzetKutu icon="checkmark-circle" color={COLORS.accent} label={_t("Doğru")} value={stats.totalCorrect || 0} />
+              <OzetKutu icon="close-circle" color={COLORS.danger} label={_t("Yanlış")} value={stats.totalWrong || 0} />
+              <OzetKutu icon="trending-up" color={COLORS.cta} label={_t("Doğru serisi")} value={stats.bestStreak || 0} />
             </View>
             {modlar.length === 0 ? (
-              <Text style={styles.bodyMuted}>Henüz bir mod oynanmadı.</Text>
+              <Text style={styles.bodyMuted}>{_t("Henüz bir mod oynanmadı.")}</Text>
             ) : (
               <View style={styles.card}>
                 {gorunenModlar.map(([modeId, m], i) => {
@@ -156,7 +161,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
                     <View key={modeId} style={[styles.modSatir, i > 0 && styles.modAyrac]}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.modAd} numberOfLines={1}>{MODE_LABELS[modeId] || modeId}</Text>
-                        <Text style={styles.modAlt}>{m.wins} doğru/galibiyet · {m.losses} yanlış · en iyi seri {m.bestStreak}</Text>
+                        <Text style={styles.modAlt}>{m.wins}{" "}{_t("doğru/galibiyet ·")}{" "}{m.losses}{" "}{_t("yanlış · en iyi seri")}{" "}{m.bestStreak}</Text>
                       </View>
                       <Text style={styles.modOran}>%{oran}</Text>
                     </View>
@@ -164,7 +169,7 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
                 })}
                 {modlar.length > 3 ? (
                   <SoundPressable onPress={() => setTumModlar((a) => !a)} style={styles.tumunuGor}>
-                    <Text style={styles.tumunuGorYazi}>{tumModlar ? "Daha az göster" : `Tüm modlar (${modlar.length})`}</Text>
+                    <Text style={styles.tumunuGorYazi}>{tumModlar ? _t("Daha az göster") : _t("Tüm modlar ({0})", [modlar.length])}</Text>
                     <Ionicons name={tumModlar ? "chevron-up" : "chevron-down"} size={16} color={COLORS.accent} />
                   </SoundPressable>
                 ) : null}
@@ -176,9 +181,9 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
 
         {/* --- menü --- */}
         <View style={styles.menuList}>
-          <MenuSatiri ikon="person-circle-outline" yazi="Hesabım" onPress={onAccount} />
-          <MenuSatiri ikon="settings-outline" yazi="Ayarlar" onPress={onSettings} />
-          <MenuSatiri ikon="help-circle-outline" yazi="Nasıl Oynanır?" onPress={onHelp} son />
+          <MenuSatiri ikon="person-circle-outline" yazi={_t("Hesabım")} onPress={onAccount} />
+          <MenuSatiri ikon="settings-outline" yazi={_t("Ayarlar")} onPress={onSettings} />
+          <MenuSatiri ikon="help-circle-outline" yazi={_t("Nasıl Oynanır?")} onPress={onHelp} son />
         </View>
       </ScrollView>
     </GameBackground>

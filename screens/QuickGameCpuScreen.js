@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -143,7 +144,7 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
       setYanlisSerisi(0);
       setKalan((k) => k + DOGRU_BONUSU);
       setKareler((l) => [...l, "sen"]);
-      setBonus(`+${DOGRU_BONUSU} sn${c > 1 ? `  ×${c}` : ""}`);
+      setBonus(_t("+{0} sn{1}", [DOGRU_BONUSU, c > 1 ? `  ×${c}` : ""]));
       bonusAnim.setValue(0);
       Animated.timing(bonusAnim, { toValue: 1, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
       if (soru.acilacak) unlockPlayer(soru.acilacak);
@@ -173,7 +174,7 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
   });
   useEffect(() => {
     oyunBilgisiniYaz("quickCpu", {
-      satirlar: ayarSatirlari({ zorluk: difficulty, sure: toplamSure, lig: presetLabel, ekstra: [["Doğru cevap", `+${DOGRU_BONUSU} sn`], ["Seri çarpanı", "3 doğru ×2 · 6 doğru ×3"], ["Zorluk", "oynadıkça kendiliğinden ayarlanır"]] }),
+      satirlar: ayarSatirlari({ zorluk: difficulty, sure: toplamSure, lig: presetLabel, ekstra: [[_t("Doğru cevap"), _t("+{0} sn", [DOGRU_BONUSU])], [_t("Seri çarpanı"), _t("3 doğru ×2 · 6 doğru ×3")], [_t("Zorluk"), _t("oynadıkça kendiliğinden ayarlanır")]] }),
     });
   }, [difficulty, toplamSure, presetLabel]);
 
@@ -182,15 +183,18 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
     return (
       <ModKurulum
         modId="quickCpu"
-        baslik="Çoktan Seçmeli"
-        aciklama={`Süre ${toplamSure} sn. Her doğru +${DOGRU_BONUSU} sn ve puan; art arda doğrular çarpanı ×2, ×3'e çıkarır. Sorular kolaydan başlar, sen bildikçe zorlaşır.`}
+        baslik={_t("Çoktan Seçmeli")}
+        aciklama={_t(
+          "Süre {0} sn. Her doğru +{1} sn ve puan; art arda doğrular çarpanı ×2, ×3'e çıkarır. Sorular kolaydan başlar, sen bildikçe zorlaşır.",
+          [toplamSure, DOGRU_BONUSU]
+        )}
         vurgu={MODE_COLORS.training}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: toplamSure })}
         onBasla={oyunuBaslat}
       >
-        <KurulumBolum baslik="BAŞLANGIÇ ZORLUĞU" not="Oyun sırasında kendiliğinden ayarlanır.">
-          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Ünlü isimlerle başlar." : z <= 7 ? "Bilinen oyuncularla başlar." : "Az bilinenlerle başlar.")} />
+        <KurulumBolum baslik={_t("BAŞLANGIÇ ZORLUĞU")} not={_t("Oyun sırasında kendiliğinden ayarlanır.")}>
+          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? _t("Ünlü isimlerle başlar.") : z <= 7 ? _t("Bilinen oyuncularla başlar.") : _t("Az bilinenlerle başlar."))} />
         </KurulumBolum>
         <KurulumBolum baslik={MOD_TANIMLARI.quickCpu.sure.etiket}>
           <SureSecici
@@ -202,7 +206,7 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
             aciklama={MOD_TANIMLARI.quickCpu.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="EŞLEŞME PROFİLİ">
+        <KurulumBolum baslik={_t("EŞLEŞME PROFİLİ")}>
           <KapsamDugmesi etiket={presetLabel} onPress={() => setProfilAcik(true)} />
         </KurulumBolum>
         <EslesmeProfiliPenceresi
@@ -220,16 +224,16 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
   const c = carpan(seri);
   return (
     <GameBackground style={s.kap}>
-      {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={soru?.dogru || "Bilinmiyor"} />}
+      {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={soru?.dogru || _t("Bilinmiyor")} />}
       <View style={s.ust}>
         <SoundPressable onPress={() => setShowReport(true)} hitSlop={20}>
           <View style={s.bildir}>
             <Ionicons name="flag" size={13} color={COLORS.cta} />
-            <Text style={s.bildirYazi}>BİLDİR</Text>
+            <Text style={s.bildirYazi}>{_t("BİLDİR")}</Text>
           </View>
         </SoundPressable>
         {/* Tek çıkış düğmesi */}
-        <SoundPressable onPress={phase === "bitti" ? (onExitSilent || onExit) : onExit} hitSlop={20} accessibilityLabel="Çık">
+        <SoundPressable onPress={phase === "bitti" ? (onExitSilent || onExit) : onExit} hitSlop={20} accessibilityLabel={_t("Çık")}>
           <View style={s.kapat}><Ionicons name="close" size={22} color={COLORS.danger} /></View>
         </SoundPressable>
       </View>
@@ -242,15 +246,15 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
         <>
           <View style={s.panel}>
             <View>
-              <Text style={s.panelEtiket}>PUAN</Text>
+              <Text style={s.panelEtiket}>{_t("PUAN")}</Text>
               <Text style={s.panelSayi}>{puan}</Text>
             </View>
             <View style={[s.carpanHap, c > 1 && { backgroundColor: COLORS.cta, borderColor: COLORS.cta }]}>
               <Ionicons name="flame" size={14} color={c > 1 ? COLORS.ctaDark : COLORS.textMuted} />
-              <Text style={[s.carpanYazi, c > 1 && { color: COLORS.ctaDark }]}>{c > 1 ? `×${c}` : `seri ${seri}`}</Text>
+              <Text style={[s.carpanYazi, c > 1 && { color: COLORS.ctaDark }]}>{c > 1 ? `×${c}` : _t("seri {0}", [seri])}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={s.panelEtiket}>SÜRE</Text>
+              <Text style={s.panelEtiket}>{_t("SÜRE")}</Text>
               <Text style={[s.panelSayi, kalan <= 10 && { color: COLORS.danger }]}>{Math.max(0, kalan)}</Text>
             </View>
           </View>
@@ -313,17 +317,17 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
               );
             })}
           </View>
-          <Text style={s.seviye}>Seviye {seviye} · {soruSayisi} soru</Text>
+          <Text style={s.seviye}>{_t("Seviye")}{" "}{seviye}· {soruSayisi}{" "}{_t("soru")}</Text>
         </View>
       ) : null}
 
       {phase !== "bitti" && !soru ? (
-        <Text style={s.soru}>Bu ayarlarla yeni soru üretilemedi. Eşleşme profilini genişletmeyi dene.</Text>
+        <Text style={s.soru}>{_t("Bu ayarlarla yeni soru üretilemedi. Eşleşme profilini genişletmeyi dene.")}</Text>
       ) : null}
 
       {phase === "bitti" && (
         <MacSonuKarti
-          modAdi="Çoktan Seçmeli"
+          modAdi={_t("Çoktan Seçmeli")}
           modeId="quickCpu"
           turlar={kareler}
           solo={{
@@ -331,13 +335,13 @@ export default function QuickGameCpuScreen({ onExit, onExitSilent }) {
             rekor,
             yeniRekor,
             satirlar: [
-              ["Doğru", `${dogruSayisi} / ${soruSayisi}`],
-              ["En uzun seri", String(enUzunSeri)],
-              ["Ulaştığın seviye", `${seviye} / 10`],
+              [_t("Doğru"), `${dogruSayisi} / ${soruSayisi}`],
+              [_t("En uzun seri"), String(enUzunSeri)],
+              [_t("Ulaştığın seviye"), `${seviye} / 10`],
             ],
           }}
           kazanilanXp={Math.min(150, 10 * dogruSayisi)}
-          rovansEtiketi="TEKRAR"
+          rovansEtiketi={_t("TEKRAR")}
           onRovans={oyunuBaslat}
           onMenu={onExitSilent || onExit}
         />

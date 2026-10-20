@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -40,7 +41,7 @@ export function OyuncuNoktasi({ o, acikMi, kirmizi, secili, boyut = 46, onPress 
   );
   if (!onPress) return govde;
   return (
-    <SoundPressable onPress={() => onPress(o)} accessibilityLabel={acikMi || kirmizi ? o.a : `${HAT_ETIKET[o.p]} ${o.n ?? ""}, bilinmiyor`}>
+    <SoundPressable onPress={() => onPress(o)} accessibilityLabel={acikMi || kirmizi ? o.a : _t("{0} {1}, bilinmiyor", [HAT_ETIKET[o.p], o.n ?? ""])}>
       {govde}
     </SoundPressable>
   );
@@ -73,7 +74,7 @@ export function Kulube({ yedek, bulundu, acik = false, onPress, secili }) {
     <View style={s.kulube}>
       <View style={s.kulubeBaslik}>
         <Ionicons name="people" size={14} color={COLORS.textMuted} />
-        <Text style={s.kulubeYazi}>YEDEKLER</Text>
+        <Text style={s.kulubeYazi}>{_t("YEDEKLER")}</Text>
       </View>
       <View style={s.kulubeSatir}>
         {yedek.map((o, i) => {

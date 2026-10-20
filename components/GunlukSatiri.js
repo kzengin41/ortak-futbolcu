@@ -1,3 +1,4 @@
+import { _t, yerel } from "../lib/dil";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,29 +47,29 @@ export function useGunlukDurum() {
   const bulD = bulmaca?.denemeler?.length || 0;
   const oyunlar = [
     {
-      id: "dailyPuzzle", ad: "Günün Bulmacası", ikon: "calendar",
+      id: "dailyPuzzle", ad: _t("Günün Bulmacası"), ikon: "calendar",
       bitti: !!bulmaca?.bitti,
-      alt: bulmaca?.bitti ? (bulmaca.bilindi ? `${bulD} denemede bildin` : "Bugün bilemedin") : bulD ? `${DENEME_HAKKI - bulD} deneme hakkın kaldı` : `Herkese aynı soru · ${DENEME_HAKKI} hak`,
+      alt: bulmaca?.bitti ? (bulmaca.bilindi ? _t("{0} denemede bildin", [bulD]) : _t("Bugün bilemedin")) : bulD ? _t("{0} deneme hakkın kaldı", [DENEME_HAKKI - bulD]) : _t("Herkese aynı soru · {0} hak", [DENEME_HAKKI]),
     },
     {
-      id: "gunlukKadro", ad: "Günün Kadrosu", ikon: "shirt",
+      id: "gunlukKadro", ad: _t("Günün Kadrosu"), ikon: "shirt",
       bitti: !!kadro?.bitti,
-      alt: kadro?.bitti ? `${kdrB}/11 buldun` : kdrB ? `${kdrB}/11 · devam et` : "Efsane bir maçın ilk 11'i",
+      alt: kadro?.bitti ? _t("{0}/11 buldun", [kdrB]) : kdrB ? _t("{0}/11 · devam et", [kdrB]) : _t("Efsane bir maçın ilk 11'i"),
     },
     {
-      id: "gunlukKimBu", ad: "Günlük Kim Bu", ikon: "help-circle",
+      id: "gunlukKimBu", ad: _t("Günlük Kim Bu"), ikon: "help-circle",
       bitti: !!kimBu?.bitti,
-      alt: kimBu?.bitti ? (kimBu.dogru ? `${Math.round(kimBu.puan || 0).toLocaleString("tr-TR")} puan` : "Bugün bilemedin") : kbT ? `${5 - kbT} tahmin hakkın kaldı` : "5 tahminde gizli futbolcu",
+      alt: kimBu?.bitti ? (kimBu.dogru ? _t("{0} puan", [Math.round(kimBu.puan || 0).toLocaleString(yerel())]) : _t("Bugün bilemedin")) : kbT ? _t("{0} tahmin hakkın kaldı", [5 - kbT]) : _t("5 tahminde gizli futbolcu"),
     },
     {
-      id: "gunluk5", ad: "Günlük 5 Kulüp", ikon: "podium",
+      id: "gunluk5", ad: _t("Günlük 5 Kulüp"), ikon: "podium",
       bitti: besT.length >= BES_KULUP_HAK,
-      alt: besT.length >= BES_KULUP_HAK ? `${besT.reduce((t, x) => t + x.puan, 0)} / 15 puan` : besT.length ? `${BES_KULUP_HAK - besT.length} hak kaldı` : `${BES_KULUP_HAK} hak`,
+      alt: besT.length >= BES_KULUP_HAK ? _t("{0} / 15 puan", [besT.reduce((t, x) => t + x.puan, 0)]) : besT.length ? _t("{0} hak kaldı", [BES_KULUP_HAK - besT.length]) : _t("{0} hak", [BES_KULUP_HAK]),
     },
     {
-      id: "gunlukIzgara", ad: "Günlük Izgara", ikon: "grid",
+      id: "gunlukIzgara", ad: _t("Günlük Izgara"), ikon: "grid",
       bitti: (izgara?.kullanilan || 0) >= IZGARA_HAK || izgDolu === 9,
-      alt: (izgara?.kullanilan || 0) >= IZGARA_HAK || izgDolu === 9 ? `${izgDolu} / 9 kare` : izgara?.kullanilan ? `${IZGARA_HAK - izgara.kullanilan} hak kaldı` : `${IZGARA_HAK} hak`,
+      alt: (izgara?.kullanilan || 0) >= IZGARA_HAK || izgDolu === 9 ? _t("{0} / 9 kare", [izgDolu]) : izgara?.kullanilan ? _t("{0} hak kaldı", [IZGARA_HAK - izgara.kullanilan]) : _t("{0} hak", [IZGARA_HAK]),
     },
   ];
   const gorevler = gorevListesi(d.gorev);
@@ -79,15 +80,15 @@ export default function GunlukSatiri({ onOyun }) {
   const durum = useGunlukDurum();
   const [acik, setAcik] = useState(false);
   const { oyunlar, biten } = durum;
-  const alt = !durum.hazir ? " " : biten === oyunlar.length ? "Bugünün hepsi bitti — yarın yenileri" : biten ? `${oyunlar.length} oyundan ${biten}'i bitti` : `#${gunNumarasi()} · ${oyunlar.length} oyun, seriyi korur`;
+  const alt = !durum.hazir ? " " : biten === oyunlar.length ? _t("Bugünün hepsi bitti — yarın yenileri") : biten ? _t("{0} oyundan {1}'i bitti", [oyunlar.length, biten]) : _t("#{0} · {1} oyun, seriyi korur", [gunNumarasi(), oyunlar.length]);
   return (
     <>
-      <PressScale style={s.satir} onPress={() => setAcik(true)} accessibilityRole="button" accessibilityLabel={`Günlük Meydan Okumalar, ${alt}`}>
+      <PressScale style={s.satir} onPress={() => setAcik(true)} accessibilityRole="button" accessibilityLabel={_t("Günlük Meydan Okumalar, {0}", [alt])}>
         <View style={s.ikon}>
           <Ionicons name="calendar" size={20} color={COLORS.accent} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={s.baslik} numberOfLines={1}>Günlük Meydan Okumalar</Text>
+          <Text style={s.baslik} numberOfLines={1}>{_t("Günlük Meydan Okumalar")}</Text>
           <View style={s.altSatir}>
             <View style={s.noktalar}>
               {oyunlar.map((o) => <View key={o.id} style={[s.nokta, o.bitti && s.noktaDolu]} />)}
@@ -126,18 +127,21 @@ export function GunlukOneriSatiri({ onOyun, style }) {
       style={[s.oneri, style]}
       onPress={() => onOyun && onOyun(oyun.id)}
       accessibilityRole="button"
-      accessibilityLabel={`Günlük: ${oyun.ad}, ${hepsiBitti ? "bugünün hepsi bitti" : oyun.alt}`}
+      accessibilityLabel={_t(
+        "Günlük: {0}, {1}",
+        [oyun.ad, hepsiBitti ? _t("bugünün hepsi bitti") : oyun.alt]
+      )}
     >
       <View style={[s.oneriIkon, hepsiBitti && { backgroundColor: saydam(COLORS.text, 0.07) }]}>
         <Ionicons name={hepsiBitti ? "checkmark" : oyun.ikon} size={20} color={hepsiBitti ? COLORS.textMuted : COLORS.accent} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={s.oneriUst} numberOfLines={1}>GÜNLÜK · #{gunNumarasi()}</Text>
+        <Text style={s.oneriUst} numberOfLines={1}>{_t("GÜNLÜK · #")}{gunNumarasi()}</Text>
         <Text style={s.oneriBaslik} numberOfLines={1}>{oyun.ad}</Text>
-        <Text style={s.oneriAlt} numberOfLines={1}>{hepsiBitti ? "Bugünün hepsi bitti — yarın yenileri" : oyun.alt}</Text>
+        <Text style={s.oneriAlt} numberOfLines={1}>{hepsiBitti ? _t("Bugünün hepsi bitti — yarın yenileri") : oyun.alt}</Text>
       </View>
       {!hepsiBitti ? (
-        <View style={s.oneriOyna}><Text style={s.oneriOynaYazi}>OYNA</Text></View>
+        <View style={s.oneriOyna}><Text style={s.oneriOynaYazi}>{_t("OYNA")}</Text></View>
       ) : (
         <Ionicons name="chevron-forward" size={18} color={COLORS.textFaint} />
       )}
@@ -153,10 +157,10 @@ export function GunlukPenceresi({ acik, durum, onKapat, onOyun, gorevsiz }) {
       <Pressable style={s.perde} onPress={onKapat}>
         <Pressable style={s.pencere} onPress={() => {}}>
           <View style={s.pencereUst}>
-            <Text style={s.pencereBaslik}>Günlük Meydan Okumalar</Text>
+            <Text style={s.pencereBaslik}>{_t("Günlük Meydan Okumalar")}</Text>
             <Text style={s.pencereNo}>#{gunNumarasi()}</Text>
           </View>
-          <Text style={s.pencereAlt}>Herkese aynı sorular, günde bir kez. Birini oynamak serini korur.</Text>
+          <Text style={s.pencereAlt}>{_t("Herkese aynı sorular, günde bir kez. Birini oynamak serini korur.")}</Text>
           <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: SPACING.sm }}>
             {oyunlar.map((o) => (
               <PressScale key={o.id} style={[s.oyun, o.bitti && s.oyunBitti]} onPress={() => onOyun(o.id)} accessibilityLabel={`${o.ad}, ${o.alt}`}>
@@ -172,8 +176,8 @@ export function GunlukPenceresi({ acik, durum, onKapat, onOyun, gorevsiz }) {
             ))}
             {gorevsiz ? null : <View style={s.gorev}>
               <View style={s.gorevUst}>
-                <Text style={s.gorevBaslik}>GÖREVLER</Text>
-                <Text style={s.gorevSayac}>{gorevBiten}/{gorevler.length} · +{GOREV_ODULU} XP</Text>
+                <Text style={s.gorevBaslik}>{_t("GÖREVLER")}</Text>
+                <Text style={s.gorevSayac}>{gorevBiten}/{gorevler.length}· +{GOREV_ODULU}{" "}{_t("XP")}</Text>
               </View>
               {gorevler.map((g) => {
                 const bitti = g.olan >= g.hedef;
@@ -188,7 +192,7 @@ export function GunlukPenceresi({ acik, durum, onKapat, onOyun, gorevsiz }) {
             </View>}
           </ScrollView>
           <Pressable style={s.kapat} onPress={onKapat} hitSlop={8}>
-            <Text style={s.kapatYazi}>Kapat</Text>
+            <Text style={s.kapatYazi}>{_t("Kapat")}</Text>
           </Pressable>
         </Pressable>
       </Pressable>

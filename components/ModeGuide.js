@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Modal, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -80,7 +81,7 @@ export function KurulumButonu({ mod }) {
   const alt = useAltBosluk();
   if (!var_) return null;
   return (
-    <Pressable onPress={() => kurulumIste(mod)} hitSlop={16} style={[styles.infoBtn, { left: SPACING.lg + 42, bottom: SPACING.lg + alt }]} accessibilityLabel="Bu modun ayarları">
+    <Pressable onPress={() => kurulumIste(mod)} hitSlop={16} style={[styles.infoBtn, { left: SPACING.lg + 42, bottom: SPACING.lg + alt }]} accessibilityLabel={_t("Bu modun ayarları")}>
       <Ionicons name="settings-outline" size={18} color={COLORS.textMuted} />
     </Pressable>
   );
@@ -103,12 +104,12 @@ export default function ModeGuide({ mod, gorunur, onClose }) {
             <Ionicons name={rehber.icon || "help-circle"} size={22} color={COLORS.accent} />
             <Text style={styles.baslik}>{rehber.title}</Text>
           </View>
-          <Text style={styles.altBaslik}>Nasıl oynanır</Text>
+          <Text style={styles.altBaslik}>{_t("Nasıl oynanır")}</Text>
 
           <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
             {bilgi && bilgi.satirlar && bilgi.satirlar.length ? (
               <View style={styles.ayarKutu}>
-                <Text style={styles.ayarBaslik}>BU MAÇIN AYARLARI</Text>
+                <Text style={styles.ayarBaslik}>{_t("BU MAÇIN AYARLARI")}</Text>
                 {bilgi.satirlar.map(([ad, deger]) => (
                   <View key={ad} style={styles.ayarSatir}>
                     <Text style={styles.ayarAd}>{ad}</Text>
@@ -118,10 +119,10 @@ export default function ModeGuide({ mod, gorunur, onClose }) {
                 {kurulumVar ? (
                   <Pressable onPress={() => { onClose(); kurulumIste(mod); }} style={styles.ayarDugme}>
                     <Ionicons name="settings-outline" size={15} color={COLORS.accent} />
-                    <Text style={styles.ayarDugmeYazi}>Ayarları değiştir (yeni maç başlar)</Text>
+                    <Text style={styles.ayarDugmeYazi}>{_t("Ayarları değiştir (yeni maç başlar)")}</Text>
                   </Pressable>
                 ) : (
-                  <Text style={styles.ayarNot}>Varsayılanları Ayarlar &gt; Mod Varsayılanları'ndan değiştirebilirsin.</Text>
+                  <Text style={styles.ayarNot}>{_t("Varsayılanları Ayarlar > Mod Varsayılanları'ndan değiştirebilirsin.")}</Text>
                 )}
               </View>
             ) : null}
@@ -136,14 +137,14 @@ export default function ModeGuide({ mod, gorunur, onClose }) {
           </ScrollView>
 
           <Pressable style={styles.anaBtn} onPress={onClose}>
-            <Text style={styles.anaBtnYazi}>TAMAM</Text>
+            <Text style={styles.anaBtnYazi}>{_t("TAMAM")}</Text>
           </Pressable>
           <Pressable onPress={onClose} hitSlop={12}>
-            <Text style={styles.atla}>Atla</Text>
+            <Text style={styles.atla}>{_t("Atla")}</Text>
           </Pressable>
-          <Text style={styles.dipnot}>
-            Bu rehberi istediğin zaman sol alttaki (i) düğmesinden tekrar açabilirsin.
-          </Text>
+          <Text style={styles.dipnot}>{_t(
+            "Bu rehberi istediğin zaman sol alttaki (i) düğmesinden tekrar açabilirsin."
+          )}</Text>
         </View>
       </View>
     </Modal>

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useMemo } from "react";
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { LEAGUE_PRESETS, allLeagues, countryForLeague, clubsForLeagues } from "../lib/leaguePresets";
@@ -82,14 +83,14 @@ export default function LeagueSelectModal({ visible, currentPreset, onSelect, on
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Lig / Kapsam Seç</Text>
+          <Text style={styles.title}>{_t("Lig / Kapsam Seç")}</Text>
           <Pressable onPress={onClose}>
-            <Text style={styles.closeBtn}>Kapat</Text>
+            <Text style={styles.closeBtn}>{_t("Kapat")}</Text>
           </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-          <Text style={styles.sectionLabel}>Hazır ön ayarlar</Text>
+          <Text style={styles.sectionLabel}>{_t("Hazır ön ayarlar")}</Text>
           {LEAGUE_PRESETS.map((p) => (
             <Pressable
               key={p.id}
@@ -104,8 +105,10 @@ export default function LeagueSelectModal({ visible, currentPreset, onSelect, on
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionLabel}>Kendi seçimini yap</Text>
-          <Text style={styles.hint}>İstediğin ligi seç, ardından takımları dilediğin gibi filtrele (tikleri kaldır).</Text>
+          <Text style={styles.sectionLabel}>{_t("Kendi seçimini yap")}</Text>
+          <Text style={styles.hint}>{_t(
+            "İstediğin ligi seç, ardından takımları dilediğin gibi filtrele (tikleri kaldır)."
+          )}</Text>
           
           <View style={styles.leaguesWrap}>
             {leagues.map((l) => {
@@ -130,7 +133,7 @@ export default function LeagueSelectModal({ visible, currentPreset, onSelect, on
                         style={styles.expandBtn} 
                         onPress={(e) => { e.stopPropagation(); setExpandedLeague(isExpanded ? null : l); }}
                       >
-                        <Text style={styles.expandBtnText}>{isExpanded ? "Takımları Gizle" : "Takımları Filtrele"}</Text>
+                        <Text style={styles.expandBtnText}>{isExpanded ? _t("Takımları Gizle") : _t("Takımları Filtrele")}</Text>
                       </Pressable>
                     )}
                   </Pressable>
@@ -163,7 +166,7 @@ export default function LeagueSelectModal({ visible, currentPreset, onSelect, on
             style={[styles.applyBtn, selectedLeagues.length === 0 && styles.applyBtnDisabled]}
           >
             <Text style={styles.applyBtnText}>
-              {selectedLeagues.length === 0 ? "Önce bir lig seç" : `Uygula (${selectedLeagues.length} lig)`}
+              {selectedLeagues.length === 0 ? _t("Önce bir lig seç") : _t("Uygula ({0} lig)", [selectedLeagues.length])}
             </Text>
           </Pressable>
         </ScrollView>

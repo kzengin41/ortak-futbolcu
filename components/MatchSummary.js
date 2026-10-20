@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,25 +40,25 @@ export default function MatchSummary({ modeId, kazanildi, kazanilanXp }) {
     <View style={styles.kart}>
       <View style={styles.satir}>
         <Ionicons name="trending-up" size={16} color={COLORS.accent} />
-        <Text style={styles.etiket}>Kazanılan XP</Text>
+        <Text style={styles.etiket}>{_t("Kazanılan XP")}</Text>
         <Text style={styles.deger}>+{kazanilanXp}</Text>
       </View>
 
       {toplam > 0 && (
         <View style={styles.satir}>
           <Ionicons name="stats-chart" size={16} color={COLORS.textMuted} />
-          <Text style={styles.etiket}>Bu moddaki isabetin</Text>
+          <Text style={styles.etiket}>{_t("Bu moddaki isabetin")}</Text>
           <Text style={styles.deger}>%{oran}</Text>
         </View>
       )}
 
       <View style={styles.satir}>
         <Ionicons name="flame" size={16} color={rekorKirildi ? COLORS.cta : COLORS.textMuted} />
-        <Text style={styles.etiket}>En iyi doğru serisi</Text>
+        <Text style={styles.etiket}>{_t("En iyi doğru serisi")}</Text>
         <Text style={[styles.deger, rekorKirildi && { color: COLORS.cta }]}>{enIyiSeri}</Text>
       </View>
 
-      {rekorKirildi && <Text style={styles.rekor}>YENİ REKOR</Text>}
+      {rekorKirildi && <Text style={styles.rekor}>{_t("YENİ REKOR")}</Text>}
     </View>
   );
 }

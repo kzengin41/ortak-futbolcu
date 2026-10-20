@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView, Share,
@@ -92,7 +93,7 @@ export default function DailyPuzzleScreen({ onExit }) {
       if (yeni.bitti) recordRound("dailyPuzzle", false);
       setGeriBildirim({
         correct: false,
-        message: kalan > 0 ? `Olmadı — ${kalan} hakkın kaldı` : "Hakkın bitti",
+        message: kalan > 0 ? _t("Olmadı — {0} hakkın kaldı", [kalan]) : _t("Hakkın bitti"),
       });
     }
   }
@@ -115,9 +116,9 @@ export default function DailyPuzzleScreen({ onExit }) {
   if (hata) {
     return (
       <GameBackground style={styles.merkez}>
-        <Text style={styles.bekleme}>Bugünün bulmacası hazırlanamadı.</Text>
+        <Text style={styles.bekleme}>{_t("Bugünün bulmacası hazırlanamadı.")}</Text>
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Geri dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Geri dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -127,7 +128,7 @@ export default function DailyPuzzleScreen({ onExit }) {
     return (
       <GameBackground style={styles.merkez}>
         <ActivityIndicator color={COLORS.cta} />
-        <Text style={styles.bekleme}>Bugünün sorusu hazırlanıyor...</Text>
+        <Text style={styles.bekleme}>{_t("Bugünün sorusu hazırlanıyor...")}</Text>
       </GameBackground>
     );
   }
@@ -145,9 +146,9 @@ export default function DailyPuzzleScreen({ onExit }) {
           contentContainerStyle={{ paddingBottom: SPACING.xxl }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.ustBaslik}>GÜNÜN BULMACASI</Text>
+          <Text style={styles.ustBaslik}>{_t("GÜNÜN BULMACASI")}</Text>
           <Text style={styles.no}>#{bulmaca.no}</Text>
-          <Text style={styles.aciklama}>Bugün herkese aynı soru soruluyor</Text>
+          <Text style={styles.aciklama}>{_t("Bugün herkese aynı soru soruluyor")}</Text>
 
           <View style={styles.takimKart}>
             <View style={styles.takimKutu}>
@@ -181,7 +182,7 @@ export default function DailyPuzzleScreen({ onExit }) {
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
-                  placeholder="İki takımda da oynamış futbolcu..."
+                  placeholder={_t("İki takımda da oynamış futbolcu...")}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
                   onChangeText={setGirdi}
@@ -208,7 +209,7 @@ export default function DailyPuzzleScreen({ onExit }) {
                   ))}
                 </ScrollView>
               )}
-              <Text style={styles.hakText}>{kalanHak} deneme hakkın kaldı</Text>
+              <Text style={styles.hakText}>{kalanHak}{" "}{_t("deneme hakkın kaldı")}</Text>
             </View>
           )}
 
@@ -227,21 +228,19 @@ export default function DailyPuzzleScreen({ onExit }) {
           {durum.bitti ? (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>
-                {durum.bilindi ? "Bildin!" : "Bugün olmadı"}
+                {durum.bilindi ? _t("Bildin!") : _t("Bugün olmadı")}
               </Text>
               <View style={{ marginVertical: SPACING.md }}>
                 <PlayerPhoto name={cevapAdi} size={96} />
               </View>
               <Text style={styles.sonucAd}>{cevapAdi}</Text>
-              <Text style={styles.sonucAlt}>
-                Bu ikilide oynamış {bulmaca.toplamCevap} futbolcu var
-              </Text>
+              <Text style={styles.sonucAlt}>{_t("Bu ikilide oynamış")}{" "}{bulmaca.toplamCevap}{" "}{_t("futbolcu var")}</Text>
 
               <SoundPressable style={styles.anaBtn} onPress={paylas}>
                 <Ionicons name="share-social" size={16} color={COLORS.accentDark} />
-                <Text style={styles.anaBtnText}>SONUCU PAYLAŞ</Text>
+                <Text style={styles.anaBtnText}>{_t("SONUCU PAYLAŞ")}</Text>
               </SoundPressable>
-              <Text style={styles.yarinText}>Yarın yeni bir soru seni bekliyor</Text>
+              <Text style={styles.yarinText}>{_t("Yarın yeni bir soru seni bekliyor")}</Text>
             </View>
           ) : null}
         </KlavyeScroll>

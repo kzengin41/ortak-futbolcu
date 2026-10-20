@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { COLORS, TYPE, SPACING } from "../lib/theme";
@@ -32,9 +33,8 @@ export default function TabHeader({ baslik, sag, compact = false, style }) {
 
 function Marka() {
   return (
-    <Text style={styles.marka} accessibilityLabel="3-2-1 Bitir İşi">
-      <Text style={{ color: COLORS.accent }}>3-2-1</Text>  BİTİR İŞİ
-    </Text>
+    <Text style={styles.marka} accessibilityLabel={_t("3-2-1 Bitir İşi")}>
+      <Text style={{ color: COLORS.accent }}>3-2-1</Text>{" "}{_t("BİTİR İŞİ")}</Text>
   );
 }
 

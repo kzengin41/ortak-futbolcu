@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,7 +37,7 @@ export default function TakimTemaSorusu({ takim, onBitti }) {
       const oldu = await uygulamayiYenile();
       if (!oldu) {
         setMesgul(false);
-        setNot("Tema kaydedildi — uygulamayı kapatıp açınca görünecek.");
+        setNot(_t("Tema kaydedildi — uygulamayı kapatıp açınca görünecek."));
         setTimeout(() => onBitti && onBitti(true), 1400);
       }
     } catch (e) {
@@ -52,24 +53,29 @@ export default function TakimTemaSorusu({ takim, onBitti }) {
           <View key={i} style={[s.serit, { backgroundColor: r, flex: i === 0 ? 3 : 1 }]} />
         ))}
       </View>
-      <Text style={s.baslik}>Tema {takim} renklerine geçsin mi?</Text>
+      <Text style={s.baslik}>{_t("Tema")}{" "}{takim}{" "}{_t("renklerine geçsin mi?")}</Text>
       <Text style={s.aciklama}>
         {tema.tur === "hazir"
-          ? `Uygulama ${tema.ad} temasıyla açılır (kartlar, düğmeler, forma deseni). Ayarlar → Tema'dan istediğin zaman geri alırsın.`
-          : `Kulübünün renklerinden bir tema hazırladık. Ayarlar → Tema'dan istediğin zaman geri alırsın.`}
-        {tema.tur === "ozel" && settings.customPalet ? " (Kayıtlı \"Kendi temam\"ın yerine geçer.)" : ""}
+          ? _t(
+          "Uygulama {0} temasıyla açılır (kartlar, düğmeler, forma deseni). Ayarlar → Tema'dan istediğin zaman geri alırsın.",
+          [tema.ad]
+        )
+          : _t(
+          "Kulübünün renklerinden bir tema hazırladık. Ayarlar → Tema'dan istediğin zaman geri alırsın."
+        )}
+        {tema.tur === "ozel" && settings.customPalet ? _t(" (Kayıtlı \"Kendi temam\"ın yerine geçer.)") : ""}
       </Text>
       {not ? <Text style={s.not}>{not}</Text> : null}
-      <SoundPressable style={s.evet} onPress={evet} disabled={mesgul} accessibilityLabel="Evet, temayı değiştir">
+      <SoundPressable style={s.evet} onPress={evet} disabled={mesgul} accessibilityLabel={_t("Evet, temayı değiştir")}>
         {mesgul ? <ActivityIndicator color={COLORS.accentDark} /> : (
           <>
             <Ionicons name="color-palette" size={18} color={COLORS.accentDark} />
-            <Text style={s.evetYazi}>EVET, DEĞİŞTİR</Text>
+            <Text style={s.evetYazi}>{_t("EVET, DEĞİŞTİR")}</Text>
           </>
         )}
       </SoundPressable>
-      <SoundPressable style={s.hayir} onPress={() => onBitti && onBitti(false)} disabled={mesgul} accessibilityLabel="Hayır, temam kalsın">
-        <Text style={s.hayirYazi}>Hayır, temam kalsın</Text>
+      <SoundPressable style={s.hayir} onPress={() => onBitti && onBitti(false)} disabled={mesgul} accessibilityLabel={_t("Hayır, temam kalsın")}>
+        <Text style={s.hayirYazi}>{_t("Hayır, temam kalsın")}</Text>
       </SoundPressable>
     </View>
   );

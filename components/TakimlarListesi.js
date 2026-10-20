@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +18,7 @@ import { COLORS, RADIUS, SPACING } from "../lib/theme";
 // kadroyu tamamlayınca rozet." Kulübe dokun → sezonlar; sezona dokun → saha.
 // Bulunan = ansiklopedide açılmış ya da oyunlarda doğru söylenmiş isim.
 // ============================================================================
-const GRUP_BASLIK = { turkiye: "TÜRKİYE'NİN 4 BÜYÜĞÜ", avrupa: "AVRUPA DEVLERİ" };
+const GRUP_BASLIK = { turkiye: _t("TÜRKİYE'NİN 4 BÜYÜĞÜ"), avrupa: _t("AVRUPA DEVLERİ") };
 
 export async function bulunanKumesi() {
   const [b, u] = await Promise.all([getBulunanlar(), getUnlockedPlayers()]);
@@ -48,7 +49,7 @@ export default function TakimlarListesi({ onKadro }) {
     return (
       <View style={s.bos}>
         <Ionicons name="shirt-outline" size={28} color={COLORS.textMuted} />
-        <Text style={s.bosYazi}>Kadro verisi henüz yüklenmedi.</Text>
+        <Text style={s.bosYazi}>{_t("Kadro verisi henüz yüklenmedi.")}</Text>
       </View>
     );
   }
@@ -57,9 +58,11 @@ export default function TakimlarListesi({ onKadro }) {
     <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
       <View style={s.ozet}>
         <Ionicons name="ribbon" size={18} color={COLORS.cta} />
-        <Text style={s.ozetYazi}>Tamamlanan kadro: <Text style={{ color: COLORS.accent }}>{tamamSayi}</Text> / {durum.size}</Text>
+        <Text style={s.ozetYazi}>{_t("Tamamlanan kadro:")}{" "}<Text style={{ color: COLORS.accent }}>{tamamSayi}</Text>/ {durum.size}</Text>
       </View>
-      <Text style={s.ipucu}>Bir kadroyu açmak için oyunlarda o futbolcuları bul ya da kadronun içinden tahmin et.</Text>
+      <Text style={s.ipucu}>{_t(
+        "Bir kadroyu açmak için oyunlarda o futbolcuları bul ya da kadronun içinden tahmin et."
+      )}</Text>
 
       {["turkiye", "avrupa"].map((grup) => {
         const kulupler = gruplar.filter((g) => g.grup === grup);
@@ -72,11 +75,11 @@ export default function TakimlarListesi({ onKadro }) {
               const acik = acikKulup === g.kulup;
               return (
                 <View key={g.kulup} style={s.kulupKutu}>
-                  <SoundPressable style={s.kulupSatir} onPress={() => setAcikKulup(acik ? null : g.kulup)} accessibilityLabel={`${g.kulup}, ${g.sezonlar.length} sezon`}>
+                  <SoundPressable style={s.kulupSatir} onPress={() => setAcikKulup(acik ? null : g.kulup)} accessibilityLabel={_t("{0}, {1} sezon", [g.kulup, g.sezonlar.length])}>
                     <TeamBadge name={g.kulup} size={32} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.kulupAd}>{g.kulup}</Text>
-                      <Text style={s.kulupAlt}>{g.sezonlar.length} sezon · {tamam} tamam</Text>
+                      <Text style={s.kulupAlt}>{g.sezonlar.length}{" "}{_t("sezon ·")}{" "}{tamam}{" "}{_t("tamam")}</Text>
                     </View>
                     <Ionicons name={acik ? "chevron-up" : "chevron-down"} size={18} color={COLORS.textMuted} />
                   </SoundPressable>
@@ -104,12 +107,12 @@ export default function TakimlarListesi({ onKadro }) {
       {MACLAR.length ? (
         <View style={{ marginTop: SPACING.lg }}>
           <SoundPressable style={s.grupSatir} onPress={() => setFinallerAcik((a) => !a)}>
-            <Text style={s.grupBaslik}>EFSANE FİNALLER ({MACLAR.length})</Text>
+            <Text style={s.grupBaslik}>{_t("EFSANE FİNALLER (")}{MACLAR.length})</Text>
             <Ionicons name={finallerAcik ? "chevron-up" : "chevron-down"} size={16} color={COLORS.textMuted} />
           </SoundPressable>
           {finallerAcik ? [...MACLAR].sort((a, b) => (b.yil || 0) - (a.yil || 0)).map((m) => (
             <View key={m.id} style={s.macKutu}>
-              <Text style={s.macBaslik}>{m.tur}{m.yil ? ` · ${m.yil}` : ""} · {m.skor}{m.penalti ? ` (pen. ${m.penalti})` : ""}</Text>
+              <Text style={s.macBaslik}>{_t(m.tur)}{m.yil ? ` · ${m.yil}` : ""} · {m.skor}{m.penalti ? _t(" (pen. {0})", [m.penalti]) : ""}</Text>
               <View style={s.macTakimlar}>
                 {m.takimlar.map((t, i) => {
                   const id = `${m.id}#${i}`;

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, StyleSheet, Share, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,13 +54,13 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
     const t = String(metin ?? girdi).trim();
     if (!t) return;
     const p = findMatchedPlayer(t, puanlilar.filter((x) => !tahminler.some((y) => y.ad === x.name))) || findMatchedPlayer(t, PLAYERS);
-    if (!p) { setUyari(`"${t}" diye bir futbolcu bulamadım — hak gitmedi`); return; }
-    if (tahminler.some((x) => x.ad === p.name)) { setUyari(`${p.name} zaten yazıldı`); return; }
+    if (!p) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — hak gitmedi", [t])); return; }
+    if (tahminler.some((x) => x.ad === p.name)) { setUyari(_t("{0} zaten yazıldı", [p.name])); return; }
     const { puan, matchedClubs } = besKulupPuani(p, bulmaca.kulupler);
     const yeni = [...tahminler, { ad: p.name, puan, matchedClubs }];
     setTahminler(yeni);
     setGirdi("");
-    setUyari(puan ? null : `${p.name} bu kulüplerin en az ikisinde oynamadı — 0 puan`);
+    setUyari(puan ? null : _t("{0} bu kulüplerin en az ikisinde oynamadı — 0 puan", [p.name]));
     recordRound("gunluk5", puan > 0);
     if (puan) { unlockPlayer(p.name); playCorrect(); } else playWrong();
     gunlukDurumYaz("5kulup", { tahminler: yeni });
@@ -76,7 +77,7 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={s.kap}>
         <BackButton onPress={onExitSilent || onExit} />
-        <Text style={s.baslik}>Bugünün kulüpleri hazırlanamadı</Text>
+        <Text style={s.baslik}>{_t("Bugünün kulüpleri hazırlanamadı")}</Text>
       </GameBackground>
     );
   }
@@ -84,8 +85,8 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
   return (
     <GameBackground style={s.kap} klavye="kaydir">
       <BackButton onPress={onExitSilent || onExit} />
-      <Text style={s.ust}>GÜNLÜK 5 KULÜP #{bulmaca.no}</Text>
-      <Text style={s.baslik}>Bu kulüplerin en çoğunda oynamış futbolcuyu bul</Text>
+      <Text style={s.ust}>{_t("GÜNLÜK 5 KULÜP #")}{bulmaca.no}</Text>
+      <Text style={s.baslik}>{_t("Bu kulüplerin en çoğunda oynamış futbolcuyu bul")}</Text>
       <View style={s.kulupler}>
         {bulmaca.kulupler.map((k) => (
           <View key={k} style={s.kulup}>
@@ -94,7 +95,9 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
           </View>
         ))}
       </View>
-      <Text style={s.kural}>{BES_KULUP_HAK} hak · her futbolcu oynadığı kulüp sayısı kadar puan (en az 2) · en fazla 15</Text>
+      <Text style={s.kural}>{BES_KULUP_HAK}{" "}{_t(
+          "hak · her futbolcu oynadığı kulüp sayısı kadar puan (en az 2) · en fazla 15"
+        )}</Text>
 
       {tahminler.map((x, i) => (
         <View key={x.ad} style={s.tahmin}>
@@ -120,14 +123,14 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
               value={girdi}
               onChangeText={(t) => { setGirdi(t); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder={`${tahminler.length + 1}. tahmin — futbolcu adı`}
+              placeholder={_t("{0}. tahmin — futbolcu adı", [tahminler.length + 1])}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
               returnKeyType="send"
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
-            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -143,17 +146,17 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
 
       {bitti ? (
         <View style={s.sonuc}>
-          <Text style={s.sonucUst}>BUGÜNKÜ PUANIN</Text>
+          <Text style={s.sonucUst}>{_t("BUGÜNKÜ PUANIN")}</Text>
           <Text style={s.sonucSayi}>{toplam} <Text style={s.sonucBolu}>/ 15</Text></Text>
-          <Text style={s.enIyiBaslik}>Bugünün en iyi cevapları</Text>
+          <Text style={s.enIyiBaslik}>{_t("Bugünün en iyi cevapları")}</Text>
           {bulmaca.enIyiler.slice(0, 5).map((x) => (
-            <Text key={x.player.name} style={s.enIyi}>{x.player.name} · {x.count} kulüp</Text>
+            <Text key={x.player.name} style={s.enIyi}>{x.player.name}· {x.count}{" "}{_t("kulüp")}</Text>
           ))}
           <SoundPressable style={s.paylas} onPress={paylas}>
             <Ionicons name="share-social" size={18} color={COLORS.accentDark} />
-            <Text style={s.paylasYazi}>PAYLAŞ</Text>
+            <Text style={s.paylasYazi}>{_t("PAYLAŞ")}</Text>
           </SoundPressable>
-          <Text style={s.yarin}>Yarın yeni 5 kulüp gelir.</Text>
+          <Text style={s.yarin}>{_t("Yarın yeni 5 kulüp gelir.")}</Text>
         </View>
       ) : null}
     </GameBackground>

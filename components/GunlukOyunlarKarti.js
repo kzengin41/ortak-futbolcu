@@ -1,3 +1,4 @@
+import { _t, yerel } from "../lib/dil";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,32 +28,32 @@ export default function GunlukOyunlarKarti({ onBesKulup, onIzgara, onKadro, onKi
 
   const besT = bes?.tahminler || [];
   const besBitti = besT.length >= BES_KULUP_HAK;
-  const besAlt = !bes ? "…" : besBitti ? `Bugün ${besT.reduce((t, x) => t + x.puan, 0)} / 15 ✓` : besT.length ? `${BES_KULUP_HAK - besT.length} hak kaldı` : "3 hak · seriyi korur 🔥";
+  const besAlt = !bes ? "…" : besBitti ? _t("Bugün {0} / 15 ✓", [besT.reduce((t, x) => t + x.puan, 0)]) : besT.length ? _t("{0} hak kaldı", [BES_KULUP_HAK - besT.length]) : _t("3 hak · seriyi korur 🔥");
 
   const izgK = izg?.kareler || [];
   const izgDolu = izgK.filter(Boolean).length;
   const izgBitti = (izg?.kullanilan || 0) >= IZGARA_HAK || izgDolu === 9;
-  const izgAlt = !izg ? "…" : izgBitti ? `Bugün ${izgDolu} / 9 ✓` : izg?.kullanilan ? `${IZGARA_HAK - izg.kullanilan} hak kaldı` : "9 hak · seriyi korur 🔥";
+  const izgAlt = !izg ? "…" : izgBitti ? _t("Bugün {0} / 9 ✓", [izgDolu]) : izg?.kullanilan ? _t("{0} hak kaldı", [IZGARA_HAK - izg.kullanilan]) : _t("9 hak · seriyi korur 🔥");
 
   const kdrB = (kdr?.bulunan || []).length;
-  const kdrAlt = !kdr ? "…" : kdr.bitti ? `Bugün ${kdrB}/11 ✓` : kdrB ? `${kdrB}/11 · devam et` : "Efsane maçın ilk 11'i · seriyi korur 🔥";
+  const kdrAlt = !kdr ? "…" : kdr.bitti ? _t("Bugün {0}/11 ✓", [kdrB]) : kdrB ? _t("{0}/11 · devam et", [kdrB]) : _t("Efsane maçın ilk 11'i · seriyi korur 🔥");
 
   // Paket 13 — Günlük Kim Bu (5 tahmin hakkı)
   const kbT = (kb?.tahminler || []).length;
-  const kbAlt = !kb ? "…" : kb.bitti ? (kb.dogru ? `Bugün ${Math.round(kb.puan || 0).toLocaleString("tr-TR")} puan ✓` : "Bugün bilemedin ✓") : kbT ? `${5 - kbT} hak kaldı` : "5 tahmin · seriyi korur 🔥";
+  const kbAlt = !kb ? "…" : kb.bitti ? (kb.dogru ? _t("Bugün {0} puan ✓", [Math.round(kb.puan || 0).toLocaleString(yerel())]) : _t("Bugün bilemedin ✓")) : kbT ? _t("{0} hak kaldı", [5 - kbT]) : _t("5 tahmin · seriyi korur 🔥");
 
   return (
     <View style={{ gap: SPACING.sm }}>
-    {onKadro || onKimBu ? (
-      <View style={[s.satir]}>
-        {onKadro ? <Kutu baslik="Günün Kadrosu" alt={kdrAlt} ikon="shirt" renk={MODE_COLORS.teamTeam.main} bitti={!!kdr?.bitti} onPress={onKadro} /> : null}
-        {onKimBu ? <Kutu baslik="Günlük Kim Bu" alt={kbAlt} ikon="help-circle" renk={MODE_COLORS.whoAmI.main} bitti={!!kb?.bitti} onPress={onKimBu} /> : null}
+      {onKadro || onKimBu ? (
+        <View style={[s.satir]}>
+          {onKadro ? <Kutu baslik={_t("Günün Kadrosu")} alt={kdrAlt} ikon="shirt" renk={MODE_COLORS.teamTeam.main} bitti={!!kdr?.bitti} onPress={onKadro} /> : null}
+          {onKimBu ? <Kutu baslik={_t("Günlük Kim Bu")} alt={kbAlt} ikon="help-circle" renk={MODE_COLORS.whoAmI.main} bitti={!!kb?.bitti} onPress={onKimBu} /> : null}
+        </View>
+      ) : null}
+      <View style={s.satir}>
+        <Kutu baslik={_t("Günlük 5 Kulüp")} alt={besAlt} ikon="podium" renk={MODE_COLORS.fiveClubs.main} bitti={besBitti} onPress={onBesKulup} />
+        <Kutu baslik={_t("Günlük Izgara")} alt={izgAlt} ikon="grid" renk={MODE_COLORS.xox.main} bitti={izgBitti} onPress={onIzgara} />
       </View>
-    ) : null}
-    <View style={s.satir}>
-      <Kutu baslik="Günlük 5 Kulüp" alt={besAlt} ikon="podium" renk={MODE_COLORS.fiveClubs.main} bitti={besBitti} onPress={onBesKulup} />
-      <Kutu baslik="Günlük Izgara" alt={izgAlt} ikon="grid" renk={MODE_COLORS.xox.main} bitti={izgBitti} onPress={onIzgara} />
-    </View>
     </View>
   );
 }

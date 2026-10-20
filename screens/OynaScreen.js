@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useRef, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,43 +34,43 @@ const MODES = [
     key: "teamTeam",
     ikon: "ortakKulup",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
-    title: "Ortak Kulüp",
+    title: _t("Ortak Kulüp"),
     // Paket 31 (Kerem: "tüm modlarda en üstte 3-2-1 Ortak Futbolcu'yu Bul yazsın")
-    vitrinAdi: "3-2-1 Ortak Futbolcu'yu Bul",
-    desc: "İki kulüp söylenir. İkisinde de oynamış futbolcuyu rakibinden önce bul.",
+    vitrinAdi: _t("3-2-1 Ortak Futbolcu'yu Bul"),
+    desc: _t("İki kulüp söylenir. İkisinde de oynamış futbolcuyu rakibinden önce bul."),
     icon: "shield-checkmark",
     colorKey: "teamTeam",
     id: "cpu",
     // 4 Ekim 2026 (.28743) — "Tek telefon" artık mod değil RAKİP SEÇENEĞİ.
     // Paket 26 — Kulüp × Ülke ve Takımı sen seç doğrudan burada da (kaybolmasınlar).
     options: [
-      { id: "cpu", rakip: "cpu", label: "Kulüp × Kulüp", alt: "İki kulüpte oynamış futbolcu" },
-      { id: "countryTeamCpu", rakip: "cpu", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcu" },
-      { id: "draftCpu", rakip: "cpu", label: "Takımı sen seç", alt: "Bir kulübü sen yazarsın, ikincisini CPU seçer" },
-      { id: "local", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", kisaLabel: "2 kişi", alt: "Ekran ikiye bölünür, ilk basan cevaplar" },
-      { id: "sunucu", rakip: "yanimdaki", label: "Yanımdakiler — Sunucu modu", kisaLabel: "Sunucu · 2–6 kişi", alt: "Sen kulüpleri okursun, onlar bağırır" },
+      { id: "cpu", rakip: "cpu", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüpte oynamış futbolcu") },
+      { id: "countryTeamCpu", rakip: "cpu", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcu") },
+      { id: "draftCpu", rakip: "cpu", label: _t("Takımı sen seç"), alt: _t("Bir kulübü sen yazarsın, ikincisini CPU seçer") },
+      { id: "local", rakip: "yanimdaki", label: _t("Yanımdaki — 2 kişi"), kisaLabel: _t("2 kişi"), alt: _t("Ekran ikiye bölünür, ilk basan cevaplar") },
+      { id: "sunucu", rakip: "yanimdaki", label: _t("Yanımdakiler — Sunucu modu"), kisaLabel: _t("Sunucu · 2–6 kişi"), alt: _t("Sen kulüpleri okursun, onlar bağırır") },
       // Paket 32 (Kerem: "online'da ülke-takım ve kendin takımı söyle modu yok?") —
       // online'da da üç tür; Kulüp × Ülke online yeni (screens/OnlineUlkeScreen.js).
-      { id: "online", rakip: "online", label: "Kulüp × Kulüp", alt: "İki kulüp çıkar, ortak futbolcuyu ilk yazan alır", sekme: true, params: { mod: "classic" } },
-      { id: "online", rakip: "online", label: "Kulüp × Ülke", alt: "O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır", sekme: true, params: { mod: "country" } },
-      { id: "online", rakip: "online", label: "Takımı sen seç", alt: "Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur", sekme: true, params: { mod: "draft" } },
+      { id: "online", rakip: "online", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüp çıkar, ortak futbolcuyu ilk yazan alır"), sekme: true, params: { mod: "classic" } },
+      { id: "online", rakip: "online", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır"), sekme: true, params: { mod: "country" } },
+      { id: "online", rakip: "online", label: _t("Takımı sen seç"), alt: _t("Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur"), sekme: true, params: { mod: "draft" } },
     ],
   },
   {
     key: "letters",
     ikon: "ilkHarf",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
-    title: "İlk Harf",
-    desc: "Verilen baş harflerle başlayan futbolcuyu bul",
-    kisa: "Baş harflerden futbolcuyu bul",
+    title: _t("İlk Harf"),
+    desc: _t("Verilen baş harflerle başlayan futbolcuyu bul"),
+    kisa: _t("Baş harflerden futbolcuyu bul"),
     icon: "text",
     colorKey: "letters",
     id: "letterCpu",
     // Paket 30 — Harf Zinciri ayrı kart değil, İlk Harf'in tek kişilik seçeneği.
     options: [
-      { id: "letterCpu", rakip: "cpu", label: "CPU'ya karşı", alt: "Harfi gören ilk söyler" },
-      { id: "letterZincir", rakip: "tek", label: "Harf Zinciri", alt: "Son harften devam et, 3 canla en uzun zincir" },
-      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da oda kodu", sekme: true, params: { mod: "letter" } },
+      { id: "letterCpu", rakip: "cpu", label: _t("CPU'ya karşı"), alt: _t("Harfi gören ilk söyler") },
+      { id: "letterZincir", rakip: "tek", label: _t("Harf Zinciri"), alt: _t("Son harften devam et, 3 canla en uzun zincir") },
+      { id: "online", rakip: "online", label: _t("Online"), alt: _t("Rastgele rakip ya da oda kodu"), sekme: true, params: { mod: "letter" } },
     ],
   },
   {
@@ -77,8 +78,8 @@ const MODES = [
     key: "harfZinciri",
     ikon: "harfZinciri",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
-    title: "Harf Zinciri",
-    desc: "Son harften devam et, 3 canla en uzun zinciri kur",
+    title: _t("Harf Zinciri"),
+    desc: _t("Son harften devam et, 3 canla en uzun zinciri kur"),
     icon: "link",
     colorKey: "letters",
     id: "letterZincir",
@@ -87,18 +88,18 @@ const MODES = [
     key: "whoAmI",
     ikon: "kimBu",   // Paket 18 — components/ModIkon.js
     grup: "bilgi",
-    title: "Kim Bu Futbolcu?",
-    desc: "Kartları çevir, gizli futbolcuyu bil",
-    kisa: "Kartları çevir, gizli futbolcuyu bil",
+    title: _t("Kim Bu Futbolcu?"),
+    desc: _t("Kartları çevir, gizli futbolcuyu bil"),
+    kisa: _t("Kartları çevir, gizli futbolcuyu bil"),
     icon: "help-circle",
     colorKey: "whoAmI",
     id: "whoAmICpu",
     // Paket 13 — Kim Bu modları (benchmark): Seri, Kadro Avı, Online düello.
     // Günlük Kim Bu üstteki günlük kutularda.
     options: [
-      { id: "whoAmICpu", rakip: "tek", label: "Seri", alt: "3 can, seviye seviye zorlaşır" },
-      { id: "kadroAvi", rakip: "tek", label: "Kadro Avı", alt: "Bir kadronun gizli oyuncusu — bulunca kadroya eklenir" },
-      { id: "online", rakip: "online", label: "Online", alt: "Aynı masada düello: ilk bilen alır", sekme: true, params: { mod: "whoami" } },
+      { id: "whoAmICpu", rakip: "tek", label: _t("Seri"), alt: _t("3 can, seviye seviye zorlaşır") },
+      { id: "kadroAvi", rakip: "tek", label: _t("Kadro Avı"), alt: _t("Bir kadronun gizli oyuncusu — bulunca kadroya eklenir") },
+      { id: "online", rakip: "online", label: _t("Online"), alt: _t("Aynı masada düello: ilk bilen alır"), sekme: true, params: { mod: "whoami" } },
     ],
   },
   {
@@ -107,8 +108,8 @@ const MODES = [
     key: "sunucu",
     ikon: "sunucu",   // Paket 18 — components/ModIkon.js
     grup: "arkadas",
-    title: "Sunucu Modu",
-    desc: "2–6 kişi, tek telefon. Sen kulüpleri okursun, onlar bağırır",
+    title: _t("Sunucu Modu"),
+    desc: _t("2–6 kişi, tek telefon. Sen kulüpleri okursun, onlar bağırır"),
     icon: "mic",
     colorKey: "hotSeat",
     id: "sunucu",
@@ -118,19 +119,19 @@ const MODES = [
     key: "fiveClubs",
     ikon: "besKulup",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
-    title: "5 Kulüp",
-    desc: "5 büyük kulüpten kaçında oynadığını bil, en çok puanı topla",
-    kisa: "Futbolcu 5 kulübün kaçında oynadı?",
+    title: _t("5 Kulüp"),
+    desc: _t("5 büyük kulüpten kaçında oynadığını bil, en çok puanı topla"),
+    kisa: _t("Futbolcu 5 kulübün kaçında oynadı?"),
     icon: "podium",
     colorKey: "fiveClubs",
     // 12 Eylül 2026 (Kerem: "5 kulüp modu aslında cpu'ya karşı da
     // oynanabilmeli") — Ortak Kulüp'le aynı desen: tek kart, dokununca
     // seçenek modalı.
     options: [
-      { id: "fiveClubsCpu", rakip: "cpu", label: "CPU'ya karşı" },
-      { id: "fiveClubs", rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Aynı telefon, sırayla" },
+      { id: "fiveClubsCpu", rakip: "cpu", label: _t("CPU'ya karşı") },
+      { id: "fiveClubs", rakip: "yanimdaki", label: _t("Yanımdaki — 2 kişi"), alt: _t("Aynı telefon, sırayla") },
       // Paket 16 (5 Ekim 2026) — Online 5 Kulüp açıldı: iki oyuncu aynı anda, gizli cevap.
-      { id: "online", rakip: "online", label: "Online", alt: "Aynı anda gizli cevap, 3 tur", sekme: true, params: { mod: "five" } },
+      { id: "online", rakip: "online", label: _t("Online"), alt: _t("Aynı anda gizli cevap, 3 tur"), sekme: true, params: { mod: "five" } },
     ],
   },
   {
@@ -141,19 +142,19 @@ const MODES = [
     key: "xox",
     ikon: "xox",   // Paket 18 — components/ModIkon.js
     grup: "klasik",
-    title: "Futbolcu XOX",
-    desc: "3x3 ızgara, kareyi almak için ortak futbolcuyu söyle",
-    kisa: "Kareyi kapmak için ortak futbolcuyu söyle",
+    title: _t("Futbolcu XOX"),
+    desc: _t("3x3 ızgara, kareyi almak için ortak futbolcuyu söyle"),
+    kisa: _t("Kareyi kapmak için ortak futbolcuyu söyle"),
     icon: "grid",
     // 26 Eylül 2026 — eskiden "hotSeat" idi; "Tek Telefon 2 Kişi" ile aynı
     // renkteydi ve iki kart ayırt edilemiyordu (bkz. lib/theme.js notu).
     colorKey: "xox",
     id: "xox",
     options: [
-      { id: "xox", params: { rakip: "cpu" }, rakip: "cpu", label: "CPU'ya karşı" },
-      { id: "xox", params: { rakip: "iki" }, rakip: "yanimdaki", label: "Yanımdaki — 2 kişi", alt: "Aynı telefon, sırayla" },
+      { id: "xox", params: { rakip: "cpu" }, rakip: "cpu", label: _t("CPU'ya karşı") },
+      { id: "xox", params: { rakip: "iki" }, rakip: "yanimdaki", label: _t("Yanımdaki — 2 kişi"), alt: _t("Aynı telefon, sırayla") },
       // 5 Ekim 2026 (.29379) — Online XOX açıldı: Online sekmesine XOX seçili gider.
-      { id: "online", rakip: "online", label: "Online", alt: "Rastgele rakip ya da arkadaşınla kodla", sekme: true, params: { mod: "xox" } },
+      { id: "online", rakip: "online", label: _t("Online"), alt: _t("Rastgele rakip ya da arkadaşınla kodla"), sekme: true, params: { mod: "xox" } },
     ],
   },
 ];
@@ -161,7 +162,7 @@ const MODES = [
 // 28 Eylül 2026 — denetim bulgusu #7: "8 eşit ağırlıklı mod kartı, gruplama/öneri
 // yok". Kartlar üç başlık altında; en üstte tek dokunuşla oyuna sokan bir
 // "Hemen Oyna" kartı (Ortak Kulüp, CPU'ya karşı — ayarlar eşleşme profilinden).
-const RAKIP_BASLIK = { cpu: "CPU", yanimdaki: "YANIMDAKİLERLE", online: "ONLINE", tek: "TEK BAŞINA" };
+const RAKIP_BASLIK = { cpu: "CPU", yanimdaki: _t("YANIMDAKİLERLE"), online: "ONLINE", tek: _t("TEK BAŞINA") };
 const RAKIP_IKON = { cpu: "hardware-chip", yanimdaki: "people", online: "globe", tek: "person" };
 
 // ============================================================================
@@ -236,7 +237,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
       >
         <View style={styles.baslikSatiri}>
           {onBack ? <BackButton onPress={onBack} /> : null}
-          <TabHeader baslik="Tüm Modlar" style={{ marginBottom: 0 }} />
+          <TabHeader baslik={_t("Tüm Modlar")} style={{ marginBottom: 0 }} />
         </View>
 
         <Vitrin mod={VITRIN} onPress={() => handleCardPress(VITRIN)} />
@@ -253,7 +254,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
         />
 
         {/* Paket 34 — modlar liste satırı değil OYUN KAROSU (components/ModKaro.js) */}
-        <BolumBasligi>Modlar</BolumBasligi>
+        <BolumBasligi>{_t("Modlar")}</BolumBasligi>
         <ModIzgarasi>
           {DIGERLERI.map((m) => (
             <ModKaro key={m.key} ikon={m.ikon} icon={m.icon} baslik={m.title} alt={m.kisa || m.desc} gunun={m.key === gunun.modKey} onPress={() => handleCardPress(m)} />
@@ -280,7 +281,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
 // tek eylem: OYNA (temanın eylem rengi; GS'de sarı üstüne kırmızı yazı).
 function Vitrin({ mod, onPress }) {
   return (
-    <PressScale style={styles.vitrin} onPress={onPress} accessibilityRole="button" accessibilityLabel="3-2-1 Ortak Futbolcu'yu Bul, oyna">
+    <PressScale style={styles.vitrin} onPress={onPress} accessibilityRole="button" accessibilityLabel={_t("3-2-1 Ortak Futbolcu'yu Bul, oyna")}>
       <LinearGradient
         colors={[saydam("#FFFFFF", 0.12), saydam("#FFFFFF", 0), saydam("#000000", 0.32)]}
         locations={[0, 0.45, 1]}
@@ -296,12 +297,11 @@ function Vitrin({ mod, onPress }) {
         {/* Paket 31 (Kerem: "en üstte 3-2-1 Ortak Futbolcu'yu Bul yazsın") — başlık tam
             genişlikte iki satır; forma sağ altta, açıklama ve düğmenin yanında. */}
         <Text style={styles.vitrinBaslik}>
-          <Text style={{ color: COLORS.marka2 }}>3-2-1 </Text>Ortak{"\n"}Futbolcu'yu Bul
-        </Text>
+          <Text style={{ color: COLORS.marka2 }}>3-2-1 </Text>{_t("Ortak")}{"\n"}{_t("Futbolcu'yu Bul")}</Text>
         <Text style={styles.vitrinAciklama}>{mod.desc}</Text>
         <View style={styles.oyna}>
           <Ionicons name="play" size={18} color={COLORS.markaDugmeYazi} />
-          <Text style={styles.oynaYazi}>OYNA</Text>
+          <Text style={styles.oynaYazi}>{_t("OYNA")}</Text>
         </View>
       </View>
     </PressScale>

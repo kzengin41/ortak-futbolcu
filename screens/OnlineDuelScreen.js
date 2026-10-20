@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,7 @@ import { odaKur, odaNesnesi } from "../lib/onlineLobi";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
+import { rakipMetniYaz } from "../lib/guvenlik";
 
 // Bu ekran hiçbir doğru-cevap kontrolü YAPMAZ. Sadece sunucudaki rounds
 // satırını dinler ve o satıra göre ekranı çizer — "gerçek" (source of truth)
@@ -267,7 +269,7 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
         onRovansOda && onRovansOda(odaNesnesi(yeni, 1));
       } catch (e) {
         kuruluyorRef.current = false;
-        setRovansHata("Rövanş odası kurulamadı, tekrar dene.");
+        setRovansHata(_t("Rövanş odası kurulamadı, tekrar dene."));
         setBenIstedim(false);
       }
     })();
@@ -317,16 +319,16 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     if (isRecording) {
       try {
         const metin = await stopRecording();
-        if (!metin) { setSesHata("Sesi anlayamadım, tekrar dener misin?"); return; }
+        if (!metin) { setSesHata(_t("Sesi anlayamadım, tekrar dener misin?")); return; }
         const gonder = (a) => { setAnswerInput(a); cevapGonder(a); };
         const yaz = (a) => yaziDegisti(a);
         if (sesOnayiAcik) setSesOnayIstegi({ duyulan: metin, ad: metin, gonder, yaz });
         else gonder(metin);
       } catch (err) {
-        setSesHata(err?.message || "Ses tanıma başarısız oldu");
+        setSesHata(err?.message || _t("Ses tanıma başarısız oldu"));
       }
     } else {
-      try { await startRecording(); } catch (err) { setSesHata(err?.message || "Mikrofona erişilemedi"); }
+      try { await startRecording(); } catch (err) { setSesHata(err?.message || _t("Mikrofona erişilemedi")); }
     }
   }
 
@@ -406,9 +408,9 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     return (
       <GameBackground style={styles.merkez}>
         <ActivityIndicator color={VURGU.main} />
-        <Text style={styles.bekleme}>{!rakipGeldi ? "Rakip bekleniyor… (kuralları okuyor olabilir)" : "Maç hazırlanıyor..."}</Text>
+        <Text style={styles.bekleme}>{!rakipGeldi ? _t("Rakip bekleniyor… (kuralları okuyor olabilir)") : _t("Maç hazırlanıyor...")}</Text>
         <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-          <Text style={styles.cikisText}>Lobiye dön</Text>
+          <Text style={styles.cikisText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -420,12 +422,12 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   const rakipNo = myPlayer === 1 ? 2 : 1;
   const rakipYanlislar = turTahminleri.filter((t) => t.kim === rakipNo && !(roundRow.winner === rakipNo && bilinen && t.metin === bilinen.metin));
   const rovansHal = !rakipVar
-    ? { etiket: "RAKİP AYRILDI", pasif: true, rakipIstiyor: false }
+    ? { etiket: _t("RAKİP AYRILDI"), pasif: true, rakipIstiyor: false }
     : benIstedim
-    ? { etiket: rakipIstedi ? "ODA KURULUYOR…" : "DAVET GÖNDERİLDİ…", pasif: true, rakipIstiyor: false }
+    ? { etiket: rakipIstedi ? _t("ODA KURULUYOR…") : _t("DAVET GÖNDERİLDİ…"), pasif: true, rakipIstiyor: false }
     : rakipIstedi
-    ? { etiket: "KABUL ET — RÖVANŞ", pasif: false, rakipIstiyor: true }
-    : { etiket: "RÖVANŞ", pasif: false, rakipIstiyor: false };
+    ? { etiket: _t("KABUL ET — RÖVANŞ"), pasif: false, rakipIstiyor: true }
+    : { etiket: _t("RÖVANŞ"), pasif: false, rakipIstiyor: false };
 
   // 4 Ekim 2026 — klavye cevap kutusunu kapatmasın (components/Klavye.js).
   return (
@@ -435,16 +437,16 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
         <KlavyeScroll contentContainerStyle={{ flexGrow: 1, paddingBottom: SPACING.xl }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.ustSerit}>
             <View style={styles.skorKutu}>
-              <Text style={styles.skorEtiket}>SEN</Text>
+              <Text style={styles.skorEtiket}>{_t("SEN")}</Text>
               <Text style={[styles.skorDeger, { color: COLORS.accent }]}>{myScore}</Text>
             </View>
             <View style={styles.ortaKutu}>
-              <Text style={styles.turEtiket}>TUR {roundRow.round_number}</Text>
-              <Text style={styles.hedefEtiket}>{HEDEF} puana ilk ulaşan kazanır</Text>
-              {!rakipVar ? <Text style={styles.kopuk}>rakip bağlı değil</Text> : null}
+              <Text style={styles.turEtiket}>{_t("TUR")}{" "}{roundRow.round_number}</Text>
+              <Text style={styles.hedefEtiket}>{HEDEF}{" "}{_t("puana ilk ulaşan kazanır")}</Text>
+              {!rakipVar ? <Text style={styles.kopuk}>{_t("rakip bağlı değil")}</Text> : null}
             </View>
             <View style={styles.skorKutu}>
-              <Text style={styles.skorEtiket}>RAKİP</Text>
+              <Text style={styles.skorEtiket}>{_t("RAKİP")}</Text>
               <Text style={[styles.skorDeger, { color: COLORS.cta }]}>{oppScore}</Text>
             </View>
           </View>
@@ -455,29 +457,29 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
             <>
               <View style={{ marginTop: SPACING.lg }}>
                 <TimerBar current={roundTimeLeft} total={turSuresi} />
-                <Text style={[styles.sureYazi, roundTimeLeft <= 5 && { color: COLORS.danger }]}>{roundTimeLeft} sn</Text>
+                <Text style={[styles.sureYazi, roundTimeLeft <= 5 && { color: COLORS.danger }]}>{roundTimeLeft}{" "}{_t("sn")}</Text>
               </View>
               <SoundPressable
                 disabled={iAmLocked}
                 onPress={handleBuzz}
                 style={[styles.buzzBtn, iAmLocked && styles.buzzBtnPasif]}
-                accessibilityLabel="Cevap hakkını al"
+                accessibilityLabel={_t("Cevap hakkını al")}
               >
                 <Ionicons name={iAmLocked ? "lock-closed" : "flash"} size={28} color={iAmLocked ? COLORS.textMuted : COLORS.accentDark} />
                 <Text style={[styles.buzzYazi, iAmLocked && { color: COLORS.textMuted }]}>
-                  {iAmLocked ? "Bu turda elendin" : "BİLİYORUM!"}
+                  {iAmLocked ? _t("Bu turda elendin") : _t("BİLİYORUM!")}
                 </Text>
               </SoundPressable>
               {!iAmLocked && (
                 <SoundPressable onPress={handlePass} style={styles.pasBtn}>
-                  <Text style={styles.pasYazi}>Bilemedim, pas</Text>
+                  <Text style={styles.pasYazi}>{_t("Bilemedim, pas")}</Text>
                 </SoundPressable>
               )}
               {turTahminleri.length ? (
                 <View style={styles.tahminListe}>
                   {turTahminleri.map((t, i) => (
                     <Text key={i} style={styles.tahminSatir}>
-                      {`${t.kim === myPlayer ? "Sen" : "Rakip"}: “${t.metin}” `}<Text style={{ color: COLORS.danger }}>✗</Text>
+                      {`${t.kim === myPlayer ? _t("Sen") : _t("Rakip")}: “${t.kim === myPlayer ? t.metin : rakipMetniYaz(t.metin)}” `}<Text style={{ color: COLORS.danger }}>✗</Text>
                     </Text>
                   ))}
                 </View>
@@ -489,14 +491,14 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
             <View style={{ marginTop: SPACING.lg }}>
               {iAmBuzzer ? (
                 <>
-                  <Text style={[styles.cevapBaslik, answerTimeLeft <= 3 && { color: COLORS.danger }]}>Sıra sende — {answerTimeLeft} sn</Text>
+                  <Text style={[styles.cevapBaslik, answerTimeLeft <= 3 && { color: COLORS.danger }]}>{_t("Sıra sende —")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
                   <View style={styles.girdiSatir}>
                     <TextInput
                       autoFocus
                       value={answerInput}
                       onChangeText={yaziDegisti}
                       onSubmitEditing={handleSubmit}
-                      placeholder="İki takımda da oynamış futbolcu..."
+                      placeholder={_t("İki takımda da oynamış futbolcu...")}
                       placeholderTextColor={COLORS.textFaint}
                       autoCorrect={false}
                       autoCapitalize="words"
@@ -507,11 +509,11 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                       style={[styles.mikBtn, isRecording && styles.mikBtnAktif]}
                       onPress={mikrofon}
                       disabled={isProcessing}
-                      accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle söyle"}
+                      accessibilityLabel={isRecording ? _t("Kaydı durdur") : _t("Sesle söyle")}
                     >
                       <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#fff" : COLORS.text} />
                     </SoundPressable>
-                    <SoundPressable style={styles.gonderBtn} onPress={handleSubmit} accessibilityLabel="Gönder">
+                    <SoundPressable style={styles.gonderBtn} onPress={handleSubmit} accessibilityLabel={_t("Gönder")}>
                       <Ionicons name="send" size={18} color={COLORS.accentDark} />
                     </SoundPressable>
                   </View>
@@ -524,8 +526,8 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                       ))}
                     </View>
                   ) : null}
-                  {isRecording ? <Text style={styles.sesIpucu}>Dinliyorum — bitince dokun</Text> : null}
-                  {isProcessing ? <Text style={styles.sesIpucu}>Yazıya çevriliyor…</Text> : null}
+                  {isRecording ? <Text style={styles.sesIpucu}>{_t("Dinliyorum — bitince dokun")}</Text> : null}
+                  {isProcessing ? <Text style={styles.sesIpucu}>{_t("Yazıya çevriliyor…")}</Text> : null}
                   {sesHata ? <Text style={[styles.sesIpucu, { color: COLORS.danger }]}>{sesHata}</Text> : null}
                   <VoiceConfirm
                     istek={sesOnayIstegi}
@@ -539,10 +541,10 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                 <View style={styles.bilgiKart}>
                   <View style={styles.bilgiUst}>
                     <ActivityIndicator color={VURGU.main} />
-                    <Text style={styles.bilgiYazi}>Rakip cevap veriyor · {answerTimeLeft} sn</Text>
+                    <Text style={styles.bilgiYazi}>{_t("Rakip cevap veriyor ·")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
                   </View>
                   <Text style={[styles.canliYazi, !rakipCanli && { color: COLORS.textFaint }]} numberOfLines={1} accessibilityLiveRegion="polite">
-                    {rakipCanli ? `“${rakipCanli}”` : "yazıyor…"}
+                    {rakipCanli ? `“${rakipCanli}”` : _t("yazıyor…")}
                   </Text>
                 </View>
               )}
@@ -552,20 +554,20 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
           {phase === "result" && (
             <View style={styles.sonucKart}>
               <Text style={[styles.sonucBaslik, { color: roundRow.winner === myPlayer ? COLORS.accent : roundRow.winner ? COLORS.cta : COLORS.text }]}>
-                {roundRow.winner === 0 ? "Kimse bilemedi" : roundRow.winner === myPlayer ? "Puan senin!" : "Rakip bildi"}
+                {roundRow.winner === 0 ? _t("Kimse bilemedi") : roundRow.winner === myPlayer ? _t("Puan senin!") : _t("Rakip bildi")}
               </Text>
               {roundRow.winner > 0 && bilinen ? (
                 <View style={styles.bilinen}>
                   {bilinen.ad ? <PlayerPhoto name={bilinen.ad} size={84} /> : null}
-                  <Text style={styles.bilinenAd}>{bilinen.ad || bilinen.metin}</Text>
+                  <Text style={styles.bilinenAd}>{bilinen.ad || (roundRow.winner === myPlayer ? bilinen.metin : rakipMetniYaz(bilinen.metin))}</Text>
                   <Text style={styles.bilinenAlt}>
-                    {roundRow.winner === myPlayer ? "Senin cevabın" : "Rakibin cevabı"}{bilinen.ad && bilinen.ad !== bilinen.metin ? ` · “${bilinen.metin}”` : ""}
+                    {roundRow.winner === myPlayer ? _t("Senin cevabın") : _t("Rakibin cevabı")}{roundRow.winner === myPlayer && bilinen.ad && bilinen.ad !== bilinen.metin ? ` · “${bilinen.metin}”` : ""}
                   </Text>
-                  {bilinen.ad ? <Text style={styles.dokunIpucu}>Profil için fotoğrafa dokun</Text> : null}
+                  {bilinen.ad ? <Text style={styles.dokunIpucu}>{_t("Profil için fotoğrafa dokun")}</Text> : null}
                 </View>
               ) : null}
               {rakipYanlislar.length ? (
-                <Text style={styles.tahminSatir}>Rakip denedi: {rakipYanlislar.map((t) => `“${t.metin}”`).join(", ")} ✗</Text>
+                <Text style={styles.tahminSatir}>{_t("Rakip denedi:")}{" "}{rakipYanlislar.map((t) => `“${rakipMetniYaz(t.metin)}”`).join(", ")}✗</Text>
               ) : null}
               {roundRow.winner === 0 && ornekler.length ? (
                 <View style={styles.ornekFotolar}>
@@ -577,16 +579,16 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                   ))}
                 </View>
               ) : null}
-              <Text style={styles.ornekBaslik}>{roundRow.winner === 0 ? "Diğer doğru cevaplar" : "Geçerli cevaplardan bazıları"}</Text>
+              <Text style={styles.ornekBaslik}>{roundRow.winner === 0 ? _t("Diğer doğru cevaplar") : _t("Geçerli cevaplardan bazıları")}</Text>
               <Text style={styles.ornekMetin}>{ornekler.slice(roundRow.winner === 0 ? 3 : 0, roundRow.winner === 0 ? 11 : 8).join(" · ") || "—"}</Text>
               {!macBitti ? (
                 myPlayer === 1 || benHazirim !== roundRow.round_number ? (
-                  <SoundPressable style={styles.anaBtn} onPress={() => handleNextRound()} accessibilityLabel="Sonraki tur">
-                    <Text style={styles.anaBtnYazi}>SONRAKİ TUR · {sonrakiKalan}</Text>
+                  <SoundPressable style={styles.anaBtn} onPress={() => handleNextRound()} accessibilityLabel={_t("Sonraki tur")}>
+                    <Text style={styles.anaBtnYazi}>{_t("SONRAKİ TUR ·")}{" "}{sonrakiKalan}</Text>
                     <Ionicons name="arrow-forward" size={18} color={COLORS.accentDark} />
                   </SoundPressable>
                 ) : (
-                  <Text style={styles.bekleme}>Hazırsın — sıradaki tur başlıyor… ({sonrakiKalan})</Text>
+                  <Text style={styles.bekleme}>{_t("Hazırsın — sıradaki tur başlıyor… (")}{sonrakiKalan})</Text>
                 )
               ) : null}
             </View>
@@ -594,13 +596,13 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
 
           {macBitti ? (
             <OnlineMacSonu
-              modAdi="Online — Ortak Kulüp"
+              modAdi={_t("Online — Ortak Kulüp")}
               oda={room}
               benKimim={myPlayer}
               onExit={onExit}
               skorSen={myScore}
               skorRakip={oppScore}
-              skorEtiketi="puan"
+              skorEtiketi={_t("puan")}
               kazanan={myScore > oppScore ? "sen" : "rakip"}
               hal={rovansHal}
               onRovans={rovansIste}
@@ -608,7 +610,7 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
             />
           ) : (
             <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-              <Text style={styles.cikisText}>Odadan çık</Text>
+              <Text style={styles.cikisText}>{_t("Odadan çık")}</Text>
             </SoundPressable>
           )}
         </KlavyeScroll>

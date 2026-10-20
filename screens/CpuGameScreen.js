@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { _t } from "../lib/dil";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS } from "../lib/theme";
@@ -43,7 +44,7 @@ const WIN_LIMIT_OPTIONS = [
   { label: "5", value: 5 },
   { label: "7", value: 7 },
   { label: "10", value: 10 },
-  { label: "Sınırsız", value: Infinity },
+  { label: _t("Sınırsız"), value: Infinity },
 ];
 
 // 3 Ekim 2026 — ana sayfadaki OYNA: `hemenBasla` kurulum ekranını atlar (ayarlar
@@ -110,7 +111,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
   async function sesTekrar() {
     setSesOnayIstegi(null);
     setVoiceError(null);
-    try { await startRecording(); } catch (err) { setVoiceError(err.message || "Mikrofona erisilemedi"); }
+    try { await startRecording(); } catch (err) { setVoiceError(err.message || _t("Mikrofona erisilemedi")); }
   }
   function sesYaz(ad) {
     const istek = sesOnayIstegi;
@@ -136,16 +137,16 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
           if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
           else { const matched = findMatchedPlayer(text, round.validAnswers); gonder(matched ? matched.name : text); }
         } else {
-          setVoiceError("Sesi anlayamadım, tekrar dener misin?");
+          setVoiceError(_t("Sesi anlayamadım, tekrar dener misin?"));
         }
       } catch (err) {
-        setVoiceError(err.message || "Ses tanıma başarısız oldu");
+        setVoiceError(err.message || _t("Ses tanıma başarısız oldu"));
       }
     } else {
       try {
         await startRecording();
       } catch (err) {
-        setVoiceError(err.message || "Mikrofona erişilemedi");
+        setVoiceError(err.message || _t("Mikrofona erişilemedi"));
       }
     }
   }
@@ -223,7 +224,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     if (!started || phase !== "racing") return;
     if (isProcessing || sesOnayIstegi) return; // ⏸ Ses işlenirken sayacı dondur
     if (timeLeft <= 0) {
-      endRound(null, "Süre doldu, kimse bilemedi.");
+      endRound(null, _t("Süre doldu, kimse bilemedi."));
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
@@ -236,7 +237,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     if (answerTimeLeft <= 0) {
       const matched = findMatchedPlayer(answerInput, round.validAnswers);
       if (matched) {
-        endRound("p1", `Doğru! (${answerInput.trim()})`, matched);
+        endRound("p1", _t("Doğru! ({0})", [answerInput.trim()]), matched);
       } else {
         resolveCpuInstant();
       }
@@ -260,7 +261,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
         // 4 Ekim 2026 — CPU yalnızca zorluğuna göre tanıyabileceği oyuncuları bilir (lib/taninirlik.js).
         const pick = willBeCorrect ? cpuCevabiSec(round.validAnswers, difficulty) : null;
         if (pick) {
-          endRound("cpu", `CPU doğru bildi: ${pick.name}`, pick);
+          endRound("cpu", _t("CPU doğru bildi: {0}", [pick.name]), pick);
         } else {
           registerWrong("cpu");
         }
@@ -287,7 +288,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     try {
       await startRecording();
     } catch (err) {
-      setVoiceError(err.message || "Mikrofona erişilemedi");
+      setVoiceError(err.message || _t("Mikrofona erişilemedi"));
     }
   }
 
@@ -300,9 +301,9 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     const willBeCorrect = Math.random() < profile.correctChance;
     const pick = willBeCorrect ? cpuCevabiSec(round.validAnswers, difficulty) : null;
     if (pick) {
-      endRound("cpu", `CPU doğru bildi: ${pick.name}`, pick);
+      endRound("cpu", _t("CPU doğru bildi: {0}", [pick.name]), pick);
     } else {
-      endRound(null, "İkiniz de bilemediniz.");
+      endRound(null, _t("İkiniz de bilemediniz."));
     }
   }
 
@@ -316,7 +317,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     const text = overrideText !== undefined ? overrideText : answerInput;
     const matched = findMatchedPlayer(text, round.validAnswers);
     if (matched) {
-      endRound("p1", `Doğru! (${text.trim()})`, matched);
+      endRound("p1", _t("Doğru! ({0})", [text.trim()]), matched);
     } else {
       // Yanlış cevapta da CPU'yu beklemeden anında sonuçlandır — sadece süre
       // dolduğunda değil, elle yanlış gönderdiğinde de aynı davranış olmalı.
@@ -340,7 +341,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     setAnswerInput("");
     const remaining = ["p1", "cpu"].filter((o) => !nextLocked.has(o));
     if (remaining.length === 0) {
-      endRound(null, "İkiniz de bilemediniz.");
+      endRound(null, _t("İkiniz de bilemediniz."));
     } else {
       setBuzzedBy(null);
       setPhase("racing");
@@ -399,17 +400,17 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
     return (
       <ModKurulum
         modId="cpu"
-        baslik="Ortak Kulüp"
-        aciklama="İki kulüp çıkar. İkisinde de oynamış bir futbolcuyu CPU'dan önce söyle."
+        baslik={_t("Ortak Kulüp")}
+        aciklama={_t("İki kulüp çıkar. İkisinde de oynamış bir futbolcuyu CPU'dan önce söyle.")}
         vurgu={MODE_COLORS.teamTeam}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, yontem: inputMode })}
         onBasla={() => setStarted(true)}
       >
-        <KurulumBolum baslik="ZORLUK">
-          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Sadece efsaneler ve süper yıldızlar sorulur, CPU yavaş ve sık yanılır." : z <= 7 ? "Büyük liglerin bilinen oyuncuları sorulur, CPU dengeli." : "Az bilinen oyuncular da sorulur, CPU hızlı ve isabetli.")} />
+        <KurulumBolum baslik={_t("ZORLUK")}>
+          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? _t("Sadece efsaneler ve süper yıldızlar sorulur, CPU yavaş ve sık yanılır.") : z <= 7 ? _t("Büyük liglerin bilinen oyuncuları sorulur, CPU dengeli.") : _t("Az bilinen oyuncular da sorulur, CPU hızlı ve isabetli."))} />
         </KurulumBolum>
-        <KurulumBolum baslik="TUR SÜRESİ">
+        <KurulumBolum baslik={_t("TUR SÜRESİ")}>
           <SureSecici
             secenekler={MOD_TANIMLARI.cpu.sure.secenekler}
             deger={roundSeconds}
@@ -419,24 +420,24 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
             aciklama={MOD_TANIMLARI.cpu.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="GALİBİYET SINIRI">
+        <KurulumBolum baslik={_t("GALİBİYET SINIRI")}>
           <SecimCipleri
             secenekler={WIN_LIMIT_OPTIONS.map((o) => ({ deger: o.value, etiket: o.label }))}
             secili={targetScore}
             onSec={setTargetScore}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+        <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")}>
           <SecimCipleri
             secenekler={[
-              { deger: "keyboard", etiket: "Klavye", ikon: "keypad" },
-              { deger: "voice", etiket: "Mikrofon", ikon: "mic" },
+              { deger: "keyboard", etiket: _t("Klavye"), ikon: "keypad" },
+              { deger: "voice", etiket: _t("Mikrofon"), ikon: "mic" },
             ]}
             secili={inputMode}
             onSec={setInputMode}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="EŞLEŞME PROFİLİ">
+        <KurulumBolum baslik={_t("EŞLEŞME PROFİLİ")}>
           <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
         </KurulumBolum>
         <EslesmeProfiliPenceresi
@@ -474,7 +475,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
         <Pressable onPress={() => { if(typeof setShowReport === 'function') setShowReport(true); }} hitSlop={20}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,100,100,0.2)", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}>
             <Ionicons name="flag" size={13} color="#FFB020" />
-            <Text style={{ color: "#FFB020", fontSize: 12, fontWeight: "800" }}>BİLDİR</Text>
+            <Text style={{ color: "#FFB020", fontSize: 12, fontWeight: "800" }}>{_t("BİLDİR")}</Text>
           </View>
         </Pressable>
         <Pressable onPress={onExit} hitSlop={20}>
@@ -498,16 +499,14 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
         />
       )}
 
-      
       {showReport && (
         <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || (winningPlayer ? winningPlayer.name : null)} />
       )}
       <View style={styles.scoreRow}>
 
-        <Text style={[styles.scoreText, streakP1 >= 3 && { color: "#FFB020" }]}>
-          Sen: {scoreP1} 
+        <Text style={[styles.scoreText, streakP1 >= 3 && { color: "#FFB020" }]}>{_t("Sen:")}{" "}{scoreP1}
         </Text>
-        <Text style={styles.scoreText}>CPU: {scoreCpu}</Text>
+        <Text style={styles.scoreText}>{_t("CPU:")}{" "}{scoreCpu}</Text>
 
         
 
@@ -539,15 +538,15 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
           <TimerBar current={timeLeft} total={roundSeconds} />
           {inputMode === "voice" ? (
             <SoundPressable disabled={p1Locked} onPress={handleBuzzAndSpeak} style={[styles.buzzBtn, p1Locked && styles.buzzBtnDisabled]}>
-              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>BİLİYORUM · SÖYLE</Text>
+              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>{_t("BİLİYORUM · SÖYLE")}</Text>
             </SoundPressable>
           ) : (
             <SoundPressable disabled={p1Locked} onPress={handleBuzz} style={[styles.buzzBtn, p1Locked && styles.buzzBtnDisabled]}>
-              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>BİLİYORUM!</Text>
+              <Text style={[styles.buzzBtnText, p1Locked && styles.buzzBtnTextDisabled]}>{_t("BİLİYORUM!")}</Text>
             </SoundPressable>
           )}
           <SoundPressable disabled={p1Locked} onPress={handlePass} style={styles.passBtn}>
-            <Text style={styles.passBtnText}>{p1Locked ? "Bilemedin" : "Bilemedim"}</Text>
+            <Text style={styles.passBtnText}>{p1Locked ? _t("Bilemedin") : _t("Bilemedim")}</Text>
           </SoundPressable>
         </>
       )}
@@ -563,13 +562,13 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
           style={{ marginTop: 20 }}
         >
           {buzzedBy === "cpu" ? (
-            <Text style={styles.answeringText}>CPU cevap veriyor...</Text>
+            <Text style={styles.answeringText}>{_t("CPU cevap veriyor...")}</Text>
           ) : inputMode === "voice" ? (
             <>
-              <Text style={styles.answeringText}>{answerTimeLeft} sn içinde söyle</Text>
+              <Text style={styles.answeringText}>{answerTimeLeft}{" "}{_t("sn içinde söyle")}</Text>
               {heardText && (
                 <View style={styles.heardBanner}>
-                  <Text style={styles.heardBannerText}>Anladığım: "{heardText}"</Text>
+                  <Text style={styles.heardBannerText}>{_t("Anladığım: \"")}{heardText}"</Text>
                 </View>
               )}
               <SoundPressable
@@ -577,7 +576,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
                 onPress={handleMicPress}
                 disabled={isProcessing}
               >
-                <Text style={styles.micBtnBigText}>{isProcessing ? "İşleniyor…" : isRecording ? "Durdur" : "Konuş"}</Text>
+                <Text style={styles.micBtnBigText}>{isProcessing ? _t("İşleniyor…") : isRecording ? _t("Durdur") : _t("Konuş")}</Text>
               </SoundPressable>
               {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
             <VoiceConfirm
@@ -587,15 +586,15 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               onYaz={sesYaz}
               onIptal={() => setSesOnayIstegi(null)}
             />
-              {isRecording && <Text style={styles.voiceHint}>Dinliyorum...</Text>}
-              {isProcessing && <Text style={styles.voiceHint}>Yazıya çevriliyor...</Text>}
+              {isRecording && <Text style={styles.voiceHint}>{_t("Dinliyorum...")}</Text>}
+              {isProcessing && <Text style={styles.voiceHint}>{_t("Yazıya çevriliyor...")}</Text>}
               <SoundPressable onPress={() => setInputMode("keyboard")} style={styles.switchModeLink}>
-                <Text style={styles.switchModeLinkText}>Bunun yerine yazmak istiyorum</Text>
+                <Text style={styles.switchModeLinkText}>{_t("Bunun yerine yazmak istiyorum")}</Text>
               </SoundPressable>
             </>
           ) : (
             <>
-              <Text style={styles.answeringText}>{answerTimeLeft} sn içinde yaz</Text>
+              <Text style={styles.answeringText}>{answerTimeLeft}{" "}{_t("sn içinde yaz")}</Text>
               <TextInput
                 autoCorrect={false}
                 autoCapitalize="words"
@@ -604,7 +603,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
                 value={answerInput}
                 onChangeText={setAnswerInput}
                 onSubmitEditing={() => submitAnswer()}
-                placeholder="Futbolcu adı..."
+                placeholder={_t("Futbolcu adı...")}
                 placeholderTextColor="#56697A"
                 style={styles.input}
               />
@@ -619,7 +618,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               )}
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <SoundPressable style={[styles.primaryBtn, { flex: 1 }]} onPress={() => submitAnswer()}>
-                  <Text style={styles.primaryBtnText}>Gönder</Text>
+                  <Text style={styles.primaryBtnText}>{_t("Gönder")}</Text>
                 </SoundPressable>
                 <SoundPressable
                   style={[styles.micBtn, isRecording && styles.micBtnActive]}
@@ -631,7 +630,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               </View>
               {heardText && (
                 <View style={styles.heardBanner}>
-                  <Text style={styles.heardBannerText}>Anladığım: "{heardText}"</Text>
+                  <Text style={styles.heardBannerText}>{_t("Anladığım: \"")}{heardText}"</Text>
                 </View>
               )}
               {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
@@ -642,10 +641,10 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               onYaz={sesYaz}
               onIptal={() => setSesOnayIstegi(null)}
             />
-              {isRecording && <Text style={styles.voiceHint}>Dinliyorum — durdurmak için dokun</Text>}
-              {isProcessing && <Text style={styles.voiceHint}>Yazıya çevriliyor...</Text>}
+              {isRecording && <Text style={styles.voiceHint}>{_t("Dinliyorum — durdurmak için dokun")}</Text>}
+              {isProcessing && <Text style={styles.voiceHint}>{_t("Yazıya çevriliyor...")}</Text>}
               <SoundPressable onPress={() => setInputMode("voice")} style={styles.switchModeLink}>
-                <Text style={styles.switchModeLinkText}>Bunun yerine sesle söylemek istiyorum</Text>
+                <Text style={styles.switchModeLinkText}>{_t("Bunun yerine sesle söylemek istiyorum")}</Text>
               </SoundPressable>
             </>
           )}
@@ -654,7 +653,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               sonuç (CPU'ya anında son şans verilir, tur beklemeden biter). */}
           {buzzedBy === "p1" && (
             <SoundPressable onPress={() => { if (sesOnayIstegi) setSesOnayIstegi(null); resolveCpuInstant(); }} style={styles.passBtn}>
-              <Text style={styles.passBtnText}>Bilemedim</Text>
+              <Text style={styles.passBtnText}>{_t("Bilemedim")}</Text>
             </SoundPressable>
           )}
         </View>
@@ -667,7 +666,7 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
           {!showAnswers && (
             <Pressable style={styles.showAnswersBtn} hitSlop={10} onPress={() => setShowAnswers(true)}>
               <Text style={styles.showAnswersBtnText}>
-                {lastWinner === "p1" ? "Diğer doğru cevapları göster" : "Doğru cevapları göster"}
+                {lastWinner === "p1" ? _t("Diğer doğru cevapları göster") : _t("Doğru cevapları göster")}
               </Text>
             </Pressable>
           )}
@@ -696,11 +695,11 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               style={styles.primaryBtn}
               onPress={() => { setPhase("gameOver"); addXP(scoreP1 > scoreCpu ? XP_MAC_GALIBIYETI : XP_MAC_MAGLUBIYETI); }}
             >
-              <Text style={styles.primaryBtnText}>Maç Sonucunu Gör</Text>
+              <Text style={styles.primaryBtnText}>{_t("Maç Sonucunu Gör")}</Text>
             </Pressable>
           ) : (
             <Pressable style={styles.primaryBtn} onPress={startNewRound}>
-              <Text style={styles.primaryBtnText}>Sıradaki Tur</Text>
+              <Text style={styles.primaryBtnText}>{_t("Sıradaki Tur")}</Text>
             </Pressable>
           )}
         </View>
@@ -709,9 +708,9 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
       {phase === "gameOver" && (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 }}>
           <Text style={[styles.title, { fontSize: 28, color: scoreP1 > scoreCpu ? "#7CFF5C" : "#FF5D5D" }]}>
-            {scoreP1 > scoreCpu ? "KAZANDIN!" : "CPU KAZANDI"}
+            {scoreP1 > scoreCpu ? _t("KAZANDIN!") : _t("CPU KAZANDI")}
           </Text>
-          <Text style={[styles.title, { fontSize: 16, marginTop: 12 }]}>Sen: {scoreP1}  —  CPU: {scoreCpu}</Text>
+          <Text style={[styles.title, { fontSize: 16, marginTop: 12 }]}>{_t("Sen:")}{" "}{scoreP1}{" "}{_t("—  CPU:")}{" "}{scoreCpu}</Text>
           <MatchSummary
             modeId="cpu"
             kazanildi={scoreP1 > scoreCpu}
@@ -726,17 +725,17 @@ export default function CpuGameScreen({ onExit, onExitSilent, hemenBasla = false
               startNewRound();
             }}
           >
-            <Text style={styles.primaryBtnText}>Tekrar Oyna</Text>
+            <Text style={styles.primaryBtnText}>{_t("Tekrar Oyna")}</Text>
           </Pressable>
           <Pressable onPress={onExitSilent || onExit} style={{ marginTop: 16 }}>
-            <Text style={styles.backLink}>Menüye dön</Text>
+            <Text style={styles.backLink}>{_t("Menüye dön")}</Text>
           </Pressable>
         </View>
       )}
 
       {(!started || phase === "result") && (
         <Pressable onPress={onExit} style={{ marginTop: 24 }}>
-          <Text style={styles.backLink}>Menüye dön</Text>
+          <Text style={styles.backLink}>{_t("Menüye dön")}</Text>
         </Pressable>
       )}
     </GameBackground>

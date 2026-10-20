@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { Text, StyleSheet, Alert, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,15 +16,15 @@ import SoundPressable from "./SoundPressable";
 //      varsayılan sadece "Geri"; menüye dönen yerler metni kendisi veriyor.
 //   2. Emoji ok (⬅) yerine Ionicons — uygulamanın geri kalanı zaten Ionicons
 //      kullanıyor, tek emoji ikon buradaydı.
-export default function BackButton({ onPress, text = "Geri", style, confirm = false }) {
+export default function BackButton({ onPress, text = _t("Geri"), style, confirm = false }) {
   const handlePress = () => {
     if (confirm) {
       Alert.alert(
-        "Çıkış",
-        "Ana menüye dönmek istediğinize emin misiniz?",
+        _t("Çıkış"),
+        _t("Ana menüye dönmek istediğinize emin misiniz?"),
         [
-          { text: "Hayır", style: "cancel" },
-          { text: "Evet", style: "destructive", onPress: onPress }
+          { text: _t("Hayır"), style: "cancel" },
+          { text: _t("Evet"), style: "destructive", onPress: onPress }
         ]
       );
     } else {

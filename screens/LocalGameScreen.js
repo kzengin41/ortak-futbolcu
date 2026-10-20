@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { _t } from "../lib/dil";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici, KapsamDugmesi } from "../components/ModKurulum";
 import { useModVarsayilanlari, useKurulumKapisi, oyunBilgisiniYaz, ayarSatirlari, MOD_TANIMLARI } from "../lib/modAyarlari";
 import { MODE_COLORS, COLORS, saydam } from "../lib/theme";
@@ -43,7 +44,7 @@ const WIN_LIMIT_OPTIONS = [
   { label: "5", value: 5 },
   { label: "7", value: 7 },
   { label: "10", value: 10 },
-  { label: "Sınırsız", value: Infinity },
+  { label: _t("Sınırsız"), value: Infinity },
 ];
 
 export default function LocalGameScreen({ onExit, onExitSilent }) {
@@ -106,7 +107,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
   async function sesTekrar() {
     setSesOnayIstegi(null);
     setVoiceError(null);
-    try { await startRecording(); } catch (err) { setVoiceError(err.message || "Mikrofona erisilemedi"); }
+    try { await startRecording(); } catch (err) { setVoiceError(err.message || _t("Mikrofona erisilemedi")); }
   }
   function sesYaz(ad) {
     const istek = sesOnayIstegi;
@@ -130,16 +131,16 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
           else { const matched = findMatchedPlayer(text, round.validAnswers); gonder(matched ? matched.name : text); }
         } else {
-          setVoiceError("Sesi anlayamadım, tekrar dener misin?");
+          setVoiceError(_t("Sesi anlayamadım, tekrar dener misin?"));
         }
       } catch (err) {
-        setVoiceError(err.message || "Ses tanıma başarısız oldu");
+        setVoiceError(err.message || _t("Ses tanıma başarısız oldu"));
       }
     } else {
       try {
         await startRecording();
       } catch (err) {
-        setVoiceError(err.message || "Mikrofona erişilemedi");
+        setVoiceError(err.message || _t("Mikrofona erişilemedi"));
       }
     }
   }
@@ -187,7 +188,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     if (phase !== "racing") return;
     if (isProcessing || sesOnayIstegi) return;
     if (timeLeft <= 0) {
-      endRound(null, "Süre doldu, kimse bilemedi.");
+      endRound(null, _t("Süre doldu, kimse bilemedi."));
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
@@ -220,7 +221,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     try {
       await startRecording();
     } catch (err) {
-      setVoiceError(err.message || "Mikrofona erişilemedi");
+      setVoiceError(err.message || _t("Mikrofona erişilemedi"));
     }
   }
 
@@ -230,7 +231,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     setLockedOut(nextLocked);
     const remaining = ["p1", "p2"].filter((o) => !nextLocked.has(o));
     if (remaining.length === 0) {
-      endRound(null, "İkisi de bilemedi.");
+      endRound(null, _t("İkisi de bilemedi."));
     } else if (phase !== "racing") {
       setBuzzedBy(null);
       setPhase("racing");
@@ -247,7 +248,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     const text = overrideText !== undefined ? overrideText : answerInput;
     const matched = findMatchedPlayer(text, round.validAnswers);
     if (matched) {
-      endRound(buzzedBy, `Doğru! (${text.trim()})`, matched);
+      endRound(buzzedBy, _t("Doğru! ({0})", [text.trim()]), matched);
     } else {
       setAnswerInput("");
       lockPlayer(buzzedBy);
@@ -315,17 +316,17 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     return (
       <ModKurulum
         modId="local"
-        baslik="Ortak Kulüp — Yanımdaki"
-        aciklama="İki kulüp çıkar. İkisinde de oynamış futbolcuyu ilk söyleyen turu alır."
+        baslik={_t("Ortak Kulüp — Yanımdaki")}
+        aciklama={_t("İki kulüp çıkar. İkisinde de oynamış futbolcuyu ilk söyleyen turu alır.")}
         vurgu={MODE_COLORS.hotSeat}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, yontem: inputMode })}
         onBasla={() => setStarted(true)}
       >
-        <KurulumBolum baslik="ZORLUK">
-          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? "Sadece efsaneler ve süper yıldızlar sorulur." : z <= 7 ? "Büyük liglerin bilinen oyuncuları sorulur." : "Az bilinen oyuncular da sorulur.")} />
+        <KurulumBolum baslik={_t("ZORLUK")}>
+          <ZorlukSecici deger={difficulty} onDegis={setDifficulty} aciklama={(z) => (z <= 3 ? _t("Sadece efsaneler ve süper yıldızlar sorulur.") : z <= 7 ? _t("Büyük liglerin bilinen oyuncuları sorulur.") : _t("Az bilinen oyuncular da sorulur."))} />
         </KurulumBolum>
-        <KurulumBolum baslik="TUR SÜRESİ">
+        <KurulumBolum baslik={_t("TUR SÜRESİ")}>
           <SureSecici
             secenekler={MOD_TANIMLARI.local.sure.secenekler}
             deger={roundSeconds}
@@ -335,7 +336,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
             aciklama={MOD_TANIMLARI.local.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="GALİBİYET SINIRI">
+        <KurulumBolum baslik={_t("GALİBİYET SINIRI")}>
           <SecimCipleri
             secenekler={WIN_LIMIT_OPTIONS.map((o) => ({ deger: o.value, etiket: o.label }))}
             secili={targetScore}
@@ -343,17 +344,17 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           />
         </KurulumBolum>
         <OyuncuAdlariBolumu adet={2} />
-        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+        <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")}>
           <SecimCipleri
             secenekler={[
-              { deger: "keyboard", etiket: "Klavye", ikon: "keypad" },
-              { deger: "voice", etiket: "Mikrofon", ikon: "mic" },
+              { deger: "keyboard", etiket: _t("Klavye"), ikon: "keypad" },
+              { deger: "voice", etiket: _t("Mikrofon"), ikon: "mic" },
             ]}
             secili={inputMode}
             onSec={setInputMode}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="EŞLEŞME PROFİLİ">
+        <KurulumBolum baslik={_t("EŞLEŞME PROFİLİ")}>
           <KapsamDugmesi etiket={presetLabel} onPress={() => setLeagueModalOpen(true)} />
         </KurulumBolum>
         <EslesmeProfiliPenceresi
@@ -370,9 +371,9 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
   if (!round) {
     return (
       <GameBackground style={styles.container}>
-        <Text style={styles.center}>Bu veri setiyle yeni eşleşme kalmadı.</Text>
+        <Text style={styles.center}>{_t("Bu veri setiyle yeni eşleşme kalmadı.")}</Text>
         <Pressable style={styles.primaryBtn} onPress={() => { setUsedPairs(new Set()); startNewRound(); }}>
-          <Text style={styles.primaryBtnText}>Sıfırla</Text>
+          <Text style={styles.primaryBtnText}>{_t("Sıfırla")}</Text>
         </Pressable>
       </GameBackground>
     );
@@ -394,12 +395,12 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           {/* 4 Ekim 2026 (benchmark: "iki kişilikte buzz yerine anlaşılır bir ad
               ve hareket") — düğme ne yaptığını söylüyor: BİLİYORUM! */}
           <Text style={[styles.buzzBtnText, locked && styles.buzzBtnTextDisabled]}>
-            {locked ? `${label} · kilitli` : "BİLİYORUM!"}
+            {locked ? _t("{0} · kilitli", [label]) : _t("BİLİYORUM!")}
           </Text>
           {!locked ? <Text style={styles.buzzBtnAlt}>{label}</Text> : null}
         </SoundPressable>
         <SoundPressable disabled={locked} onPress={() => handlePass(who)} style={styles.passBtn}>
-          <Text style={styles.passBtnText}>{locked ? "Bilemedi" : "Bilemedim"}</Text>
+          <Text style={styles.passBtnText}>{locked ? _t("Bilemedi") : _t("Bilemedim")}</Text>
         </SoundPressable>
       </>
     );
@@ -409,9 +410,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     if (buzzedBy !== who) {
       return (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={styles.answeringText}>
-            Rakip cevaplıyor... {answerTimeLeft} sn
-          </Text>
+          <Text style={styles.answeringText}>{_t("Rakip cevaplıyor...")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
         </View>
       );
     }
@@ -419,13 +418,12 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text style={styles.answeringText}>
-          {adi(buzzedBy)} biliyor — {answerTimeLeft} sn
-        </Text>
+          {adi(buzzedBy)}{" "}{_t("biliyor —")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
         {inputMode === "voice" ? (
           <>
             {heardText && (
               <View style={styles.heardBanner}>
-                <Text style={styles.heardBannerText}>Anladığım: "{heardText}"</Text>
+                <Text style={styles.heardBannerText}>{_t("Anladığım: \"")}{heardText}"</Text>
               </View>
             )}
             <SoundPressable
@@ -433,7 +431,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               onPress={handleMicPress}
               disabled={isProcessing}
             >
-              <Text style={styles.micBtnBigText}>{isProcessing ? "İşleniyor…" : isRecording ? "Durdur" : "Konuş"}</Text>
+              <Text style={styles.micBtnBigText}>{isProcessing ? _t("İşleniyor…") : isRecording ? _t("Durdur") : _t("Konuş")}</Text>
             </SoundPressable>
             {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
             <VoiceConfirm
@@ -443,8 +441,8 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               onYaz={sesYaz}
               onIptal={() => setSesOnayIstegi(null)}
             />
-            {isRecording && <Text style={styles.voiceHint}>Dinliyorum...</Text>}
-            {isProcessing && <Text style={styles.voiceHint}>Yazıya çevriliyor...</Text>}
+            {isRecording && <Text style={styles.voiceHint}>{_t("Dinliyorum...")}</Text>}
+            {isProcessing && <Text style={styles.voiceHint}>{_t("Yazıya çevriliyor...")}</Text>}
           </>
         ) : (
           <>
@@ -456,7 +454,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               value={answerInput}
               onChangeText={setAnswerInput}
               onSubmitEditing={() => submitAnswer()}
-              placeholder="Futbolcu adı..."
+              placeholder={_t("Futbolcu adı...")}
               placeholderTextColor={COLORS.textFaint}
               style={[styles.input, { padding: 8, marginBottom: 4 }]}
             />
@@ -471,7 +469,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
             )}
             <View style={{ flexDirection: "row", gap: 10 }}>
               <SoundPressable style={[styles.primaryBtn, { flex: 1, paddingVertical: 10 }]} onPress={() => submitAnswer()}>
-                <Text style={styles.primaryBtnText}>Gönder</Text>
+                <Text style={styles.primaryBtnText}>{_t("Gönder")}</Text>
               </SoundPressable>
             </View>
           </>
@@ -485,15 +483,15 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
     <GameBackground style={styles.container} klavye="kaydir">
       {/* 28 Eylül 2026 — klavye cevap kutusunu kapatıyordu (denetim bulgusu #1). */}
       <View style={{ flex: 1, width: "100%", justifyContent: "center" }}>
-      {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || (typeof winningPlayer !== 'undefined' && winningPlayer ? winningPlayer.name : "Bilinmiyor")} />}
+      {showReport && <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={lastPlayer || (typeof winningPlayer !== 'undefined' && winningPlayer ? winningPlayer.name : _t("Bilinmiyor"))} />}
 
       {/* GLOBAL TOP HEADER — 31 Ağustos 2026 (Kerem: "üstteki butonların
           konumlandırması çirkin"): artık absolute/top:40 ile içerikle
           çakışmıyor, normal akışta kendi satırını alıyor. */}
       {/* Paket 31 — standart üst çubuk */}
       <OyunUstCubugu
-        baslik="Ortak Kulüp"
-        alt="Yanımdaki · 2 kişi"
+        baslik={_t("Ortak Kulüp")}
+        alt={_t("Yanımdaki · 2 kişi")}
         onCikis={onExit}
         onBildir={() => setShowReport(true)}
         style={{ paddingHorizontal: 16, marginTop: 6 }}
@@ -518,7 +516,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           <SkorSeridi
             sol={{ etiket: String(adlar[0]).toLocaleUpperCase("tr"), puan: scoreP1, renk: COLORS.accent }}
             sag={{ etiket: String(adlar[1]).toLocaleUpperCase("tr"), puan: scoreP2, renk: COLORS.cta }}
-            orta={`${targetScore || 5}'te biter`}
+            orta={_t("{0}'te biter", [targetScore || 5])}
           />
 
           <EslesmeKarti sol={{ tip: "kulup", ad: round.teamA }} sag={{ tip: "kulup", ad: round.teamB }} style={{ marginBottom: 12 }} />
@@ -539,8 +537,8 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
         <View style={{ flex: 1 }}>
           <View style={{ flex: 1, transform: [{ rotate: "180deg" }] }}>
             <View style={styles.scoreRow}>
-              <Text style={styles.scoreText}>Rakip: {scoreP2}</Text>
-              <Text style={styles.scoreText}>Ben: {scoreP1}</Text>
+              <Text style={styles.scoreText}>{_t("Rakip:")}{" "}{scoreP2}</Text>
+              <Text style={styles.scoreText}>{_t("Ben:")}{" "}{scoreP1}</Text>
             </View>
             <EslesmeKarti kompakt sol={{ tip: "kulup", ad: round.teamA }} sag={{ tip: "kulup", ad: round.teamB }} style={{ marginBottom: 8 }} />
             <TimerBar current={timeLeft} total={roundSeconds} />
@@ -557,8 +555,8 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 
           <View style={{ flex: 1 }}>
             <View style={styles.scoreRow}>
-              <Text style={styles.scoreText}>Ben: {scoreP2}</Text>
-              <Text style={styles.scoreText}>Rakip: {scoreP1}</Text>
+              <Text style={styles.scoreText}>{_t("Ben:")}{" "}{scoreP2}</Text>
+              <Text style={styles.scoreText}>{_t("Rakip:")}{" "}{scoreP1}</Text>
             </View>
             <EslesmeKarti kompakt sol={{ tip: "kulup", ad: round.teamA }} sag={{ tip: "kulup", ad: round.teamB }} style={{ marginBottom: 8 }} />
             <TimerBar current={timeLeft} total={roundSeconds} />
@@ -572,13 +570,12 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       {phase === "answering" && viewMode !== "mirror" && (
         <View style={[{ marginTop: 20, flex: 1, justifyContent: "center" }, viewMode === "mirror" && buzzedBy === "p1" && { transform: [{ rotate: "180deg" }] }]}>
           <Text style={styles.answeringText}>
-            {adi(buzzedBy)} biliyor — {answerTimeLeft} sn
-          </Text>
+            {adi(buzzedBy)}{" "}{_t("biliyor —")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
           {inputMode === "voice" ? (
             <>
               {heardText && (
                 <View style={styles.heardBanner}>
-                  <Text style={styles.heardBannerText}>Anladığım: "{heardText}"</Text>
+                  <Text style={styles.heardBannerText}>{_t("Anladığım: \"")}{heardText}"</Text>
                 </View>
               )}
               <SoundPressable
@@ -586,7 +583,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
                 onPress={handleMicPress}
                 disabled={isProcessing}
               >
-                <Text style={styles.micBtnBigText}>{isProcessing ? "İşleniyor…" : isRecording ? "Durdur" : "Konuş"}</Text>
+                <Text style={styles.micBtnBigText}>{isProcessing ? _t("İşleniyor…") : isRecording ? _t("Durdur") : _t("Konuş")}</Text>
               </SoundPressable>
               {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
             <VoiceConfirm
@@ -596,10 +593,10 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               onYaz={sesYaz}
               onIptal={() => setSesOnayIstegi(null)}
             />
-              {isRecording && <Text style={styles.voiceHint}>Dinliyorum...</Text>}
-              {isProcessing && <Text style={styles.voiceHint}>Yazıya çevriliyor...</Text>}
+              {isRecording && <Text style={styles.voiceHint}>{_t("Dinliyorum...")}</Text>}
+              {isProcessing && <Text style={styles.voiceHint}>{_t("Yazıya çevriliyor...")}</Text>}
               <SoundPressable onPress={() => setInputMode("keyboard")} style={{ marginTop: 14, alignItems: "center" }}>
-                <Text style={styles.switchModeLink}>Bunun yerine yazmak istiyorum</Text>
+                <Text style={styles.switchModeLink}>{_t("Bunun yerine yazmak istiyorum")}</Text>
               </SoundPressable>
             </>
           ) : (
@@ -612,7 +609,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
                 value={answerInput}
                 onChangeText={setAnswerInput}
                 onSubmitEditing={() => submitAnswer()}
-                placeholder="Futbolcu adı..."
+                placeholder={_t("Futbolcu adı...")}
                 placeholderTextColor={COLORS.textFaint}
                 style={styles.input}
               />
@@ -627,7 +624,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               )}
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <SoundPressable style={[styles.primaryBtn, { flex: 1 }]} onPress={() => submitAnswer()}>
-                  <Text style={styles.primaryBtnText}>Gönder</Text>
+                  <Text style={styles.primaryBtnText}>{_t("Gönder")}</Text>
                 </SoundPressable>
                 <SoundPressable
                   style={[styles.micBtn, isRecording && styles.micBtnActive]}
@@ -639,7 +636,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               </View>
               {heardText && (
                 <View style={styles.heardBanner}>
-                  <Text style={styles.heardBannerText}>Anladığım: "{heardText}"</Text>
+                  <Text style={styles.heardBannerText}>{_t("Anladığım: \"")}{heardText}"</Text>
                 </View>
               )}
               {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
@@ -650,10 +647,10 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
               onYaz={sesYaz}
               onIptal={() => setSesOnayIstegi(null)}
             />
-              {isRecording && <Text style={styles.voiceHint}>Dinliyorum — durdurmak için dokun</Text>}
-              {isProcessing && <Text style={styles.voiceHint}>Yazıya çevriliyor...</Text>}
+              {isRecording && <Text style={styles.voiceHint}>{_t("Dinliyorum — durdurmak için dokun")}</Text>}
+              {isProcessing && <Text style={styles.voiceHint}>{_t("Yazıya çevriliyor...")}</Text>}
               <SoundPressable onPress={() => setInputMode("voice")} style={{ marginTop: 10, alignItems: "center" }}>
-                <Text style={styles.switchModeLink}>Bunun yerine konuşmak istiyorum</Text>
+                <Text style={styles.switchModeLink}>{_t("Bunun yerine konuşmak istiyorum")}</Text>
               </SoundPressable>
             </>
           )}
@@ -667,7 +664,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
           {!showAnswers && (
             <Pressable style={styles.showAnswersBtn} hitSlop={10} onPress={() => setShowAnswers(true)}>
               <Text style={styles.showAnswersBtnText}>
-                {lastWinner ? "Diğer doğru cevapları göster" : "Doğru cevapları göster"}
+                {lastWinner ? _t("Diğer doğru cevapları göster") : _t("Doğru cevapları göster")}
               </Text>
             </Pressable>
           )}
@@ -692,7 +689,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
             </ScrollView>
           )}
           <Pressable style={styles.primaryBtn} onPress={startNewRound}>
-            <Text style={styles.primaryBtnText}>Sıradaki Tur</Text>
+            <Text style={styles.primaryBtnText}>{_t("Sıradaki Tur")}</Text>
           </Pressable>
         </View>
       )}
@@ -700,7 +697,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
       {phase === "gameOver" && (
         <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 4 }}>
           <IsimliSkorTablosu
-            modAdi="Ortak Kulüp — Yanımdaki"
+            modAdi={_t("Ortak Kulüp — Yanımdaki")}
             oyuncular={[{ ad: adlar[0], puan: scoreP1 }, { ad: adlar[1], puan: scoreP2 }]}
             onRovans={() => {
               setScoreP1(0);
@@ -715,7 +712,7 @@ export default function LocalGameScreen({ onExit, onExitSilent }) {
 
       {(!started || phase === "result") && (
         <Pressable onPress={onExit} style={{ marginTop: 24 }}>
-          <Text style={styles.backLink}>Menüye dön</Text>
+          <Text style={styles.backLink}>{_t("Menüye dön")}</Text>
         </Pressable>
       )}
       </View>

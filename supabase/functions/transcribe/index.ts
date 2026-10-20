@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const hamIpucu = incomingForm.get("names"); // "Ronaldo, Messi, Olaitan Ojo, ..."
     const namesHint = typeof hamIpucu === "string" ? hamIpucu.slice(0, AZAMI_IPUCU) : null;
     const prompt = namesHint
-      ? `Futbolcu isimleri: ${namesHint}.`
+      ? (incomingForm.get("dil") === "en" ? `Football player names: ${namesHint}.` : `Futbolcu isimleri: ${namesHint}.`)
       : "Futbolcu ismi: Ronaldo, Messi, Drogba, Okocha, Iniesta, Zidane, Ballack.";
 
     // ========================================================================
@@ -104,7 +104,10 @@ Deno.serve(async (req) => {
     const openaiForm = new FormData();
     openaiForm.append("file", sesBlob, `answer.${uzanti}`);
     openaiForm.append("model", "whisper-1");
-    openaiForm.append("language", "tr");
+    // Paket 39: istemci "dil" gönderir (tr | en). Eski sürümler göndermez → tr.
+    const hamDil = incomingForm.get("dil");
+    const dilKodu = hamDil === "en" ? "en" : "tr";
+    openaiForm.append("language", dilKodu);
     openaiForm.append("prompt", prompt);
 
     // 26 Eylül 2026: OpenAI'nin ne kadar sürdüğünü istemciye bildiriyoruz

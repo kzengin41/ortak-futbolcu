@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -55,7 +56,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
   useEffect(() => {
     if (phase !== "oyun") return;
     if (kalan <= 0) {
-      cezaVer("Süre doldu — yeni harf", true);
+      cezaVer(_t("Süre doldu — yeni harf"), true);
       return;
     }
     const t = setTimeout(() => setKalan((k) => k - 1), 1000);
@@ -89,7 +90,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
     setKareler((k) => [...k, "rakip"]);
     const kalanCan = can - 1;
     setCan(kalanCan);
-    setUyari({ metin: `${metin} · −1 can`, ceza: true });
+    setUyari({ metin: _t("{0} · −1 can", [metin]), ceza: true });
     if (kalanCan <= 0) { bitir(zincir.length); return; }
     // Süre dolduysa yeni harf + yeni süre; yanlış/tekrar isimde saat işlemeye devam eder.
     if (yeniHarf) { setHarf(rastgeleHarf(PLAYERS, Math.random, harf)); setKalan(sureHesapla(zincir.length)); }
@@ -101,9 +102,9 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
     if (!t) return;
     setGirdi("");
     const s = tahminDegerlendir(t, harf, kullanilan, PLAYERS);
-    if (s.tip === "bilinmiyor") { setUyari({ metin: `"${t}" diye bir futbolcu bulamadım — can gitmedi`, ceza: false }); return; }
-    if (s.tip === "tekrar") { cezaVer(`${s.oyuncu.name} zaten söylendi`, false); return; }
-    if (s.tip === "yanlisHarf") { cezaVer(`${s.oyuncu.name} "${harf}" ile başlamıyor`, false); return; }
+    if (s.tip === "bilinmiyor") { setUyari({ metin: _t("\"{0}\" diye bir futbolcu bulamadım — can gitmedi", [t]), ceza: false }); return; }
+    if (s.tip === "tekrar") { cezaVer(_t("{0} zaten söylendi", [s.oyuncu.name]), false); return; }
+    if (s.tip === "yanlisHarf") { cezaVer(_t("{0} \"{1}\" ile başlamıyor", [s.oyuncu.name, harf]), false); return; }
     const yeniZincir = [...zincir, s.oyuncu.name];
     if (yeniZincir.length === 8) gorevOlayi("zincir8").catch(() => {});
     setZincir(yeniZincir);
@@ -116,7 +117,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
     const kalanAday = (harfDizini(PLAYERS).get(s.sonrakiHarf) || []).filter((p) => !yeni.has(p.name)).length;
     if (kalanAday < 3) {
       setHarf(rastgeleHarf(PLAYERS, Math.random, s.sonrakiHarf));
-      setUyari({ metin: `"${s.sonrakiHarf}" ile başlayan futbolcu kalmadı — yeni harf`, ceza: false });
+      setUyari({ metin: _t("\"{0}\" ile başlayan futbolcu kalmadı — yeni harf", [s.sonrakiHarf]), ceza: false });
     } else {
       setHarf(s.sonrakiHarf);
       setUyari(null);
@@ -131,8 +132,8 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
       {phase === "geri" ? <CountdownOverlay onComplete={() => { setPhase("oyun"); setTimeout(() => inputRef.current?.focus?.(), 50); }} /> : null}
       {/* Paket 31 — standart üst çubuk: ✕ · mod adı · canlar */}
       <OyunUstCubugu
-        baslik="Harf Zinciri"
-        alt={`Zincir ${zincir.length} · rekor ${rekor}`}
+        baslik={_t("Harf Zinciri")}
+        alt={_t("Zincir {0} · rekor {1}", [zincir.length, rekor])}
         onCikis={phase === "bitti" ? (onExitSilent || onExit) : onExit}
         sag={
           <View style={s.canlar}>
@@ -146,12 +147,12 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
       {phase !== "bitti" ? (
         <>
           <View style={s.harfKutu}>
-            <Text style={s.harfEtiket}>Bu harfle başlayan futbolcu</Text>
+            <Text style={s.harfEtiket}>{_t("Bu harfle başlayan futbolcu")}</Text>
             <Text style={s.harf}>{harf}</Text>
           </View>
           <View style={{ marginTop: SPACING.sm }}>
             <TimerBar current={Math.max(0, kalan)} total={toplamSure} />
-            <Text style={s.sure}>{Math.max(0, kalan)} sn</Text>
+            <Text style={s.sure}>{Math.max(0, kalan)}{" "}{_t("sn")}</Text>
           </View>
 
           <View style={s.girdiSatir}>
@@ -161,7 +162,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
               value={girdi}
               onChangeText={(t) => { setGirdi(t); if (uyari && !uyari.ceza) setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder={`${harf} ile başlayan futbolcu`}
+              placeholder={_t("{0} ile başlayan futbolcu", [harf])}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
@@ -170,7 +171,7 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
               editable={phase === "oyun"}
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => gonder(m)} />
-            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -192,26 +193,28 @@ export default function HarfZinciriScreen({ onExit, onExitSilent }) {
               ))}
             </View>
           ) : (
-            <Text style={s.kural}>Her futbolcunun tam adı bir öncekinin SON harfiyle başlar (Lionel Messi → L ile başlar, I ile biter). Yanlış harf, tekrar ya da süre dolması 1 can götürür. Süre zincir uzadıkça kısalır.</Text>
+            <Text style={s.kural}>{_t(
+              "Her futbolcunun tam adı bir öncekinin SON harfiyle başlar (Lionel Messi → L ile başlar, I ile biter). Yanlış harf, tekrar ya da süre dolması 1 can götürür. Süre zincir uzadıkça kısalır."
+            )}</Text>
           )}
         </>
       ) : (
         <MacSonuKarti
-          modAdi="Harf Zinciri"
+          modAdi={_t("Harf Zinciri")}
           modeId="letterZincir"
           turlar={kareler}
           solo={{
             puan: zincir.length,
             rekor,
             yeniRekor,
-            baslik: yeniRekor ? "YENİ REKOR!" : "ZİNCİR KOPTU",
+            baslik: yeniRekor ? _t("YENİ REKOR!") : _t("ZİNCİR KOPTU"),
             satirlar: [
-              ["Zincir uzunluğu", String(zincir.length)],
-              ["Son halka", zincir[zincir.length - 1] || "—"],
+              [_t("Zincir uzunluğu"), String(zincir.length)],
+              [_t("Son halka"), zincir[zincir.length - 1] || "—"],
             ],
           }}
           kazanilanXp={Math.min(150, 5 * zincir.length)}
-          rovansEtiketi="TEKRAR"
+          rovansEtiketi={_t("TEKRAR")}
           onRovans={basla}
           onMenu={onExitSilent || onExit}
         />

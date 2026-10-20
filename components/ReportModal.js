@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { Modal, View, Text, Pressable, StyleSheet, TextInput, Alert } from "react-native";
 import { supabase, getDeviceId } from "../lib/supabaseClient";
@@ -9,7 +10,7 @@ export default function ReportModal({ visible, onClose, playerContext }) {
 
   async function handleSubmit() {
     if (!reason.trim()) {
-      Alert.alert("Hata", "Lütfen bir neden belirtin.");
+      Alert.alert("Hata", _t("Lütfen bir neden belirtin."));
       return;
     }
     setLoading(true);
@@ -17,17 +18,17 @@ export default function ReportModal({ visible, onClose, playerContext }) {
       const deviceId = await getDeviceId();
       await supabase.from("reports").insert([
         {
-          player_name: playerContext || "Bilinmiyor",
+          player_name: playerContext || _t("Bilinmiyor"),
           reason: reason.trim(),
           device_id: deviceId,
         }
       ]);
-      Alert.alert("Teşekkürler", "Geri bildiriminiz alındı, en kısa sürede düzeltilecektir!");
+      Alert.alert(_t("Teşekkürler"), _t("Geri bildiriminiz alındı, en kısa sürede düzeltilecektir!"));
       setReason("");
       onClose();
     } catch (err) {
       console.log(err);
-      Alert.alert("Hata", "Gönderilemedi, lütfen tekrar deneyin.");
+      Alert.alert("Hata", _t("Gönderilemedi, lütfen tekrar deneyin."));
     }
     setLoading(false);
   }
@@ -36,14 +37,13 @@ export default function ReportModal({ visible, onClose, playerContext }) {
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          <Text style={styles.title}>Hata Bildir</Text>
-          <Text style={styles.subtitle}>
-            İlgili Futbolcu: <Text style={{ color: COLORS.success }}>{playerContext || "Bilinmiyor"}</Text>
+          <Text style={styles.title}>{_t("Hata Bildir")}</Text>
+          <Text style={styles.subtitle}>{_t("İlgili Futbolcu:")}{" "}<Text style={{ color: COLORS.success }}>{playerContext || _t("Bilinmiyor")}</Text>
           </Text>
           
           <TextInput
             style={styles.input}
-            placeholder="Eksik kulüp mü, hatalı fotoğraf mı?"
+            placeholder={_t("Eksik kulüp mü, hatalı fotoğraf mı?")}
             placeholderTextColor={COLORS.textMuted}
             value={reason}
             onChangeText={setReason}
@@ -52,10 +52,10 @@ export default function ReportModal({ visible, onClose, playerContext }) {
           
           <View style={styles.row}>
             <Pressable style={styles.btnCancel} onPress={onClose}>
-              <Text style={styles.btnCancelText}>İptal</Text>
+              <Text style={styles.btnCancelText}>{_t("İptal")}</Text>
             </Pressable>
             <Pressable style={styles.btnSubmit} onPress={handleSubmit} disabled={loading}>
-              <Text style={styles.btnSubmitText}>{loading ? "..." : "Gönder"}</Text>
+              <Text style={styles.btnSubmitText}>{loading ? "..." : _t("Gönder")}</Text>
             </Pressable>
           </View>
         </View>

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { createContext, useContext } from "react";
 import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -96,7 +97,7 @@ export function ModBolumu({ baslik, children, style, sade }) {
   );
 }
 
-export function ModSecimPenceresi({ mod, soru = "Kiminle oynuyorsun?", secenekler = [], onClose, children, altYazi }) {
+export function ModSecimPenceresi({ mod, soru = _t("Kiminle oynuyorsun?"), secenekler = [], onClose, children, altYazi }) {
   const c = mod ? { main: COLORS.accent } : null;
   return (
     <Modal visible={!!mod} transparent animationType="fade" onRequestClose={onClose}>
@@ -139,7 +140,7 @@ export function ModSecimPenceresi({ mod, soru = "Kiminle oynuyorsun?", secenekle
               )}
               {altYazi ? <Text style={s.altYazi}>{altYazi}</Text> : null}
               <Pressable style={s.modalCancel} onPress={onClose}>
-                <Text style={s.modalCancelText}>Vazgeç</Text>
+                <Text style={s.modalCancelText}>{_t("Vazgeç")}</Text>
               </Pressable>
             </>
           )}

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, TextInput, StyleSheet, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,7 +36,7 @@ export function useOyuncuAdlari(adet = 2) {
 export function OyuncuAdlariBolumu({ adet = 2, vurgu }) {
   const { ham, adDegistir } = useOyuncuAdlari(adet);
   return (
-    <KurulumBolum baslik="OYUNCU ADLARI" vurgu={vurgu} not="Skor tablosunda ve sıra yazılarında bu adlar görünür.">
+    <KurulumBolum baslik={_t("OYUNCU ADLARI")} vurgu={vurgu} not={_t("Skor tablosunda ve sıra yazılarında bu adlar görünür.")}>
       <View style={{ gap: 8 }}>
         {Array.from({ length: adet }, (_, i) => (
           <View key={i} style={s.adSatir}>
@@ -49,7 +50,7 @@ export function OyuncuAdlariBolumu({ adet = 2, vurgu }) {
               maxLength={16}
               autoCorrect={false}
               autoCapitalize="words"
-              accessibilityLabel={`${i + 1}. oyuncunun adı`}
+              accessibilityLabel={_t("{0}. oyuncunun adı", [i + 1])}
             />
           </View>
         ))}
@@ -62,20 +63,20 @@ export function OyuncuAdlariBolumu({ adet = 2, vurgu }) {
 // oyuncular: [{ ad, puan }]; birden fazla lider varsa berabere.
 // kazanan (isteğe bağlı): oyuncu indeksi ya da "berabere" — skordan çıkmayan
 // sonuçlar için (XOX'ta üçlü sıra yapan, kare sayısı az olsa da kazanır).
-export function IsimliSkorTablosu({ modAdi, oyuncular, skorEtiketi = "puan", onRovans, onMenu, rovansEtiketi = "RÖVANŞ", altYazi, kazanan }) {
+export function IsimliSkorTablosu({ modAdi, oyuncular, skorEtiketi = _t("puan"), onRovans, onMenu, rovansEtiketi = _t("RÖVANŞ"), altYazi, kazanan }) {
   const zorunlu = typeof kazanan === "number" ? kazanan : null;
   const sirali = [...oyuncular].map((o, i) => ({ ...o, i }))
     .sort((a, b) => (b.i === zorunlu) - (a.i === zorunlu) || b.puan - a.puan || a.i - b.i);
   const enYuksek = sirali.length ? sirali[0].puan : 0;
   const berabere = kazanan === "berabere" || (zorunlu === null && sirali.filter((o) => o.puan === enYuksek).length > 1);
   const liderMi = (o) => (zorunlu !== null ? o.i === zorunlu : o.puan === enYuksek);
-  const baslik = berabere ? "BERABERE" : `${sirali[0].ad.toLocaleUpperCase("tr")} KAZANDI!`;
+  const baslik = berabere ? _t("BERABERE") : _t("{0} KAZANDI!", [sirali[0].ad.toLocaleUpperCase("tr")]);
 
   async function paylas() {
     const satirlar = [
       `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
       ...sirali.map((o, n) => `${n === 0 && !berabere ? "🏆" : `${n + 1}.`} ${o.ad}: ${o.puan} ${skorEtiketi}`),
-      "Sen de gel, rövanş var!",
+      _t("Sen de gel, rövanş var!"),
     ];
     try { await Share.share({ message: satirlar.join("\n") }); } catch (e) {}
   }
@@ -106,11 +107,11 @@ export function IsimliSkorTablosu({ modAdi, oyuncular, skorEtiketi = "puan", onR
       <View style={s.altSatir}>
         <SoundPressable style={s.ikincil} onPress={paylas}>
           <Ionicons name="share-social" size={18} color={COLORS.text} />
-          <Text style={s.ikincilYazi}>Paylaş</Text>
+          <Text style={s.ikincilYazi}>{_t("Paylaş")}</Text>
         </SoundPressable>
         <SoundPressable style={s.ikincil} onPress={onMenu}>
           <Ionicons name="home" size={18} color={COLORS.text} />
-          <Text style={s.ikincilYazi}>Menü</Text>
+          <Text style={s.ikincilYazi}>{_t("Menü")}</Text>
         </SoundPressable>
       </View>
     </View>

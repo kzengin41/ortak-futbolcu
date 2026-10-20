@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -62,7 +63,7 @@ export default function TakimSecici({ secili, onSec, kompakt }) {
           style={styles.arama}
           value={ara}
           onChangeText={setAra}
-          placeholder="Takım ara (ör. Göztepe, Celtic)"
+          placeholder={_t("Takım ara (ör. Göztepe, Celtic)")}
           placeholderTextColor={COLORS.textFaint}
           autoCorrect={false}
           autoCapitalize="none"
@@ -85,7 +86,7 @@ export default function TakimSecici({ secili, onSec, kompakt }) {
             </SoundPressable>
           );
         })}
-        {!liste.length ? <Text style={styles.bos}>Bu adla bir kulüp bulunamadı.</Text> : null}
+        {!liste.length ? <Text style={styles.bos}>{_t("Bu adla bir kulüp bulunamadı.")}</Text> : null}
       </View>
     </View>
   );

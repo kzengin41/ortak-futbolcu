@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -52,7 +53,7 @@ export default function ModKurulum({
   vurgu,
   onGeri,
   onBasla,
-  baslaEtiketi = "BAŞLA",
+  baslaEtiketi = _t("BAŞLA"),
   baslaYukleniyor = false,
   baslaDevreDisi = false,
   onVarsayilanKaydet,
@@ -89,7 +90,7 @@ export default function ModKurulum({
           {/* Paket 32 (Kerem: "mod giriş ekranı" renkleri) — ayar özeti gri tablo
               değil, 3 sütunlu küçük künye; dokununca maç ayarları açılır. */}
           {satirlar.length ? (
-            <SoundPressable style={styles.ozet} onPress={() => setAyarda(true)} accessibilityLabel="Maç ayarlarını aç">
+            <SoundPressable style={styles.ozet} onPress={() => setAyarda(true)} accessibilityLabel={_t("Maç ayarlarını aç")}>
               {satirlar.map(([k, v]) => (
                 <View key={k} style={styles.ozetHucre}>
                   <Text style={styles.ozetEtiket} numberOfLines={1}>{k}</Text>
@@ -103,20 +104,20 @@ export default function ModKurulum({
             style={[styles.basla, styles.girisBasla, kapali && { opacity: 0.6 }]}
             onPress={() => onBasla && onBasla()}
             disabled={kapali}
-            accessibilityLabel="Hızlı başla"
+            accessibilityLabel={_t("Hızlı başla")}
           >
             {baslaYukleniyor ? (
               <ActivityIndicator color={COLORS.accentDark} />
             ) : (
               <View style={styles.dugmeIc}>
                 <Ionicons name="flash" size={20} color={COLORS.accentDark} />
-                <Text style={styles.baslaYazi}>HIZLI BAŞLA</Text>
+                <Text style={styles.baslaYazi}>{_t("HIZLI BAŞLA")}</Text>
               </View>
             )}
           </SoundPressable>
-          <SoundPressable style={styles.ikincil} onPress={() => setAyarda(true)} accessibilityLabel="Maç ayarları">
+          <SoundPressable style={styles.ikincil} onPress={() => setAyarda(true)} accessibilityLabel={_t("Maç ayarları")}>
             <Ionicons name="options-outline" size={20} color={COLORS.text} />
-            <Text style={styles.ikincilYazi}>MAÇ AYARLARI</Text>
+            <Text style={styles.ikincilYazi}>{_t("MAÇ AYARLARI")}</Text>
           </SoundPressable>
         </ScrollView>
       </GameBackground>
@@ -132,7 +133,7 @@ export default function ModKurulum({
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.ayarBaslik}>{girisYok ? baslik : "Maç Ayarları"}</Text>
+        <Text style={styles.ayarBaslik}>{girisYok ? baslik : _t("Maç Ayarları")}</Text>
         <Text style={styles.ayarAlt}>{girisYok ? aciklama : baslik}</Text>
 
         <View style={styles.liste}>{children}</View>
@@ -144,7 +145,7 @@ export default function ModKurulum({
             <Text style={styles.baslaYazi}>{baslaEtiketi}</Text>
           )}
         </SoundPressable>
-        {onVarsayilanKaydet ? <Text style={styles.hatirlatma}>Seçimlerin bir dahaki HIZLI BAŞLA için hatırlanır.</Text> : null}
+        {onVarsayilanKaydet ? <Text style={styles.hatirlatma}>{_t("Seçimlerin bir dahaki HIZLI BAŞLA için hatırlanır.")}</Text> : null}
       </ScrollView>
     </GameBackground>
   );
@@ -163,7 +164,7 @@ export function KurulumBolum({ baslik, not, notHata = false, children }) {
       <View style={styles.bolumUst}>
         <Text style={styles.bolumBaslik}>{baslik}</Text>
         {bilgiVar ? (
-          <SoundPressable onPress={() => setAcik((a) => !a)} hitSlop={12} accessibilityLabel={`${baslik} hakkında bilgi`}>
+          <SoundPressable onPress={() => setAcik((a) => !a)} hitSlop={12} accessibilityLabel={_t("{0} hakkında bilgi", [baslik])}>
             <Ionicons name={acik ? "information-circle" : "information-circle-outline"} size={18} color={acik ? COLORS.accent : COLORS.textFaint} />
           </SoundPressable>
         ) : null}
@@ -257,7 +258,7 @@ export function ZorlukSecici({ deger, onDegis, aciklama }) {
         <SoundPressable
           style={styles.zorlukOk}
           onPress={() => onDegis(Math.max(1, z - 1))}
-          accessibilityLabel="Zorluğu azalt"
+          accessibilityLabel={_t("Zorluğu azalt")}
         >
           <Ionicons name="remove" size={18} color={COLORS.text} />
         </SoundPressable>
@@ -271,7 +272,7 @@ export function ZorlukSecici({ deger, onDegis, aciklama }) {
                   key={i}
                   style={[styles.zorlukBolme, dolu && { backgroundColor: COLORS.accent }]}
                   onPress={() => onDegis(i + 1)}
-                  accessibilityLabel={`Zorluk ${i + 1}`}
+                  accessibilityLabel={_t("Zorluk {0}", [i + 1])}
                   hitSlop={{ top: 10, bottom: 10 }}
                 />
               );
@@ -281,7 +282,7 @@ export function ZorlukSecici({ deger, onDegis, aciklama }) {
         <SoundPressable
           style={styles.zorlukOk}
           onPress={() => onDegis(Math.min(10, z + 1))}
-          accessibilityLabel="Zorluğu artır"
+          accessibilityLabel={_t("Zorluğu artır")}
         >
           <Ionicons name="add" size={18} color={COLORS.text} />
         </SoundPressable>
@@ -318,15 +319,18 @@ export function SureSecici({
   }
 
   const liste = [
-    ...secenekler.map((s) => ({ deger: s, etiket: `${s} sn` })),
-    ...(suresizVar ? [{ deger: "suresiz", etiket: "Süresiz" }] : []),
-    { deger: "ozel", etiket: "Özel" },
+    ...secenekler.map((s) => ({ deger: s, etiket: _t("{0} sn", [s]) })),
+    ...(suresizVar ? [{ deger: "suresiz", etiket: _t("Süresiz") }] : []),
+    { deger: "ozel", etiket: _t("Özel") },
   ];
   const secili = ozelAcik ? "ozel" : deger === null ? "suresiz" : deger;
 
   let not = gorunur ? aciklama || null : null;
   if (ozelAcik && gecersiz) {
-    not = `En az ${asgari}, en fazla ${azami} saniye olabilir — ${deger} sn ile başlayacak.`;
+    not = _t(
+      "En az {0}, en fazla {1} saniye olabilir — {2} sn ile başlayacak.",
+      [asgari, azami, deger]
+    );
   }
 
   return (
@@ -352,11 +356,11 @@ export function SureSecici({
             value={metin}
             onChangeText={ozelYaz}
             keyboardType="number-pad"
-            placeholder={`en az ${asgari}`}
+            placeholder={_t("en az {0}", [asgari])}
             placeholderTextColor={COLORS.textFaint}
             maxLength={3}
           />
-          <Text style={styles.ozelBirim}>saniye</Text>
+          <Text style={styles.ozelBirim}>{_t("saniye")}</Text>
         </View>
       ) : null}
       {not ? <Text style={[styles.not, gecersiz && { color: COLORS.danger }]}>{not}</Text> : null}
@@ -370,7 +374,7 @@ export function KapsamDugmesi({ etiket, onPress }) {
     <SoundPressable style={styles.kapsam} onPress={onPress}>
       <Ionicons name="earth" size={18} color={COLORS.accent} />
       <Text style={styles.kapsamYazi} numberOfLines={1}>{etiket}</Text>
-      <Text style={styles.kapsamDegis}>Değiştir ›</Text>
+      <Text style={styles.kapsamDegis}>{_t("Değiştir ›")}</Text>
     </SoundPressable>
   );
 }

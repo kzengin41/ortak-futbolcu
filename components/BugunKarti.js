@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Modal, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,26 +28,26 @@ export default function BugunKarti({ onGununModu, onGorev, onGunlukOyun }) {
   const mod = gununModu();
   const { oyunlar, biten, gorevler } = durum;
   const gorevBiten = gorevler.filter((g) => g.olan >= g.hedef).length;
-  const gunlukAlt = !durum.hazir ? " " : biten === oyunlar.length ? "Bugünün hepsi bitti" : `#${gunNumarasi()} · ${biten}/${oyunlar.length} bitti`;
+  const gunlukAlt = !durum.hazir ? " " : biten === oyunlar.length ? _t("Bugünün hepsi bitti") : _t("#{0} · {1}/{2} bitti", [gunNumarasi(), biten, oyunlar.length]);
 
   return (
     <View style={s.kart}>
       {/* 1 — günün modu */}
-      <PressScale style={[s.satir, s.cizgi]} onPress={() => onGununModu && onGununModu(mod)} accessibilityRole="button" accessibilityLabel={`Günün modu: ${mod.ad}, iki kat XP, oyna`}>
+      <PressScale style={[s.satir, s.cizgi]} onPress={() => onGununModu && onGununModu(mod)} accessibilityRole="button" accessibilityLabel={_t("Günün modu: {0}, iki kat XP, oyna", [mod.ad])}>
         <View style={[s.ikon, s.ikonVurgu]}><ModIkon ad={mod.ikon} boyut={24} renk={COLORS.accent} /></View>
         <View style={s.metin}>
-          <Text style={s.ust}>GÜNÜN MODU · 2× XP</Text>
+          <Text style={s.ust}>{_t("GÜNÜN MODU · 2× XP")}</Text>
           <Text style={s.baslik} numberOfLines={1}>{mod.ad}</Text>
         </View>
-        <View style={s.oyna}><Text style={s.oynaYazi}>OYNA</Text></View>
+        <View style={s.oyna}><Text style={s.oynaYazi}>{_t("OYNA")}</Text></View>
       </PressScale>
 
       {/* 2 — görevler */}
-      <PressScale style={[s.satir, s.cizgi]} onPress={() => setGorevAcik(true)} accessibilityRole="button" accessibilityLabel={`Günün görevleri, ${gorevBiten} / ${gorevler.length}`}>
+      <PressScale style={[s.satir, s.cizgi]} onPress={() => setGorevAcik(true)} accessibilityRole="button" accessibilityLabel={_t("Günün görevleri, {0} / {1}", [gorevBiten, gorevler.length])}>
         <View style={s.ikon}><Ionicons name="checkmark-done" size={22} color={COLORS.text} /></View>
         <View style={s.metin}>
-          <Text style={s.baslik} numberOfLines={1}>Günün görevleri</Text>
-          <Text style={s.alt} numberOfLines={1}>{gorevBiten === gorevler.length && gorevler.length ? `Hepsi bitti · +${GOREV_ODULU} XP alındı` : `${gorevBiten}/${gorevler.length} · hepsine +${GOREV_ODULU} XP`}</Text>
+          <Text style={s.baslik} numberOfLines={1}>{_t("Günün görevleri")}</Text>
+          <Text style={s.alt} numberOfLines={1}>{gorevBiten === gorevler.length && gorevler.length ? _t("Hepsi bitti · +{0} XP alındı", [GOREV_ODULU]) : _t("{0}/{1} · hepsine +{2} XP", [gorevBiten, gorevler.length, GOREV_ODULU])}</Text>
         </View>
         <View style={s.cubuklar}>
           {gorevler.map((g) => <View key={g.id} style={[s.cubuk, g.olan >= g.hedef && s.cubukDolu]} />)}
@@ -55,10 +56,10 @@ export default function BugunKarti({ onGununModu, onGorev, onGunlukOyun }) {
       </PressScale>
 
       {/* 3 — günlük meydan okumalar */}
-      <PressScale style={s.satir} onPress={() => setGunlukAcik(true)} accessibilityRole="button" accessibilityLabel={`Günlük Meydan Okumalar, ${gunlukAlt}`}>
+      <PressScale style={s.satir} onPress={() => setGunlukAcik(true)} accessibilityRole="button" accessibilityLabel={_t("Günlük Meydan Okumalar, {0}", [gunlukAlt])}>
         <View style={s.ikon}><Ionicons name="calendar" size={21} color={COLORS.text} /></View>
         <View style={s.metin}>
-          <Text style={s.baslik} numberOfLines={1}>Günlük Meydan Okumalar</Text>
+          <Text style={s.baslik} numberOfLines={1}>{_t("Günlük Meydan Okumalar")}</Text>
           <View style={s.altSatir}>
             <View style={s.noktalar}>{oyunlar.map((o) => <View key={o.id} style={[s.nokta, o.bitti && s.noktaDolu]} />)}</View>
             <Text style={s.alt} numberOfLines={1}>{gunlukAlt}</Text>
@@ -93,10 +94,10 @@ export function GorevPenceresi({ acik, gorevler, mod, onKapat, onGorev }) {
         <Pressable style={[s.sayfa, { paddingBottom: SPACING.xl + (insets.bottom || 0) }]} onPress={() => {}}>
           <View style={s.tutamak} />
           <View style={s.sayfaUst}>
-            <Text style={s.sayfaBaslik}>Günün görevleri</Text>
+            <Text style={s.sayfaBaslik}>{_t("Günün görevleri")}</Text>
             <Text style={s.sayfaSayac}>{biten}/{gorevler.length}</Text>
           </View>
-          <Text style={s.sayfaAlt}>Üçü de bitince +{GOREV_ODULU} XP ve günlük serin korunur.</Text>
+          <Text style={s.sayfaAlt}>{_t("Üçü de bitince +")}{GOREV_ODULU}{" "}{_t("XP ve günlük serin korunur.")}</Text>
           {gorevler.map((g) => {
             const bitti = g.olan >= g.hedef;
             const hedefAd = g.git.gunun ? `${mod.ad} · 2× XP` : null;
@@ -108,17 +109,17 @@ export function GorevPenceresi({ acik, gorevler, mod, onKapat, onGorev }) {
                   <View style={s.ilerleme}>
                     <View style={[s.ilerlemeDolu, { width: `${Math.round((Math.min(g.olan, g.hedef) / g.hedef) * 100)}%` }]} />
                   </View>
-                  <Text style={s.gorevAlt}>{Math.min(g.olan, g.hedef)}/{g.hedef}{hedefAd ? ` · önerilen: ${hedefAd}` : ""}</Text>
+                  <Text style={s.gorevAlt}>{Math.min(g.olan, g.hedef)}/{g.hedef}{hedefAd ? _t(" · önerilen: {0}", [hedefAd]) : ""}</Text>
                 </View>
                 {!bitti ? (
-                  <PressScale style={s.gorevOyna} onPress={() => onGorev(g)} accessibilityRole="button" accessibilityLabel={`Görev: ${g.metin}, oyna`}>
-                    <Text style={s.gorevOynaYazi}>OYNA</Text>
+                  <PressScale style={s.gorevOyna} onPress={() => onGorev(g)} accessibilityRole="button" accessibilityLabel={_t("Görev: {0}, oyna", [g.metin])}>
+                    <Text style={s.gorevOynaYazi}>{_t("OYNA")}</Text>
                   </PressScale>
                 ) : null}
               </View>
             );
           })}
-          <Pressable style={s.kapat} onPress={onKapat} hitSlop={8}><Text style={s.kapatYazi}>Kapat</Text></Pressable>
+          <Pressable style={s.kapat} onPress={onKapat} hitSlop={8}><Text style={s.kapatYazi}>{_t("Kapat")}</Text></Pressable>
         </Pressable>
       </Pressable>
     </Modal>

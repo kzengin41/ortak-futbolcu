@@ -1,3 +1,4 @@
+import { _t, yerel } from "../lib/dil";
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +19,7 @@ import { resolvePlayerPhotoUrl } from "../lib/playerPhotos";
 //   AcilisAnimasyonu — tur sonu: kapalı kartlar sırayla döner, foto netleşir,
 //                      ad çıkar, "ANSİKLOPEDİYE EKLENDİ" (benchmark: Tur sonu)
 // ============================================================================
-export const sayi = (n) => Math.round(n).toLocaleString("tr-TR");
+export const sayi = (n) => Math.round(n).toLocaleString(yerel());
 
 // Kapalıdan açığa geçerken Y ekseninde dönen kart (4 Ekim 2026, Kerem'in isteği).
 // `children` bir fonksiyon: o an görünen yüzü (gorunen) alır.
@@ -43,9 +44,9 @@ export function Kart({ kart, durum, kilitli, onPress, genislik, yukseklik = 70, 
         onPress={onPress}
         disabled={!!durum || !onPress}
         accessibilityLabel={
-          durum ? `${kart.etiket || kart.yil} açık`
-            : kilitli ? `${kart.etiket || kart.yil} kartı için puan yetmiyor`
-            : `${kart.etiket || kart.yil} kartını çevir, ${kart.bedel} puan`
+          durum ? _t("{0} açık", [kart.etiket || kart.yil])
+            : kilitli ? _t("{0} kartı için puan yetmiyor", [kart.etiket || kart.yil])
+            : _t("{0} kartını çevir, {1} puan", [kart.etiket || kart.yil, kart.bedel])
         }
       >
         {children(gorunen)}
@@ -86,14 +87,22 @@ export function Hucre({ deger }) {
   );
 }
 
+// Paket 38 — dar kariyer kartında uzun kulüp adı ("Barcelona", "Makhachkala")
+// kelimenin ortasından bölünüyordu ("Barcelon / a"). En uzun kelime sığmıyorsa
+// yazı o kelime tek satıra sığacak kadar küçülür.
+export function kulupYaziBoyu(ad, taban = 12, sigan = 7) {
+  const en = Math.max(0, ...String(ad || "").split(/\s+/).map((w) => w.length));
+  return en > sigan ? Math.max(7.5, Math.round((taban * sigan / en) * 10) / 10) : taban;
+}
+
 // tahminler: karsilastir() satırları; etiket(t) varsa adın önüne yazılır (online: "Sen"/"Rakip").
-export function TahminTablosu({ tahminler, baslik = "TAHMİNLERİN", etiket }) {
+export function TahminTablosu({ tahminler, baslik = _t("TAHMİNLERİN"), etiket }) {
   if (!tahminler || !tahminler.length) return null;
   return (
     <>
       <View style={s.tabloBaslik}>
         <Text style={[s.tabloBaslikYazi, { flex: 1, textAlign: "left" }]}>{baslik}</Text>
-        {["BAYRAK", "MEVKİ", "YAŞ", "LİG", "KULÜP"].map((b) => (
+        {[_t("BAYRAK"), _t("MEVKİ"), _t("YAŞ"), _t("LİG"), _t("KULÜP")].map((b) => (
           <Text key={b} style={[s.tabloBaslikYazi, s.hucreGenislik]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{b}</Text>
         ))}
       </View>
@@ -116,12 +125,12 @@ export function SimdiBilirsenAfis({ puan, carp, kucuk, alt }) {
   return (
     <View style={[s.afis, kucuk && s.afisKucuk]}>
       <View style={kucuk && { flexDirection: "row", alignItems: "baseline", gap: 8 }}>
-        <Text style={s.afisUst}>ŞİMDİ BİLİRSEN</Text>
+        <Text style={s.afisUst}>{_t("ŞİMDİ BİLİRSEN")}</Text>
         <Text style={[s.afisSayi, kucuk && s.afisSayiKucuk]}>{sayi(puan)}</Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>
         {carp > 1 ? <Text style={[s.afisCarpan, kucuk && { fontSize: 18 }]}>×{String(carp).replace(".", ",")}</Text> : null}
-        {!kucuk ? <Text style={s.afisAlt}>{alt || (carp === 2 ? "kart çevirmeden" : carp > 1 ? "1–2 kartla" : `en az ${sayi(ASGARI_PUAN)}`)}</Text> : null}
+        {!kucuk ? <Text style={s.afisAlt}>{alt || (carp === 2 ? _t("kart çevirmeden") : carp > 1 ? _t("1–2 kartla") : _t("en az {0}", [sayi(ASGARI_PUAN)]))}</Text> : null}
       </View>
     </View>
   );
@@ -140,7 +149,7 @@ export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd
   const siluetAcik = masa.vitrin.some((k) => k.id === "siluet" && durum(k));
   return (
     <>
-      <Text style={s.bolum}>KİMLİK</Text>
+      <Text style={s.bolum}>{_t("KİMLİK")}</Text>
       <View style={s.izgara}>
         {masa.kimlik.map((k) => (
           <Kart key={turAnahtari + k.id} kart={k} durum={durum(k)} kilitli={kilitli(k)} onPress={bas(k)} genislik="23.5%" yukseklik={kompakt ? 56 : 70}>
@@ -158,19 +167,19 @@ export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd
         ))}
       </View>
 
-      <Text style={s.bolum}>KARİYER · {masa.kariyer.length} KULÜP <Text style={s.bolumAlt}>eskiden yeniye</Text></Text>
+      <Text style={s.bolum}>{_t("KARİYER ·")}{" "}{masa.kariyer.length}{" "}{_t("KULÜP")}{" "}<Text style={s.bolumAlt}>{_t("eskiden yeniye")}</Text></Text>
       <View style={s.izgara}>
         {masa.kariyer.map((k) => (
           <Kart key={turAnahtari + k.id} kart={k} durum={durum(k)} kilitli={kilitli(k)} onPress={bas(k)} genislik="18.4%" yukseklik={kompakt ? 72 : 88}>
             {(d) => (
               <>
-                <Text style={s.kariyerYil}>{k.yil}</Text>
+                <Text style={s.kariyerYil} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{k.yil}</Text>
                 {d ? (
-                  <Text style={s.kariyerAd} numberOfLines={3}>{k.kulup}</Text>
+                  <Text style={[s.kariyerAd, { fontSize: kulupYaziBoyu(k.kulup) }]} numberOfLines={3}>{k.kulup}</Text>
                 ) : (
                   <View style={s.kalkan}><Text style={s.kalkanSoru}>?</Text></View>
                 )}
-                {d === "bedava" ? <Text style={s.bedava}>bedava</Text> : !d ? <Bedel kart={k} kilitli={kilitli(k)} /> : <View />}
+                {d === "bedava" ? <Text style={s.bedava}>{_t("bedava")}</Text> : !d ? <Bedel kart={k} kilitli={kilitli(k)} /> : <View />}
               </>
             )}
           </Kart>
@@ -179,7 +188,7 @@ export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd
 
       {masa.vitrin.length ? (
         <>
-          <Text style={s.bolum}>VİTRİN</Text>
+          <Text style={s.bolum}>{_t("VİTRİN")}</Text>
           <View style={s.izgara}>
             {masa.vitrin.map((k) => (
               <Kart key={turAnahtari + k.id} kart={k} durum={durum(k)} kilitli={kilitli(k)} onPress={bas(k)} genislik="31.8%" yukseklik={durum(k) && k.id === "basarilar" ? undefined : 80}>
@@ -224,7 +233,7 @@ export function MasaKartlari({ masa, acik, onKartCevir, turAnahtari = "", fotoAd
 //   2) fotoğraf bulanık başlar, netleşir (bulanık üst katman söner)
 //   3) ad + kısa künye belirir; doğru bilindiyse "ANSİKLOPEDİYE EKLENDİ"
 // --------------------------------------------------------------------------
-export function AcilisAnimasyonu({ masa, acik, ad, dogru, baslik, baslikRengi, eklendiYazisi = "ANSİKLOPEDİYE EKLENDİ", altSatir, kartlariGoster = true }) {
+export function AcilisAnimasyonu({ masa, acik, ad, dogru, baslik, baslikRengi, eklendiYazisi = _t("ANSİKLOPEDİYE EKLENDİ"), altSatir, kartlariGoster = true }) {
   const kapali = tumKartlar(masa).filter((k) => !acik[k.id]);
   const [donen, setDonen] = useState(0);
   const [asama, setAsama] = useState(kapali.length ? "kartlar" : "foto");

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -80,7 +81,10 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
   function kartCevir(k) {
     if (bitti || acik[k.id]) return;
     if (!acilabilirMi(masa, acik, k)) {
-      setUyari(`Puanın yetmiyor: bu kart ${sayi(k.bedel)}, puanın ${sayi(ASGARI_PUAN)}'in altına inemez.`);
+      setUyari(_t(
+        "Puanın yetmiyor: bu kart {0}, puanın {1}'in altına inemez.",
+        [sayi(k.bedel), sayi(ASGARI_PUAN)]
+      ));
       return;
     }
     const yeni = { ...acik, [k.id]: "satin" };
@@ -102,10 +106,10 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
       return;
     }
     const o = oyuncuBul(yazi);
-    if (!o) { setUyari(`"${yazi}" diye bir futbolcu bulamadım — hak gitmedi`); return; }
-    if (tahminler.some((t) => t.ad === o.name)) { setUyari(`${o.name} zaten denendi`); return; }
+    if (!o) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — hak gitmedi", [yazi])); return; }
+    if (tahminler.some((t) => t.ad === o.name)) { setUyari(_t("{0} zaten denendi", [o.name])); return; }
     const satir = karsilastirAd(o.name, gun.ad);
-    if (!satir) { setUyari(`"${yazi}" diye bir futbolcu bulamadım — hak gitmedi`); return; }
+    if (!satir) { setUyari(_t("\"{0}\" diye bir futbolcu bulamadım — hak gitmedi", [yazi])); return; }
     const bedava = ortakKartlariAc(masa, acik, satir.ortakKulupler);
     const yeniAcik = { ...acik };
     for (const id of bedava) yeniAcik[id] = "bedava";
@@ -114,7 +118,7 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
     setTahminler(yeniT);
     playWrong();
     if (yeniT.length >= TAHMIN_HAKKI) { bitir({ d: false, p: 0, a: yeniAcik, t: yeniT }); return; }
-    setUyari(bedava.length ? `Ortak kulüp: ${satir.ortakKulupler.join(", ")} — kartı bedava açıldı` : `${o.name} değil — ${TAHMIN_HAKKI - yeniT.length} hakkın kaldı`);
+    setUyari(bedava.length ? _t("Ortak kulüp: {0} — kartı bedava açıldı", [satir.ortakKulupler.join(", ")]) : _t("{0} değil — {1} hakkın kaldı", [o.name, TAHMIN_HAKKI - yeniT.length]));
     kaydet({ acik: yeniAcik, tahminler: yeniT.map((t) => t.ad) });
   }
 
@@ -127,7 +131,7 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
     return (
       <GameBackground style={s.merkez}>
         <BackButton onPress={cikis} confirm={false} />
-        <Text style={s.baslik}>Bugünün futbolcusu hazırlanamadı</Text>
+        <Text style={s.baslik}>{_t("Bugünün futbolcusu hazırlanamadı")}</Text>
       </GameBackground>
     );
   }
@@ -136,10 +140,10 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
     <View style={s.ust}>
       <BackButton onPress={cikis} confirm={false} style={{ marginTop: 0, marginBottom: 0 }} />
       <View style={{ flex: 1 }}>
-        <Text style={s.ustBaslik}>{`GÜNLÜK KİM BU #${gun.no}`}</Text>
-        <Text style={s.ustAlt}>{bitti ? "Herkese aynı futbolcu" : `Herkese aynı futbolcu · ${Math.max(0, kalanHak)} tahmin hakkı`}</Text>
+        <Text style={s.ustBaslik}>{_t("GÜNLÜK KİM BU #{0}", [gun.no])}</Text>
+        <Text style={s.ustAlt}>{bitti ? _t("Herkese aynı futbolcu") : _t("Herkese aynı futbolcu · {0} tahmin hakkı", [Math.max(0, kalanHak)])}</Text>
       </View>
-      <View style={s.haklar} accessibilityLabel={`${Math.max(0, kalanHak)} tahmin hakkı`}>
+      <View style={s.haklar} accessibilityLabel={_t("{0} tahmin hakkı", [Math.max(0, kalanHak)])}>
         {[...Array(TAHMIN_HAKKI)].map((_, i) => (
           <View key={i} style={[s.hak, i < tahminler.length && s.hakYanlis, bitti && dogru && i === tahminler.length && s.hakDogru]} />
         ))}
@@ -158,17 +162,17 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
             acik={acik}
             ad={gun.ad}
             dogru={dogru}
-            baslik={dogru ? `BİLDİN! · ${sayi(puan)} PUAN` : "BU SEFER OLMADI"}
-            altSatir={dogru ? `${tahminler.length + 1}. tahminde` : "5 tahmin hakkı bitti"}
+            baslik={dogru ? _t("BİLDİN! · {0} PUAN", [sayi(puan)]) : _t("BU SEFER OLMADI")}
+            altSatir={dogru ? _t("{0}. tahminde", [tahminler.length + 1]) : _t("5 tahmin hakkı bitti")}
           />
           <TahminTablosu tahminler={tahminler} />
-          <SoundPressable style={s.anaDugme} onPress={paylas} accessibilityLabel="Sonucu paylaş">
+          <SoundPressable style={s.anaDugme} onPress={paylas} accessibilityLabel={_t("Sonucu paylaş")}>
             <Ionicons name="share-social" size={20} color={COLORS.accentDark} />
-            <Text style={s.anaDugmeYazi}>PAYLAŞ</Text>
+            <Text style={s.anaDugmeYazi}>{_t("PAYLAŞ")}</Text>
           </SoundPressable>
-          <Text style={s.yarin}>Yarın yeni bir futbolcu seni bekliyor.</Text>
+          <Text style={s.yarin}>{_t("Yarın yeni bir futbolcu seni bekliyor.")}</Text>
           <SoundPressable style={s.ikinciDugme} onPress={cikis}>
-            <Text style={s.ikinciDugmeYazi}>Menüye dön</Text>
+            <Text style={s.ikinciDugmeYazi}>{_t("Menüye dön")}</Text>
           </SoundPressable>
         </ScrollView>
       </GameBackground>
@@ -188,7 +192,7 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
               style={s.cevapGirdi}
               autoCorrect={false}
               autoCapitalize="words"
-              placeholder={`Bu futbolcu kim? (${Math.max(0, kalanHak)} hak)`}
+              placeholder={_t("Bu futbolcu kim? ({0} hak)", [Math.max(0, kalanHak)])}
               placeholderTextColor={COLORS.textMuted}
               value={girdi}
               onChangeText={(t) => { setGirdi(t); if (uyari) setUyari(null); }}
@@ -196,7 +200,7 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
               returnKeyType="send"
             />
             <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => tahminEt(m)} />
-            <SoundPressable onPress={() => tahminEt()} style={s.gonder} accessibilityLabel="Tahmini gönder">
+            <SoundPressable onPress={() => tahminEt()} style={s.gonder} accessibilityLabel={_t("Tahmini gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>
@@ -215,7 +219,9 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.icerik} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <TahminTablosu tahminler={tahminler} />
           <MasaKartlari masa={masa} acik={acik} onKartCevir={kartCevir} fotoAd={gun.ad} />
-          <Text style={s.not}>Yanlış tahmin bir hak götürür ama masaya karşılaştırma bırakır. Bilinmeyen isim hak götürmez.</Text>
+          <Text style={s.not}>{_t(
+            "Yanlış tahmin bir hak götürür ama masaya karşılaştırma bırakır. Bilinmeyen isim hak götürmez."
+          )}</Text>
         </ScrollView>
       </KlavyeAlani>
     </GameBackground>

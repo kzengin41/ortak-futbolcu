@@ -1,3 +1,4 @@
+import { _t, yerel } from "../lib/dil";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, View, Text, ScrollView, TextInput, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -110,14 +111,14 @@ export default function EslesmeProfiliPenceresi({
     const simdi = taslak.karolar[id] || 0;
     const sonraki = (simdi + 1) % 3;
     const yeni = { ...taslak.karolar, [id]: sonraki };
-    if (!Object.values(yeni).some((v) => v > 0)) { setUyari("En az bir yer açık kalmalı."); return; }
+    if (!Object.values(yeni).some((v) => v > 0)) { setUyari(_t("En az bir yer açık kalmalı.")); return; }
     setUyari(null);
     guncelle({ karolar: yeni });
   }
   function donemDegistir(d) {
     const var_ = taslak.donemler.includes(d);
     const yeni = var_ ? taslak.donemler.filter((x) => x !== d) : [...taslak.donemler, d];
-    if (!yeni.length) { setUyari("En az bir dönem seçili kalmalı."); return; }
+    if (!yeni.length) { setUyari(_t("En az bir dönem seçili kalmalı.")); return; }
     setUyari(null);
     guncelle({ donemler: yeni });
   }
@@ -136,9 +137,9 @@ export default function EslesmeProfiliPenceresi({
   if (!visible) return null;
 
   const nitelik = !onizleme || onizleme.havuz == null ? null
-    : onizleme.havuz >= 150 ? { yazi: "çeşit bol", ikon: "checkmark-circle", renk: COLORS.accent }
+    : onizleme.havuz >= 150 ? { yazi: _t("çeşit bol"), ikon: "checkmark-circle", renk: COLORS.accent }
     : onizleme.havuz >= 60 ? { yazi: "yeterli", ikon: "checkmark", renk: COLORS.cta }
-    : { yazi: "dar — biraz genişlet", ikon: "alert-circle", renk: COLORS.danger };
+    : { yazi: _t("dar — biraz genişlet"), ikon: "alert-circle", renk: COLORS.danger };
   const ozelSayisi = Object.keys(taslak.kulupAyar || {}).length;
 
   return (
@@ -146,34 +147,34 @@ export default function EslesmeProfiliPenceresi({
       <View style={[styles.kap, { paddingTop: insets.top + 12 }]}>
         <View style={styles.ust}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.baslik}>Hangi futbolcular çıksın?</Text>
+            <Text style={styles.baslik}>{_t("Hangi futbolcular çıksın?")}</Text>
             <Text style={styles.altBaslik} numberOfLines={1}>
-              {ayarlarModu ? "Bütün modlar bu seçimle başlar" : "Bu maç için ya da varsayılan olarak"}
+              {ayarlarModu ? _t("Bütün modlar bu seçimle başlar") : _t("Bu maç için ya da varsayılan olarak")}
             </Text>
           </View>
-          <SoundPressable onPress={onClose} hitSlop={12} style={styles.kapat} accessibilityLabel="Kapat">
+          <SoundPressable onPress={onClose} hitSlop={12} style={styles.kapat} accessibilityLabel={_t("Kapat")}>
             <Ionicons name="close" size={24} color={COLORS.textMuted} />
           </SoundPressable>
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.icerik} keyboardShouldPersistTaps="handled">
-          <Text style={styles.eb}>Hazır</Text>
+          <Text style={styles.eb}>{_t("Hazır")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hazirlar}>
             {HAZIR_PROFILLER.map((h) => {
               const aktif = secili === h.id;
               return (
-                <SoundPressable key={h.id} style={[styles.hazir, aktif && styles.hazirAktif]} onPress={() => hazirSec(h.id)} accessibilityLabel={`Hazır: ${h.ad}`} accessibilityState={{ selected: aktif }}>
+                <SoundPressable key={h.id} style={[styles.hazir, aktif && styles.hazirAktif]} onPress={() => hazirSec(h.id)} accessibilityLabel={_t("Hazır: {0}", [h.ad])} accessibilityState={{ selected: aktif }}>
                   <Text style={[styles.hazirYazi, aktif && styles.hazirYaziAktif]}>{h.ikon} {h.ad}</Text>
                 </SoundPressable>
               );
             })}
             {secili === "ozel" ? (
-              <View style={[styles.hazir, styles.hazirAktif]}><Text style={[styles.hazirYazi, styles.hazirYaziAktif]}>✏️ Özel</Text></View>
+              <View style={[styles.hazir, styles.hazirAktif]}><Text style={[styles.hazirYazi, styles.hazirYaziAktif]}>{_t("✏️ Özel")}</Text></View>
             ) : null}
           </ScrollView>
           {secili !== "ozel" ? <Text style={styles.not}>{(HAZIR_PROFILLER.find((h) => h.id === secili) || {}).aciklama}</Text> : null}
 
-          <Text style={styles.eb}>Nereden <Text style={styles.ebIpucu}>· dokun: kapalı → açık → ağırlıklı</Text></Text>
+          <Text style={styles.eb}>{_t("Nereden")}{" "}<Text style={styles.ebIpucu}>{_t("· dokun: kapalı → açık → ağırlıklı")}</Text></Text>
           <View style={styles.izgara}>
             {KAROLAR.map((k) => {
               const d = taslak.karolar[k.id] || 0;
@@ -182,23 +183,23 @@ export default function EslesmeProfiliPenceresi({
                   key={k.id}
                   style={[styles.karo, d === 1 && styles.karoAcik, d === 2 && styles.karoCok, d === 0 && styles.karoKapali]}
                   onPress={() => karoDegistir(k.id)}
-                  accessibilityLabel={`${k.ad}: ${KARO_DURUMLARI[d]}`}
+                  accessibilityLabel={`${k.ad}: ${_t(KARO_DURUMLARI[d])}`}
                 >
                   <Text style={styles.karoBayrak}>{k.bayrak}</Text>
                   <Text style={styles.karoAd} numberOfLines={2}>{k.ad}</Text>
-                  <Text style={[styles.karoDurum, d > 0 && { color: COLORS.accent }, d === 2 && { fontWeight: "900" }]}>{KARO_DURUMLARI[d]}</Text>
+                  <Text style={[styles.karoDurum, d > 0 && { color: COLORS.accent }, d === 2 && { fontWeight: "900" }]}>{_t(KARO_DURUMLARI[d])}</Text>
                 </SoundPressable>
               );
             })}
           </View>
           {uyari ? <Text style={[styles.not, { color: COLORS.danger }]}>{uyari}</Text> : null}
 
-          <Text style={styles.eb}>Kulüpler</Text>
+          <Text style={styles.eb}>{_t("Kulüpler")}</Text>
           <View style={styles.seg}>
             {KULUP_SEVIYELERI.map((s) => {
               const aktif = taslak.kulupler === s.deger;
               return (
-                <SoundPressable key={s.deger} style={[styles.segDugme, aktif && styles.segAktif]} onPress={() => guncelle({ kulupler: s.deger })} accessibilityLabel={`Kulüpler: ${s.etiket}`}>
+                <SoundPressable key={s.deger} style={[styles.segDugme, aktif && styles.segAktif]} onPress={() => guncelle({ kulupler: s.deger })} accessibilityLabel={_t("Kulüpler: {0}", [s.etiket])}>
                   <Text style={[styles.segYazi, aktif && styles.segYaziAktif]} numberOfLines={2}>{s.etiket}</Text>
                 </SoundPressable>
               );
@@ -206,56 +207,56 @@ export default function EslesmeProfiliPenceresi({
           </View>
           <Text style={styles.not}>{(KULUP_SEVIYELERI.find((s) => s.deger === taslak.kulupler) || {}).aciklama}</Text>
 
-          <Text style={styles.eb}>Ne zaman</Text>
+          <Text style={styles.eb}>{_t("Ne zaman")}</Text>
           <View style={styles.seg}>
             {DONEMLER.map((d) => {
               const aktif = taslak.donemler.includes(d.deger);
               return (
-                <SoundPressable key={d.deger} style={[styles.segDugme, aktif && styles.segAktif]} onPress={() => donemDegistir(d.deger)} accessibilityLabel={`Dönem: ${d.etiket}`} accessibilityState={{ selected: aktif }}>
+                <SoundPressable key={d.deger} style={[styles.segDugme, aktif && styles.segAktif]} onPress={() => donemDegistir(d.deger)} accessibilityLabel={_t("Dönem: {0}", [d.etiket])} accessibilityState={{ selected: aktif }}>
                   <Text style={[styles.segYazi, aktif && styles.segYaziAktif]} numberOfLines={2}>{d.etiket}</Text>
                 </SoundPressable>
               );
             })}
           </View>
 
-          <Text style={styles.eb}>Takımın</Text>
+          <Text style={styles.eb}>{_t("Takımın")}</Text>
           {takimAcik ? (
             <TakimSecici secili={taslak.takim} kompakt onSec={(t) => { setTaslak((x) => ({ ...x, takim: t })); setTakimAcik(false); }} />
           ) : taslak.takim ? (
             <View style={styles.takimSatir}>
-              <SoundPressable onPress={() => setTakimAcik(true)} style={styles.takimSol} accessibilityLabel="Takımı değiştir">
+              <SoundPressable onPress={() => setTakimAcik(true)} style={styles.takimSol} accessibilityLabel={_t("Takımı değiştir")}>
                 <TeamBadge name={taslak.takim} size={32} />
                 <Text style={styles.takimAd} numberOfLines={1}>{taslak.takim}</Text>
               </SoundPressable>
               {TAKIM_ORANI.filter((t) => t.deger !== "yok").map((t) => {
                 const aktif = taslak.takimOrani === t.deger;
                 return (
-                  <SoundPressable key={t.deger} style={[styles.mini, aktif && styles.miniAktif]} onPress={() => setTaslak((x) => ({ ...x, takimOrani: t.deger }))} accessibilityLabel={`Takımın: ${t.etiket}`}>
+                  <SoundPressable key={t.deger} style={[styles.mini, aktif && styles.miniAktif]} onPress={() => setTaslak((x) => ({ ...x, takimOrani: t.deger }))} accessibilityLabel={_t("Takımın: {0}", [t.etiket])}>
                     <Text style={[styles.miniYazi, aktif && styles.miniYaziAktif]}>{t.etiket}</Text>
                   </SoundPressable>
                 );
               })}
-              <SoundPressable onPress={() => setTaslak((x) => ({ ...x, takim: null }))} hitSlop={8} accessibilityLabel="Takımı kaldır">
+              <SoundPressable onPress={() => setTaslak((x) => ({ ...x, takim: null }))} hitSlop={8} accessibilityLabel={_t("Takımı kaldır")}>
                 <Ionicons name="close-circle" size={20} color={COLORS.textFaint} />
               </SoundPressable>
             </View>
           ) : (
             <SoundPressable style={styles.genisDugme} onPress={() => setTakimAcik(true)}>
               <Ionicons name="add-circle-outline" size={18} color={COLORS.accent} />
-              <Text style={styles.genisDugmeYazi}>Takım seç</Text>
+              <Text style={styles.genisDugmeYazi}>{_t("Takım seç")}</Text>
             </SoundPressable>
           )}
 
           {/* Canlı önizleme */}
           <View style={styles.onizleme}>
             <View style={styles.onizlemeUst}>
-              <Text style={styles.onizlemeBaslik}>ÖRNEK EŞLEŞMELER</Text>
+              <Text style={styles.onizlemeBaslik}>{_t("ÖRNEK EŞLEŞMELER")}</Text>
               {onizleme && onizleme.yukleniyor ? <ActivityIndicator size="small" color={COLORS.textMuted} /> : null}
               {nitelik && !onizleme.yukleniyor ? (
                 <View style={styles.nitelik}>
                   <Ionicons name={nitelik.ikon} size={14} color={nitelik.renk} />
                   <Text style={[styles.nitelikYazi, { color: nitelik.renk }]} numberOfLines={1}>
-                    {onizleme.toplam.toLocaleString("tr-TR")} oyuncu · {nitelik.yazi}
+                    {onizleme.toplam.toLocaleString(yerel())}{" "}{_t("oyuncu ·")}{" "}{nitelik.yazi}
                   </Text>
                 </View>
               ) : null}
@@ -270,27 +271,27 @@ export default function EslesmeProfiliPenceresi({
               </View>
             ))}
             {onizleme && onizleme.ciftler && !onizleme.ciftler.length && !onizleme.yukleniyor ? (
-              <Text style={[styles.not, { color: COLORS.danger }]}>Bu seçimle eşleşme çıkmıyor — bir yer ya da dönem daha aç.</Text>
+              <Text style={[styles.not, { color: COLORS.danger }]}>{_t("Bu seçimle eşleşme çıkmıyor — bir yer ya da dönem daha aç.")}</Text>
             ) : null}
           </View>
 
           {/* Gelişmiş: kulüp bazında ayar */}
-          <SoundPressable style={styles.gelismisBaslik} onPress={() => setGelismis((g) => !g)} accessibilityRole="button" accessibilityState={{ expanded: gelismis }} accessibilityLabel="Gelişmiş">
+          <SoundPressable style={styles.gelismisBaslik} onPress={() => setGelismis((g) => !g)} accessibilityRole="button" accessibilityState={{ expanded: gelismis }} accessibilityLabel={_t("Gelişmiş")}>
             <Ionicons name="construct-outline" size={16} color={COLORS.textMuted} />
-            <Text style={styles.gelismisYazi}>Gelişmiş{ozelSayisi ? ` · ${ozelSayisi} kulüp ayarı` : ""}</Text>
+            <Text style={styles.gelismisYazi}>{_t("Gelişmiş")}{ozelSayisi ? _t(" · {0} kulüp ayarı", [ozelSayisi]) : ""}</Text>
             <View style={{ flex: 1 }} />
             <Ionicons name={gelismis ? "chevron-up" : "chevron-down"} size={18} color={COLORS.textMuted} />
           </SoundPressable>
           {gelismis ? (
             <View>
-              <Text style={styles.not}>Bir kulübü öne çıkar ya da hiç çıkmasın.</Text>
+              <Text style={styles.not}>{_t("Bir kulübü öne çıkar ya da hiç çıkmasın.")}</Text>
               <View style={styles.aramaKutu}>
                 <Ionicons name="search" size={18} color={COLORS.textMuted} />
                 <TextInput
                   style={styles.arama}
                   value={kulupAra}
                   onChangeText={setKulupAra}
-                  placeholder="Kulüp ara"
+                  placeholder={_t("Kulüp ara")}
                   placeholderTextColor={COLORS.textFaint}
                   autoCorrect={false}
                   autoCapitalize="none"
@@ -304,24 +305,24 @@ export default function EslesmeProfiliPenceresi({
           ) : null}
 
           {online ? (
-            <Text style={[styles.not, { marginTop: SPACING.md }]}>
-              Dereceli maçlarda herkes aynı (Dengeli) havuzla oynar; bu seçim arkadaş odalarında geçerli.
-            </Text>
+            <Text style={[styles.not, { marginTop: SPACING.md }]}>{_t(
+              "Dereceli maçlarda herkes aynı (Dengeli) havuzla oynar; bu seçim arkadaş odalarında geçerli."
+            )}</Text>
           ) : null}
         </ScrollView>
 
         <View style={[styles.alt, { paddingBottom: insets.bottom + SPACING.md }]}>
           {ayarlarModu ? (
             <SoundPressable style={styles.anaDugme} onPress={() => onVarsayilanYap && onVarsayilanYap(taslak)}>
-              <Text style={styles.anaDugmeYazi}>KAYDET</Text>
+              <Text style={styles.anaDugmeYazi}>{_t("KAYDET")}</Text>
             </SoundPressable>
           ) : (
             <View style={{ flexDirection: "row", gap: SPACING.sm }}>
               <SoundPressable style={[styles.anaDugme, { flex: 1.3 }]} onPress={() => onUygula && onUygula(taslak)}>
-                <Text style={styles.anaDugmeYazi}>BU MAÇ İÇİN</Text>
+                <Text style={styles.anaDugmeYazi}>{_t("BU MAÇ İÇİN")}</Text>
               </SoundPressable>
               <SoundPressable style={[styles.ikinciDugme, { flex: 1 }]} onPress={() => onVarsayilanYap && onVarsayilanYap(taslak)}>
-                <Text style={styles.ikinciDugmeYazi}>VARSAYILAN YAP</Text>
+                <Text style={styles.ikinciDugmeYazi}>{_t("VARSAYILAN YAP")}</Text>
               </SoundPressable>
             </View>
           )}
@@ -336,7 +337,7 @@ export default function EslesmeProfiliPenceresi({
 export function EslesmeProfiliBolumu({ eslesme, online, not }) {
   const [acik, setAcik] = useState(false);
   return (
-    <KurulumBolum baslik="EŞLEŞME PROFİLİ" not={not}>
+    <KurulumBolum baslik={_t("EŞLEŞME PROFİLİ")} not={not}>
       <KapsamDugmesi etiket={eslesme.derlenmis.etiket} onPress={() => setAcik(true)} />
       <EslesmeProfiliPenceresi
         visible={acik}
@@ -351,8 +352,8 @@ export function EslesmeProfiliBolumu({ eslesme, online, not }) {
 }
 
 const KULUP_DURUMLARI = [
-  { deger: "one", etiket: "Öne çıkar", ikon: "star" },
-  { deger: "haric", etiket: "Hiç çıkmasın", ikon: "close" },
+  { deger: "one", etiket: _t("Öne çıkar"), ikon: "star" },
+  { deger: "haric", etiket: _t("Hiç çıkmasın"), ikon: "close" },
 ];
 function KulupSatiri({ ad, durum, onSec }) {
   return (

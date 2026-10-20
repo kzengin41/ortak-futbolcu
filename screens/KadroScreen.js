@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useMemo, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
@@ -59,7 +60,7 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
     return (
       <GameBackground style={s.kap}>
         <BackButton onPress={geri} confirm={false} />
-        <Text style={s.baslik}>Kadro bulunamadı</Text>
+        <Text style={s.baslik}>{_t("Kadro bulunamadı")}</Text>
       </GameBackground>
     );
   }
@@ -76,12 +77,15 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
     const m = findMatchedPlayer(yazi, kapali);
     if (!m) {
       playWrong();
-      setUyari(findMatchedPlayer(yazi, [...kadro.ilk11, ...kadro.yedek].map((o) => ({ name: o.a }))) ? "Onu zaten açtın" : "Bu kadroda yok");
+      setUyari(findMatchedPlayer(yazi, [...kadro.ilk11, ...kadro.yedek].map((o) => ({ name: o.a }))) ? _t("Onu zaten açtın") : _t("Bu kadroda yok"));
       return;
     }
     // Hedefli tahmin: doğru forma mı? Değilse yine açılır (kadroda var) ama söylenir.
     if (hedef && m.o.a !== hedef.a) {
-      setUyari(`${hedef.n != null ? `#${hedef.n}` : "O forma"} değil — ama ${m.o.a} de bu kadroda, açıldı`);
+      setUyari(_t(
+        "{0} değil — ama {1} de bu kadroda, açıldı",
+        [hedef.n != null ? `#${hedef.n}` : _t("O forma"), m.o.a]
+      ));
     } else {
       setUyari(null);
       setHedef(null);
@@ -106,11 +110,11 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
     if (isRecording) {
       try {
         const metin = await stopRecording();
-        if (!metin) { setSesHata("Sesi anlayamadım, tekrar dener misin?"); return; }
+        if (!metin) { setSesHata(_t("Sesi anlayamadım, tekrar dener misin?")); return; }
         gonder(metin);
-      } catch (e) { setSesHata(e.message || "Ses tanıma başarısız oldu"); }
+      } catch (e) { setSesHata(e.message || _t("Ses tanıma başarısız oldu")); }
     } else {
-      try { await startRecording(); } catch (e) { setSesHata(e.message || "Mikrofona erişilemedi"); }
+      try { await startRecording(); } catch (e) { setSesHata(e.message || _t("Mikrofona erişilemedi")); }
     }
   }
 
@@ -125,7 +129,13 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
         <View style={{ flex: 1 }}>
           <Text style={s.baslik} numberOfLines={1}>{baslikAd}</Text>
           <Text style={s.alt} numberOfLines={2}>
-            {kadro.tip === "sezon" ? `${kadro.sezon.sezon} sezonu` : `${m.tur}${m.yil ? ` ${m.yil}` : ""} · ${m.skor}${m.penalti ? ` (pen. ${m.penalti})` : ""} · rakip ${kadro.rakipTip === "ulke" ? countryTr(kadro.rakip) || kadro.rakip : kadro.rakip}`}
+            {kadro.tip === "sezon" ? _t("{0} sezonu", [kadro.sezon.sezon]) : _t("{0}{1} · {2}{3} · rakip {4}", [
+              m.tur,
+              m.yil ? ` ${m.yil}` : "",
+              m.skor,
+              m.penalti ? _t(" (pen. {0})", [m.penalti]) : "",
+              kadro.rakipTip === "ulke" ? countryTr(kadro.rakip) || kadro.rakip : kadro.rakip
+            ])}
           </Text>
         </View>
         <View style={[s.rozet, t.tamam && s.rozetTamam]}>
@@ -133,15 +143,15 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
         </View>
       </View>
 
-      {t.tamam ? <Text style={s.tamam}>KADRO TAMAMLANDI</Text> : null}
+      {t.tamam ? <Text style={s.tamam}>{_t("KADRO TAMAMLANDI")}</Text> : null}
 
       {/* Paket 13 — Kadro Avı: bu kadronun bulunmamış bir oyuncusu kart masasında. */}
       {!t.tamam && navigation && avHedefleri(kadro, bulunan, (ad) => !!oyuncuGetir(ad)).length ? (
-        <SoundPressable style={s.av} onPress={() => navigation.navigate("kadroAvi", { id: kadro.id })} accessibilityLabel="Kadro Avı">
+        <SoundPressable style={s.av} onPress={() => navigation.navigate("kadroAvi", { id: kadro.id })} accessibilityLabel={_t("Kadro Avı")}>
           <Ionicons name="search-circle" size={22} color={COLORS.accentDark} />
           <View style={{ flex: 1 }}>
-            <Text style={s.avBaslik}>KADRO AVI</Text>
-            <Text style={s.avAlt}>Gizli bir oyuncuyu kartlarla bul, kadroya ekle</Text>
+            <Text style={s.avBaslik}>{_t("KADRO AVI")}</Text>
+            <Text style={s.avAlt}>{_t("Gizli bir oyuncuyu kartlarla bul, kadroya ekle")}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={COLORS.accentDark} />
         </SoundPressable>
@@ -152,10 +162,10 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
       {kadro.tip === "sezon" ? (
         <Text style={s.not}>
           {kadro.sezon.kaynak === "diyagram"
-            ? "İlk 11: sezon sayfasındaki en çok kullanılan ilk 11 (Wikipedia)."
+            ? _t("İlk 11: sezon sayfasındaki en çok kullanılan ilk 11 (Wikipedia).")
             : kadro.sezon.kaynak === "mac"
-            ? "İlk 11: mevkilerine göre sezonda en çok forma giyenler."
-            : "İlk 11: mevkilerine göre kadronun en bilinen oyuncuları."}
+            ? _t("İlk 11: mevkilerine göre sezonda en çok forma giyenler.")
+            : _t("İlk 11: mevkilerine göre kadronun en bilinen oyuncuları.")}
         </Text>
       ) : null}
 
@@ -164,13 +174,15 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
           {hedef ? (
             <View style={s.hedefSatir}>
               <View style={s.hedefNo}><Text style={s.hedefNoYazi}>{hedef.n != null ? hedef.n : "?"}</Text></View>
-              <Text style={s.hedefYazi} numberOfLines={1}>{HAT_ETIKET[hedef.p] || hedef.p} — bu oyuncu kim?</Text>
-              <SoundPressable onPress={() => setHedef(null)} hitSlop={10} accessibilityLabel="Seçimi kaldır">
+              <Text style={s.hedefYazi} numberOfLines={1}>{HAT_ETIKET[hedef.p] || hedef.p}{" "}{_t("— bu oyuncu kim?")}</Text>
+              <SoundPressable onPress={() => setHedef(null)} hitSlop={10} accessibilityLabel={_t("Seçimi kaldır")}>
                 <Ionicons name="close-circle" size={22} color={COLORS.textMuted} />
               </SoundPressable>
             </View>
           ) : (
-            <Text style={s.ipucu}>Bir forma numarasına dokun ve o oyuncuyu tahmin et — ya da kadrodan herhangi bir isim yaz.</Text>
+            <Text style={s.ipucu}>{_t(
+              "Bir forma numarasına dokun ve o oyuncuyu tahmin et — ya da kadrodan herhangi bir isim yaz."
+            )}</Text>
           )}
           <View style={s.girdiSatir}>
             <TextInput
@@ -178,7 +190,7 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
               value={girdi}
               onChangeText={(x) => { setGirdi(x); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder={hedef ? `#${hedef.n ?? "?"} kim?` : "Bu kadrodan bir isim yaz"}
+              placeholder={hedef ? _t("#{0} kim?", [hedef.n ?? "?"]) : _t("Bu kadrodan bir isim yaz")}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
@@ -189,11 +201,11 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
               style={[s.mic, isRecording && s.micAktif]}
               onPress={mikrofon}
               disabled={isProcessing}
-              accessibilityLabel={isRecording ? "Kaydı durdur" : "Sesle söyle"}
+              accessibilityLabel={isRecording ? _t("Kaydı durdur") : _t("Sesle söyle")}
             >
               <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#FFFFFF" : COLORS.text} />
             </SoundPressable>
-            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel="Gönder">
+            <SoundPressable style={s.gonder} onPress={() => gonder()} accessibilityLabel={_t("Gönder")}>
               <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
             </SoundPressable>
           </View>

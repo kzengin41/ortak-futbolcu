@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useRef, useState } from "react";
 import { Modal, View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -122,25 +123,24 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
             <>
               <View style={s.ust}>
                 <View style={s.rozet}><Ionicons name="school" size={26} color={COLORS.accent} /></View>
-                <SoundPressable onPress={() => kapat(true)} hitSlop={12} accessibilityLabel="Kapat">
+                <SoundPressable onPress={() => kapat(true)} hitSlop={12} accessibilityLabel={_t("Kapat")}>
                   <Ionicons name="close" size={24} color={COLORS.textMuted} />
                 </SoundPressable>
               </View>
-              <Text style={s.baslik}>1 dakikalık seviye ayarı</Text>
-              <Text style={s.aciklama}>
-                Bu oyunun kendisi değil — oyunlar bundan sonra başlıyor. 8 kolay soruyla futbol bilgini ölçüp
-                bütün modların zorluğunu sana göre ayarlıyoruz.
-              </Text>
+              <Text style={s.baslik}>{_t("1 dakikalık seviye ayarı")}</Text>
+              <Text style={s.aciklama}>{_t(
+                "Bu oyunun kendisi değil — oyunlar bundan sonra başlıyor. 8 kolay soruyla futbol bilgini ölçüp bütün modların zorluğunu sana göre ayarlıyoruz."
+              )}</Text>
               <View style={s.maddeler}>
-                <Madde ikon="flag" yazi="Türkiye bilgin: Süper Lig'in bugünü ve nostaljisi" />
-                <Madde ikon="globe" yazi="Avrupa bilgin: bugünün yıldızları ve eskiler" />
-                <Madde ikon="help-circle" yazi="Emin değilsen “Bilmiyorum” de — sallamak sonucu bozar" />
+                <Madde ikon="flag" yazi={_t("Türkiye bilgin: Süper Lig'in bugünü ve nostaljisi")} />
+                <Madde ikon="globe" yazi={_t("Avrupa bilgin: bugünün yıldızları ve eskiler")} />
+                <Madde ikon="help-circle" yazi={_t("Emin değilsen “Bilmiyorum” de — sallamak sonucu bozar")} />
               </View>
               <SoundPressable style={s.anaDugme} onPress={basla} disabled={faz === "hazirlaniyor"}>
-                {faz === "hazirlaniyor" ? <ActivityIndicator color={COLORS.accentDark} /> : <Text style={s.anaDugmeYazi}>TESTE BAŞLA</Text>}
+                {faz === "hazirlaniyor" ? <ActivityIndicator color={COLORS.accentDark} /> : <Text style={s.anaDugmeYazi}>{_t("TESTE BAŞLA")}</Text>}
               </SoundPressable>
               <SoundPressable style={s.gec} onPress={() => kapat(true)}>
-                <Text style={s.gecYazi}>Şimdilik geç · Ayarlar'dan çözebilirsin</Text>
+                <Text style={s.gecYazi}>{_t("Şimdilik geç · Ayarlar'dan çözebilirsin")}</Text>
               </SoundPressable>
             </>
           ) : faz === "soru" && soru ? (
@@ -158,8 +158,8 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                 ))}
               </View>
               <View style={s.soruUst}>
-                <Text style={s.soruNo}>SORU {no + 1} / {bt().SORU_SAYISI}</Text>
-                <SoundPressable onPress={() => kapat(true)} hitSlop={12} accessibilityLabel="Testi bırak">
+                <Text style={s.soruNo}>{_t("SORU")}{" "}{no + 1}/ {bt().SORU_SAYISI}</Text>
+                <SoundPressable onPress={() => kapat(true)} hitSlop={12} accessibilityLabel={_t("Testi bırak")}>
                   <Ionicons name="close" size={22} color={COLORS.textMuted} />
                 </SoundPressable>
               </View>
@@ -197,15 +197,15 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                 style={[s.bilmiyorum, secilen === "__bilmiyorum" && s.bilmiyorumSecili]}
                 onPress={() => cevapla(null)}
                 disabled={secilen !== null}
-                accessibilityLabel="Bilmiyorum"
+                accessibilityLabel={_t("Bilmiyorum")}
               >
                 <Ionicons name="help-circle-outline" size={20} color={COLORS.textMuted} />
-                <Text style={s.bilmiyorumYazi}>Bilmiyorum</Text>
+                <Text style={s.bilmiyorumYazi}>{_t("Bilmiyorum")}</Text>
               </SoundPressable>
             </>
           ) : faz === "sonuc" && sonuc ? (
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={s.sonucUst}>FUTBOL BİLGİN</Text>
+              <Text style={s.sonucUst}>{_t("FUTBOL BİLGİN")}</Text>
               <View style={s.sonucSatir}>
                 <Text style={s.sonucSayi}>{sonuc.seviye}</Text>
                 <View>
@@ -213,30 +213,34 @@ export default function BilgiTestiPenceresi({ otomatik = false, visible, onKapat
                   <Text style={s.sonucEtiket}>{seviyeEtiketi(sonuc.seviye)}</Text>
                 </View>
               </View>
-              <Text style={s.aciklama}>{bt().SORU_SAYISI} sorudan {sonuc.dogruSayisi} doğru. Bütün modlar {sonuc.seviye}/10 zorlukla başlayacak (Ayarlar'da elle değiştirdiğin modlar hariç). Oynadıkça seviyen kendiliğinden ince ayarlanır.</Text>
+              <Text style={s.aciklama}>{bt().SORU_SAYISI}{" "}{_t("sorudan")}{" "}{sonuc.dogruSayisi}{" "}{_t("doğru. Bütün modlar")}{" "}{sonuc.seviye}{_t(
+                    "/10 zorlukla başlayacak (Ayarlar'da elle değiştirdiğin modlar hariç). Oynadıkça seviyen kendiliğinden ince ayarlanır."
+                  )}</Text>
 
               <View style={s.cubuklar}>
-                <Cubuk etiket="Türkiye" oran={sonuc.oranlar.tr} />
-                <Cubuk etiket="Avrupa" oran={sonuc.oranlar.avr} />
-                <Cubuk etiket="Güncel" oran={sonuc.oranlar.guncel} />
-                <Cubuk etiket="Nostalji" oran={sonuc.oranlar.nostalji} />
+                <Cubuk etiket={_t("Türkiye")} oran={sonuc.oranlar.tr} />
+                <Cubuk etiket={_t("Avrupa")} oran={sonuc.oranlar.avr} />
+                <Cubuk etiket={_t("Güncel")} oran={sonuc.oranlar.guncel} />
+                <Cubuk etiket={_t("Nostalji")} oran={sonuc.oranlar.nostalji} />
               </View>
 
               <View style={s.oneri}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.oneriBaslik}>Önerilen eşleşme</Text>
+                  <Text style={s.oneriBaslik}>{_t("Önerilen eşleşme")}</Text>
                   <Text style={s.oneriYazi}>{oneriEtiketi(sonuc.oneri)}</Text>
-                  <Text style={s.oneriAlt}>Takımın ve detaylı ayarların korunur.</Text>
+                  <Text style={s.oneriAlt}>{_t("Takımın ve detaylı ayarların korunur.")}</Text>
                 </View>
                 <Switch value={profilUygula} onValueChange={setProfilUygula} trackColor={{ true: COLORS.accent }} />
               </View>
 
-              <Text style={s.oyunlarNot}>Şimdi asıl oyunlar: 3-2-1 Ortak Futbolcu, 5 Kulüp, XOX, Kim Bu, İlk Harf ve online kapışmalar.</Text>
+              <Text style={s.oyunlarNot}>{_t(
+                "Şimdi asıl oyunlar: 3-2-1 Ortak Futbolcu, 5 Kulüp, XOX, Kim Bu, İlk Harf ve online kapışmalar."
+              )}</Text>
               <SoundPressable style={s.anaDugme} onPress={kaydet}>
-                <Text style={s.anaDugmeYazi}>KAYDET VE OYNA</Text>
+                <Text style={s.anaDugmeYazi}>{_t("KAYDET VE OYNA")}</Text>
               </SoundPressable>
               <SoundPressable style={s.gec} onPress={basla}>
-                <Text style={s.gecYazi}>Testi baştan çöz</Text>
+                <Text style={s.gecYazi}>{_t("Testi baştan çöz")}</Text>
               </SoundPressable>
             </ScrollView>
           ) : null}

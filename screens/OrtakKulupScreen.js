@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -62,10 +63,12 @@ const count1Source = require("../assets/sounds/count-1.mp3");
 // ============================================================================
 
 const TURLER = [
-  { deger: "kulup", etiket: "Kulüp × Kulüp", ikon: "shield-checkmark", not: "İki kulüp çıkar; ikisinde de oynamış bir futbolcuyu rakibinden önce yaz." },
-  { deger: "ulke", etiket: "Kulüp × Ülke", ikon: "earth", not: "Bir ülke ve bir kulüp çıkar; o ülkeden, o kulüpte oynamış bir futbolcu bul." },
-  { deger: "secim", etiket: "Takımı sen seç", ikon: "hand-left", not: "Bir kulübü sen yazarsın, ikincisini rakibin seçer." },
-  { deger: "coktan", etiket: "Çoktan seçmeli", ikon: "flash", not: "4 şıklı, süreye karşı seri cevaplama. Yazmak yok." },
+  { deger: "kulup", etiket: _t("Kulüp × Kulüp"), ikon: "shield-checkmark", not: _t("İki kulüp çıkar; ikisinde de oynamış bir futbolcuyu rakibinden önce yaz.") },
+  { deger: "ulke", etiket: _t("Kulüp × Ülke"), ikon: "earth", not: _t(
+    "Bir ülke ve bir kulüp çıkar; o ülkeden, o kulüpte oynamış bir futbolcu bul."
+  ) },
+  { deger: "secim", etiket: _t("Takımı sen seç"), ikon: "hand-left", not: _t("Bir kulübü sen yazarsın, ikincisini rakibin seçer.") },
+  { deger: "coktan", etiket: _t("Çoktan seçmeli"), ikon: "flash", not: _t("4 şıklı, süreye karşı seri cevaplama. Yazmak yok.") },
 ];
 const MOD_ID = { kulup: "cpu", ulke: "countryTeamCpu", secim: "draftCpu" };
 const GALIBIYET = [3, 5, 7, 10];
@@ -73,7 +76,7 @@ const SURELER = [15, 20, 30, 45];
 const YANLIS_HAKKI = 3;
 
 // Paket 31 — üst çubuğun alt satırı
-const TUR_ADLARI = { kulup: "Kulüp × Kulüp", ulke: "Kulüp × Ülke", secim: "Takımı sen seç", coktan: "Çoktan seçmeli" };
+const TUR_ADLARI = { kulup: _t("Kulüp × Kulüp"), ulke: _t("Kulüp × Ülke"), secim: _t("Takımı sen seç"), coktan: _t("Çoktan seçmeli") };
 
 export default function OrtakKulupScreen({
   onExit, onExitSilent, onModaGit, hemenBasla = false, ilkCift = null, tur: baslangicTuru = "kulup",
@@ -142,16 +145,16 @@ export default function OrtakKulupScreen({
     if (isRecording) {
       try {
         const text = await stopRecording();
-        if (!text) { setVoiceError("Sesi anlayamadım, tekrar dener misin?"); return; }
+        if (!text) { setVoiceError(_t("Sesi anlayamadım, tekrar dener misin?")); return; }
         const gonder = (a) => { setAnswerInput(a); cevapGonder(a); };
         const yaz = (a) => { setAnswerInput(a); setInputMode("keyboard"); };
         if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
         else gonder(text);
       } catch (err) {
-        setVoiceError(err.message || "Ses tanıma başarısız oldu");
+        setVoiceError(err.message || _t("Ses tanıma başarısız oldu"));
       }
     } else {
-      try { await startRecording(); } catch (err) { setVoiceError(err.message || "Mikrofona erişilemedi"); }
+      try { await startRecording(); } catch (err) { setVoiceError(err.message || _t("Mikrofona erişilemedi")); }
     }
   }
 
@@ -235,13 +238,13 @@ export default function OrtakKulupScreen({
     const t = String(metin || takimGirdi).trim();
     if (!t) return;
     const kulup = findMatchedTeam(t, Object.keys(CLUB_INFO));
-    if (!kulup) { setTakimHata(`"${t}" diye bir kulüp bulamadım`); return; }
-    if (allowedClubs && !allowedClubs.has(kulup)) { setTakimHata(`${kulup} eşleşme profilinde yok`); return; }
+    if (!kulup) { setTakimHata(_t("\"{0}\" diye bir kulüp bulamadım", [t])); return; }
+    if (allowedClubs && !allowedClubs.has(kulup)) { setTakimHata(_t("{0} eşleşme profilinde yok", [kulup])); return; }
     setTakimHata(null);
     setPhase("rakipSeciyor");
     setTimeout(() => {
       const g = generateDraftRound(kulup, PLAYERS, usedPairs, allowedClubs, difficulty);
-      if (!g) { setTakimHata(`${kulup} ile eşleşecek uygun kulüp kalmadı, başka bir kulüp dene`); setPhase("takimSec"); return; }
+      if (!g) { setTakimHata(_t("{0} ile eşleşecek uygun kulüp kalmadı, başka bir kulüp dene", [kulup])); setPhase("takimSec"); return; }
       turuSifirla();
       turaBasla({ sol: { tip: "kulup", ad: kulup }, sag: { tip: "kulup", ad: g.teamB }, validAnswers: g.validAnswers, key: g.key });
     }, 900);
@@ -300,8 +303,8 @@ export default function OrtakKulupScreen({
     const kalan = hak - 1;
     setHak(kalan);
     setYanlisMesaj(
-      (kim ? `${kim.name} bu ikisinde oynamadı` : `"${text}" diye bir futbolcu bulamadım`) +
-        (kalan > 0 ? ` · ${kalan} hakkın kaldı` : "")
+      (kim ? _t("{0} bu ikisinde oynamadı", [kim.name]) : _t("\"{0}\" diye bir futbolcu bulamadım", [text])) +
+        (kalan > 0 ? _t(" · {0} hakkın kaldı", [kalan]) : "")
     );
     if (kalan <= 0) oyuncuCekildi();
   }
@@ -324,20 +327,20 @@ export default function OrtakKulupScreen({
     if (kazanan === "p1") {
       setScoreP1((s) => s + 1);
       setDogrularim((l) => [...l, { oyuncu, etiket: turEtiketi(round) }]);
-      setResultText(`Doğru! ${oyuncu.name}`);
+      setResultText(_t("Doğru! {0}", [oyuncu.name]));
       setCpuSoz(tepki(karakter, "kaptirdi"));
       playCorrect();
       setFeedback("correct");
       setShowResultPanel(false);
     } else if (kazanan === "cpu") {
       setScoreCpu((s) => s + 1);
-      setResultText(`${kisaAd(karakter)} buldu: ${oyuncu.name}`);
+      setResultText(_t("{0} buldu: {1}", [kisaAd(karakter), oyuncu.name]));
       setCpuSoz(tepki(karakter, "dogru"));
       playWrong();
       setFeedback("wrong");
       setShowResultPanel(false);
     } else {
-      setResultText(timeLeft <= 0 ? "Süre doldu, kimse bilemedi." : "İkiniz de bilemediniz.");
+      setResultText(timeLeft <= 0 ? _t("Süre doldu, kimse bilemedi.") : _t("İkiniz de bilemediniz."));
       setShowResultPanel(true);
     }
   }
@@ -384,7 +387,7 @@ export default function OrtakKulupScreen({
     oyunBilgisiniYaz(modId, {
       satirlar: ayarSatirlari({
         zorluk: difficulty, sure: turSuresi, galibiyet: targetScore, lig: presetLabel, yontem: inputMode,
-        ekstra: [["Tür", (TURLER.find((t) => t.deger === tur) || TURLER[0]).etiket], ["Rakip", `${karakter.avatar} ${kisaAd(karakter)}`], ["Yanlış hakkı", String(YANLIS_HAKKI)]],
+        ekstra: [[_t("Tür"), (TURLER.find((t) => t.deger === tur) || TURLER[0]).etiket], [_t("Rakip"), `${karakter.avatar} ${kisaAd(karakter)}`], [_t("Yanlış hakkı"), String(YANLIS_HAKKI)]],
       }),
     });
   }, [modId, difficulty, turSuresi, targetScore, presetLabel, inputMode, tur, karakter]);
@@ -396,8 +399,10 @@ export default function OrtakKulupScreen({
     return (
       <ModKurulum
         modId={modId}
-        baslik="Ortak Kulüp"
-        aciklama="İki kulüp (ya da bir kulüp ve bir ülke) çıkar. İkisinde de oynamış bir futbolcuyu rakibinden önce yaz."
+        baslik={_t("Ortak Kulüp")}
+        aciklama={_t(
+          "İki kulüp (ya da bir kulüp ve bir ülke) çıkar. İkisinde de oynamış bir futbolcuyu rakibinden önce yaz."
+        )}
         vurgu={MODE_COLORS.teamTeam}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: difficulty, sure: roundSeconds, galibiyet: targetScore, yontem: inputMode })}
@@ -407,39 +412,41 @@ export default function OrtakKulupScreen({
         // beri MAÇ AYARLARI'nın arkasında kalmıştı; artık giriş ekranında, ilk bakışta.
         girisSecimi={<SecimCipleri secenekler={TURLER.map(({ deger, etiket, ikon }) => ({ deger, etiket, ikon }))} secili={tur} onSec={setTur} />}
       >
-        <KurulumBolum baslik="TÜR" not={secili.not}>
+        <KurulumBolum baslik={_t("TÜR")} not={secili.not}>
           <SecimCipleri secenekler={TURLER.map(({ deger, etiket, ikon }) => ({ deger, etiket, ikon }))} secili={tur} onSec={setTur} />
         </KurulumBolum>
         {tur !== "coktan" ? (
           <>
-            <KurulumBolum baslik="ZORLUK" not={`Rakibin: ${karakter.avatar} ${karakter.ad} — ${karakter.unvan}`}>
+            <KurulumBolum baslik={_t("ZORLUK")} not={_t("Rakibin: {0} {1} — {2}", [karakter.avatar, karakter.ad, karakter.unvan])}>
               <ZorlukSecici
                 deger={difficulty}
                 onDegis={setDifficulty}
-                aciklama={(z) => (z <= 3 ? "Bol ve tanınmış cevaplı çiftler." : z <= 6 ? "Dengeli çiftler; en az bir tanınmış cevap var." : z <= 8 ? "Az cevaplı çiftler." : "İğne deliği: çoğu çiftte birkaç cevap var.")}
+                aciklama={(z) => (z <= 3 ? _t("Bol ve tanınmış cevaplı çiftler.") : z <= 6 ? _t("Dengeli çiftler; en az bir tanınmış cevap var.") : z <= 8 ? _t("Az cevaplı çiftler.") : _t("İğne deliği: çoğu çiftte birkaç cevap var."))}
               />
             </KurulumBolum>
-            <KurulumBolum baslik="TUR SÜRESİ">
+            <KurulumBolum baslik={_t("TUR SÜRESİ")}>
               <SureSecici
                 secenekler={SURELER}
                 deger={turSuresi}
                 onDegis={setRoundSeconds}
                 asgari={15}
                 azami={90}
-                aciklama="Takımlar göründükten sonra cevap için süre. Rakibin de bu sürede düşünüyor."
+                aciklama={_t(
+                  "Takımlar göründükten sonra cevap için süre. Rakibin de bu sürede düşünüyor."
+                )}
               />
             </KurulumBolum>
-            <KurulumBolum baslik="GALİBİYET SINIRI">
+            <KurulumBolum baslik={_t("GALİBİYET SINIRI")}>
               <SecimCipleri secenekler={GALIBIYET.map((g) => ({ deger: g, etiket: String(g) }))} secili={targetScore} onSec={setTargetScore} />
             </KurulumBolum>
-            <KurulumBolum baslik="CEVAP YÖNTEMİ">
+            <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")}>
               <SecimCipleri
-                secenekler={[{ deger: "keyboard", etiket: "Klavye", ikon: "keypad" }, { deger: "voice", etiket: "Mikrofon", ikon: "mic" }]}
+                secenekler={[{ deger: "keyboard", etiket: _t("Klavye"), ikon: "keypad" }, { deger: "voice", etiket: _t("Mikrofon"), ikon: "mic" }]}
                 secili={inputMode}
                 onSec={setInputMode}
               />
             </KurulumBolum>
-            <KurulumBolum baslik="EŞLEŞME PROFİLİ">
+            <KurulumBolum baslik={_t("EŞLEŞME PROFİLİ")}>
               <KapsamDugmesi etiket={presetLabel} onPress={() => setProfilAcik(true)} />
             </KurulumBolum>
           </>
@@ -469,7 +476,7 @@ export default function OrtakKulupScreen({
     <GameBackground style={styles.container} klavye="kaydir">
       {/* Paket 31 — standart üst çubuk (components/MacCercevesi.js) */}
       <OyunUstCubugu
-        baslik="Ortak Kulüp"
+        baslik={_t("Ortak Kulüp")}
         alt={TUR_ADLARI[tur] || null}
         onCikis={phase === "gameOver" ? (onExitSilent || onExit) : onExit}
         onBildir={() => setShowReport(true)}
@@ -487,34 +494,34 @@ export default function OrtakKulupScreen({
 
       {phase !== "gameOver" && (
         <SkorSeridi
-          sol={{ etiket: "SEN", puan: scoreP1 }}
+          sol={{ etiket: _t("SEN"), puan: scoreP1 }}
           sag={{ etiket: rakipEtiketi(karakter), puan: scoreCpu, karakter }}
-          orta={`${targetScore}'te biter`}
+          orta={_t("{0}'te biter", [targetScore])}
         />
       )}
       {/* Paket 31 — rakibin tek satırlık tepkisi her modda skor şeridinin altında */}
-      {phase === "racing" ? <RakipTepkisi karakter={karakter} metin={cpuKilitli ? "Pas geçiyorum." : dusunceSozu} style={{ marginTop: -4, marginBottom: 6 }} /> : null}
+      {phase === "racing" ? <RakipTepkisi karakter={karakter} metin={cpuKilitli ? _t("Pas geçiyorum.") : dusunceSozu} style={{ marginTop: -4, marginBottom: 6 }} /> : null}
 
       {/* ---------------- Takımı sen seç ---------------- */}
       {(phase === "takimSec" || phase === "rakipSeciyor") && (
         <View style={styles.secimKutu}>
-          <Text style={styles.secimBaslik}>{phase === "rakipSeciyor" ? `${kisaAd(karakter)} rakip kulübü seçiyor…` : "Bir kulüp yaz"}</Text>
+          <Text style={styles.secimBaslik}>{phase === "rakipSeciyor" ? _t("{0} rakip kulübü seçiyor…", [kisaAd(karakter)]) : _t("Bir kulüp yaz")}</Text>
           {phase === "takimSec" ? (
             <>
-              <Text style={styles.secimAlt}>İkinci kulübü {kisaAd(karakter)} seçecek. Zor bir kulüp onu da zorlar.</Text>
+              <Text style={styles.secimAlt}>{_t("İkinci kulübü")}{" "}{kisaAd(karakter)}{" "}{_t("seçecek. Zor bir kulüp onu da zorlar.")}</Text>
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
                   value={takimGirdi}
                   onChangeText={(t) => { setTakimGirdi(t); setTakimHata(null); }}
                   onSubmitEditing={() => takimSecildi()}
-                  placeholder="Kulüp adı… (ör. Galatasaray)"
+                  placeholder={_t("Kulüp adı… (ör. Galatasaray)")}
                   placeholderTextColor={COLORS.textFaint}
                   autoCorrect={false}
                   autoFocus
                   returnKeyType="send"
                 />
-                <SoundPressable style={styles.gonder} onPress={() => takimSecildi()} accessibilityLabel="Kulübü seç">
+                <SoundPressable style={styles.gonder} onPress={() => takimSecildi()} accessibilityLabel={_t("Kulübü seç")}>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
                 </SoundPressable>
               </View>
@@ -540,11 +547,11 @@ export default function OrtakKulupScreen({
           <View style={styles.bilgiSatir}>
             <View style={styles.ortakCip}>
               <Ionicons name="people" size={14} color={COLORS.accent} />
-              <Text style={styles.ortakYazi}>Bu ikilide {round.validAnswers.length} ortak futbolcu var</Text>
+              <Text style={styles.ortakYazi}>{_t("Bu ikilide")}{" "}{round.validAnswers.length}{" "}{_t("ortak futbolcu var")}</Text>
             </View>
           </View>
           {round.sol.tip === "ulke" ? (
-            <Text style={styles.kural}>Vatandaşlık ya da milli takım — ikisi de geçer</Text>
+            <Text style={styles.kural}>{_t("Vatandaşlık ya da milli takım — ikisi de geçer")}</Text>
           ) : null}
         </>
       )}
@@ -554,20 +561,20 @@ export default function OrtakKulupScreen({
         <View style={{ marginTop: 10 }}>
           <View style={styles.sureSatir}>
             <View style={{ flex: 1 }}><TimerBar current={timeLeft} total={turSuresi} /></View>
-            <Text style={[styles.sureYazi, timeLeft <= 5 && { color: COLORS.danger }]}>{timeLeft} sn</Text>
+            <Text style={[styles.sureYazi, timeLeft <= 5 && { color: COLORS.danger }]}>{timeLeft}{" "}{_t("sn")}</Text>
           </View>
 
 
           {p1Kilitli ? (
-            <Text style={styles.kilitYazi}>Hakkın bitti — {iyelik(kisaAd(karakter))} cevabı bekleniyor…</Text>
+            <Text style={styles.kilitYazi}>{_t("Hakkın bitti —")}{" "}{iyelik(kisaAd(karakter))}{" "}{_t("cevabı bekleniyor…")}</Text>
           ) : inputMode === "voice" ? (
             <>
               <SoundPressable style={[styles.micBuyuk, isRecording && styles.micAktif]} onPress={handleMicPress} disabled={isProcessing}>
                 <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={26} color={COLORS.accentDark} />
-                <Text style={styles.micBuyukYazi}>{isProcessing ? "İşleniyor…" : isRecording ? "Durdur" : "Konuş"}</Text>
+                <Text style={styles.micBuyukYazi}>{isProcessing ? _t("İşleniyor…") : isRecording ? _t("Durdur") : _t("Konuş")}</Text>
               </SoundPressable>
               <SoundPressable onPress={() => setInputMode("keyboard")} style={styles.degistir}>
-                <Text style={styles.degistirYazi}>Bunun yerine yazmak istiyorum</Text>
+                <Text style={styles.degistirYazi}>{_t("Bunun yerine yazmak istiyorum")}</Text>
               </SoundPressable>
             </>
           ) : (
@@ -581,16 +588,16 @@ export default function OrtakKulupScreen({
                   value={answerInput}
                   onChangeText={(t) => { setAnswerInput(t); if (yanlisMesaj) setYanlisMesaj(null); }}
                   onSubmitEditing={() => cevapGonder()}
-                  placeholder="Futbolcu adı…"
+                  placeholder={_t("Futbolcu adı…")}
                   placeholderTextColor={COLORS.textFaint}
                   style={styles.girdi}
                   returnKeyType="send"
                   blurOnSubmit={false}
                 />
-                <SoundPressable style={[styles.mic, isRecording && styles.micAktif]} onPress={handleMicPress} disabled={isProcessing} accessibilityLabel="Sesle cevap ver">
+                <SoundPressable style={[styles.mic, isRecording && styles.micAktif]} onPress={handleMicPress} disabled={isProcessing} accessibilityLabel={_t("Sesle cevap ver")}>
                   <Ionicons name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"} size={20} color={COLORS.text} />
                 </SoundPressable>
-                <SoundPressable style={styles.gonder} onPress={() => cevapGonder()} accessibilityLabel="Cevabı gönder">
+                <SoundPressable style={styles.gonder} onPress={() => cevapGonder()} accessibilityLabel={_t("Cevabı gönder")}>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
                 </SoundPressable>
               </View>
@@ -623,10 +630,10 @@ export default function OrtakKulupScreen({
                 {Array.from({ length: YANLIS_HAKKI }).map((_, i) => (
                   <View key={i} style={[styles.hakNokta, i < hak ? { backgroundColor: COLORS.accent } : { backgroundColor: COLORS.cardBorder }]} />
                 ))}
-                <Text style={styles.hakYazi}>yanlış hakkı</Text>
+                <Text style={styles.hakYazi}>{_t("yanlış hakkı")}</Text>
               </View>
               <SoundPressable onPress={oyuncuCekildi} style={styles.pas}>
-                <Text style={styles.pasYazi}>Bilemedim</Text>
+                <Text style={styles.pasYazi}>{_t("Bilemedim")}</Text>
               </SoundPressable>
             </View>
           ) : null}
@@ -640,7 +647,7 @@ export default function OrtakKulupScreen({
           <Text style={[styles.resultText, winningPlayer && { marginTop: 12 }]}>{resultText}</Text>
           {!showAnswers && (
             <Pressable style={styles.showAnswersBtn} hitSlop={10} onPress={() => setShowAnswers(true)}>
-              <Text style={styles.showAnswersBtnText}>{lastWinner === "p1" ? "Diğer doğru cevapları göster" : "Doğru cevapları göster"}</Text>
+              <Text style={styles.showAnswersBtnText}>{lastWinner === "p1" ? _t("Diğer doğru cevapları göster") : _t("Doğru cevapları göster")}</Text>
             </Pressable>
           )}
           {showAnswers && (
@@ -654,7 +661,7 @@ export default function OrtakKulupScreen({
             </ScrollView>
           )}
           <Pressable style={styles.primaryBtn} onPress={macBitti ? macSonunaGec : () => yeniTur()}>
-            <Text style={styles.primaryBtnText}>{macBitti ? "Maç sonucunu gör" : "Sıradaki tur"}</Text>
+            <Text style={styles.primaryBtnText}>{macBitti ? _t("Maç sonucunu gör") : _t("Sıradaki tur")}</Text>
           </Pressable>
         </View>
       )}
@@ -662,7 +669,10 @@ export default function OrtakKulupScreen({
       {/* ---------------- Maç sonu kartı ---------------- */}
       {phase === "gameOver" && (
         <MacSonuKarti
-          modAdi={`Ortak Kulüp (${(TURLER.find((t) => t.deger === tur) || TURLER[0]).etiket})`}
+          modAdi={_t(
+            "Ortak Kulüp ({0})",
+            [(TURLER.find((t) => t.deger === tur) || TURLER[0]).etiket]
+          )}
           modeId={modId}
           skorSen={scoreP1}
           skorRakip={scoreCpu}

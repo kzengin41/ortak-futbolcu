@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -136,7 +137,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
     const y = durum?.sonYanlis;
     if (!y || y.kimden !== benKimim || faz !== "cevap") return;
     const kalan = YANLIS_HAKKI - (durum.yanlis?.[`p${benKimim}`] || 0);
-    setGeriBildirim({ correct: false, message: kalan > 0 ? `"${y.metin}" olmadı · ${kalan} hak kaldı` : `"${y.metin}" olmadı · hakkın bitti` });
+    setGeriBildirim({ correct: false, message: kalan > 0 ? _t("\"{0}\" olmadı · {1} hak kaldı", [y.metin, kalan]) : _t("\"{0}\" olmadı · hakkın bitti", [y.metin]) });
     playWrong();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sonYanlisN]);
@@ -151,16 +152,16 @@ export default function OnlineUlkeScreen({ room, onExit }) {
   // ---------------------------------------------------------------- bekleme
   if (!durum || faz === "hazirlik" || faz === "hata") {
     const yazi = !durum
-      ? (senkronBekliyor ? "Odaya bağlanılıyor..." : "Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene.")
-      : faz === "hata" ? "Tur hazırlanamadı. Odadan çıkıp tekrar dene."
-      : rakipVar ? "İlk tur hazırlanıyor..." : "Rakip bekleniyor...";
+      ? (senkronBekliyor ? _t("Odaya bağlanılıyor...") : _t("Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene."))
+      : faz === "hata" ? _t("Tur hazırlanamadı. Odadan çıkıp tekrar dene.")
+      : rakipVar ? _t("İlk tur hazırlanıyor...") : _t("Rakip bekleniyor...");
     return (
       <GameBackground style={styles.merkez}>
         {(senkronBekliyor || faz === "hazirlik") && <ActivityIndicator color={COLORS.accent} />}
         <Text style={styles.bekleme}>{yazi}</Text>
         {faz === "hazirlik" && room.code ? <Text style={styles.odaKodu}>{room.code}</Text> : null}
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -179,14 +180,14 @@ export default function OnlineUlkeScreen({ room, onExit }) {
       {ayrildi}
       <KlavyeAlani style={{ flex: 1 }}>
         <OyunUstCubugu
-          baslik="Ortak Kulüp"
-          alt={`Kulüp × Ülke · Online · Tur ${durum.turNo}`}
+          baslik={_t("Ortak Kulüp")}
+          alt={_t("Kulüp × Ülke · Online · Tur {0}", [durum.turNo])}
           onCikis={faz === "macSonu" ? null : onExit}
         />
         <SkorSeridi
-          sol={{ etiket: "SEN", puan: skorSen, renk: COLORS.accent }}
-          sag={{ etiket: "RAKİP", puan: skorRakip, renk: COLORS.cta }}
-          orta={!rakipVar ? "rakip bağlı değil" : `${HEDEF_PUAN}'te biter`}
+          sol={{ etiket: _t("SEN"), puan: skorSen, renk: COLORS.accent }}
+          sag={{ etiket: _t("RAKİP"), puan: skorRakip, renk: COLORS.cta }}
+          orta={!rakipVar ? _t("rakip bağlı değil") : _t("{0}'te biter", [HEDEF_PUAN])}
         />
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACING.lg }} keyboardShouldPersistTaps="handled">
@@ -196,7 +197,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
 
           {faz === "cevap" ? (
             <>
-              <Text style={styles.kural}>Vatandaşlık ya da milli takım — ikisi de geçer</Text>
+              <Text style={styles.kural}>{_t("Vatandaşlık ya da milli takım — ikisi de geçer")}</Text>
               <View style={{ marginTop: SPACING.md }}>
                 <TimerBar current={kalanSn} total={Math.round(TUR_SURESI_MS / 1000)} />
               </View>
@@ -205,16 +206,16 @@ export default function OnlineUlkeScreen({ room, onExit }) {
                   {Array.from({ length: YANLIS_HAKKI }).map((_, i) => (
                     <View key={i} style={[styles.hakNokta, i < hakNoktalari(benKimim) && { backgroundColor: COLORS.accent }]} />
                   ))}
-                  <Text style={styles.hakYazi}>senin hakların</Text>
+                  <Text style={styles.hakYazi}>{_t("senin hakların")}</Text>
                 </View>
                 <Text style={[styles.hakYazi, rakipBitti && { color: COLORS.textFaint }]}>
-                  {rakipBitti ? "rakibin hakkı bitti" : `rakip ${hakNoktalari(rakipNo)} hak`}
+                  {rakipBitti ? _t("rakibin hakkı bitti") : _t("rakip {0} hak", [hakNoktalari(rakipNo)])}
                 </Text>
               </View>
               {benBittim ? (
                 <View style={styles.bitti}>
                   <Ionicons name="hourglass-outline" size={18} color={COLORS.textMuted} />
-                  <Text style={styles.bittiYazi}>Bu turda hakkın bitti — rakip deniyor</Text>
+                  <Text style={styles.bittiYazi}>{_t("Bu turda hakkın bitti — rakip deniyor")}</Text>
                 </View>
               ) : null}
             </>
@@ -223,7 +224,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
           {acik && faz !== "macSonu" ? (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>
-                {durum.turKazanani === benKimim ? "Puan senin!" : durum.turKazanani ? "Puan rakibin" : "Kimse bilemedi"}
+                {durum.turKazanani === benKimim ? _t("Puan senin!") : durum.turKazanani ? _t("Puan rakibin") : _t("Kimse bilemedi")}
               </Text>
               {durum.sonCevap?.ad ? (
                 <>
@@ -233,7 +234,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
                   <Text style={styles.sonucAd}>{durum.sonCevap.ad}</Text>
                 </>
               ) : null}
-              <Text style={styles.ornekBaslik}>Geçerli cevaplardan bazıları</Text>
+              <Text style={styles.ornekBaslik}>{_t("Geçerli cevaplardan bazıları")}</Text>
               <Text style={styles.ornekMetin}>{ornekCevaplar(durum).join(" · ")}</Text>
             </View>
           ) : null}
@@ -241,7 +242,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
           {faz === "macSonu" ? (
             <OnlineMacSonu
               oda={room}
-              modAdi="Online — Kulüp × Ülke"
+              modAdi={_t("Online — Kulüp × Ülke")}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}
@@ -249,7 +250,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
               onExit={onExit}
               skorSen={skorSen}
               skorRakip={skorRakip}
-              skorEtiketi="puan"
+              skorEtiketi={_t("puan")}
               kazanan={skorSen > skorRakip ? "sen" : skorSen < skorRakip ? "rakip" : "berabere"}
             />
           ) : null}
@@ -269,7 +270,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
             <View style={styles.girdiSatir}>
               <TextInput
                 style={styles.girdi}
-                placeholder="Futbolcu adı…"
+                placeholder={_t("Futbolcu adı…")}
                 placeholderTextColor={COLORS.textFaint}
                 value={girdi}
                 onChangeText={setGirdi}
@@ -278,12 +279,12 @@ export default function OnlineUlkeScreen({ room, onExit }) {
                 autoCorrect={false}
               />
               <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
-              <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel="Gönder">
+              <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel={_t("Gönder")}>
                 <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
             <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })}>
-              <Text style={styles.pasBtnText}>Bilemedim</Text>
+              <Text style={styles.pasBtnText}>{_t("Bilemedim")}</Text>
             </SoundPressable>
           </View>
         ) : null}

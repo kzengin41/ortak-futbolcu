@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { Modal, View, Text, ScrollView, StyleSheet, Switch } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,10 +54,10 @@ export default function TakimSorusuPenceresi() {
         <View style={styles.kart}>
           <View style={styles.ust}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.baslik}>Tuttuğun takım hangisi?</Text>
-              <Text style={styles.aciklama}>
-                Turlarda takımın biraz daha sık çıksın. İstediğin zaman Ayarlar'dan değiştirirsin.
-              </Text>
+              <Text style={styles.baslik}>{_t("Tuttuğun takım hangisi?")}</Text>
+              <Text style={styles.aciklama}>{_t(
+                "Turlarda takımın biraz daha sık çıksın. İstediğin zaman Ayarlar'dan değiştirirsin."
+              )}</Text>
             </View>
             <SoundPressable onPress={() => bitir(null)} hitSlop={12}>
               <Ionicons name="close" size={24} color={COLORS.textMuted} />
@@ -68,14 +69,14 @@ export default function TakimSorusuPenceresi() {
           {bildirimVar ? (
             <View style={styles.hatirlat}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.hatirlatBaslik}>Akşam hatırlatması</Text>
-                <Text style={styles.hatirlatYazi}>Günün bulmacası için her akşam {HATIRLATMA_SAATI}:00'de tek bildirim</Text>
+                <Text style={styles.hatirlatBaslik}>{_t("Akşam hatırlatması")}</Text>
+                <Text style={styles.hatirlatYazi}>{_t("Günün bulmacası için her akşam")}{" "}{HATIRLATMA_SAATI}{_t(":00'de tek bildirim")}</Text>
               </View>
               <Switch value={hatirlat} onValueChange={setHatirlat} trackColor={{ true: COLORS.accent }} />
             </View>
           ) : null}
           <SoundPressable style={styles.gec} onPress={() => bitir(null)}>
-            <Text style={styles.gecYazi}>Şimdilik geç</Text>
+            <Text style={styles.gecYazi}>{_t("Şimdilik geç")}</Text>
           </SoundPressable>
         </View>
       </View>

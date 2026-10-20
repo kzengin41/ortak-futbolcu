@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
@@ -14,6 +15,7 @@ import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto from "../components/PlayerPhoto";
 import TimerBar from "../components/TimerBar";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
+import { rakipMetniYaz } from "../lib/guvenlik";
 import { PLAYERS } from "../lib/players";
 import { CLUB_INFO } from "../lib/clubs";
 import { buildSuggestIndex, suggestPlayers, suggestClubs, findMatchedTeam } from "../lib/gameEngine";
@@ -161,14 +163,19 @@ export default function OnlineDraftScreen({ room, onExit }) {
   useEffect(() => {
     const c = durum?.sonCevap;
     if (!c || c.dogru || faz !== "cevap") return;
-    setGeriBildirim({ correct: false, message: `"${c.metin}" bu ikilide oynamadı` });
+    // Paket 38: cevaplayan rakipse ham metin değil, tanınan futbolcu adı gösterilir.
+    const benimCevap = (durum.secen === 1 ? 2 : 1) === benKimim;
+    setGeriBildirim({ correct: false, message: _t(
+      "\"{0}\" bu ikilide oynamadı",
+      [benimCevap ? c.metin : rakipMetniYaz(c.metin)]
+    ) });
   }, [durum?.sonCevap, faz]);
 
   // Seçim motorda tura dönüşemediyse kullanıcıyı bilgilendir
   const reddedildi = durum?.secimReddedildi || 0;
   useEffect(() => {
     if (!reddedildi || !benSecenim) return;
-    setGeriBildirim({ correct: false, message: "Bu takımdan tur çıkmadı, başka bir takım dene" });
+    setGeriBildirim({ correct: false, message: _t("Bu takımdan tur çıkmadı, başka bir takım dene") });
   }, [reddedildi, benSecenim]);
 
   function kulupGonder(ad) {
@@ -178,7 +185,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
     // SEÇİLEBİLİR kulüpler arasında aranıyor.
     const eslesen = findMatchedTeam(ham, kulupIndeksi.map((k) => k.original));
     if (!eslesen) {
-      setGeriBildirim({ correct: false, message: "Bu takımı bulamadım, listeden seçebilirsin" });
+      setGeriBildirim({ correct: false, message: _t("Bu takımı bulamadım, listeden seçebilirsin") });
       return;
     }
     setKulupGirdi("");
@@ -199,11 +206,11 @@ export default function OnlineDraftScreen({ room, onExit }) {
         {senkronBekliyor && <ActivityIndicator color={VURGU.main} />}
         <Text style={styles.bekleme}>
           {senkronBekliyor
-            ? "Odaya bağlanılıyor..."
-            : "Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene."}
+            ? _t("Odaya bağlanılıyor...")
+            : _t("Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene.")}
         </Text>
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -219,16 +226,16 @@ export default function OnlineDraftScreen({ room, onExit }) {
       <KlavyeAlani style={{ flex: 1 }}>
         <View style={styles.ustSerit}>
           <View style={styles.skorKutu}>
-            <Text style={styles.skorEtiket}>SEN</Text>
+            <Text style={styles.skorEtiket}>{_t("SEN")}</Text>
             <Text style={styles.skorDeger}>{benimSkor}</Text>
           </View>
           <View style={styles.turKutu}>
-            <Text style={styles.turEtiket}>TUR {durum.turNo}</Text>
-            <Text style={styles.hedefEtiket}>{HEDEF_PUAN} puana ilk ulaşan kazanır</Text>
-            {!rakipVar && <Text style={styles.kopukEtiket}>rakip bağlı değil</Text>}
+            <Text style={styles.turEtiket}>{_t("TUR")}{" "}{durum.turNo}</Text>
+            <Text style={styles.hedefEtiket}>{HEDEF_PUAN}{" "}{_t("puana ilk ulaşan kazanır")}</Text>
+            {!rakipVar && <Text style={styles.kopukEtiket}>{_t("rakip bağlı değil")}</Text>}
           </View>
           <View style={styles.skorKutu}>
-            <Text style={styles.skorEtiket}>RAKİP</Text>
+            <Text style={styles.skorEtiket}>{_t("RAKİP")}</Text>
             <Text style={styles.skorDeger}>{rakipSkor}</Text>
           </View>
         </View>
@@ -243,14 +250,12 @@ export default function OnlineDraftScreen({ room, onExit }) {
             <View style={styles.orta}>
               {benSecenim ? (
                 <>
-                  <Text style={styles.buyukBaslik}>Bir takım seç</Text>
-                  <Text style={styles.aciklama}>
-                    Seçtiğin takım rakibinin sorusu olacak. Bilemezse puan senin.
-                  </Text>
+                  <Text style={styles.buyukBaslik}>{_t("Bir takım seç")}</Text>
+                  <Text style={styles.aciklama}>{_t("Seçtiğin takım rakibinin sorusu olacak. Bilemezse puan senin.")}</Text>
                   <View style={styles.girdiSatir}>
                     <TextInput
                       style={styles.girdi}
-                      placeholder="Takım adı yaz..."
+                      placeholder={_t("Takım adı yaz...")}
                       placeholderTextColor={COLORS.textFaint}
                       value={kulupGirdi}
                       onChangeText={setKulupGirdi}
@@ -273,8 +278,8 @@ export default function OnlineDraftScreen({ room, onExit }) {
               ) : (
                 <>
                   <ActivityIndicator color={VURGU.main} />
-                  <Text style={styles.buyukBaslik}>Rakip takım seçiyor</Text>
-                  <Text style={styles.aciklama}>Sıradaki soru sana gelecek.</Text>
+                  <Text style={styles.buyukBaslik}>{_t("Rakip takım seçiyor")}</Text>
+                  <Text style={styles.aciklama}>{_t("Sıradaki soru sana gelecek.")}</Text>
                 </>
               )}
             </View>
@@ -286,12 +291,12 @@ export default function OnlineDraftScreen({ room, onExit }) {
               <EslesmeKarti sol={{ tip: "kulup", ad: durum.teamA }} sag={{ tip: "kulup", ad: durum.teamB }} style={{ marginBottom: SPACING.md }} />
 
               <TimerBar current={kalanSn} total={Math.round(CEVAP_SURESI_MS / 1000)} />
-              <Text style={styles.sayacText}>{kalanSn} sn</Text>
+              <Text style={styles.sayacText}>{kalanSn}{" "}{_t("sn")}</Text>
 
               {benCevaplayanim ? (
-                <Text style={styles.aciklama}>İki takımda da oynamış bir futbolcu söyle</Text>
+                <Text style={styles.aciklama}>{_t("İki takımda da oynamış bir futbolcu söyle")}</Text>
               ) : (
-                <Text style={styles.aciklama}>Rakip cevaplıyor — senin seçtiğin takım</Text>
+                <Text style={styles.aciklama}>{_t("Rakip cevaplıyor — senin seçtiğin takım")}</Text>
               )}
             </>
           )}
@@ -300,7 +305,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
           {(faz === "turSonu" || faz === "macSonu") && (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>
-                {durum.turKazanani === benKimim ? "Puan senin!" : "Puan rakibin"}
+                {durum.turKazanani === benKimim ? _t("Puan senin!") : _t("Puan rakibin")}
               </Text>
               <Text style={styles.sonucAltBaslik}>
                 {durum.teamA} + {durum.teamB}
@@ -313,14 +318,13 @@ export default function OnlineDraftScreen({ room, onExit }) {
                   <Text style={styles.sonucAd}>{durum.sonCevap.ad}</Text>
                 </>
               ) : (
-                <Text style={styles.sonucAd}>Süre doldu</Text>
+                <Text style={styles.sonucAd}>{_t("Süre doldu")}</Text>
               )}
-              <Text style={styles.ornekBaslik}>Geçerli cevaplardan bazıları</Text>
+              <Text style={styles.ornekBaslik}>{_t("Geçerli cevaplardan bazıları")}</Text>
               <Text style={styles.ornekMetin}>{ornekCevaplar(durum).join(" · ")}</Text>
 
               {faz === "macSonu" ? null : (
-                <Text style={styles.bekleme}>
-                  Sıradaki turda {rakip(durum.secen) === benKimim ? "sıra sende" : "seçim rakipte"}
+                <Text style={styles.bekleme}>{_t("Sıradaki turda")}{" "}{rakip(durum.secen) === benKimim ? _t("sıra sende") : _t("seçim rakipte")}
                 </Text>
               )}
             </View>
@@ -328,7 +332,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
           {faz === "macSonu" && (
             <OnlineMacSonu
               oda={room}
-              modAdi="Online — Takımı Sen Seç"
+              modAdi={_t("Online — Takımı Sen Seç")}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}
@@ -336,7 +340,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
               onExit={onExit}
               skorSen={benimSkor}
               skorRakip={rakipSkor}
-              skorEtiketi="puan"
+              skorEtiketi={_t("puan")}
               kazanan={benimSkor > rakipSkor ? "sen" : benimSkor < rakipSkor ? "rakip" : "berabere"}
             />
           )}
@@ -362,7 +366,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
             <View style={styles.girdiSatir}>
               <TextInput
                 style={styles.girdi}
-                placeholder="Futbolcu adı yaz..."
+                placeholder={_t("Futbolcu adı yaz...")}
                 placeholderTextColor={COLORS.textFaint}
                 value={cevapGirdi}
                 onChangeText={setCevapGirdi}
@@ -376,7 +380,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
               </SoundPressable>
             </View>
             <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })}>
-              <Text style={styles.pasBtnText}>Bilemedim</Text>
+              <Text style={styles.pasBtnText}>{_t("Bilemedim")}</Text>
             </SoundPressable>
           </View>
         )}
@@ -393,7 +397,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
 
         {faz !== "macSonu" && (
           <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-            <Text style={styles.cikisText}>Odadan çık</Text>
+            <Text style={styles.cikisText}>{_t("Odadan çık")}</Text>
           </SoundPressable>
         )}
       </KlavyeAlani>

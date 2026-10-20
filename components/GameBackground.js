@@ -1,3 +1,5 @@
+import { useEkran } from "../lib/ekran";
+import { _t } from "../lib/dil";
 import React, { useState } from "react";
 import { ImageBackground, StyleSheet, View, useWindowDimensions } from "react-native";
 import { ArkaplanDeseni } from "./FormaDeseni";
@@ -31,9 +33,9 @@ export const ARKAPLANLAR = {
 };
 export const ORTU = [0.38, 0.7, 0.9];   // çim fotoğrafı üstündeki zemin rengi örtüsü (üst, orta, alt)
 export const ARKAPLAN_SECENEKLERI = [
-  { id: "tema", ad: "Temaya uygun" },
-  { id: "saha", ad: "Çim fotoğrafı" },
-  { id: "duz", ad: "Düz renk" },
+  { id: "tema", ad: _t("Temaya uygun") },
+  { id: "saha", ad: _t("Çim fotoğrafı") },
+  { id: "duz", ad: _t("Düz renk") },
 ];
 
 export function arkaplanAnahtari(themeId, secim) {
@@ -47,7 +49,7 @@ export function arkaplanAnahtari(themeId, secim) {
 // (kulüp renginde stadyum ışığı + forma motifi + ince saha çizgileri). Ad geriye
 // uyum için duruyor (Ayarlar önizlemesi bunu çağırıyor).
 export function SahaDeseni({ genislik, yukseklik, cizgiKalinligi = 1.4 }) {
-  const ekran = useWindowDimensions();
+  const ekran = useEkran();
   return <ArkaplanDeseni genislik={genislik || ekran.width} yukseklik={yukseklik || Math.max(ekran.height, 1)} cizgiKalinligi={cizgiKalinligi} />;
 }
 

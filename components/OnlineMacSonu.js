@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Modal } from "react-native";
 import SoundPressable from "./SoundPressable";
@@ -6,6 +7,7 @@ import MacSonuKarti from "./MacSonuKarti";
 import DereceSonucu from "./DereceSonucu";
 import { rovansHali, macSirasi as macSirasiBul } from "../lib/onlineRoom";
 import { rakipKarti } from "../lib/derece";
+import { RakipBildirBaglantisi } from "./OyuncuIslemleri";
 import { COLORS, RADIUS, SPACING } from "../lib/theme";
 
 // ============================================================================
@@ -48,12 +50,12 @@ export default function OnlineMacSonu({
       turlar={turlar}
       kareSatir={kareSatir}
       enIyi={enIyi}
-      rakip={{ ad: rakipAd || "Rakip", avatar: "🌐", renk: COLORS.cta }}
+      rakip={{ ad: rakipAd || _t("Rakip"), avatar: "🌐", renk: COLORS.cta }}
       rovansEtiketi={hal.etiket}
       rovansPasif={hal.pasif}
       onRovans={onRovans || (() => gonder && gonder({ tip: "rovans" }))}
       onMenu={onExit}
-      menuEtiketi="Lobiye dön"
+      menuEtiketi={_t("Lobiye dön")}
       ekSatir={
         <>
           {oda && benKimim ? <DereceSonucu oda={oda} kazananNo={kazananNo} macNo={macSirasi} /> : null}
@@ -61,24 +63,25 @@ export default function OnlineMacSonu({
           {hal.rakipIstiyor ? (
             <View style={s.istek}>
               <Ionicons name="flash" size={16} color={COLORS.cta} />
-              <Text style={s.istekYazi}>{rakipAd || "Rakip"} seni rövanşa davet ediyor!</Text>
+              <Text style={s.istekYazi}>{rakipAd || _t("Rakip")}{" "}{_t("seni rövanşa davet ediyor!")}</Text>
             </View>
-          ) : hal.davetGonderildi || /DAVET GÖNDERİLDİ/.test(hal.etiket || "") ? (
-            <Text style={s.davetBilgi}>Rövanş daveti gönderildi — rakibin kabul etmesi bekleniyor.</Text>
+          ) : hal.davetGonderildi || /DAVET GÖNDERİLDİ|INVITE SENT/i.test(hal.etiket || "") ? (
+            <Text style={s.davetBilgi}>{_t("Rövanş daveti gönderildi — rakibin kabul etmesi bekleniyor.")}</Text>
           ) : null}
+          {oda && oda.rakipId ? <RakipBildirBaglantisi oyuncuId={oda.rakipId} ad={rakipAd} baglam={`mac_sonu:${modAdi || ""}`.slice(0, 60)} /> : null}
           {hal.rakipIstiyor && !davetKapali ? (
           <Modal visible transparent animationType="fade" onRequestClose={() => setDavetKapali(true)}>
             <View style={s.perde}>
               <View style={s.davet} accessibilityViewIsModal>
                 <View style={s.davetIkon}><Ionicons name="refresh" size={28} color={COLORS.accentDark} /></View>
-                <Text style={s.davetUst}>RÖVANŞ DAVETİ</Text>
-                <Text style={s.davetBaslik}>{rakipAd || "Rakip"} seni rövanşa davet ediyor</Text>
-                <Text style={s.davetAlt}>Kabul edersen yeni maç hemen başlar.</Text>
-                <SoundPressable style={s.kabul} onPress={() => { setDavetKapali(true); (onRovans || (() => gonder && gonder({ tip: "rovans" })))(); }} accessibilityLabel="Rövanşı kabul et">
-                  <Text style={s.kabulYazi}>KABUL ET</Text>
+                <Text style={s.davetUst}>{_t("RÖVANŞ DAVETİ")}</Text>
+                <Text style={s.davetBaslik}>{rakipAd || _t("Rakip")}{" "}{_t("seni rövanşa davet ediyor")}</Text>
+                <Text style={s.davetAlt}>{_t("Kabul edersen yeni maç hemen başlar.")}</Text>
+                <SoundPressable style={s.kabul} onPress={() => { setDavetKapali(true); (onRovans || (() => gonder && gonder({ tip: "rovans" })))(); }} accessibilityLabel={_t("Rövanşı kabul et")}>
+                  <Text style={s.kabulYazi}>{_t("KABUL ET")}</Text>
                 </SoundPressable>
-                <SoundPressable style={s.reddet} onPress={() => setDavetKapali(true)} accessibilityLabel="Şimdi değil">
-                  <Text style={s.reddetYazi}>Şimdi değil</Text>
+                <SoundPressable style={s.reddet} onPress={() => setDavetKapali(true)} accessibilityLabel={_t("Şimdi değil")}>
+                  <Text style={s.reddetYazi}>{_t("Şimdi değil")}</Text>
                 </SoundPressable>
               </View>
             </View>

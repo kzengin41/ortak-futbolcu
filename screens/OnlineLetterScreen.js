@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
@@ -11,6 +12,7 @@ import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PlayerPhoto from "../components/PlayerPhoto";
 import { COLORS, RADIUS, SPACING, TYPE, SHADOW, MODE_COLORS } from "../lib/theme";
+import { rakipMetniYaz } from "../lib/guvenlik";
 import { PLAYERS } from "../lib/players";
 import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
 import { calculatePlayerPopularity } from "../lib/clubWeights";
@@ -151,10 +153,10 @@ export default function OnlineLetterScreen({ room, onExit }) {
     setGeriBildirim({
       correct: false,
       message: c.tekrar
-        ? `${c.ad} bu maçta zaten söylendi`
+        ? _t("{0} bu maçta zaten söylendi", [c.ad])
         : benMi
-        ? "Bu isim harflere uymuyor"
-        : `Rakip bilemedi: ${c.metin}`,
+        ? _t("Bu isim harflere uymuyor")
+        : _t("Rakip bilemedi: {0}", [rakipMetniYaz(c.metin)]),
     });
   }, [durum?.sonCevap, benKimim]);
 
@@ -162,7 +164,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
   const reddedildi = durum?.secimReddedildi || 0;
   useEffect(() => {
     if (!reddedildi || !benSecenim) return;
-    setGeriBildirim({ correct: false, message: "Bu harf ikilisi olmaz, başka bir harf seç" });
+    setGeriBildirim({ correct: false, message: _t("Bu harf ikilisi olmaz, başka bir harf seç") });
   }, [reddedildi, benSecenim]);
 
   function cevapGonder(ad) {
@@ -179,11 +181,11 @@ export default function OnlineLetterScreen({ room, onExit }) {
         {senkronBekliyor && <ActivityIndicator color={VURGU.main} />}
         <Text style={styles.bekleme}>
           {senkronBekliyor
-            ? "Odaya bağlanılıyor..."
-            : "Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene."}
+            ? _t("Odaya bağlanılıyor...")
+            : _t("Ev sahibine ulaşılamadı. Bağlantını kontrol edip tekrar dene.")}
         </Text>
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -193,10 +195,10 @@ export default function OnlineLetterScreen({ room, onExit }) {
     return (
       <GameBackground style={styles.merkez}>
         <ActivityIndicator color={VURGU.main} />
-        <Text style={styles.bekleme}>{rakipVar ? "Harfler atanıyor..." : "Rakip bekleniyor..."}</Text>
+        <Text style={styles.bekleme}>{rakipVar ? _t("Harfler atanıyor...") : _t("Rakip bekleniyor...")}</Text>
         {room.code ? <Text style={styles.odaKodu}>{room.code}</Text> : null}
         <SoundPressable onPress={onExit} style={styles.ikincilBtn}>
-          <Text style={styles.ikincilBtnText}>Lobiye dön</Text>
+          <Text style={styles.ikincilBtnText}>{_t("Lobiye dön")}</Text>
         </SoundPressable>
       </GameBackground>
     );
@@ -212,16 +214,16 @@ export default function OnlineLetterScreen({ room, onExit }) {
       <KlavyeAlani style={{ flex: 1 }}>
         <View style={styles.ustSerit}>
           <View style={styles.skorKutu}>
-            <Text style={styles.skorEtiket}>SEN</Text>
+            <Text style={styles.skorEtiket}>{_t("SEN")}</Text>
             <Text style={styles.skorDeger}>{benimSkor}</Text>
           </View>
           <View style={styles.turKutu}>
-            <Text style={styles.turEtiket}>TUR {durum.turNo}</Text>
-            <Text style={styles.hedefEtiket}>{HEDEF_PUAN} puana ilk ulaşan kazanır</Text>
-            {!rakipVar && <Text style={styles.kopukEtiket}>rakip bağlı değil</Text>}
+            <Text style={styles.turEtiket}>{_t("TUR")}{" "}{durum.turNo}</Text>
+            <Text style={styles.hedefEtiket}>{HEDEF_PUAN}{" "}{_t("puana ilk ulaşan kazanır")}</Text>
+            {!rakipVar && <Text style={styles.kopukEtiket}>{_t("rakip bağlı değil")}</Text>}
           </View>
           <View style={styles.skorKutu}>
-            <Text style={styles.skorEtiket}>RAKİP</Text>
+            <Text style={styles.skorEtiket}>{_t("RAKİP")}</Text>
             <Text style={styles.skorDeger}>{rakipSkor}</Text>
           </View>
         </View>
@@ -237,12 +239,11 @@ export default function OnlineLetterScreen({ room, onExit }) {
               {benSecenim ? (
                 <>
                   <Text style={styles.buyukBaslik}>
-                    {kacinciHarf}. harfi sen seç
-                  </Text>
+                    {_t("{0}. harfi sen seç", [kacinciHarf])}</Text>
                   <Text style={styles.aciklama}>
                     {durum.harfP1
-                      ? `İlk harf ${durum.harfP1}. İkinciyi sen belirliyorsun.`
-                      : "İki harf de belirlenince yarış başlayacak."}
+                      ? _t("İlk harf {0}. İkinciyi sen belirliyorsun.", [durum.harfP1])
+                      : _t("İki harf de belirlenince yarış başlayacak.")}
                   </Text>
                   <View style={styles.klavye}>
                     {ALFABE.map((h) => (
@@ -259,9 +260,9 @@ export default function OnlineLetterScreen({ room, onExit }) {
               ) : (
                 <>
                   <ActivityIndicator color={VURGU.main} />
-                  <Text style={styles.buyukBaslik}>Rakip harf seçiyor</Text>
+                  <Text style={styles.buyukBaslik}>{_t("Rakip harf seçiyor")}</Text>
                   {durum.harfP1 ? (
-                    <Text style={styles.aciklama}>İlk harf: {durum.harfP1}</Text>
+                    <Text style={styles.aciklama}>{_t("İlk harf:")}{" "}{durum.harfP1}</Text>
                   ) : null}
                 </>
               )}
@@ -272,30 +273,27 @@ export default function OnlineLetterScreen({ room, onExit }) {
           {(faz === "harfler" || faz === "yaris" || faz === "turSonu" || faz === "macSonu") && (
             <View style={styles.harfKart}>
               <View style={styles.harfKutu}>
-                <Text style={styles.harfEtiket}>AD</Text>
+                <Text style={styles.harfEtiket}>{_t("AD")}</Text>
                 <Text style={styles.harfDeger}>{durum.harfP1}</Text>
               </View>
               <Text style={styles.arti}>+</Text>
               <View style={styles.harfKutu}>
-                <Text style={styles.harfEtiket}>SOYAD</Text>
+                <Text style={styles.harfEtiket}>{_t("SOYAD")}</Text>
                 <Text style={styles.harfDeger}>{durum.harfP2}</Text>
               </View>
             </View>
           )}
 
-          {faz === "harfler" && <Text style={styles.aciklama}>Hazır ol...</Text>}
+          {faz === "harfler" && <Text style={styles.aciklama}>{_t("Hazır ol...")}</Text>}
           {faz === "yaris" && (
-            <Text style={styles.aciklama}>
-              Adı {durum.harfP1}, soyadı {durum.harfP2} ile başlayan bir futbolcu
-              (ya da tersi) — ilk yazan puanı alır
-            </Text>
+            <Text style={styles.aciklama}>{_t("Adı")}{" "}{durum.harfP1}{_t(", soyadı")}{" "}{durum.harfP2}{" "}{_t("ile başlayan bir futbolcu (ya da tersi) — ilk yazan puanı alır")}</Text>
           )}
 
           {/* --- TUR / MAÇ SONU --- */}
           {(faz === "turSonu" || faz === "macSonu") && (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>
-                {durum.turKazanani === benKimim ? "Puan senin!" : "Puan rakibin"}
+                {durum.turKazanani === benKimim ? _t("Puan senin!") : _t("Puan rakibin")}
               </Text>
               {durum.sonCevap?.ad ? (
                 <>
@@ -306,14 +304,14 @@ export default function OnlineLetterScreen({ room, onExit }) {
                 </>
               ) : null}
               {faz === "macSonu" ? null : (
-                <Text style={styles.bekleme}>Sıradaki tur birazdan...</Text>
+                <Text style={styles.bekleme}>{_t("Sıradaki tur birazdan...")}</Text>
               )}
             </View>
           )}
           {faz === "macSonu" && (
             <OnlineMacSonu
               oda={room}
-              modAdi="Online — İlk Harften Bul"
+              modAdi={_t("Online — İlk Harften Bul")}
               durum={durum}
               benKimim={benKimim}
               rakipVar={rakipVar}
@@ -321,7 +319,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
               onExit={onExit}
               skorSen={benimSkor}
               skorRakip={rakipSkor}
-              skorEtiketi="puan"
+              skorEtiketi={_t("puan")}
               kazanan={benimSkor > rakipSkor ? "sen" : benimSkor < rakipSkor ? "rakip" : "berabere"}
             />
           )}
@@ -346,7 +344,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
             <View style={styles.girdiSatir}>
               <TextInput
                 style={styles.girdi}
-                placeholder="Futbolcu adı yaz..."
+                placeholder={_t("Futbolcu adı yaz...")}
                 placeholderTextColor={COLORS.textFaint}
                 value={girdi}
                 onChangeText={setGirdi}
@@ -375,7 +373,7 @@ export default function OnlineLetterScreen({ room, onExit }) {
 
         {faz !== "macSonu" && (
           <SoundPressable onPress={onExit} style={styles.cikisBtn}>
-            <Text style={styles.cikisText}>Odadan çık</Text>
+            <Text style={styles.cikisText}>{_t("Odadan çık")}</Text>
           </SoundPressable>
         )}
       </KlavyeAlani>

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Linking, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,18 +27,26 @@ const ILETISIM = "kzengin41@gmail.com";
 
 const KAYNAKLAR = [
   {
-    baslik: "Futbolcu fotoğrafları",
+    baslik: _t("Futbolcu fotoğrafları"),
     maddeler: [
-      "Fotoğrafların büyük bölümü Wikimedia Commons'tan derlenmiştir. Buradaki görsellerin çoğu Creative Commons (CC BY / CC BY-SA) lisanslıdır ve telif hakları kendi fotoğrafçılarına aittir.",
-      "Bir kısmı TheSportsDB açık veri tabanından alınmıştır.",
-      "Az sayıda fotoğraf uygulama sahibi tarafından ücretsiz kaynaklardan temin edilip eklenmiştir.",
+      _t(
+        "Fotoğrafların büyük bölümü Wikimedia Commons'tan derlenmiştir. Buradaki görsellerin çoğu Creative Commons (CC BY / CC BY-SA) lisanslıdır ve telif hakları kendi fotoğrafçılarına aittir."
+      ),
+      _t("Bir kısmı TheSportsDB açık veri tabanından alınmıştır."),
+      _t(
+        "Az sayıda fotoğraf uygulama sahibi tarafından ücretsiz kaynaklardan temin edilip eklenmiştir."
+      ),
     ],
   },
   {
-    baslik: "Kulüp ve kariyer verisi",
+    baslik: _t("Kulüp ve kariyer verisi"),
     maddeler: [
-      "Futbolcuların kulüp geçmişi, uyruk ve milli takım bilgileri Wikipedia'dan derlenmiştir.",
-      "Kulüp amblemleri kullanılmamaktadır; uygulamadaki takım rozetleri kulüp renklerinden üretilen özgün görsellerdir.",
+      _t(
+        "Futbolcuların kulüp geçmişi, uyruk ve milli takım bilgileri Wikipedia'dan derlenmiştir."
+      ),
+      _t(
+        "Kulüp amblemleri kullanılmamaktadır; uygulamadaki takım rozetleri kulüp renklerinden üretilen özgün görsellerdir."
+      ),
     ],
   },
 ];
@@ -51,9 +60,9 @@ export default function SourcesScreen({ onBack }) {
 
   return (
     <GameBackground style={styles.container}>
-      <BackButton onPress={onBack} confirm={false} text="Geri" />
-      <Text style={styles.baslik}>Kaynaklar</Text>
-      <Text style={styles.altBaslik}>İçeriğin nereden geldiği ve iletişim</Text>
+      <BackButton onPress={onBack} confirm={false} text={_t("Geri")} />
+      <Text style={styles.baslik}>{_t("Kaynaklar")}</Text>
+      <Text style={styles.altBaslik}>{_t("İçeriğin nereden geldiği ve iletişim")}</Text>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
         {KAYNAKLAR.map((bolum) => (
@@ -69,23 +78,19 @@ export default function SourcesScreen({ onBack }) {
         ))}
 
         <View style={[styles.kart, styles.kaldirmaKart]}>
-          <Text style={styles.kartBaslik}>Kaldırma talebi</Text>
-          <Text style={styles.maddeYazi}>
-            Bir görselin veya bilginin hak sahibiysen ve uygulamadan kaldırılmasını
-            istiyorsan bize yaz — talebini inceleyip ilgili içeriği kaldırıyoruz.
-            Ayrıca bir fotoğrafın yanlış futbolcuya ait olduğunu fark edersen oyun
-            içindeki "Bildir" düğmesini kullanabilirsin.
-          </Text>
+          <Text style={styles.kartBaslik}>{_t("Kaldırma talebi")}</Text>
+          <Text style={styles.maddeYazi}>{_t(
+            "Bir görselin veya bilginin hak sahibiysen ve uygulamadan kaldırılmasını istiyorsan bize yaz — talebini inceleyip ilgili içeriği kaldırıyoruz. Ayrıca bir fotoğrafın yanlış futbolcuya ait olduğunu fark edersen oyun içindeki \"Bildir\" düğmesini kullanabilirsin."
+          )}</Text>
           <Pressable onPress={mailAc} style={styles.mailBtn} hitSlop={10}>
             <Ionicons name="mail-outline" size={16} color={COLORS.accentDark} />
             <Text style={styles.mailBtnYazi}>{ILETISIM}</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.feragat}>
-          Bu uygulama hiçbir kulüp, lig, federasyon veya oyuncuyla resmi bağlantılı
-          değildir. Kulüp ve oyuncu isimleri yalnızca tanımlama amacıyla kullanılmaktadır.
-        </Text>
+        <Text style={styles.feragat}>{_t(
+          "Bu uygulama hiçbir kulüp, lig, federasyon veya oyuncuyla resmi bağlantılı değildir. Kulüp ve oyuncu isimleri yalnızca tanımlama amacıyla kullanılmaktadır."
+        )}</Text>
       </ScrollView>
     </GameBackground>
   );

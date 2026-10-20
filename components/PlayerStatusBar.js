@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -52,10 +53,9 @@ export default function PlayerStatusBar() {
 
       <View style={{ flex: 1 }}>
         <View style={styles.ustSatir}>
-          <Text style={styles.etiket}>SEVİYE {ilerleme.level}</Text>
+          <Text style={styles.etiket}>{_t("SEVİYE")}{" "}{ilerleme.level}</Text>
           <Text style={styles.xpYazi}>
-            {ilerleme.acilan} futbolcu · {ilerleme.kalan} kaldı
-          </Text>
+            {ilerleme.acilan}{" "}{_t("futbolcu ·")}{" "}{ilerleme.kalan}{" "}{_t("kaldı")}</Text>
         </View>
         <View style={styles.barZemin}>
           <View style={[styles.barDolgu, { width: `${Math.round(ilerleme.fraction * 100)}%` }]} />

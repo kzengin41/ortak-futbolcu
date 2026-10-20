@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,14 +24,14 @@ export function ModKaro({ ikon, icon, baslik, alt, onPress, rozet, gunun, access
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || baslik}
-      accessibilityHint={gunun ? "Günün modu: bu modda XP iki kat" : undefined}
+      accessibilityHint={gunun ? _t("Günün modu: bu modda XP iki kat") : undefined}
     >
       <View style={s.ust}>
         <View style={[s.ikon, gunun && s.ikonGunun]}>
           {ikon ? <ModIkon ad={ikon} boyut={28} renk={gunun ? COLORS.accent : COLORS.text} /> : <Ionicons name={icon || "play"} size={26} color={gunun ? COLORS.accent : COLORS.text} />}
         </View>
         {gunun ? (
-          <View style={s.xp}><Text style={s.xpYazi}>2× XP</Text></View>
+          <View style={s.xp}><Text style={s.xpYazi}>{_t("2× XP")}</Text></View>
         ) : rozet ? (
           <View style={s.rozet}><Text style={s.rozetYazi}>{rozet}</Text></View>
         ) : null}

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -34,37 +35,39 @@ export default function StatsScreen({ onBack }) {
     <GameBackground style={styles.container}>
       <BackButton onPress={onBack} />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 8 }} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>İstatistikler</Text>
+        <Text style={styles.title}>{_t("İstatistikler")}</Text>
 
         {!stats ? (
-          <Text style={styles.bodyMuted}>Yükleniyor...</Text>
+          <Text style={styles.bodyMuted}>{_t("Yükleniyor...")}</Text>
         ) : totalGames === 0 && pokedex.unlocked === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="stats-chart-outline" size={32} color={COLORS.textMuted} />
-            <Text style={styles.emptyText}>Henüz hiç oyun oynamadın. İlk turunu oynadığında burada istatistiklerin görünecek.</Text>
+            <Text style={styles.emptyText}>{_t(
+              "Henüz hiç oyun oynamadın. İlk turunu oynadığında burada istatistiklerin görünecek."
+            )}</Text>
           </View>
         ) : (
           <>
             <View style={styles.summaryRow}>
-              <SummaryCard icon="checkmark-circle" color={COLORS.accent} label="Toplam Doğru" value={stats.totalCorrect} />
-              <SummaryCard icon="close-circle" color={COLORS.danger} label="Toplam Yanlış" value={stats.totalWrong} />
-              <SummaryCard icon="flame" color={COLORS.cta} label="En İyi Seri" value={stats.bestStreak} />
+              <SummaryCard icon="checkmark-circle" color={COLORS.accent} label={_t("Toplam Doğru")} value={stats.totalCorrect} />
+              <SummaryCard icon="close-circle" color={COLORS.danger} label={_t("Toplam Yanlış")} value={stats.totalWrong} />
+              <SummaryCard icon="flame" color={COLORS.cta} label={_t("En İyi Seri")} value={stats.bestStreak} />
             </View>
 
-            <Text style={styles.sectionTitle}>Ansiklopedi İlerlemesi</Text>
+            <Text style={styles.sectionTitle}>{_t("Ansiklopedi İlerlemesi")}</Text>
             <View style={styles.card}>
               <View style={styles.pokedexRow}>
                 <Ionicons name="book" size={20} color={COLORS.accent} />
-                <Text style={styles.pokedexText}>{pokedex.unlocked} / {pokedex.total} futbolcu açıldı</Text>
+                <Text style={styles.pokedexText}>{pokedex.unlocked}/ {pokedex.total}{" "}{_t("futbolcu açıldı")}</Text>
               </View>
               <View style={styles.xpTrack}>
                 <View style={[styles.xpFill, { width: `${pokedex.total ? (pokedex.unlocked / pokedex.total) * 100 : 0}%` }]} />
               </View>
             </View>
 
-            <Text style={styles.sectionTitle}>Mod Bazlı Sonuçlar</Text>
+            <Text style={styles.sectionTitle}>{_t("Mod Bazlı Sonuçlar")}</Text>
             {modeEntries.length === 0 ? (
-              <Text style={styles.bodyMuted}>Henüz bir mod oynanmadı.</Text>
+              <Text style={styles.bodyMuted}>{_t("Henüz bir mod oynanmadı.")}</Text>
             ) : (
               modeEntries
                 .sort((a, b) => (b[1].wins + b[1].losses) - (a[1].wins + a[1].losses))
@@ -79,14 +82,11 @@ export default function StatsScreen({ onBack }) {
                       </View>
                       <View style={styles.modeStatsRow}>
                         <Text style={styles.modeStat}>
-                          <Text style={{ color: COLORS.accent, fontWeight: "900" }}>{m.wins}</Text> galibiyet
-                        </Text>
+                          <Text style={{ color: COLORS.accent, fontWeight: "900" }}>{m.wins}</Text>{" "}{_t("galibiyet")}</Text>
                         <Text style={styles.modeStat}>
-                          <Text style={{ color: COLORS.danger, fontWeight: "900" }}>{m.losses}</Text> mağlubiyet
-                        </Text>
+                          <Text style={{ color: COLORS.danger, fontWeight: "900" }}>{m.losses}</Text>{" "}{_t("mağlubiyet")}</Text>
                         <Text style={styles.modeStat}>
-                          <Text style={{ color: COLORS.cta, fontWeight: "900" }}>{m.bestStreak}</Text> en iyi seri
-                        </Text>
+                          <Text style={{ color: COLORS.cta, fontWeight: "900" }}>{m.bestStreak}</Text>{" "}{_t("en iyi seri")}</Text>
                       </View>
                     </View>
                   );

@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,17 +39,17 @@ export default function DailyPuzzleCard({ onPress }) {
         />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.baslik}>Günün Bulmacası #{gunNumarasi()}</Text>
+        <Text style={styles.baslik}>{_t("Günün Bulmacası #")}{gunNumarasi()}</Text>
         <Text style={styles.altBaslik}>
           {!durum
-            ? "Yükleniyor..."
+            ? _t("Yükleniyor...")
             : bitti
             ? bilindi
-              ? `Bugünü ${durum.denemeler.length} denemede bildin`
-              : "Bugünü bilemedin — yarın yeni soru"
+              ? _t("Bugünü {0} denemede bildin", [durum.denemeler.length])
+              : _t("Bugünü bilemedin — yarın yeni soru")
             : durum.denemeler.length
-            ? `${kalan} deneme hakkın kaldı`
-            : "Herkese aynı soru, 3 hak · seriyi korur 🔥"}
+            ? _t("{0} deneme hakkın kaldı", [kalan])
+            : _t("Herkese aynı soru, 3 hak · seriyi korur 🔥")}
         </Text>
       </View>
       {!bitti && <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />}

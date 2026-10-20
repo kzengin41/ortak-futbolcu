@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import ModKurulum, { KurulumBolum, SecimCipleri, ZorlukSecici, SureSecici } from "../components/ModKurulum";
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
@@ -40,18 +41,18 @@ function cpuZorluk(z) {
 
 // Filtre (Kapsam) Seçenekleri
 const SCOPE_OPTIONS = [
-  { id: "profil", label: "⚙️ Eşleşme profilim" },
-  { id: "all", label: "🌍 Tüm Dünya" },
-  { id: "turkish", label: "🇹🇷 Sadece Türkler" },
-  { id: "big4", label: "🦅🦁🐂 4 Büyükler" }
+  { id: "profil", label: _t("⚙️ Eşleşme profilim") },
+  { id: "all", label: _t("🌍 Tüm Dünya") },
+  { id: "turkish", label: _t("🇹🇷 Sadece Türkler") },
+  { id: "big4", label: _t("🦅🦁🐂 4 Büyükler") }
 ];
 
 const SUBMODES = [
-  { id: "classic", label: "🔠 Klasik (Baştan)", desc: "Ad ve soyadı bu iki harfle BAŞLAYAN oyuncu" },
-  { id: "contains", label: "🔎 İçinde Geçen", desc: "Ad veya soyadında bu iki harfi İÇEREN oyuncu (nerede olursa olsun)" },
-  { id: "chain", label: "🔗 Son Harf (Zincir)", desc: "Son harften oyuncu türetme" },
+  { id: "classic", label: _t("🔠 Klasik (Baştan)"), desc: _t("Ad ve soyadı bu iki harfle BAŞLAYAN oyuncu") },
+  { id: "contains", label: _t("🔎 İçinde Geçen"), desc: _t("Ad veya soyadında bu iki harfi İÇEREN oyuncu (nerede olursa olsun)") },
+  { id: "chain", label: _t("🔗 Son Harf (Zincir)"), desc: _t("Son harften oyuncu türetme") },
   // 4 Ekim 2026 (.28548) — tek kişilik hayatta kalma ayrı ekranda (Harf Zinciri); seçilince oraya geçer.
-  { id: "hayatta", label: "⏱️ Zincir — Tek Başına", desc: "CPU yok: 3 canla en uzun zinciri kur, rekorunu kır" },
+  { id: "hayatta", label: _t("⏱️ Zincir — Tek Başına"), desc: _t("CPU yok: 3 canla en uzun zinciri kur, rekorunu kır") },
 ];
 
 const charMap = { 'À':'A', 'Á':'A', 'Â':'A', 'Ä':'A', 'Å':'A', 'É':'E', 'Í':'I', 'Ñ':'N', 'Ó':'O', 'Ø':'O', 'Þ':'T', 'Č':'C', 'Đ':'D', 'Ľ':'L', 'Ł':'L', 'Š':'S', 'Ž':'Z', 'Ș':'S', 'Α':'A', 'Ğ':'G' };
@@ -271,7 +272,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     },
   });
   useEffect(() => {
-    oyunBilgisiniYaz("letterCpu", { satirlar: ayarSatirlari({ zorluk: zorlukId, sure: harfSuresi, yontem: inputMode, ekstra: [["Hedef", "3 puan"]] }) });
+    oyunBilgisiniYaz("letterCpu", { satirlar: ayarSatirlari({ zorluk: zorlukId, sure: harfSuresi, yontem: inputMode, ekstra: [[_t("Hedef"), _t("3 puan")]] }) });
   }, [zorlukId, harfSuresi, inputMode]);
 
   // CPU'nun bu turdaki düşünme süresi — zorluğa göre, sürenin %85'ini aşmaz.
@@ -357,7 +358,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
         // bu fonksiyon tanımlı değil, bu yüzden bu koşula her düşüldüğünde
         // (ör. rastgele atamada nadir bir harf çıktığında) uygulama anında
         // çöküyordu. Alert.alert ile düzeltildi.
-        Alert.alert("Uygun kombinasyon yok", "Bu harfle (ve bu filtreyle) eşleşen kombinasyon kalmamış olabilir, başka bir harf dene.");
+        Alert.alert(_t("Uygun kombinasyon yok"), _t(
+          "Bu harfle (ve bu filtreyle) eşleşen kombinasyon kalmamış olabilir, başka bir harf dene."
+        ));
         setUserLetter(null);
       }
     } else {
@@ -424,16 +427,16 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     
     if (isPairMode) {
       playWrong();
-      endRound(null, "Kimse bilemedi! Süre Doldu.");
+      endRound(null, _t("Kimse bilemedi! Süre Doldu."));
     } else {
       // Zincir modu
       const isPlayerTurn = chainHistory.length % 2 === 0;
       if (isPlayerTurn) {
         // Oyuncu cevaplayamadı, CPU puan alır
-        awardPoint("cpu", `Süren bitti! ${kisaAd(karakter)} kazandı.`);
+        awardPoint("cpu", _t("Süren bitti! {0} kazandı.", [kisaAd(karakter)]));
       } else {
         // CPU cevaplayamadı (Gerçekte CPU'nun timeoutu ayrı çalışır ama fallback)
-        awardPoint("p1", `${kisaAd(karakter)} cevap bulamadı! Sen kazandın.`);
+        awardPoint("p1", _t("{0} cevap bulamadı! Sen kazandın.", [kisaAd(karakter)]));
       }
     }
   };
@@ -479,7 +482,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
         } else {
           // CPU bulamadı! Player kazandı!
           if (timerRef.current) clearInterval(timerRef.current);
-          awardPoint("p1", `${kisaAd(karakter)} isim bulamadı, sen kazandın!`);
+          awardPoint("p1", _t("{0} isim bulamadı, sen kazandın!", [kisaAd(karakter)]));
         }
       }
     }, delay);
@@ -496,7 +499,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     if (isPairMode) {
       // Klasik/İçinde Geçen'de doğru bildiyse tur biter
       setWinningPlayer(playerObj);
-      awardPoint(who, `${who === "p1" ? "Doğru Bildin!" : "Rakip Bildi!"}`);
+      awardPoint(who, `${who === "p1" ? _t("Doğru Bildin!") : _t("Rakip Bildi!")}`);
     } else {
       // Zincir modunda sıra diğerine geçer
       if (who === "cpu") playCpuCorrect(); else playCorrect();
@@ -583,7 +586,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
         processGuess(match, "p1");
       } else {
         playWrong();
-        setFeedback({ type: "wrong", text: "Yanlış Eşleşme veya Kapsam Dışı!" });
+        setFeedback({ type: "wrong", text: _t("Yanlış Eşleşme veya Kapsam Dışı!") });
         setTimeout(() => setFeedback(null), 1500);
       }
     } else {
@@ -594,7 +597,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       if (match) {
         if (chainHistory.some(ch => ch.name === match.name)) {
           playWrong();
-          setFeedback({ type: "wrong", text: "Bu oyuncu daha önce söylendi!" });
+          setFeedback({ type: "wrong", text: _t("Bu oyuncu daha önce söylendi!") });
           setTimeout(() => setFeedback(null), 1500);
         } else {
           processGuess(match, "p1");
@@ -602,7 +605,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
         }
       } else {
         playWrong();
-        setFeedback({ type: "wrong", text: `İsim '${currentLetter}' ile başlamalı veya filtrenize uygun değil!` });
+        setFeedback({ type: "wrong", text: _t("İsim '{0}' ile başlamalı veya filtrenize uygun değil!", [currentLetter]) });
         setTimeout(() => setFeedback(null), 1500);
       }
     }
@@ -618,29 +621,31 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
     return (
       <ModKurulum
         modId="letterCpu"
-        baslik="İlk Harften Bul"
-        aciklama="Harfler 3-2-1'den sonra açılır. Harflere uyan bir futbolcuyu CPU'dan önce söyle. 3 puana ulaşan kazanır."
+        baslik={_t("İlk Harften Bul")}
+        aciklama={_t(
+          "Harfler 3-2-1'den sonra açılır. Harflere uyan bir futbolcuyu CPU'dan önce söyle. 3 puana ulaşan kazanır."
+        )}
         vurgu={MODE_COLORS.letters}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorlukId, sure: harfSuresi, yontem: inputMode })}
         onBasla={startGame}
         baslaDevreDisi={filteredPlayers.length === 0}
       >
-        <KurulumBolum baslik="OYUN TÜRÜ" not={secilenAlt ? secilenAlt.desc : null}>
+        <KurulumBolum baslik={_t("OYUN TÜRÜ")} not={secilenAlt ? secilenAlt.desc : null}>
           <SecimCipleri
             secenekler={SUBMODES.map((m) => ({ deger: m.id, etiket: m.label }))}
             secili={subMode}
             onSec={(id) => (id === "hayatta" ? (onModaGit ? onModaGit("letterZincir") : null) : setSubMode(id))}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="ZORLUK">
+        <KurulumBolum baslik={_t("ZORLUK")}>
           <ZorlukSecici
             deger={zorlukId}
             onDegis={setZorlukId}
-            aciklama={(z) => (z <= 3 ? "CPU yavaş, sık sık bulamaz." : z <= 7 ? "CPU dengeli." : "CPU çok hızlı ve neredeyse hep bulur.")}
+            aciklama={(z) => (z <= 3 ? _t("CPU yavaş, sık sık bulamaz.") : z <= 7 ? _t("CPU dengeli.") : _t("CPU çok hızlı ve neredeyse hep bulur."))}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="TUR SÜRESİ">
+        <KurulumBolum baslik={_t("TUR SÜRESİ")}>
           <SureSecici
             secenekler={MOD_TANIMLARI.letterCpu.sure.secenekler}
             deger={harfSuresi}
@@ -650,11 +655,11 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
             aciklama={MOD_TANIMLARI.letterCpu.sure.aciklama}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+        <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")}>
           <SecimCipleri secenekler={YONTEM_SECENEKLERI} secili={inputMode} onSec={setInputMode} />
         </KurulumBolum>
         {scope === "profil" ? <EslesmeProfiliBolumu eslesme={eslesme} /> : null}
-        <KurulumBolum baslik="KAPSAM" not={`Bu ayarlarla havuzda ${filteredPlayers.length} oyuncu var.`}>
+        <KurulumBolum baslik={_t("KAPSAM")} not={_t("Bu ayarlarla havuzda {0} oyuncu var.", [filteredPlayers.length])}>
           <SecimCipleri
             secenekler={SCOPE_OPTIONS.map((o) => ({ deger: o.id, etiket: o.label }))}
             secili={scope}
@@ -674,8 +679,8 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
         {/* Paket 31 — standart üst çubuk + skor şeridi (components/MacCercevesi.js) */}
         {phase !== "countdown" && (
           <OyunUstCubugu
-            baslik="İlk Harf"
-            alt={phase === "setup" ? "Mod seç" : `${kisaAd(karakter)} ile · ilk 3 alan kazanır`}
+            baslik={_t("İlk Harf")}
+            alt={phase === "setup" ? _t("Mod seç") : _t("{0} ile · ilk 3 alan kazanır", [kisaAd(karakter)])}
             onCikis={phase === "gameOver" ? (onExitSilent || onExit) : onExit}
             style={{ paddingHorizontal: 20, marginTop: 6 }}
           />
@@ -685,9 +690,9 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       {phase !== "setup" && phase !== "gameOver" && (
         <SkorSeridi
           style={{ marginHorizontal: 20, width: "auto" }}
-          sol={{ etiket: "SEN", puan: scores.p1 }}
+          sol={{ etiket: _t("SEN"), puan: scores.p1 }}
           sag={{ etiket: rakipEtiketi(karakter), puan: scores.cpu, karakter }}
-          orta="3'te biter"
+          orta={_t("3'te biter")}
         />
       )}
       {subMode === "chain" && phase === "racing" && chainHistory.length % 2 !== 0 ? <RakipTepkisi karakter={karakter} metin={dusunceSozu} style={{ marginTop: -4, marginBottom: 8 }} /> : null}
@@ -695,7 +700,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       {/* SETUP PHASE */}
       {phase === "setup" && (
         <View style={styles.setupCard}>
-          <Text style={styles.setupTitle}>Oyun Modunu Seç</Text>
+          <Text style={styles.setupTitle}>{_t("Oyun Modunu Seç")}</Text>
           <View style={styles.setupOptions}>
             {SUBMODES.map(m => (
               <Pressable key={m.id} style={[styles.setupBtn, subMode === m.id && styles.setupBtnActive]} onPress={() => (m.id === "hayatta" ? (onModaGit ? onModaGit("letterZincir") : null) : setSubMode(m.id))}>
@@ -705,7 +710,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
             ))}
           </View>
 
-          <Text style={[styles.setupTitle, { marginTop: 20 }]}>Kapsam (Filtre)</Text>
+          <Text style={[styles.setupTitle, { marginTop: 20 }]}>{_t("Kapsam (Filtre)")}</Text>
           <View style={styles.setupOptionsRow}>
             {SCOPE_OPTIONS.map(s => (
               <Pressable key={s.id} style={[styles.setupPill, scope === s.id && styles.setupPillActive]} onPress={() => setScope(s.id)}>
@@ -714,10 +719,10 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
             ))}
           </View>
           
-          <Text style={styles.poolSizeText}>Bu ayarlarla havuzda {filteredPlayers.length} oyuncu var.</Text>
+          <Text style={styles.poolSizeText}>{_t("Bu ayarlarla havuzda")}{" "}{filteredPlayers.length}{" "}{_t("oyuncu var.")}</Text>
 
           <Pressable style={styles.startBtn} onPress={startGame}>
-            <Text style={styles.startBtnText}>BAŞLA</Text>
+            <Text style={styles.startBtnText}>{_t("BAŞLA")}</Text>
           </Pressable>
         </View>
       )}
@@ -725,26 +730,27 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       {/* SELECT LETTER PHASE */}
       {phase === "selectLetter" && (
         <View style={styles.board}>
-          <Text style={styles.instruction}>Bir Harf Seç</Text>
+          <Text style={styles.instruction}>{_t("Bir Harf Seç")}</Text>
           <Text style={styles.instructionSub}>
             {subMode === "classic"
-              ? "Ad ve Soyadı bu harflerle BAŞLAYAN futbolcuyu bulacaksın"
+              ? _t("Ad ve Soyadı bu harflerle BAŞLAYAN futbolcuyu bulacaksın")
               : subMode === "contains"
-              ? "Adında veya soyadında bu iki harfi İÇEREN (nerede olursa olsun) futbolcuyu bulacaksın"
-              : "Kelime zincirini başlatacak ilk harfi seçiyorsun"}
-            {"\n"}Türkçe harfler eşdeğer: Ç=C, Ş=S, Ğ=G, Ö=O, Ü=U, İ=I.
-          </Text>
+              ? _t(
+              "Adında veya soyadında bu iki harfi İÇEREN (nerede olursa olsun) futbolcuyu bulacaksın"
+            )
+              : _t("Kelime zincirini başlatacak ilk harfi seçiyorsun")}
+            {"\n"}{_t("Türkçe harfler eşdeğer: Ç=C, Ş=S, Ğ=G, Ö=O, Ü=U, İ=I.")}</Text>
 
           {!atananHarfler && (
             <SoundPressable style={[styles.randomLetterBtn, { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }]} onPress={handleRandomLetter}>
               <Ionicons name="shuffle" size={16} color={COLORS.accent} />
-              <Text style={styles.randomLetterBtnText}>Rastgele Ata</Text>
+              <Text style={styles.randomLetterBtnText}>{_t("Rastgele Ata")}</Text>
             </SoundPressable>
           )}
 
           {atananHarfler ? (
             <View style={styles.atandiKutu}>
-              <Text style={styles.atandiBaslik}>Harfler atandı</Text>
+              <Text style={styles.atandiBaslik}>{_t("Harfler atandı")}</Text>
               <View style={styles.atandiSatir}>
                 <Text style={styles.atandiHarf}>{atananHarfler.kullanici}</Text>
                 {atananHarfler.cpu ? (
@@ -754,7 +760,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                   </>
                 ) : null}
               </View>
-              <Text style={styles.atandiAlt}>Hazır ol…</Text>
+              <Text style={styles.atandiAlt}>{_t("Hazır ol…")}</Text>
             </View>
           ) : (
             <View style={styles.keyboard}>
@@ -774,26 +780,26 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
           {isPairMode ? (
             <View style={styles.lettersCard}>
               <View style={styles.letterBox}>
-                <Text style={styles.letterLabel}>Senin Harfin</Text>
+                <Text style={styles.letterLabel}>{_t("Senin Harfin")}</Text>
                 <Text style={styles.letterValue}>{phase === "countdown" ? "?" : userLetter}</Text>
               </View>
               <Text style={styles.letterPlus}>+</Text>
               <View style={styles.letterBox}>
-                <Text style={styles.letterLabel}>Rakibin harfi</Text>
+                <Text style={styles.letterLabel}>{_t("Rakibin harfi")}</Text>
                 <Text style={styles.letterValue}>{phase === "countdown" ? "?" : cpuLetter}</Text>
               </View>
               {/* 4 Ekim 2026 — Ç/C kuralı her turda görünür */}
-              <Text style={styles.harfKurali}>Ç=C · Ş=S · Ğ=G · Ö=O · Ü=U · İ=I sayılır</Text>
+              <Text style={styles.harfKurali}>{_t("Ç=C · Ş=S · Ğ=G · Ö=O · Ü=U · İ=I sayılır")}</Text>
             </View>
           ) : (
             <View style={styles.chainCard}>
-              <Text style={styles.chainLabel}>Aranan İlk Harf</Text>
+              <Text style={styles.chainLabel}>{_t("Aranan İlk Harf")}</Text>
               <Text style={styles.chainValue}>{phase === "countdown" ? "?" : userLetter}</Text>
               {chainHistory.length > 0 && (
                 <View style={styles.chainHistoryBox}>
                   {chainHistory.map((ch, i) => (
                     <Text key={i} style={styles.chainHistoryText}>
-                      {i % 2 === 0 ? "Sen" : kisaAd(karakter)}: {ch.name}
+                      {i % 2 === 0 ? _t("Sen") : kisaAd(karakter)}: {ch.name}
                     </Text>
                   ))}
                 </View>
@@ -808,7 +814,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 width: fuseAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
                 backgroundColor: fuseAnim.interpolate({ inputRange: [0, 0.3, 1], outputRange: [COLORS.danger, COLORS.cta, COLORS.accent] })
               }]} />
-              <Text style={styles.fuseText}>{timeLeft} saniye</Text>
+              <Text style={styles.fuseText}>{timeLeft}{" "}{_t("saniye")}</Text>
             </View>
           )}
 
@@ -822,7 +828,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 autoCapitalize="words"
                 spellCheck={false}
                 style={styles.input}
-                placeholder="Örn: Abdülkerim Bardakcı"
+                placeholder={_t("Örn: Abdülkerim Bardakcı")}
                 placeholderTextColor={COLORS.textMuted}
                 value={answerInput}
                 onChangeText={setAnswerInput}
@@ -840,13 +846,13 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 )}
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 12 }}>
                   <Pressable style={[styles.primaryBtn, { flex: 1, marginRight: 8, paddingVertical: 12 }]} onPress={checkUserGuess}>
-                    <Text style={[styles.primaryBtnText, { fontSize: 14 }]}>Gönder</Text>
+                    <Text style={[styles.primaryBtnText, { fontSize: 14 }]}>{_t("Gönder")}</Text>
                   </Pressable>
                   <Pressable style={[styles.primaryBtn, { flex: 1, marginLeft: 8, paddingVertical: 12, backgroundColor: COLORS.danger }]} onPress={() => {
                     if (timerRef.current) clearInterval(timerRef.current);
-                    awardPoint("cpu", "Pes ettin!");
+                    awardPoint("cpu", _t("Pes ettin!"));
                   }}>
-                    <Text style={[styles.primaryBtnText, { fontSize: 14, color: "#FFF" }]}>Bilemedim</Text>
+                    <Text style={[styles.primaryBtnText, { fontSize: 14, color: "#FFF" }]}>{_t("Bilemedim")}</Text>
                   </Pressable>
                 </View>
               
@@ -854,7 +860,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10 }}>
                 <Ionicons name={subMode === "chain" && chainHistory.length % 2 !== 0 ? "time" : "pencil"} size={16} color="#FFD93D" />
                 <Text style={[styles.turnIndicator, { marginTop: 0 }]}>
-                  {subMode === "chain" && chainHistory.length % 2 !== 0 ? `${kisaAd(karakter).toLocaleUpperCase("tr")} DÜŞÜNÜYOR…` : "SENİN SIRAN!"}
+                  {subMode === "chain" && chainHistory.length % 2 !== 0 ? _t("{0} DÜŞÜNÜYOR…", [kisaAd(karakter).toLocaleUpperCase("tr")]) : _t("SENİN SIRAN!")}
                 </Text>
               </View>
             </View>
@@ -871,7 +877,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       {/* RESULT & GAME OVER */}
       {phase === "gameOver" && (
         <MacSonuKarti
-          modAdi={subMode === "chain" ? "İlk Harf — Zincir" : "İlk Harften Bul"}
+          modAdi={subMode === "chain" ? _t("İlk Harf — Zincir") : _t("İlk Harften Bul")}
           modeId="letterCpu"
           skorSen={scores.p1}
           skorRakip={scores.cpu}
@@ -880,7 +886,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
           enIyi={(() => {
             if (!dogrularim.length) return null;
             const en = [...dogrularim].sort((a, b) => taninirlik(a.oyuncu) - taninirlik(b.oyuncu))[0];
-            return { ad: en.oyuncu.name, alt: `Harfler: ${en.etiket}` };
+            return { ad: en.oyuncu.name, alt: _t("Harfler: {0}", [en.etiket]) };
           })()}
           kazanilanXp={scores.p1 > scores.cpu ? XP_MAC_GALIBIYETI : 0}
           onRovans={startGame}
@@ -900,7 +906,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 setShowAnswers(true);
               }}
             >
-              <Text style={[styles.primaryBtnText, { color: "#3D2600" }]}>Doğru Cevapları Gör</Text>
+              <Text style={[styles.primaryBtnText, { color: "#3D2600" }]}>{_t("Doğru Cevapları Gör")}</Text>
             </Pressable>
           
         </View>
@@ -911,7 +917,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
       <Modal visible={showAnswers} transparent animationType="slide" onRequestClose={() => setShowAnswers(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', padding: 20, paddingTop: 60 }}>
           <View style={{ backgroundColor: COLORS.card, flex: 1, borderRadius: 20, padding: 20, borderColor: COLORS.cardBorder, borderWidth: 2 }}>
-            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '900', marginBottom: 16 }}>Olası Cevaplar</Text>
+            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '900', marginBottom: 16 }}>{_t("Olası Cevaplar")}</Text>
             <ScrollView>
               {filteredPlayers.filter(p => {
                 // NOT: burada önceden tanımsız bir `chainLetter` değişkeni
@@ -947,10 +953,10 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
               }).slice(0, 50).map(p => (
                 <Text key={p.name} style={{ color: COLORS.accent, fontSize: 16, marginBottom: 8 }}>{p.name}</Text>
               ))}
-              <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 10 }}>* Sadece en popüler 50 kişi listelenmiştir.</Text>
+              <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 10 }}>{_t("* Sadece en popüler 50 kişi listelenmiştir.")}</Text>
             </ScrollView>
             <Pressable style={[styles.primaryBtn, { marginTop: 20 }]} onPress={() => setShowAnswers(false)}>
-              <Text style={styles.primaryBtnText}>Kapat</Text>
+              <Text style={styles.primaryBtnText}>{_t("Kapat")}</Text>
             </Pressable>
           </View>
         </View>

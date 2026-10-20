@@ -1,3 +1,4 @@
+import { _t } from "../lib/dil";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { MODE_COLORS, COLORS, saydam, vurguZemini } from "../lib/theme";
 import { EslesmeProfiliBolumu } from "../components/EslesmeProfiliPenceresi";
@@ -85,7 +86,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   const karakter = useMemo(() => karakterSec(zorluk10), [zorluk10]);
   // 4 Ekim 2026 (.28810) — 2 kişilikte Ayarlar'daki oyuncu adları.
   const { adlar } = useOyuncuAdlari(2);
-  const oyuncuEtiketi = vsCpu ? { p1: "Sen", p2: kisaAd(karakter) } : { p1: adlar[0], p2: adlar[1] };
+  const oyuncuEtiketi = vsCpu ? { p1: _t("Sen"), p2: kisaAd(karakter) } : { p1: adlar[0], p2: adlar[1] };
   const [turlar, setTurlar] = useState([]);
   const [dogrularim, setDogrularim] = useState([]);
   const difficulty = zorluk10 <= 3 ? "normal" : zorluk10 <= 7 ? "zor" : "cokZor";
@@ -137,7 +138,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   async function sesTekrar() {
     setSesOnayIstegi(null);
     setVoiceError(null);
-    try { await startRecording(); } catch (err) { setVoiceError(err.message || "Mikrofona erisilemedi"); }
+    try { await startRecording(); } catch (err) { setVoiceError(err.message || _t("Mikrofona erisilemedi")); }
   }
   function sesYaz(ad) {
     const istek = sesOnayIstegi;
@@ -291,7 +292,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     try {
       await startRecording();
     } catch (err) {
-      setVoiceError(err.message || "Mikrofona erişilemedi");
+      setVoiceError(err.message || _t("Mikrofona erişilemedi"));
     }
   }
 
@@ -311,16 +312,16 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           if (sesOnayiAcik) setSesOnayIstegi({ duyulan: text, ad: text, gonder, yaz });
           else { const matched = findMatchedPlayer(text, PLAYERS); gonder(matched ? matched.name : text); }
         } else {
-          setVoiceError("Sesi anlayamadım, tekrar dener misin?");
+          setVoiceError(_t("Sesi anlayamadım, tekrar dener misin?"));
         }
       } catch (err) {
-        setVoiceError(err.message || "Ses tanıma başarısız oldu");
+        setVoiceError(err.message || _t("Ses tanıma başarısız oldu"));
       }
     } else {
       try {
         await startRecording();
       } catch (err) {
-        setVoiceError(err.message || "Mikrofona erişilemedi");
+        setVoiceError(err.message || _t("Mikrofona erişilemedi"));
       }
     }
   }
@@ -337,7 +338,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     if (who === "p1") setScoreP1((s) => s + gained);
     else setScoreP2((s) => s + gained);
     if (who === "p1" && gained > 0 && player) {
-      setDogrularim((l) => [...l, { oyuncu: player, etiket: `${gained} kulüp: ${(matchedClubs || []).join(", ")}` }]);
+      setDogrularim((l) => [...l, { oyuncu: player, etiket: _t("{0} kulüp: {1}", [gained, (matchedClubs || []).join(", ")]) }]);
     }
     if (gained > 0) {
       // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
@@ -411,7 +412,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     const rakipCevabi = roundResults[digeri]?.player;
     if (rakipCevabi && rakipCevabi.name === matched.name) {
       setVoiceError(null);
-      setFeedback({ correct: false, message: "Bu futbolcu bu turda zaten söylendi" });
+      setFeedback({ correct: false, message: _t("Bu futbolcu bu turda zaten söylendi") });
       recordTurnResult(who, 0, matched, []);
       return;
     }
@@ -467,7 +468,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     kurulumaDon: () => { setStarted(false); setScoreP1(0); setScoreP2(0); setRoundNumber(1); },
   });
   useEffect(() => {
-    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [["Rakip", vsCpu ? `${karakter.avatar} ${kisaAd(karakter)}` : "2 kişi"], ["Tur sayısı", String(turSayisi)], ["Son tur altın", altinTur ? "Açık (×2)" : "Kapalı"]] }) });
+    oyunBilgisiniYaz("fiveClubs", { satirlar: ayarSatirlari({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, ekstra: [[_t("Rakip"), vsCpu ? `${karakter.avatar} ${kisaAd(karakter)}` : _t("2 kişi")], [_t("Tur sayısı"), String(turSayisi)], [_t("Son tur altın"), altinTur ? _t("Açık (×2)") : _t("Kapalı")]] }) });
   }, [zorluk10, roundSeconds, inputMode, vsCpu, turSayisi, altinTur, karakter]);
   // Tur sayısı ve altın tur da "son seçimler" arasında hatırlanır.
   const turAyariYuklendi = useRef(false);
@@ -487,51 +488,57 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     return (
       <ModKurulum
         modId="fiveClubs"
-        baslik={vsCpu ? "5 Kulüp — CPU'ya Karşı" : "5 Kulüp — 2 Kişi"}
+        baslik={vsCpu ? _t("5 Kulüp — CPU'ya Karşı") : _t("5 Kulüp — 2 Kişi")}
         aciklama={vsCpu
-          ? "Ekranda 5 büyük kulüp çıkar. Sen ve CPU sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."
-          : "Ekranda 5 büyük kulüp çıkar. Sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."}
+          ? _t(
+          "Ekranda 5 büyük kulüp çıkar. Sen ve CPU sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."
+        )
+          : _t(
+          "Ekranda 5 büyük kulüp çıkar. Sırayla birer futbolcu söylersiniz; futbolcu bu kulüplerin kaçında oynadıysa o kadar puan (en az 2). 3 tur, en çok puan kazanır."
+        )}
         vurgu={MODE_COLORS.fiveClubs}
         onGeri={onExitSilent || onExit}
         onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk: zorluk10, sure: roundSeconds, yontem: inputMode, turSayisi, altinTur })}
         onBasla={() => setStarted(true)}
       >
-        <KurulumBolum baslik="ZORLUK">
+        <KurulumBolum baslik={_t("ZORLUK")}>
           <ZorlukSecici
             deger={zorluk10}
             onDegis={setZorluk10}
             aciklama={(z) =>
-              (z <= 3 ? "Sadece en büyük kulüpler." : z <= 7 ? "Şampiyonlar Ligi klasikleri de girer." : "54 kulüplük tam havuz.") +
-              (vsCpu ? (z <= 3 ? " CPU sık pas geçer." : z <= 7 ? " CPU dengeli." : " CPU en iyi cevabı arar.") : "")}
+              (z <= 3 ? _t("Sadece en büyük kulüpler.") : z <= 7 ? _t("Şampiyonlar Ligi klasikleri de girer.") : _t("54 kulüplük tam havuz.")) +
+              (vsCpu ? (z <= 3 ? _t(" CPU sık pas geçer.") : z <= 7 ? _t(" CPU dengeli.") : _t(" CPU en iyi cevabı arar.")) : "")}
           />
         </KurulumBolum>
-        <EslesmeProfiliBolumu eslesme={eslesme} not="Ekrana gelen 5 kulüp profilin bölge ve kulüp ayarlarına göre seçilir." />
-        <KurulumBolum baslik="CEVAP SÜRESİ">
+        <EslesmeProfiliBolumu eslesme={eslesme} not={_t("Ekrana gelen 5 kulüp profilin bölge ve kulüp ayarlarına göre seçilir.")} />
+        <KurulumBolum baslik={_t("CEVAP SÜRESİ")}>
           <SureSecici
             secenekler={FIVE_CLUB_TIME_OPTIONS}
             deger={roundSeconds}
             onDegis={setRoundSeconds}
             asgari={15}
             azami={180}
-            aciklama="Her oyuncunun kendi cevabı için süresi."
+            aciklama={_t("Her oyuncunun kendi cevabı için süresi.")}
           />
         </KurulumBolum>
-        <KurulumBolum baslik="CEVAP YÖNTEMİ">
+        <KurulumBolum baslik={_t("CEVAP YÖNTEMİ")}>
           <SecimCipleri
             secenekler={[
-              { deger: "keyboard", etiket: "Klavye", ikon: "keypad" },
-              { deger: "voice", etiket: "Mikrofon", ikon: "mic" },
+              { deger: "keyboard", etiket: _t("Klavye"), ikon: "keypad" },
+              { deger: "voice", etiket: _t("Mikrofon"), ikon: "mic" },
             ]}
             secili={inputMode}
             onSec={setInputMode}
           />
         </KurulumBolum>
         {!vsCpu ? <OyuncuAdlariBolumu adet={2} /> : null}
-        <KurulumBolum baslik="TUR SAYISI">
-          <SecimCipleri secenekler={[{ deger: 3, etiket: "3 tur" }, { deger: 5, etiket: "5 tur" }]} secili={turSayisi} onSec={setTurSayisi} />
+        <KurulumBolum baslik={_t("TUR SAYISI")}>
+          <SecimCipleri secenekler={[{ deger: 3, etiket: _t("3 tur") }, { deger: 5, etiket: _t("5 tur") }]} secili={turSayisi} onSec={setTurSayisi} />
         </KurulumBolum>
-        <KurulumBolum baslik="SON TUR ALTIN TUR" not="Açıkken son turda bütün puanlar ×2 — geride kalan son turda maçı çevirebilir.">
-          <SecimCipleri secenekler={[{ deger: false, etiket: "Kapalı" }, { deger: true, etiket: "Açık ★" }]} secili={altinTur} onSec={setAltinTur} />
+        <KurulumBolum baslik={_t("SON TUR ALTIN TUR")} not={_t(
+          "Açıkken son turda bütün puanlar ×2 — geride kalan son turda maçı çevirebilir."
+        )}>
+          <SecimCipleri secenekler={[{ deger: false, etiket: _t("Kapalı") }, { deger: true, etiket: _t("Açık ★") }]} secili={altinTur} onSec={setAltinTur} />
         </KurulumBolum>
       </ModKurulum>
     );
@@ -540,9 +547,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
   if (!round) {
     return (
       <GameBackground style={styles.container}>
-        <Text style={styles.center}>Şu an çözülebilir bir kulüp seti bulunamadı.</Text>
+        <Text style={styles.center}>{_t("Şu an çözülebilir bir kulüp seti bulunamadı.")}</Text>
         <Pressable style={styles.primaryBtn} onPress={() => { setUsedClubKeys(new Set()); startNewRound(); }}>
-          <Text style={styles.primaryBtnText}>Tekrar Dene</Text>
+          <Text style={styles.primaryBtnText}>{_t("Tekrar Dene")}</Text>
         </Pressable>
       </GameBackground>
     );
@@ -568,7 +575,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         <View style={[styles.buzzBtn, styles.buzzBtnDone]}>
           <Text style={styles.buzzBtnDoneLabel}>{label}</Text>
           <Text style={styles.buzzBtnDoneScore}>
-            {result?.player ? `${result.player.name} (+${result.gained})` : "Pas / bilemedi (0)"}
+            {result?.player ? `${result.player.name} (+${result.gained})` : _t("Pas / bilemedi (0)")}
           </Text>
         </View>
       );
@@ -579,7 +586,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         <View style={[styles.buzzBtn, styles.buzzBtnCpu]}>
           <Text style={styles.buzzBtnText}>{label}</Text>
           <Text style={styles.buzzBtnSub}>
-            {cpuDusunuyor ? "düşünüyor…" : "sırasını bekliyor"}
+            {cpuDusunuyor ? _t("düşünüyor…") : _t("sırasını bekliyor")}
           </Text>
         </View>
       );
@@ -590,7 +597,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         style={styles.buzzBtn}
       >
         <Text style={styles.buzzBtnText}>{label}</Text>
-        <Text style={styles.buzzBtnSub}>BİLİYORUM!</Text>
+        <Text style={styles.buzzBtnSub}>{_t("BİLİYORUM!")}</Text>
       </SoundPressable>
     );
   }
@@ -599,13 +606,12 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <Text style={styles.answeringText}>
-          {oyuncuEtiketi[buzzedBy]} cevaplıyor — {answerTimeLeft} sn
-        </Text>
+          {oyuncuEtiketi[buzzedBy]}{" "}{_t("cevaplıyor —")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
         {inputMode === "voice" ? (
           <>
             {heardText && (
               <View style={styles.heardBanner}>
-                <Text style={styles.heardBannerText}>Anladığım: "{heardText}"</Text>
+                <Text style={styles.heardBannerText}>{_t("Anladığım: \"")}{heardText}"</Text>
               </View>
             )}
             <SoundPressable
@@ -613,7 +619,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               onPress={handleMicPress}
               disabled={isProcessing}
             >
-              <Text style={styles.micBtnBigText}>{isProcessing ? "İşleniyor…" : isRecording ? "Durdur" : "Konuş"}</Text>
+              <Text style={styles.micBtnBigText}>{isProcessing ? _t("İşleniyor…") : isRecording ? _t("Durdur") : _t("Konuş")}</Text>
             </SoundPressable>
             {voiceError ? <Text style={styles.voiceError}>{voiceError}</Text> : null}
             <VoiceConfirm
@@ -623,10 +629,10 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               onYaz={sesYaz}
               onIptal={() => setSesOnayIstegi(null)}
             />
-            {isRecording && <Text style={styles.voiceHint}>Dinliyorum...</Text>}
-            {isProcessing && <Text style={styles.voiceHint}>Yazıya çevriliyor...</Text>}
+            {isRecording && <Text style={styles.voiceHint}>{_t("Dinliyorum...")}</Text>}
+            {isProcessing && <Text style={styles.voiceHint}>{_t("Yazıya çevriliyor...")}</Text>}
             <SoundPressable onPress={() => setInputMode("keyboard")} style={{ marginTop: 14, alignItems: "center" }}>
-              <Text style={styles.switchModeLink}>Bunun yerine yazmak istiyorum</Text>
+              <Text style={styles.switchModeLink}>{_t("Bunun yerine yazmak istiyorum")}</Text>
             </SoundPressable>
           </>
         ) : (
@@ -639,7 +645,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               value={answerInput}
               onChangeText={setAnswerInput}
               onSubmitEditing={() => submitAnswer()}
-              placeholder="Futbolcu adı..."
+              placeholder={_t("Futbolcu adı...")}
               placeholderTextColor={COLORS.textFaint}
               style={styles.input}
             />
@@ -653,15 +659,15 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               </View>
             )}
             <SoundPressable style={styles.primaryBtn} onPress={() => submitAnswer()}>
-              <Text style={styles.primaryBtnText}>Gönder</Text>
+              <Text style={styles.primaryBtnText}>{_t("Gönder")}</Text>
             </SoundPressable>
             <SoundPressable onPress={() => setInputMode("voice")} style={{ marginTop: 10, alignItems: "center" }}>
-              <Text style={styles.switchModeLink}>Bunun yerine konuşmak istiyorum</Text>
+              <Text style={styles.switchModeLink}>{_t("Bunun yerine konuşmak istiyorum")}</Text>
             </SoundPressable>
           </>
         )}
         <SoundPressable onPress={handlePass} style={{ marginTop: 14, alignItems: "center" }}>
-          <Text style={styles.passLink}>Bilemiyorum, pas geç</Text>
+          <Text style={styles.passLink}>{_t("Bilemiyorum, pas geç")}</Text>
         </SoundPressable>
       </View>
     );
@@ -673,10 +679,10 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
     return (
       <View style={{ width: "100%", marginTop: 8 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <Text style={styles.answersPanelTitle}>Olası Doğru Cevaplar</Text>
+          <Text style={styles.answersPanelTitle}>{_t("Olası Doğru Cevaplar")}</Text>
           <SoundPressable onPress={() => setAnswersRevealed((v) => !v)} style={styles.revealToggleBtn}>
             <Ionicons name={answersRevealed ? "eye-off" : "eye"} size={14} color={COLORS.accentDark} />
-            <Text style={styles.revealToggleText}>{answersRevealed ? "Gizle" : "Görünür Yap"}</Text>
+            <Text style={styles.revealToggleText}>{answersRevealed ? _t("Gizle") : _t("Görünür Yap")}</Text>
           </SoundPressable>
         </View>
         <ScrollView
@@ -690,7 +696,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
             if (list.length === 0) return null;
             return (
               <View key={n} style={{ marginBottom: 10 }}>
-                <Text style={styles.bucketHeader}>{n} Takım ({list.length})</Text>
+                <Text style={styles.bucketHeader}>{n}{" "}{_t("Takım (")}{list.length})</Text>
                 {list.map((s) => (
                   <View key={s.player.name} style={styles.answersBoxRow}>
                     {answersRevealed ? (
@@ -728,14 +734,14 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
         <ReportModal
           visible={showReport}
           onClose={() => setShowReport(false)}
-          playerContext={feedback?.player ? feedback.player.name : "Bilinmiyor"}
+          playerContext={feedback?.player ? feedback.player.name : _t("Bilinmiyor")}
         />
       )}
 
       {/* Paket 31 — standart üst çubuk */}
       <OyunUstCubugu
-        baslik="5 Kulüp"
-        alt={phase === "gameOver" ? null : altinTurMu ? `★ Altın tur · ${roundNumber} / ${turSayisi}` : `Tur ${roundNumber} / ${turSayisi}`}
+        baslik={_t("5 Kulüp")}
+        alt={phase === "gameOver" ? null : altinTurMu ? _t("★ Altın tur · {0} / {1}", [roundNumber, turSayisi]) : _t("Tur {0} / {1}", [roundNumber, turSayisi])}
         onCikis={onExit}
         onBildir={() => setShowReport(true)}
       />
@@ -759,9 +765,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
           keyboardShouldPersistTaps="always"
         >
           <SkorSeridi
-            sol={{ etiket: vsCpu ? "SEN" : String(oyuncuEtiketi.p1).toLocaleUpperCase("tr"), puan: scoreP1, renk: COLORS.accent }}
+            sol={{ etiket: vsCpu ? _t("SEN") : String(oyuncuEtiketi.p1).toLocaleUpperCase("tr"), puan: scoreP1, renk: COLORS.accent }}
             sag={{ etiket: vsCpu ? rakipEtiketi(karakter) : String(oyuncuEtiketi.p2).toLocaleUpperCase("tr"), puan: scoreP2, karakter: vsCpu ? karakter : null, renk: COLORS.cta }}
-            orta={`${turSayisi} tur`}
+            orta={_t("{0} tur", [turSayisi])}
           />
           {vsCpu && cpuDusunuyor ? <RakipTepkisi karakter={karakter} metin={dusunceSozu} style={{ marginTop: -4, marginBottom: 8 }} /> : null}
 
@@ -806,7 +812,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
             <>
               <TimerBar current={timeLeft} total={roundSeconds} />
               <Text style={styles.hintText}>
-                {p1Answered || p2Answered ? "Sırada diğer oyuncu var — BİLİYORUM'a bassın!" : "En az 2 kulüpte oynamış bir futbolcu söyle!"}
+                {p1Answered || p2Answered ? _t("Sırada diğer oyuncu var — BİLİYORUM'a bassın!") : _t("En az 2 kulüpte oynamış bir futbolcu söyle!")}
               </Text>
               <View style={styles.buzzRow}>
                 <View style={{ flex: 1 }}>{renderPlayerButtons("p1")}</View>
@@ -831,9 +837,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
                           <Text style={styles.resultCardName} numberOfLines={1}>{r.player.name}</Text>
                         </>
                       ) : (
-                        <Text style={styles.resultCardName}>Bilemedi</Text>
+                        <Text style={styles.resultCardName}>{_t("Bilemedi")}</Text>
                       )}
-                      <Text style={styles.resultCardGain}>+{r?.gained || 0} puan</Text>
+                      <Text style={styles.resultCardGain}>+{r?.gained || 0}{" "}{_t("puan")}</Text>
                     </View>
                   );
                 })}
@@ -842,13 +848,12 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
               {/* 4 Ekim 2026 (Kerem: "tur sonunda en iyi cevap") */}
               {enIyiCevap ? (
                 <View style={styles.enIyiKart}>
-                  <Text style={styles.enIyiEtiket}>BU TURUN EN İYİ CEVABI</Text>
+                  <Text style={styles.enIyiEtiket}>{_t("BU TURUN EN İYİ CEVABI")}</Text>
                   <View style={styles.enIyiSatir}>
                     <PlayerPhoto name={enIyiCevap.player.name} size={44} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.enIyiAd} numberOfLines={1}>{enIyiCevap.player.name}</Text>
-                      <Text style={styles.enIyiAlt} numberOfLines={2}>
-                        5 kulübün {enIyiCevap.count}'{enIyiCevap.count === 2 ? "si" : enIyiCevap.count === 3 ? "ü" : enIyiCevap.count === 4 ? "ü" : "i"}: {enIyiCevap.matchedClubs.join(", ")}
+                      <Text style={styles.enIyiAlt} numberOfLines={2}>{_t("5 kulübün")}{" "}{enIyiCevap.count}'{enIyiCevap.count === 2 ? "si" : enIyiCevap.count === 3 ? "ü" : enIyiCevap.count === 4 ? "ü" : "i"}: {enIyiCevap.matchedClubs.join(", ")}
                       </Text>
                     </View>
                     <Text style={styles.enIyiPuan}>+{enIyiCevap.count}</Text>
@@ -858,14 +863,14 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
               {!showAnswersPanel && (
                 <Pressable style={styles.showAnswersBtn} hitSlop={10} onPress={() => setShowAnswersPanel(true)}>
-                  <Text style={styles.showAnswersBtnText}>Doğru cevapları göster</Text>
+                  <Text style={styles.showAnswersBtnText}>{_t("Doğru cevapları göster")}</Text>
                 </Pressable>
               )}
               {showAnswersPanel && renderAnswersPanel()}
 
               <Pressable style={styles.primaryBtn} onPress={goToNextRound}>
                 <Text style={styles.primaryBtnText}>
-                  {roundNumber >= turSayisi ? "Sonuçları Gör" : roundNumber === turSayisi - 1 && altinTur ? "Altın Tura Geç ★" : "Sıradaki Tur"}
+                  {roundNumber >= turSayisi ? _t("Sonuçları Gör") : roundNumber === turSayisi - 1 && altinTur ? _t("Altın Tura Geç ★") : _t("Sıradaki Tur")}
                 </Text>
               </Pressable>
             </View>
@@ -875,7 +880,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
 
       {phase === "gameOver" && vsCpu && (
         <MacSonuKarti
-          modAdi="5 Kulüp"
+          modAdi={_t("5 Kulüp")}
           modeId="fiveClubsCpu"
           skorSen={scoreP1}
           skorRakip={scoreP2}
@@ -894,9 +899,9 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
       {phase === "gameOver" && !vsCpu && (
         <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 4 }}>
           <IsimliSkorTablosu
-            modAdi="5 Kulüp"
+            modAdi={_t("5 Kulüp")}
             oyuncular={[{ ad: adlar[0], puan: scoreP1 }, { ad: adlar[1], puan: scoreP2 }]}
-            altYazi={`${turSayisi} tur${altinTur ? " · son tur altın" : ""}`}
+            altYazi={_t("{0} tur{1}", [turSayisi, altinTur ? _t(" · son tur altın") : ""])}
             onRovans={restartGame}
             onMenu={onExitSilent || onExit}
           />
