@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "3-2-1: Bitir İşi",
-  "NSMicrophoneUsageDescription": "Oyuncu isimlerini sesli olarak tahmin edebilmeniz için mikrofona ihtiyacımız var.",
-  "NSPhotoLibraryUsageDescription": "Profil fotoğrafı seçebilmen için galerine erişmemiz gerekiyor. Fotoğraf sadece senin profilinde kullanılır.",
-  "NSSpeechRecognitionUsageDescription": "Söylediğin futbolcu adını anında yazıya çevirmek için konuşma tanıma kullanıyoruz."
+  "ios": {
+    "CFBundleDisplayName": "3-2-1: Bitir İşi",
+    "NSMicrophoneUsageDescription": "Oyuncu isimlerini sesli olarak tahmin edebilmeniz için mikrofona ihtiyacımız var.",
+    "NSPhotoLibraryUsageDescription": "Profil fotoğrafı seçebilmen için galerine erişmemiz gerekiyor. Fotoğraf sadece senin profilinde kullanılır.",
+    "NSSpeechRecognitionUsageDescription": "Söylediğin futbolcu adını anında yazıya çevirmek için konuşma tanıma kullanıyoruz."
+  }
 }

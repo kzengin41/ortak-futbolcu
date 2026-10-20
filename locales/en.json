@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "3-2-1: Bitir İşi",
-  "NSMicrophoneUsageDescription": "The microphone lets you say player names out loud instead of typing them.",
-  "NSPhotoLibraryUsageDescription": "Access to your photos lets you pick a profile picture. It is only used on your profile.",
-  "NSSpeechRecognitionUsageDescription": "Speech recognition turns the player name you say into text instantly."
+  "ios": {
+    "CFBundleDisplayName": "3-2-1: Bitir İşi",
+    "NSMicrophoneUsageDescription": "The microphone lets you say player names out loud instead of typing them.",
+    "NSPhotoLibraryUsageDescription": "Access to your photos lets you pick a profile picture. It is only used on your profile.",
+    "NSSpeechRecognitionUsageDescription": "Speech recognition turns the player name you say into text instantly."
+  }
 }
