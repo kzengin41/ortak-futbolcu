@@ -45,7 +45,10 @@ const KAYNAKLAR = [
         "Futbolcuların kulüp geçmişi, uyruk ve milli takım bilgileri Wikipedia'dan derlenmiştir."
       ),
       _t(
-        "Kulüp amblemleri kullanılmamaktadır; uygulamadaki takım rozetleri kulüp renklerinden üretilen özgün görsellerdir."
+        "Takım rozetleri kulüplerin resmî armaları değildir; Football Manager oyuncu topluluğunun hazırladığı jenerik (lisanssız) rozet paketinden alınmıştır. Rozeti olmayan kulüpler için kulüp renklerinden üretilen özgün bir kalkan gösterilir."
+      ),
+      _t(
+        "Bu uygulama hiçbir kulüp, lig, federasyon ya da futbolcuyla bağlantılı değildir ve onlar tarafından onaylanmamıştır. Kulüp ve futbolcu adları yalnızca bilgi amacıyla kullanılır."
       ),
     ],
   },
