@@ -9,7 +9,7 @@ import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import BackButton from "../components/BackButton";
 import SoundPressable from "../components/SoundPressable";
-import { signUpWithEmail, signInWithEmail, signOut, getCurrentUser } from "../lib/auth";
+import { signUpWithEmail, signInWithEmail, signOut, getCurrentUser, sifreSifirlamaKoduGonder, sifreyiKodlaYenile, ASGARI_SIFRE } from "../lib/auth";
 import {
   fetchCloudProfile, reconcileOnLogin, updateDisplayName, updateAvatarColor,
   pushFullProgressToCloud, uploadAvatarPhoto, deleteAccount,
@@ -42,6 +42,10 @@ export default function AccountScreen({ onBack }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  // Paket 41: şifremi unuttum — null | "eposta" | "kod"
+  const [sifirlama, setSifirlama] = useState(null);
+  const [kod, setKod] = useState("");
+  const [yeniSifre, setYeniSifre] = useState("");
 
   const [nameInput, setNameInput] = useState("");
   const [localXp, setLocalXp] = useState(null);
@@ -120,18 +124,85 @@ export default function AccountScreen({ onBack }) {
       setInfo(_t("Kayıt oldun! E-postana gelen onay linkine tıklayıp buraya geri dön."));
       return;
     }
-    if (newUser) {
-      setUser(newUser);
-      const result = await reconcileOnLogin(newUser.id);
-      const cp = await fetchCloudProfile(newUser.id);
-      setCloudProfile(cp);
-      setNameInput(cp?.display_name || "");
-      if (result.winner === "local") {
-        setInfo(_t("Giriş yapıldı — bu cihazdaki ilerleme buluta kaydedildi."));
-      } else {
-        setInfo(_t("Giriş yapıldı — buluttaki hesabın gösteriliyor."));
-      }
+    if (newUser) await girisSonrasi(newUser);
+  }
+
+  // Giriş / kayıt / şifre sıfırlama sonrası ortak adımlar.
+  async function girisSonrasi(newUser, onMesaj = "") {
+    setUser(newUser);
+    const result = await reconcileOnLogin(newUser.id);
+    const cp = await fetchCloudProfile(newUser.id);
+    setCloudProfile(cp);
+    setNameInput(cp?.display_name || "");
+    const mesaj = result.winner === "local"
+      ? _t("Giriş yapıldı — bu cihazdaki ilerleme buluta kaydedildi.")
+      : _t("Giriş yapıldı — buluttaki hesabın gösteriliyor.");
+    setInfo(onMesaj ? onMesaj + " " + mesaj : mesaj);
+  }
+
+  function sifirlamaHataMetni(h) {
+    if (h === "sik") return _t("Çok sık denedin. Bir dakika bekleyip tekrar dene.");
+    if (h === "kod") return _t("Kod hatalı ya da süresi dolmuş. Yeni kod isteyebilirsin.");
+    if (h === "sifre") return _t("Yeni şifre kabul edilmedi. En az {0} karakter olmalı.", [ASGARI_SIFRE]);
+    return _t("Bir şeyler ters gitti. İnternet bağlantını kontrol edip tekrar dene.");
+  }
+
+  function sifirlamayiAc() {
+    setSifirlama("eposta");
+    setKod("");
+    setYeniSifre("");
+    setError("");
+    setInfo("");
+  }
+
+  function sifirlamayiKapat() {
+    setSifirlama(null);
+    setError("");
+    setInfo("");
+  }
+
+  async function kodGonder() {
+    setError("");
+    setInfo("");
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError(_t("Geçerli bir e-posta adresi yaz."));
+      return;
     }
+    setBusy(true);
+    const { hata } = await sifreSifirlamaKoduGonder(email);
+    setBusy(false);
+    if (hata) {
+      setError(sifirlamaHataMetni(hata));
+      return;
+    }
+    setSifirlama("kod");
+    setInfo(_t("Bu adresle bir hesap varsa {0} adresine bir kod gönderdik. Birkaç dakika içinde gelmezse gereksiz (spam) klasörüne de bak.", [email.trim()]));
+  }
+
+  async function sifreyiYenile() {
+    setError("");
+    setInfo("");
+    if (!kod.trim()) {
+      setError(_t("E-postadaki kodu yaz."));
+      return;
+    }
+    if (yeniSifre.length < ASGARI_SIFRE) {
+      setError(_t("Yeni şifre en az {0} karakter olmalı.", [ASGARI_SIFRE]));
+      return;
+    }
+    setBusy(true);
+    const { user: u, hata } = await sifreyiKodlaYenile(email, kod, yeniSifre);
+    setBusy(false);
+    if (!u) {
+      setError(sifirlamaHataMetni(hata));
+      return;
+    }
+    setSifirlama(null);
+    setPassword("");
+    setKod("");
+    setYeniSifre("");
+    if (hata) setError(sifirlamaHataMetni(hata));
+    await girisSonrasi(u, hata ? "" : _t("Şifren yenilendi."));
   }
 
   async function handleSignOut() {
@@ -227,18 +298,80 @@ export default function AccountScreen({ onBack }) {
               <View style={styles.tabRow}>
                 <SoundPressable
                   style={[styles.tabBtn, authMode === "signin" && styles.tabBtnActive]}
-                  onPress={() => { setAuthMode("signin"); setError(""); setInfo(""); }}
+                  onPress={() => { setAuthMode("signin"); setSifirlama(null); setError(""); setInfo(""); }}
                 >
                   <Text style={[styles.tabBtnText, authMode === "signin" && styles.tabBtnTextActive]}>{_t("Giriş Yap")}</Text>
                 </SoundPressable>
                 <SoundPressable
                   style={[styles.tabBtn, authMode === "signup" && styles.tabBtnActive]}
-                  onPress={() => { setAuthMode("signup"); setError(""); setInfo(""); }}
+                  onPress={() => { setAuthMode("signup"); setSifirlama(null); setError(""); setInfo(""); }}
                 >
                   <Text style={[styles.tabBtnText, authMode === "signup" && styles.tabBtnTextActive]}>{_t("Kayıt Ol")}</Text>
                 </SoundPressable>
               </View>
 
+              {sifirlama ? (
+              <View style={styles.card}>
+                <Text style={styles.sifirlamaBaslik}>{_t("Şifreni yenile")}</Text>
+                <Text style={styles.sifirlamaAciklama}>
+                  {sifirlama === "eposta"
+                    ? _t("Hesabının e-posta adresini yaz, sana bir kod gönderelim.")
+                    : _t("E-postadaki kodu ve yeni şifreni yaz.")}
+                </Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder={_t("E-posta")}
+                  placeholderTextColor={COLORS.textFaint}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  editable={sifirlama === "eposta"}
+                  style={[styles.input, sifirlama !== "eposta" && { opacity: 0.6 }]}
+                />
+                {sifirlama === "kod" ? (
+                  <>
+                    <TextInput
+                      value={kod}
+                      onChangeText={setKod}
+                      placeholder={_t("Kod")}
+                      placeholderTextColor={COLORS.textFaint}
+                      keyboardType="number-pad"
+                      autoComplete="one-time-code"
+                      textContentType="oneTimeCode"
+                      maxLength={10}
+                      style={[styles.input, { marginTop: SPACING.sm, letterSpacing: 4 }]}
+                    />
+                    <TextInput
+                      value={yeniSifre}
+                      onChangeText={setYeniSifre}
+                      placeholder={_t("Yeni şifre")}
+                      placeholderTextColor={COLORS.textFaint}
+                      secureTextEntry
+                      autoComplete="new-password"
+                      textContentType="newPassword"
+                      style={[styles.input, { marginTop: SPACING.sm }]}
+                    />
+                  </>
+                ) : null}
+                {!!error && <Text style={styles.errorText}>{error}</Text>}
+                {!!info && <Text style={styles.infoText}>{info}</Text>}
+                <SoundPressable style={styles.primaryBtn} onPress={sifirlama === "eposta" ? kodGonder : sifreyiYenile} disabled={busy}>
+                  {busy ? (
+                    <ActivityIndicator color={COLORS.accentDark} />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>{sifirlama === "eposta" ? _t("Kod gönder") : _t("Şifreyi yenile")}</Text>
+                  )}
+                </SoundPressable>
+                {sifirlama === "kod" ? (
+                  <SoundPressable style={styles.linkBtn} onPress={kodGonder} disabled={busy} hitSlop={8}>
+                    <Text style={styles.linkText}>{_t("Kodu tekrar gönder")}</Text>
+                  </SoundPressable>
+                ) : null}
+                <SoundPressable style={styles.linkBtn} onPress={sifirlamayiKapat} disabled={busy} hitSlop={8}>
+                  <Text style={styles.linkText}>{_t("Girişe dön")}</Text>
+                </SoundPressable>
+              </View>
+              ) : (
               <View style={styles.card}>
                 <TextInput
                   value={email}
@@ -266,7 +399,13 @@ export default function AccountScreen({ onBack }) {
                     <Text style={styles.primaryBtnText}>{authMode === "signup" ? _t("Kayıt Ol") : _t("Giriş Yap")}</Text>
                   )}
                 </SoundPressable>
+                {authMode === "signin" ? (
+                  <SoundPressable style={styles.linkBtn} onPress={sifirlamayiAc} disabled={busy} hitSlop={8}>
+                    <Text style={styles.linkText}>{_t("Şifremi unuttum")}</Text>
+                  </SoundPressable>
+                ) : null}
               </View>
+              )}
             </>
           ) : (
             <>
@@ -381,6 +520,10 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: COLORS.accentDark, fontWeight: "900", fontSize: 14, textTransform: "uppercase" },
   errorText: { color: COLORS.danger, fontSize: 12, marginTop: SPACING.sm, textAlign: "center" },
   infoText: { color: COLORS.accent, fontSize: 12, marginTop: SPACING.sm, textAlign: "center" },
+  linkBtn: { alignSelf: "center", marginTop: SPACING.md, paddingVertical: 4, paddingHorizontal: 8 },
+  linkText: { color: COLORS.textMuted, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  sifirlamaBaslik: { color: COLORS.text, fontSize: 17, fontWeight: "900", marginBottom: 4 },
+  sifirlamaAciklama: { color: COLORS.textMuted, fontSize: 13, fontWeight: "600", marginBottom: SPACING.md, lineHeight: 18 },
 
   avatarWrap: { alignItems: "center", marginBottom: SPACING.md },
   avatarCircle: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: SPACING.sm },
