@@ -30,33 +30,28 @@ import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
 import {
   baslangicDurumu, aksiyonuIsle, secilebilirKulupIndeksi, ornekCevaplar, rakip,
-  CEVAP_SURESI_MS, TUR_ARASI_MS, HEDEF_PUAN,
+  CEVAP_SURESI_MS, TUR_ARASI_MS, HEDEF_PUAN, GERI_SAYIM_MS, GECERSIZ_MS, YANLIS_HAKKI,
 } from "../lib/onlineDraft";
+import CountdownOverlay from "../components/CountdownOverlay";
 
 // ============================================================================
-// ONLINE — ORTAK KULÜP (SEN SEÇ) — 12 Eylül 2026
-//
-// Bu da "Çok Yakında" taslağıydı. Kurallar lib/onlineDraft.js'te (saf, test
-// edilebilir), ağ katmanı lib/onlineRoom.js'te; burada sadece çizim ve
-// host'un zamanlayıcıları var.
-//
-// Akış: sıradaki oyuncu bir kulüp seçer -> motor ikinci kulübü belirler ->
-// SORU KARŞI TARAFA gider -> bilirse puan onun, bilemezse puan seçene ->
-// sıra döner.
+// ONLINE — ORTAK KULÜP · TAKIMI SEN SEÇ
+// Paket 42 (26 Ekim 2026) — yeni kurgu (Kerem): iki taraf AYNI ANDA gizlice
+// birer takım seçer → 3-2-1 → iki takım açılır → önce doğru yazan puanı alır.
+// Kurallar lib/onlineDraft.js'te (saf, test edilebilir), ağ lib/onlineRoom.js'te;
+// burada çizim ve host'un zamanlayıcıları var. Sayaçlar host saatine değil,
+// her cihazın fazın geldiği ana göre çalışır (saat farkı ekranı bozmasın).
 // ============================================================================
 
 const VURGU = MODE_COLORS.teamTeam;
 
 export default function OnlineDraftScreen({ room, onExit }) {
   const benKimim = room.playerNumber;
+  const rakipNo = rakip(benKimim);
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
 
-  // Paket 32 — HATA DÜZELTMESİ: burada `room.allowedClubs` kullanılıyordu, ama o
-  // alan sunucudaki kulüp KİMLİKLERİ (sayı); motor ise kulüp ADI bekliyor. Kimlik
-  // kümesiyle hiçbir kulüp eşleşmediği için her seçim "Bu takımdan tur çıkmadı"
-  // diye reddediliyordu. Artık Online 5 Kulüp gibi: dereceli maçta herkes aynı
-  // (Dengeli) havuz, arkadaş odasında kuranın (host — turu o üretiyor) profili.
+  // Dereceli maçta herkes aynı (Dengeli) havuz, arkadaş odasında kuranın profili.
   const eslesme = useEslesmeProfili();
   const profil = room && room.isRanked ? standartProfil() : eslesme.derlenmis;
   const izinliKulupler = (profil && profil.kapsam) || null;
@@ -65,18 +60,15 @@ export default function OnlineDraftScreen({ room, onExit }) {
     () => secilebilirKulupIndeksi(Object.keys(CLUB_INFO), PLAYERS),
     []
   );
-  // Zorluk bilerek verilmiyor: lib/onlineDraft.js'teki VARSAYILAN_ZORLUK
-  // (tanıdık, dolu eşleşmeler) online için doğru olan.
   const baglamRef = useRef({ veriSeti: PLAYERS, izinliKulupler });
   useEffect(() => { baglamRef.current = { veriSeti: PLAYERS, izinliKulupler }; }, [izinliKulupler]);
 
   const aksiyonIsle = useCallback(
-    // 5 Ekim 2026 — rövanş iki taraftan tek dokunuş (lib/onlineRoom.js rovansli)
     rovansli((durum, aksiyon, kimden) => aksiyonuIsle(durum, aksiyon, kimden, baglamRef.current)),
     []
   );
 
-  const ilkDurum = useMemo(() => baslangicDurumu(1), []);
+  const ilkDurum = useMemo(() => baslangicDurumu(), []);
   const { durum, hostMuyum, rakipVar, senkronBekliyor, gonder, guncelle } = useOnlineRoom({
     kanalAdi: `draft-${room.id}`,
     benKimim,
@@ -90,42 +82,40 @@ export default function OnlineDraftScreen({ room, onExit }) {
   const [simdi, setSimdi] = useState(Date.now());
 
   const oyuncuIndeksi = useMemo(() => buildSuggestIndex(PLAYERS), []);
-  const oyuncuOnerileri = useMemo(() => suggestPlayers(oyuncuIndeksi, cevapGirdi), [oyuncuIndeksi, cevapGirdi]);
+  const oyuncuOnerileri = useMemo(() => (cevapGirdi.trim().length >= 3 ? suggestPlayers(oyuncuIndeksi, cevapGirdi) : []), [oyuncuIndeksi, cevapGirdi]);
   const kulupOnerileri = useMemo(() => suggestClubs(kulupIndeksi, kulupGirdi), [kulupIndeksi, kulupGirdi]);
 
   const faz = durum?.faz;
-  // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
   const ayrildi = <RakipAyrildi oda={room} benKimim={benKimim} rakipVar={rakipVar} aktif={!!faz && !["hazirlik", "macSonu", "hata"].includes(faz)} macNo={macSirasi(durum)} onExit={onExit} />;
-  const benSecenim = durum?.secen === benKimim;
-  const benCevaplayanim = durum ? rakip(durum.secen) === benKimim : false;
+  const benimSecim = durum?.secimler?.[`p${benKimim}`] || null;
+  const rakipSecti = !!durum?.secimler?.[`p${rakipNo}`];
+  const elendim = !!durum?.elenen?.includes(benKimim);
+  const rakipElendi = !!durum?.elenen?.includes(rakipNo);
+  const benimYanlis = durum?.yanlislar?.[`p${benKimim}`] || 0;
 
-  // Saniye sayacı sadece cevap fazında dönsün.
+  // Fazın BU cihazda başladığı an (sayaçlar buna göre).
+  const fazAnRef = useRef({ anahtar: null, t: 0 });
+  const fazAnahtari = durum ? `${durum.turNo}-${faz}-${durum.macNo || 0}` : null;
+  if (fazAnahtari && fazAnRef.current.anahtar !== fazAnahtari) fazAnRef.current = { anahtar: fazAnahtari, t: Date.now() };
+
   useEffect(() => {
-    if (faz !== "cevap") return;
+    if (faz !== "yaris") return;
     const t = setInterval(() => setSimdi(Date.now()), 250);
     return () => clearInterval(t);
   }, [faz]);
 
-  // --- Host: cevap süresi dolunca turu kapat ------------------------------
+  // --- Host zamanlayıcıları ---------------------------------------------------
   useEffect(() => {
-    if (!hostMuyum || faz !== "cevap" || !durum?.cevapBitis) return;
-    const kalan = durum.cevapBitis - Date.now();
-    const t = setTimeout(
-      () => guncelle((d) => aksiyonuIsle(d, { tip: "sureDoldu" }, 1, baglamRef.current)),
-      Math.max(0, kalan)
-    );
+    if (!hostMuyum || !faz) return;
+    let ms = null, aksiyon = null;
+    if (faz === "geriSayim") { ms = GERI_SAYIM_MS; aksiyon = { tip: "ac" }; }
+    else if (faz === "gecersiz") { ms = GECERSIZ_MS; aksiyon = { tip: "yenidenSec" }; }
+    else if (faz === "yaris") { ms = Math.max(0, (durum.cevapBitis || 0) - Date.now()) + 50; aksiyon = { tip: "sureDoldu" }; }
+    else if (faz === "turSonu") { ms = TUR_ARASI_MS; aksiyon = { tip: "sonrakiTur" }; }
+    if (ms == null) return;
+    const t = setTimeout(() => guncelle((d) => aksiyonuIsle(d, aksiyon, 1, baglamRef.current)), ms);
     return () => clearTimeout(t);
-  }, [hostMuyum, faz, durum?.cevapBitis, guncelle]);
-
-  // --- Host: tur sonu -> sıradaki tur --------------------------------------
-  useEffect(() => {
-    if (!hostMuyum || faz !== "turSonu") return;
-    const t = setTimeout(
-      () => guncelle((d) => aksiyonuIsle(d, { tip: "sonrakiTur" }, 1, baglamRef.current)),
-      TUR_ARASI_MS
-    );
-    return () => clearTimeout(t);
-  }, [hostMuyum, faz, durum?.turNo, guncelle]);
+  }, [hostMuyum, faz, durum?.turNo, durum?.cevapBitis, guncelle]);
 
   // --- Ses + istatistik (tur başına bir kez) -------------------------------
   const islenenTurRef = useRef(-1);
@@ -135,10 +125,6 @@ export default function OnlineDraftScreen({ room, onExit }) {
     islenenTurRef.current = durum.turNo;
     const kazandimMi = durum.turKazanani === benKimim;
     if (kazandimMi) playCorrect(); else playWrong();
-    // 26 Eylül 2026 (Kerem: "cpu'nun söyledikleri hiçbir modda ansiklopediyi açmasın. kendi söylediklerimiz açsın.")
-    // Sadece bu cihazdaki oyuncu turu kazandıysa. (NOT: lib/onlineDraft.js
-    // doğru cevapta sonCevap'a `ad` yazmıyor — yani bu satır şu an hiç
-    // tetiklenmiyor. Bkz. denetim raporu.)
     if (kazandimMi && durum.sonCevap?.ad) unlockPlayer(durum.sonCevap.ad);
     recordRound("onlineDraft", kazandimMi);
   }, [faz, durum?.turNo, durum?.turKazanani, benKimim, playCorrect, playWrong, durum?.sonCevap]);
@@ -159,30 +145,31 @@ export default function OnlineDraftScreen({ room, onExit }) {
     setGeriBildirim(null);
   }, [durum?.turNo, faz]);
 
-  // Yanlış cevap uyarısı (tur bitmiyor, tekrar denenebiliyor)
+  // Yanlış cevabım: uyarı (tur bitmiyor, hakkım varsa tekrar denerim)
+  const sonYanlisRef = useRef(null);
   useEffect(() => {
     const c = durum?.sonCevap;
-    if (!c || c.dogru || faz !== "cevap") return;
-    // Paket 38: cevaplayan rakipse ham metin değil, tanınan futbolcu adı gösterilir.
-    const benimCevap = (durum.secen === 1 ? 2 : 1) === benKimim;
-    setGeriBildirim({ correct: false, message: _t(
-      "\"{0}\" bu ikilide oynamadı",
-      [benimCevap ? c.metin : rakipMetniYaz(c.metin)]
-    ) });
-  }, [durum?.sonCevap, faz]);
+    if (!c || c.dogru || c.pes || faz !== "yaris" || c.kimden !== benKimim) return;
+    const k = `${durum.turNo}-${benimYanlis}`;
+    if (sonYanlisRef.current === k) return;
+    sonYanlisRef.current = k;
+    playWrong();
+    const kalan = Math.max(0, YANLIS_HAKKI - benimYanlis);
+    setGeriBildirim({ correct: false, message: kalan ? _t("\"{0}\" bu ikilide oynamadı · {1} hakkın kaldı", [c.metin, kalan]) : _t("\"{0}\" bu ikilide oynamadı · bu turda elendin", [c.metin]) });
+  }, [durum?.sonCevap, faz, benimYanlis]);
 
-  // Seçim motorda tura dönüşemediyse kullanıcıyı bilgilendir
-  const reddedildi = durum?.secimReddedildi || 0;
+  // Profil dışı takım seçimi reddedildi
+  const ret = durum?.secimReddi;
+  const retRef = useRef(0);
   useEffect(() => {
-    if (!reddedildi || !benSecenim) return;
-    setGeriBildirim({ correct: false, message: _t("Bu takımdan tur çıkmadı, başka bir takım dene") });
-  }, [reddedildi, benSecenim]);
+    if (!ret || ret.kimden !== benKimim || ret.sayac === retRef.current) return;
+    retRef.current = ret.sayac;
+    setGeriBildirim({ correct: false, message: _t("{0} bu odanın eşleşme profilinde yok, başka bir takım seç", [ret.kulup]) });
+  }, [ret, benKimim]);
 
   function kulupGonder(ad) {
     const ham = String(ad ?? kulupGirdi).trim();
-    if (!ham || !benSecenim || faz !== "secim") return;
-    // Yazım toleransı: "galatasary" -> "Galatasaray". Eşleşme sadece
-    // SEÇİLEBİLİR kulüpler arasında aranıyor.
+    if (!ham || faz !== "secim" || benimSecim) return;
     const eslesen = findMatchedTeam(ham, kulupIndeksi.map((k) => k.original));
     if (!eslesen) {
       setGeriBildirim({ correct: false, message: _t("Bu takımı bulamadım, listeden seçebilirsin") });
@@ -194,7 +181,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
 
   function cevapGonder(ad) {
     const temiz = String(ad ?? cevapGirdi).trim();
-    if (!temiz || !benCevaplayanim || faz !== "cevap") return;
+    if (!temiz || faz !== "yaris" || elendim) return;
     setCevapGirdi("");
     gonder({ tip: "cevap", metin: temiz });
   }
@@ -218,7 +205,11 @@ export default function OnlineDraftScreen({ room, onExit }) {
 
   const benimSkor = benKimim === 1 ? durum.skorlar.p1 : durum.skorlar.p2;
   const rakipSkor = benKimim === 1 ? durum.skorlar.p2 : durum.skorlar.p1;
-  const kalanSn = faz === "cevap" ? Math.max(0, Math.ceil((durum.cevapBitis - simdi) / 1000)) : 0;
+  const yarisToplam = Math.round(CEVAP_SURESI_MS / 1000);
+  const kalanSn = faz === "yaris" ? Math.max(0, yarisToplam - Math.floor((simdi - fazAnRef.current.t) / 1000)) : 0;
+  const benimTakim = benKimim === 1 ? durum.teamA : durum.teamB;
+  const rakipTakim = benKimim === 1 ? durum.teamB : durum.teamA;
+  const takimlarAcik = faz === "yaris" || faz === "gecersiz" || faz === "turSonu" || faz === "macSonu";
 
   return (
     <GameBackground style={styles.kap}>
@@ -245,13 +236,15 @@ export default function OnlineDraftScreen({ room, onExit }) {
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* --- SEÇİM FAZI --- */}
+          {/* --- SEÇİM --- */}
           {faz === "secim" && (
             <View style={styles.orta}>
-              {benSecenim ? (
+              {!benimSecim ? (
                 <>
-                  <Text style={styles.buyukBaslik}>{_t("Bir takım seç")}</Text>
-                  <Text style={styles.aciklama}>{_t("Seçtiğin takım rakibinin sorusu olacak. Bilemezse puan senin.")}</Text>
+                  <Text style={styles.buyukBaslik}>{_t("Takımını seç")}</Text>
+                  <Text style={styles.aciklama}>{_t(
+                    "Rakibin de şu an gizlice bir takım seçiyor. İkiniz de seçince 3-2-1 sayılır, iki takım açılır: ikisinde de oynamış futbolcuyu önce yazan puanı alır."
+                  )}</Text>
                   <View style={styles.girdiSatir}>
                     <TextInput
                       style={styles.girdi}
@@ -264,7 +257,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
                       autoCorrect={false}
                     />
                     <MikrofonDugmesi onMetin={(m) => setKulupGirdi(m)} onGonder={(m) => kulupGonder(m)} />
-                    <SoundPressable style={styles.gonderBtn} onPress={() => kulupGonder()}>
+                    <SoundPressable style={styles.gonderBtn} onPress={() => kulupGonder()} accessibilityLabel={_t("Takımı seç")}>
                       <Ionicons name="send" size={18} color={COLORS.accentDark} />
                     </SoundPressable>
                   </View>
@@ -277,26 +270,57 @@ export default function OnlineDraftScreen({ room, onExit }) {
                 </>
               ) : (
                 <>
-                  <ActivityIndicator color={VURGU.main} />
-                  <Text style={styles.buyukBaslik}>{_t("Rakip takım seçiyor")}</Text>
-                  <Text style={styles.aciklama}>{_t("Sıradaki soru sana gelecek.")}</Text>
+                  <TeamBadge name={benimSecim} size={64} />
+                  <Text style={styles.buyukBaslik}>{_t("Seçtin: {0}", [benimSecim])}</Text>
+                  <Text style={styles.aciklama}>{_t("Rakibin bunu 3-2-1'den sonra görecek.")}</Text>
+                  <SoundPressable onPress={() => gonder({ tip: "secimiGeriAl" })} style={styles.pasBtn}>
+                    <Text style={styles.pasBtnText}>{_t("Takımı değiştir")}</Text>
+                  </SoundPressable>
                 </>
               )}
+              <View style={styles.rakipDurum}>
+                {rakipSecti
+                  ? <Ionicons name="checkmark-circle" size={18} color={COLORS.accent} />
+                  : <ActivityIndicator size="small" color={VURGU.main} />}
+                <Text style={styles.rakipDurumYazi}>{rakipSecti ? _t("Rakip takımını seçti") : _t("Rakip takım seçiyor…")}</Text>
+              </View>
             </View>
           )}
 
-          {/* --- CEVAP FAZI --- */}
-          {faz === "cevap" && (
+          {/* --- GERİ SAYIM: takımlar henüz gizli --- */}
+          {faz === "geriSayim" && (
+            <View style={styles.orta}>
+              <Text style={styles.buyukBaslik}>{_t("Takımlar geliyor…")}</Text>
+              <EslesmeKarti sol={{ tip: "kulup", ad: "?" }} sag={{ tip: "kulup", ad: "?" }} style={{ marginTop: SPACING.md }} />
+            </View>
+          )}
+
+          {/* --- AÇILIŞ / YARIŞ / SONUÇ: iki takım --- */}
+          {takimlarAcik && durum.teamA && durum.teamB ? (
             <>
-              <EslesmeKarti sol={{ tip: "kulup", ad: durum.teamA }} sag={{ tip: "kulup", ad: durum.teamB }} style={{ marginBottom: SPACING.md }} />
+              <EslesmeKarti sol={{ tip: "kulup", ad: benimTakim }} sag={{ tip: "kulup", ad: rakipTakim }} style={{ marginBottom: SPACING.xs }} />
+              <View style={styles.sahipSatir}>
+                <Text style={styles.sahipYazi}>{_t("senin seçimin")}</Text>
+                <Text style={styles.sahipYazi}>{_t("rakibin seçimi")}</Text>
+              </View>
+            </>
+          ) : null}
 
-              <TimerBar current={kalanSn} total={Math.round(CEVAP_SURESI_MS / 1000)} />
+          {faz === "gecersiz" && (
+            <View style={styles.sonucKart}>
+              <Text style={styles.sonucBaslik}>{durum.gecersizSebep === "ayni" ? _t("Aynı takımı seçtiniz!") : _t("Bu ikilinin yeterli ortak futbolcusu yok")}</Text>
+              <Text style={styles.sonucAltBaslik}>{_t("Puan yok — yeniden seçiyorsunuz…")}</Text>
+            </View>
+          )}
+
+          {faz === "yaris" && (
+            <>
+              <TimerBar current={kalanSn} total={yarisToplam} />
               <Text style={styles.sayacText}>{kalanSn}{" "}{_t("sn")}</Text>
-
-              {benCevaplayanim ? (
-                <Text style={styles.aciklama}>{_t("İki takımda da oynamış bir futbolcu söyle")}</Text>
+              {elendim ? (
+                <Text style={styles.aciklama}>{rakipElendi ? _t("İkiniz de elendiniz") : _t("Bu turda elendin — rakip deniyor")}</Text>
               ) : (
-                <Text style={styles.aciklama}>{_t("Rakip cevaplıyor — senin seçtiğin takım")}</Text>
+                <Text style={styles.aciklama}>{_t("İki takımda da oynamış futbolcuyu önce yaz · yanlış hakkın: {0}", [Math.max(0, YANLIS_HAKKI - benimYanlis)])}{rakipElendi ? " · " + _t("rakip elendi") : ""}</Text>
               )}
             </>
           )}
@@ -305,28 +329,19 @@ export default function OnlineDraftScreen({ room, onExit }) {
           {(faz === "turSonu" || faz === "macSonu") && (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>
-                {durum.turKazanani === benKimim ? _t("Puan senin!") : _t("Puan rakibin")}
+                {durum.turKazanani === benKimim ? _t("Puan senin!") : durum.turKazanani ? _t("Puan rakibin") : _t("Kimse bilemedi")}
               </Text>
-              <Text style={styles.sonucAltBaslik}>
-                {durum.teamA} + {durum.teamB}
-              </Text>
-              {durum.sonCevap?.ad ? (
+              {durum.sonCevap?.dogru && durum.sonCevap?.ad ? (
                 <>
                   <View style={{ marginVertical: SPACING.md }}>
                     <PlayerPhoto name={durum.sonCevap.ad} size={88} />
                   </View>
                   <Text style={styles.sonucAd}>{durum.sonCevap.ad}</Text>
                 </>
-              ) : (
-                <Text style={styles.sonucAd}>{_t("Süre doldu")}</Text>
-              )}
+              ) : null}
               <Text style={styles.ornekBaslik}>{_t("Geçerli cevaplardan bazıları")}</Text>
               <Text style={styles.ornekMetin}>{ornekCevaplar(durum).join(" · ")}</Text>
-
-              {faz === "macSonu" ? null : (
-                <Text style={styles.bekleme}>{_t("Sıradaki turda")}{" "}{rakip(durum.secen) === benKimim ? _t("sıra sende") : _t("seçim rakipte")}
-                </Text>
-              )}
+              {faz === "macSonu" ? null : <Text style={styles.bekleme}>{_t("Sıradaki tur: yine ikiniz de takım seçeceksiniz")}</Text>}
             </View>
           )}
           {faz === "macSonu" && (
@@ -346,10 +361,10 @@ export default function OnlineDraftScreen({ room, onExit }) {
           )}
         </ScrollView>
 
-        {/* Cevap girişi — sadece cevap sırası bendeyken */}
-        {faz === "cevap" && benCevaplayanim && (
+        {/* Cevap girişi — yarışta, elenmediysem */}
+        {faz === "yaris" && !elendim && (
           <View style={styles.altAlan}>
-            {oyuncuOnerileri.length > 0 && cevapGirdi.length > 1 && (
+            {oyuncuOnerileri.length > 0 && (
               <ScrollView
                 horizontal
                 keyboardShouldPersistTaps="handled"
@@ -372,10 +387,12 @@ export default function OnlineDraftScreen({ room, onExit }) {
                 onChangeText={setCevapGirdi}
                 onSubmitEditing={() => cevapGonder()}
                 returnKeyType="send"
+                blurOnSubmit={false}
                 autoCorrect={false}
+                autoFocus
               />
               <MikrofonDugmesi onMetin={(m) => setCevapGirdi(m)} onGonder={(m) => cevapGonder(m)} />
-              <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()}>
+              <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel={_t("Gönder")}>
                 <Ionicons name="send" size={18} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
@@ -401,6 +418,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
           </SoundPressable>
         )}
       </KlavyeAlani>
+      {faz === "geriSayim" ? <CountdownOverlay key={fazAnahtari} onComplete={() => {}} /> : null}
     </GameBackground>
   );
 }
@@ -485,4 +503,8 @@ const styles = StyleSheet.create({
   cikisBtn: { alignItems: "center", paddingVertical: SPACING.sm },
   cikisText: { ...TYPE.caption },
   bekleme: { ...TYPE.caption, marginTop: SPACING.md, textAlign: "center" },
+  rakipDurum: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginTop: SPACING.lg },
+  rakipDurumYazi: { ...TYPE.caption, fontWeight: "800" },
+  sahipSatir: { flexDirection: "row", justifyContent: "space-around", marginBottom: SPACING.md },
+  sahipYazi: { ...TYPE.caption, fontSize: 11, letterSpacing: 0.5 },
 });

@@ -54,6 +54,12 @@ import { rakipMetniYaz } from "../lib/guvenlik";
 //    ev sahibi ancak rakip EKRANA GELDİĞİNDE üretir (rehber kapanmadan ekran
 //    bağlanmıyor, bkz. App.js RehberliOyun).
 export const HEDEF = 5;
+// Paket 42 (Kerem: "ortak kulüp kulüp x kulüp modundaki biliyorum butonu
+// kalksın. direkt yazalım.") — BUZZ YOK: iki taraf da kutuya doğrudan yazar,
+// ilk doğru yazan turu alır (CPU modundaki gibi). Turda 3 yanlış hakkı var;
+// sunucu: supabase/paket42_online.sql (ortak_cevap). SQL henüz
+// çalıştırılmadıysa eski yol (buzz_round + submit_guess) yedek olarak denenir.
+export const YANLIS_HAKKI = 3;
 const VURGU = MODE_COLORS.online;
 export const SONRAKI_TUR_SN = 10;      // sonuç ekranından otomatik geçiş
 const CEVAP_PAYI_MS = 2000;            // cevap süresi dolduktan sonra rakibin turu açması için pay
@@ -166,7 +172,8 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     return () => clearInterval(t);
   }, []);
 
-  const phase = !roundRow ? "loading" : roundRow.resolved ? "result" : roundRow.buzzed_by ? "answering" : "racing";
+  // Paket 42: "answering" (buzz sonrası) aşaması yok — rakip eski sürümde buzz'lasa bile biz yazmaya devam ederiz.
+  const phase = !roundRow ? "loading" : roundRow.resolved ? "result" : "racing";
   const myScore = (myPlayer === 1 ? roomRow?.score1 : roomRow?.score2) ?? 0;
   const oppScore = (myPlayer === 1 ? roomRow?.score2 : roomRow?.score1) ?? 0;
   const macBitti = phase === "result" && (myScore >= HEDEF || oppScore >= HEDEF);
@@ -184,6 +191,9 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     : 20;
   const iAmBuzzer = roundRow?.buzzed_by === myPlayer;
   const iAmLocked = roundRow?.locked_players?.includes(myPlayer);
+  const benimYanlis = Number((roundRow?.game_state || {})[`yanlis${myPlayer}`] || 0);
+  const kalanHak = Math.max(0, YANLIS_HAKKI - benimYanlis);
+  const rakipKilitli = roundRow?.locked_players?.includes(myPlayer === 1 ? 2 : 1);
 
   // --- Paket 36: ilk tur ancak iki taraf da ekrandayken --------------------
   // (Misafir mod rehberini okurken maç arkada başlamasın — rehber kapanmadan
@@ -209,21 +219,12 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   }
   useEffect(() => {
     if (phase === "racing" && roundTimeLeft === 0) zamanAsimi();
-    // Cevap hakkını alanın süresi (+pay) doldu ve hâlâ cevap gelmedi: o telefon
-    // donmuş/arka planda olabilir — turu sunucu açar ya da kapatır.
-    if (phase === "answering" && roundRow?.answer_deadline && now > new Date(roundRow.answer_deadline).getTime() + CEVAP_PAYI_MS) zamanAsimi();
+    // Eski sürümdeki rakip buzz'layıp cevap vermeden kaldıysa (süre + pay doldu) turu sunucu açar.
+    if (roundRow?.buzzed_by && roundRow?.answer_deadline && now > new Date(roundRow.answer_deadline).getTime() + CEVAP_PAYI_MS) zamanAsimi();
   }, [phase, roundTimeLeft, now, roundRow]);
 
   // Cevap süresi bitti: kutuda ne yazılıysa (boşsa boş) gönder — ekran donmasın.
-  const otoGonderRef = useRef(null);
-  useEffect(() => {
-    if (phase !== "answering" || !iAmBuzzer || answerTimeLeft > 0 || !roundRow) return;
-    const anahtar = `${roundRow.id}-${roundRow.buzzed_at}`;
-    if (otoGonderRef.current === anahtar) return;
-    otoGonderRef.current = anahtar;
-    setSesOnayIstegi(null);
-    cevapGonder(answerInput);
-  }, [phase, iAmBuzzer, answerTimeLeft, roundRow]);
+  // (Paket 42: buzz kalktı — cevap süresi dolunca otomatik gönderme de yok.)
 
   // --- Paket 36: sonraki tura geçiş (iki taraf da; 10 sn sonra otomatik) ---
   const sonucAnRef = useRef({ id: null, t: 0 });
@@ -293,18 +294,14 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   // --- cevap kutusu: öneriler + canlı yayın + mikrofon ----------------------
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
   const oneriler = useMemo(
-    () => (phase === "answering" && iAmBuzzer && answerInput.trim().length >= 3 ? suggestPlayers(suggestIndex, answerInput) : []),
-    [suggestIndex, answerInput, phase, iAmBuzzer]
+    () => (phase === "racing" && !iAmLocked && answerInput.trim().length >= 3 ? suggestPlayers(suggestIndex, answerInput) : []),
+    [suggestIndex, answerInput, phase, iAmLocked]
   );
   const sonYayinRef = useRef(0);
   function yaziDegisti(metin) {
+    // Paket 42: iki taraf aynı anda yarıştığı için yazılan metin rakibe CANLI
+    // gönderilmez (cevabı kopyalayabilirdi). Yalnız gönderilen yanlışlar görünür.
     setAnswerInput(metin);
-    // Rakip ekranında canlı görünsün (çok sık yayın yapmamak için ~150 ms aralık).
-    const t = Date.now();
-    if (roundRow && t - sonYayinRef.current > 150) {
-      sonYayinRef.current = t;
-      yayinla("yaziyor", { tur: roundRow.id, metin });
-    }
   }
 
   const teamAAd = roundRow ? clubsMap[roundRow.club_a_id] : null;
@@ -340,16 +337,25 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
     if (!roundRow) return;
     await supabase.rpc("pass_round", { p_round_id: roundRow.id, p_player: myPlayer });
   }
+  const gonderiliyorRef = useRef(false);
   async function cevapGonder(metin) {
-    if (!roundRow) return;
+    if (!roundRow || iAmLocked || gonderiliyorRef.current) return;
     const text = String(metin || "");
+    if (!text.trim()) return;
     setAnswerInput("");
-    if (text.trim()) {
-      tahminEkle(roundRow.id, myPlayer, text);
-      yayinla("tahmin", { tur: roundRow.id, metin: text });
+    tahminEkle(roundRow.id, myPlayer, text);
+    yayinla("tahmin", { tur: roundRow.id, metin: text });
+    gonderiliyorRef.current = true;
+    try {
+      const { error } = await supabase.rpc("ortak_cevap", { p_round_id: roundRow.id, p_player: myPlayer, p_guess: text });
+      if (error) {
+        // SQL (paket42) henüz çalıştırılmadıysa eski yol: hakkı al + cevapla.
+        await supabase.rpc("buzz_round", { p_round_id: roundRow.id, p_player: myPlayer });
+        await supabase.rpc("submit_guess", { p_round_id: roundRow.id, p_player: myPlayer, p_guess: text });
+      }
+    } finally {
+      gonderiliyorRef.current = false;
     }
-    yayinla("yaziyor", { tur: roundRow.id, metin: "" });
-    await supabase.rpc("submit_guess", { p_round_id: roundRow.id, p_player: myPlayer, p_guess: text });
   }
   function handleSubmit() {
     if (!answerInput.trim()) return;
@@ -459,39 +465,16 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                 <TimerBar current={roundTimeLeft} total={turSuresi} />
                 <Text style={[styles.sureYazi, roundTimeLeft <= 5 && { color: COLORS.danger }]}>{roundTimeLeft}{" "}{_t("sn")}</Text>
               </View>
-              <SoundPressable
-                disabled={iAmLocked}
-                onPress={handleBuzz}
-                style={[styles.buzzBtn, iAmLocked && styles.buzzBtnPasif]}
-                accessibilityLabel={_t("Cevap hakkını al")}
-              >
-                <Ionicons name={iAmLocked ? "lock-closed" : "flash"} size={28} color={iAmLocked ? COLORS.textMuted : COLORS.accentDark} />
-                <Text style={[styles.buzzYazi, iAmLocked && { color: COLORS.textMuted }]}>
-                  {iAmLocked ? _t("Bu turda elendin") : _t("BİLİYORUM!")}
-                </Text>
-              </SoundPressable>
-              {!iAmLocked && (
-                <SoundPressable onPress={handlePass} style={styles.pasBtn}>
-                  <Text style={styles.pasYazi}>{_t("Bilemedim, pas")}</Text>
-                </SoundPressable>
-              )}
-              {turTahminleri.length ? (
-                <View style={styles.tahminListe}>
-                  {turTahminleri.map((t, i) => (
-                    <Text key={i} style={styles.tahminSatir}>
-                      {`${t.kim === myPlayer ? _t("Sen") : _t("Rakip")}: “${t.kim === myPlayer ? t.metin : rakipMetniYaz(t.metin)}” `}<Text style={{ color: COLORS.danger }}>✗</Text>
-                    </Text>
-                  ))}
+              {iAmLocked ? (
+                <View style={styles.bilgiKart}>
+                  <View style={styles.bilgiUst}>
+                    <Ionicons name="lock-closed" size={18} color={COLORS.textMuted} />
+                    <Text style={styles.bilgiYazi}>{rakipKilitli ? _t("İkiniz de bilemediniz") : _t("Bu turda elendin — rakip deniyor")}</Text>
+                  </View>
                 </View>
-              ) : null}
-            </>
-          )}
-
-          {phase === "answering" && (
-            <View style={{ marginTop: SPACING.lg }}>
-              {iAmBuzzer ? (
+              ) : (
                 <>
-                  <Text style={[styles.cevapBaslik, answerTimeLeft <= 3 && { color: COLORS.danger }]}>{_t("Sıra sende —")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
+                  <Text style={styles.hakYazi}>{_t("İlk doğru yazan puanı alır · yanlış hakkın: {0}", [kalanHak])}</Text>
                   <View style={styles.girdiSatir}>
                     <TextInput
                       autoFocus
@@ -503,6 +486,8 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                       autoCorrect={false}
                       autoCapitalize="words"
                       spellCheck={false}
+                      returnKeyType="send"
+                      blurOnSubmit={false}
                       style={styles.girdi}
                     />
                     <SoundPressable
@@ -536,19 +521,21 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                     onYaz={(ad) => { const i = sesOnayIstegi; setSesOnayIstegi(null); i && i.yaz(ad); }}
                     onIptal={() => setSesOnayIstegi(null)}
                   />
+                  <SoundPressable onPress={handlePass} style={styles.pasBtn}>
+                    <Text style={styles.pasYazi}>{_t("Bilemedim, pas")}</Text>
+                  </SoundPressable>
                 </>
-              ) : (
-                <View style={styles.bilgiKart}>
-                  <View style={styles.bilgiUst}>
-                    <ActivityIndicator color={VURGU.main} />
-                    <Text style={styles.bilgiYazi}>{_t("Rakip cevap veriyor ·")}{" "}{answerTimeLeft}{" "}{_t("sn")}</Text>
-                  </View>
-                  <Text style={[styles.canliYazi, !rakipCanli && { color: COLORS.textFaint }]} numberOfLines={1} accessibilityLiveRegion="polite">
-                    {rakipCanli ? `“${rakipCanli}”` : _t("yazıyor…")}
-                  </Text>
-                </View>
               )}
-            </View>
+              {turTahminleri.length ? (
+                <View style={styles.tahminListe}>
+                  {turTahminleri.map((t, i) => (
+                    <Text key={i} style={styles.tahminSatir}>
+                      {`${t.kim === myPlayer ? _t("Sen") : _t("Rakip")}: “${t.kim === myPlayer ? t.metin : rakipMetniYaz(t.metin)}” `}<Text style={{ color: COLORS.danger }}>✗</Text>
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+            </>
           )}
 
           {phase === "result" && (
@@ -652,6 +639,7 @@ const styles = StyleSheet.create({
   buzzBtnPasif: { backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.cardBorder },
   buzzYazi: { fontSize: 22, fontWeight: "900", letterSpacing: 1.5, color: COLORS.accentDark },
   pasBtn: { marginTop: SPACING.sm, paddingVertical: SPACING.sm, alignItems: "center" },
+  hakYazi: { ...TYPE.caption, textAlign: "center", marginTop: SPACING.md, marginBottom: SPACING.sm },
   pasYazi: { ...TYPE.caption, textDecorationLine: "underline" },
 
   cevapBaslik: { ...TYPE.h3, color: COLORS.accent, textAlign: "center", marginBottom: SPACING.sm },

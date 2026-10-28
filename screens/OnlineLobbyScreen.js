@@ -70,7 +70,7 @@ export const GAME_MODES = [
   ), icon: "shield-checkmark", colorKey: "teamTeam" },
   // Kartı yok (Ortak Kulüp'ün içinde bir tür); bekleme ekranı ve modIstegi için listede duruyor.
   { id: "draft", ikon: "takimiSenSec", grup: "ortak", gizli: true, label: _t("Ortak Kulüp · Takımı Sen Seç"), desc: _t(
-    "Sırayla takım seçersiniz: seçtiğin takım rakibin sorusu olur, bilemezse puan senin"
+    "İkiniz de gizlice birer takım seçersiniz; 3-2-1'den sonra iki takım açılır, ikisinde de oynamış futbolcuyu önce yazan puanı alır"
   ), icon: "create", colorKey: "teamCountry" },
   // Paket 32 — Online Kulüp × Ülke (screens/OnlineUlkeScreen.js); kartı yok, Ortak Kulüp'ün türü.
   { id: "country", ikon: "ulkeKulup", grup: "ortak", gizli: true, label: _t("Ortak Kulüp · Kulüp × Ülke"), desc: _t("O ülkeden, o kulüpte oynamış futbolcuyu rakibinden önce yaz"), icon: "earth", colorKey: "teamCountry" },
@@ -98,7 +98,7 @@ const HIZLI_MODLAR = GAME_MODES.map((m) => m.id);
 const ORTAK_TURLER = [
   { mod: "classic", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüp çıkar, ortak futbolcuyu ilk yazan alır") },
   { mod: "country", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır") },
-  { mod: "draft", label: _t("Takımı sen seç"), alt: _t("Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur") },
+  { mod: "draft", label: _t("Takımı sen seç"), alt: _t("İkiniz de gizlice birer takım seçersiniz; 3-2-1'den sonra açılır, önce doğru yazan alır") },
 ];
 // Paket 37 — XOX penceresinde NASIL? (offline'daki ızgara türleri)
 const XOX_TURLER = [

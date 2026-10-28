@@ -328,9 +328,12 @@ const s = StyleSheet.create({
   izgara: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   kart: { borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 4 },
   kartKapali: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder },
-  kartAcik: { backgroundColor: COLORS.card, borderColor: saydam(COLORS.accent, 0.55) },
-  kartBaslangic: { backgroundColor: COLORS.card, borderColor: COLORS.accent },
-  kartBedava: { backgroundColor: vurguZemini(0.14), borderColor: saydam(COLORS.accent, 0.5) },
+  // Paket 42 (Kerem: "açılan ipuçlarının rengi farklılaşsın. açıldığı belli
+  // olsun, yeşil olsun mesela temaya göre") — açık kartlar temanın vurgu
+  // renginde dolgulu; kapalılar düz kart rengi. Bedava açılan biraz daha koyu.
+  kartAcik: { backgroundColor: vurguZemini(0.22), borderColor: COLORS.accent, borderWidth: 1.5 },
+  kartBaslangic: { backgroundColor: vurguZemini(0.22), borderColor: COLORS.accent, borderWidth: 1.5 },
+  kartBedava: { backgroundColor: vurguZemini(0.32), borderColor: COLORS.accent, borderWidth: 1.5 },
   kartSon: { backgroundColor: COLORS.card, borderColor: COLORS.textFaint },
   kartKilitli: { backgroundColor: COLORS.card, borderColor: COLORS.card, opacity: 0.6 },
   kilitSatir: { flexDirection: "row", alignItems: "center", gap: 3 },

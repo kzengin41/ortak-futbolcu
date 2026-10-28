@@ -35,7 +35,7 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import {
-  izgaraUret, zorlukAyari10, baslangicDurumu, IZGARA_TURLERI, basariVerisiVarMi, calinabilirMi, CALMA_HAKKI,
+  izgaraUret, zorlukAyari10, baslangicDurumu, IZGARA_TURLERI, basariVerisiVarMi, calinabilirMi, CALMA_HAKKI, CALMA_KURALLARI, calmaKuraliCoz, ARDISIK_BASARISIZ_SINIR,
   kosulTuru, kosulEtiketi, kosulBayragi, kosulIkonu, aksiyonuIsle, hucreCevaplari, kareTukendiMi,
   cpuHucreSec, cpuCevapSec, sonucMetni, ZORLUKLAR, VARSAYILAN_ZORLUK, X, O,
 } from "../lib/gridGame";
@@ -116,7 +116,10 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   // 4 Ekim 2026 — çalma kuralı (oyuncu başı 3 hak). Paket 24 (Kerem: "xox çalma
   // kuralı default kapalı olsun. ayarlardan ayarlansın.") — varsayılan KAPALI;
   // Ayarlar > Mod Varsayılanları > Futbolcu XOX ya da Maç Ayarları'ndan açılır.
-  const [calma, setCalma] = useState(false);
+  // Paket 42 — çalma kuralı üç seçenekli: kapalı | hak (3 çalma) | katlama (anında düello)
+  const [calma, setCalma] = useState("kapali");
+  // Paket 42 — tahta çizgisiz dolarsa berabere; açıksa bir kez yeni ızgarayla uzatma.
+  const [uzatma, setUzatma] = useState(false);
   const xoxAyar = useMemo(() => zorlukAyari10(zorluk), [zorluk]);
   const [inputMode, setInputMode] = useState("keyboard");
   const [basladi, setBasladi] = useState(false);
@@ -153,7 +156,8 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     const k = appSettings.modVarsayilanlari && appSettings.modVarsayilanlari.xox;
     if (!k) return;
     calmaYuklendi.current = true;
-    if (typeof k.calmaKurali === "boolean") setCalma(k.calmaKurali);
+    if (k.calmaKurali != null) setCalma(calmaKuraliCoz(k.calmaKurali));
+    if (typeof k.uzatma === "boolean") setUzatma(k.uzatma);
   }, [appSettings]);
   const sesOnayiAcik = appSettings?.voiceConfirm !== false;
 
@@ -190,28 +194,57 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
       // 13 Eylül 2026 (Kerem: "gelen takımlar zorluk derecesine göre daha kolay
       // olmalı") — ızgara ARTIK zorluğa göre kuruluyor; eskiden zorluk sadece
       // CPU'yu etkiliyordu, soru her seviyede aynı zorluktaydı.
-      const izgara = izgaraUret(PLAYERS, xoxAyar, Math.random, izgaraTuru, eslesme.derlenmis);
+      const izgara = izgaraUret(PLAYERS, xoxAyar, Math.random, izgaraTuru, eslesme.derlenmis, { gecmis: true });
       if (!izgara) { setUretilemedi(true); setHazirlaniyor(false); return; }
       // veriSeti veriliyor: dokuz karenin cevapları bir kez hesaplanıp durumda
       // saklanıyor (bkz. lib/gridGame.js baslangicDurumu).
-      setDurum(baslangicDurumu(izgara, X, PLAYERS, { calma }));
+      setDurum(baslangicDurumu(izgara, X, PLAYERS, { calma: calma === "hak", katlama: calma === "katlama", uzatma }));
       setGirdi("");
       setGeriBildirim(null);
       setHazirlaniyor(false);
       setBasladi(true);
     }, 40);
-  }, [xoxAyar, izgaraTuru, eslesme.derlenmis, calma]);
+  }, [xoxAyar, izgaraTuru, eslesme.derlenmis, calma, uzatma]);
+
+  // --- Paket 42: uzatma — tahta çizgisiz doldu, yeni ızgara (eski takımlar hariç) --
+  useEffect(() => {
+    if (!durum || !durum.uzatmaBekliyor) return;
+    setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: _t("Çizgi yok — UZATMA! Yeni ızgara geliyor") });
+    const t = setTimeout(() => {
+      const eski = new Set([...durum.izgara.satirlar, ...durum.izgara.sutunlar]);
+      let enIyi = null, enAz = Infinity;
+      for (let i = 0; i < 8; i++) {
+        const iz = izgaraUret(PLAYERS, xoxAyar, Math.random, izgaraTuru, eslesme.derlenmis, { gecmis: true });
+        if (!iz) continue;
+        const ortak = [...iz.satirlar, ...iz.sutunlar].filter((k) => eski.has(k)).length;
+        if (ortak < enAz) { enIyi = iz; enAz = ortak; }
+        if (ortak === 0) break;
+      }
+      setDurum((d) => {
+        if (!d || !d.uzatmaBekliyor) return d;
+        if (!enIyi) return { ...d, uzatmaBekliyor: false, bitti: true, kazanan: "berabere", bitisSebebi: "dolu" };
+        return aksiyonuIsle(d, { tip: "uzatma", izgara: enIyi }, baglam) || d;
+      });
+    }, 1800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durum && durum.uzatmaBekliyor]);
 
   // --- CPU sırası ----------------------------------------------------------
   useEffect(() => {
-    if (!durum || durum.bitti || !cpuyaKarsi) return;
-    if (durum.sira !== O || durum.secili) return;
+    if (!durum || durum.bitti || !cpuyaKarsi || durum.uzatmaBekliyor) return;
+    if (durum.sira !== O || (durum.secili && !durum.duello)) return;
 
     setCpuDusunuyor(true);
     zamanlayiciRef.current = setTimeout(() => {
       setCpuDusunuyor(false);
       setDurum((d) => {
         if (!d || d.bitti || d.sira !== O) return d;
+        // Paket 42 — katlama düellosu: kare belli, CPU geri almayı dener.
+        if (d.duello && d.secili) {
+          const ad = cpuCevapSec(d, d.secili.satir, d.secili.sutun, baglam, xoxAyar);
+          return (ad ? aksiyonuIsle(d, { tip: "cevap", metin: ad }, baglam) : aksiyonuIsle(d, { tip: "pas" }, baglam)) || d;
+        }
         const indis = cpuHucreSec(d, xoxAyar, Math.random, PLAYERS);
         if (indis === null) return d;
         const satir = Math.floor(indis / 3);
@@ -229,7 +262,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
   }, [durum, cpuyaKarsi, xoxAyar, baglam]);
 
   // --- Hamle süresi ----------------------------------------------------------
-  const insanSirasi = !!durum && !durum.bitti && (!cpuyaKarsi || durum.sira === X);
+  const insanSirasi = !!durum && !durum.bitti && !durum.uzatmaBekliyor && (!cpuyaKarsi || durum.sira === X);
   // Her yeni hamlede (hamleNo değişince) ya da yeni oyunda sayaç baştan başlar.
   useEffect(() => {
     if (!basladi || !insanSirasi) { setKalanSure(null); return; }
@@ -289,17 +322,20 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
       // CPU'nun (O) doğru cevabı koleksiyona eklenmiyor. İki kişilik modda
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: (h.calma ? _t("ÇALDI! ") : "") + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
+      const onEk = h.calma ? (durum && durum.katlama ? (h.duello ? _t("GERİ ALDI! ") : _t("KAPTI! ")) : _t("ÇALDI! ")) : "";
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: onEk + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
     } else if (h.tip === "yanlis") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
         message: h.ayniIsim
-          ? _t("Çalmak için FARKLI bir futbolcu gerekir")
+          ? (durum && durum.katlama ? _t("Bu karede o isim zaten söylendi") : _t("Çalmak için FARKLI bir futbolcu gerekir"))
           : cpuHamlesi ? _t("{0} bilemedi: {1}", [kisaAd(karakter), h.metin]) : _t("Bu futbolcu bu ikilide oynamadı"),
       });
     } else if (h.tip === "pas") {
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: false, message: cpuHamlesi ? _t("{0} pas geçti", [kisaAd(karakter)]) : _t("Pas geçtin") });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: !!h.duelloBitti && (cpuyaKarsi ? cpuHamlesi : false), message: h.duelloBitti
+        ? (cpuHamlesi ? _t("{0} geri alamadı — kare senin", [kisaAd(karakter)]) : _t("Geri alamadın — kare rakipte kaldı"))
+        : cpuHamlesi ? _t("{0} pas geçti", [kisaAd(karakter)]) : _t("Pas geçtin") });
     } else if (h.tip === "sure") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
@@ -389,8 +425,8 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
     kurulumaDon: () => setBasladi(false),
   });
   useEffect(() => {
-    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [[_t("Rakip"), cpuyaKarsi ? `${karakter.avatar} ${kisaAd(karakter)}` : _t("2 kişi")], [_t("Izgara"), (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || _t("Kulüpler")], [_t("Çalma kuralı"), calma ? _t("Açık") : _t("Kapalı")]] }) });
-  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru, calma]);
+    oyunBilgisiniYaz("xox", { satirlar: ayarSatirlari({ zorluk, sure: cevapSuresi, yontem: inputMode, ekstra: [[_t("Rakip"), cpuyaKarsi ? `${karakter.avatar} ${kisaAd(karakter)}` : _t("2 kişi")], [_t("Izgara"), (IZGARA_TURLERI.find((t) => t.deger === izgaraTuru) || {}).etiket || _t("Kulüpler")], [_t("Çalma kuralı"), (CALMA_KURALLARI.find((k) => k.deger === calma) || CALMA_KURALLARI[0]).etiket], [_t("Uzatma"), uzatma ? _t("Açık") : _t("Kapalı")]] }) });
+  }, [zorluk, cevapSuresi, inputMode, cpuyaKarsi, izgaraTuru, calma, uzatma]);
 
   function cevapGonder(ad) {
     const metin = String(ad ?? girdi).trim();
@@ -416,7 +452,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
         )}
         vurgu={VURGU}
         onGeri={onExitSilent || onExit}
-        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode, calmaKurali: calma })}
+        onVarsayilanKaydet={() => modVarsayilanKaydet({ zorluk, sure: cevapSuresi, yontem: inputMode, calmaKurali: calma, uzatma })}
         onBasla={yeniOyun}
         baslaYukleniyor={hazirlaniyor}
       >
@@ -465,11 +501,17 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
             onSec={setIzgaraTuru}
           />
         </KurulumBolum>
-        <KurulumBolum baslik={_t("ÇALMA KURALI")} not={_t(
-          "Açıkken rakibin aldığı kareye dokunup o kare için FARKLI bir futbolcu söylersen kare senin olur. Herkesin {0} çalma hakkı var.",
-          [CALMA_HAKKI]
-        )}>
-          <SecimCipleri secenekler={[{ deger: false, etiket: _t("Kapalı") }, { deger: true, etiket: _t("Açık") }]} secili={calma} onSec={setCalma} />
+        <KurulumBolum baslik={_t("ÇALMA KURALI")} not={calma === "katlama"
+          ? _t("Katlamalı: rakibin karesine FARKLI bir futbolcu söyleyip alırsan, rakip hemen geri almayı dener. Biri bilemeyene kadar sürer; o karede söylenen isim tekrar edilemez.")
+          : calma === "hak"
+          ? _t("Rakibin aldığı kareye dokunup o kare için FARKLI bir futbolcu söylersen kare senin olur. Herkesin {0} çalma hakkı var.", [CALMA_HAKKI])
+          : _t("Alınan kare bir daha el değiştirmez.")}>
+          <SecimCipleri secenekler={CALMA_KURALLARI} secili={calma} onSec={setCalma} />
+        </KurulumBolum>
+        <KurulumBolum baslik={_t("UZATMA")} not={uzatma
+          ? _t("Tahta çizgisiz dolarsa yeni takımlarla bir ızgara daha oynanır; ilk çizgiyi yapan kazanır.")
+          : _t("Kazanmak için üçlü çizgi şart. Tahta çizgisiz dolarsa maç berabere biter.")}>
+          <SecimCipleri secenekler={[{ deger: false, etiket: _t("Kapalı") }, { deger: true, etiket: _t("Açık") }]} secili={uzatma} onSec={setUzatma} />
         </KurulumBolum>
         <EslesmeProfiliBolumu eslesme={eslesme} not={_t("Izgaradaki kulüpler profilin bölge ve kulüp ayarlarına göre seçilir.")} />
         <KurulumBolum baslik={MOD_TANIMLARI.xox.sure.etiket}>
@@ -518,13 +560,28 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
           keyboardShouldPersistTaps="handled"
         >
-          {!secili && !durum.bitti && benimSiram && (
-            <Text style={styles.ipucu}>
-              {durum.calmaHakki && durum.calmaHakki[durum.sira] > 0
-                ? _t("Boş bir kareye dokun — ya da rakibin karesini çal")
-                : _t("Almak istediğin kareye dokun")}
-            </Text>
+          {!secili && !durum.bitti && !durum.uzatmaBekliyor && benimSiram && (
+            <View style={styles.ipucuSatir}>
+              <Text style={[styles.ipucu, { marginBottom: 0, flexShrink: 1 }]}>
+                {durum.katlama
+                  ? _t("Boş bir kareye dokun — ya da rakibin karesini kap")
+                  : durum.calmaHakki && durum.calmaHakki[durum.sira] > 0
+                  ? _t("Boş bir kareye dokun — ya da rakibin karesini çal")
+                  : _t("Almak istediğin kareye dokun")}
+              </Text>
+              <SoundPressable
+                style={styles.bilemedimBtn}
+                onPress={() => setDurum(aksiyonuIsle(durum, { tip: "pas" }, baglam) || durum)}
+                accessibilityLabel={_t("Bilemedim, sırayı geç")}
+              >
+                <Text style={styles.bilemedimYazi}>{_t("Bilemedim")}</Text>
+              </SoundPressable>
+            </View>
           )}
+          {!durum.bitti && durum.basarisizSeri >= 2 ? (
+            <Text style={styles.calmaSatir}>{_t("Art arda {0} başarısız hamle · {1} olunca berabere", [durum.basarisizSeri, ARDISIK_BASARISIZ_SINIR])}</Text>
+          ) : null}
+          {durum.uzatmaNo ? <Text style={[styles.calmaSatir, { color: VURGU.main }]}>{_t("UZATMA · ilk çizgiyi yapan kazanır")}</Text> : null}
           {durum.calmaHakki ? (
             <Text style={styles.calmaSatir}>{_t("Çalma hakkı · X:")}{" "}{durum.calmaHakki[X]}· O: {durum.calmaHakki[O]}
             </Text>
@@ -561,7 +618,11 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                 {kosulEtiketi(durum.izgara.satirlar[secili.satir])} + {kosulEtiketi(durum.izgara.sutunlar[secili.sutun])}
               </Text>
               <Text style={styles.hedefAlt}>
-                {secili.calma
+                {secili.duello
+                  ? _t("GERİ AL! Bu karede söylenenler: {0} — başka bir futbolcu söyle", [((durum.kareIsimleri || {})[secili.satir * 3 + secili.sutun] || []).join(", ")])
+                  : secili.calma && durum.katlama
+                  ? _t("KAP · bu karede söylenmemiş bir futbolcu söyle ({0} söylendi). Alırsan rakip hemen geri almayı dener.", [((durum.kareIsimleri || {})[secili.satir * 3 + secili.sutun] || []).join(", ")])
+                  : secili.calma
                   ? _t(
                   "ÇALMA · \"{0}\" dışında bir futbolcu söyle (1 çalma hakkı gider)",
                   [durum.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""]
@@ -626,15 +687,17 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
               )}
 
               <View style={styles.altBtnSatir}>
-                <SoundPressable
-                  onPress={() => setDurum(aksiyonuIsle(durum, { tip: "secimiIptal" }, baglam) || durum)}
-                >
-                  <Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text>
-                </SoundPressable>
+                {!secili.duello ? (
+                  <SoundPressable
+                    onPress={() => setDurum(aksiyonuIsle(durum, { tip: "secimiIptal" }, baglam) || durum)}
+                  >
+                    <Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text>
+                  </SoundPressable>
+                ) : <View />}
                 <SoundPressable
                   onPress={() => setDurum(aksiyonuIsle(durum, { tip: "pas" }, baglam) || durum)}
                 >
-                  <Text style={styles.kucukLink}>{_t("Pas geç")}</Text>
+                  <Text style={styles.kucukLink}>{secili.duello ? _t("Bilemedim — kare rakipte kalsın") : _t("Bilemedim")}</Text>
                 </SoundPressable>
               </View>
             </View>
@@ -857,6 +920,9 @@ const styles = StyleSheet.create({
   hucreSecili: { borderColor: VURGU.main },
   hucreCalinabilir: { borderStyle: "dashed", borderColor: COLORS.cta },
   calmaSatir: { textAlign: "center", fontSize: 12, fontWeight: "700", color: COLORS.textMuted, marginTop: 4 },
+  ipucuSatir: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.sm, marginHorizontal: SPACING.xl, marginBottom: SPACING.sm, flexWrap: "wrap" },
+  bilemedimBtn: { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: RADIUS.pill || 999, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: COLORS.card },
+  bilemedimYazi: { color: COLORS.textMuted, fontSize: 12, fontWeight: "800" },
   hucreX: { backgroundColor: "#173A22", borderColor: COLORS.accent },
   hucreO: { backgroundColor: "#3D2600", borderColor: COLORS.cta },
   hucreKazanan: { borderWidth: 3, borderColor: VURGU.main },

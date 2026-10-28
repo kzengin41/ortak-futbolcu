@@ -218,3 +218,21 @@ Not: `runtimeVersion` artık sabit `"1.0.0"` — 1.0.0 kurulu telefonlar da 1.1.
 ```
 Version 1.1 adds Report / Block: tap any player in the online leaderboard, or "Report / block opponent" at the end of an online match. Blocked players are never matched again; nicknames reported by 3 different users are removed automatically, and reports are reviewed within 24 hours.
 ```
+
+---
+
+## 11. Apple 2. ret (28 Ekim 2026) — 1.1.0 (8)
+
+**Ret sebepleri (1.1.0 build 7):**
+- 2.1(a): İnceleyici demo hesapla giremedi. Video yetmiyor; çalışan kullanıcı adı + şifre isteniyor.
+- 4 Design: iPad Air 11" (iPadOS 27) üzerinde arayüz "sıkışık, iPad çözünürlüğüne uygun değil".
+
+**Karar: iOS'ta iPad desteği kapatıldı** (`ios.supportsTablet: false`, `requireFullScreen` kaldırıldı).
+- Uygulama iPad'de yine kurulur ve çalışır; Apple'ın iPhone uyumluluk modunda, telefondaki görünümle açılır. Apple bu modu "iPad için optimize değil" diye reddetmez.
+- Gerçek iPad tasarımı için 923 sabit yazı boyutu ve bütün ekranların yeniden düzenlenmesi gerekiyordu. Ayrıca iPadOS 27'de `UIRequiresFullScreen` artık yok sayılıyor; pencere boyutu serbestçe değişebiliyor.
+- Yön önemli: yayınlanmış bir sürümden iPad desteği SONRADAN KALDIRILAMAZ. Yayından sonra iPad desteği EKLENEBİLİR. Bu yüzden önce iPhone ile yayına çıkmak doğru.
+- Android tabletler etkilenmedi (TabletCercevesi aynen çalışıyor).
+- iPad ekran görüntüleri ASC'de kalabilir; iPhone'a özel build'de kullanılmazlar.
+- What's New metninden "iPad desteği / iPad support" satırını çıkar (ilk yayında bu alan zaten görünmez).
+
+**Demo hesap:** Kayıt videosunda "Hesabımı kalıcı olarak sil" adımı demo hesapla yapıldıysa hesap silinmiş olabilir. Supabase → Authentication → Users'ta kontrol et, yoksa uygulamada yeniden **Kayıt Ol**, sonra **Giriş Yap** ile dene. Şifre bu depoda TUTULMAZ, yalnız ASC'ye yazılır.

@@ -131,7 +131,7 @@ function Merhaba() {
         </Animated.View>
       </View>
       <View style={s.maddeler}>
-        <Madde ikon="flash" yazi={_t("Bildiğin an “BİLİYORUM”a bas; yaz ya da sesle söyle.")} />
+        <Madde ikon="flash" yazi={_t("Bildiğin an yaz ya da sesle söyle; ilk doğru cevap puanı alır.")} />
         <Madde ikon="people" yazi={_t("CPU'ya karşı, yanındaki arkadaşınla ya da online rakiple oyna.")} />
         <Madde ikon="trophy" yazi={_t("Her doğru cevap XP, rozet ve futbolcu koleksiyonu demek.")} />
       </View>
@@ -257,7 +257,7 @@ function DenemeTuru({ onBitti }) {
               </SoundPressable>
             )}
           </View>
-          <Text style={s.not}>{_t("Gerçek maçta önce “BİLİYORUM”a basarsın; rakibin de aynı anda yarışır.")}</Text>
+          <Text style={s.not}>{_t("Gerçek maçta rakibin de aynı anda yazar; önce doğru yazan turu alır.")}</Text>
         </View>
       ) : null}
 

@@ -31,7 +31,7 @@ const SECTIONS = [
         "Ekranda iki takım belirir. Amacın, kariyeri boyunca ikisinde de forma giymiş bir futbolcuyu söylemek."
       ),
       _t(
-        "\"Takımı Sen Seç\" seçeneğinde bir takımı sen belirlersin, rakip takımı ise CPU otomatik atar."
+        "\"Takımı Sen Seç\"te iki taraf da birer takım seçer; 3-2-1'den sonra takımlar açılır, ikisinde de oynamış futbolcuyu önce yazan puanı alır."
       ),
       _t(
         "\"CPU Rastgele Atar\" seçeneğinde iki takımı da CPU seçer, sen sadece cevabı bulmaya odaklanırsın."
@@ -178,7 +178,8 @@ const SECTIONS = [
       ),
       _t("Doğru cevap kareyi senin adına işaretler; bilemezsen sıra rakibe geçer."),
       _t("Aynı futbolcuyu birden fazla karede kullanabilirsin — kısıtlama yoktur."),
-      _t("Üçlü sırayı (yatay, dikey ya da çapraz) tamamlayan kazanır."),
+      _t("Üçlü sırayı (yatay, dikey ya da çapraz) tamamlayan kazanır. Tahta çizgisiz dolarsa berabere (Uzatma açıksa yeni ızgarayla devam)."),
+      _t("Katlamalı modda kapılan kareyi sahibi hemen geri almayı dener; biri bilemeyene kadar sürer."),
       _t(
         "Beş zorluk seviyesi var: kolay seviyelerde tanıdık kulüpler ve bol cevaplı kareler gelir, zor seviyelerde kareler 3-4 cevaba kadar düşer."
       ),

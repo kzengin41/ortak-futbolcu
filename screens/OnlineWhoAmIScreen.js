@@ -21,7 +21,7 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
 import { useOnlineRoom, rovansli, macSirasi } from "../lib/onlineRoom";
-import { baslangicDurumu, aksiyonuIsle, potu, carpani, alabilirMi, TUR_ARASI_MS, HEDEF_TUR, HAMLE_SURESI_SN, YANLIS_CEZA } from "../lib/onlineWhoAmI";
+import { baslangicDurumu, aksiyonuIsle, potu, carpani, alabilirMi, TUR_ARASI_MS, TOPLAM_TUR, HAMLE_SURESI_SN, YANLIS_CEZA, macKazanani } from "../lib/onlineWhoAmI";
 import TimerBar from "../components/TimerBar";
 import MikrofonDugmesi from "../components/MikrofonDugmesi";
 
@@ -170,10 +170,8 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     if (faz !== "macSonu") { if (faz === "oynaniyor") macIslendiRef.current = false; return; }
     if (macIslendiRef.current) return;
     macIslendiRef.current = true;
-    const ben = benKimim === 1 ? durum.turlar.p1 : durum.turlar.p2;
-    const rk = benKimim === 1 ? durum.turlar.p2 : durum.turlar.p1;
-    addXP(ben > rk ? XP_MAC_GALIBIYETI : XP_MAC_MAGLUBIYETI);
-  }, [faz, benKimim, durum?.turlar]);
+    addXP(macKazanani(durum) === benKimim ? XP_MAC_GALIBIYETI : XP_MAC_MAGLUBIYETI);
+  }, [faz, benKimim, durum?.skorlar]);
 
   function tahminGonder(metin) {
     const yazi = String(metin ?? girdi).trim();
@@ -223,18 +221,18 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
     <View style={styles.ustSerit}>
       <View style={styles.skorKutu}>
         <Text style={styles.skorEtiket}>{_t("SEN")}</Text>
-        <Text style={[styles.skorTur, { color: COLORS.accent }]}>{benimTur}</Text>
-        <Text style={styles.skorPuan}>{sayi(benimPuan)} p</Text>
+        <Text style={[styles.skorTur, { color: COLORS.accent }]} numberOfLines={1} adjustsFontSizeToFit>{sayi(benimPuan)}</Text>
+        <Text style={styles.skorPuan}>{_t("{0} tur", [benimTur])}</Text>
       </View>
       <View style={styles.turKutu}>
-        <Text style={styles.turEtiket}>{_t("TUR")}{" "}{durum.turNo}</Text>
-        <Text style={styles.hedefEtiket}>{HEDEF_TUR}{" "}{_t("turu alan kazanır")}</Text>
+        <Text style={styles.turEtiket}>{_t("TUR {0}/{1}", [durum.turNo, TOPLAM_TUR])}</Text>
+        <Text style={styles.hedefEtiket}>{_t("{0} turun sonunda puanı çok olan kazanır", [TOPLAM_TUR])}</Text>
         {!rakipVar && faz !== "macSonu" ? <Text style={styles.kopuk}>{_t("rakip bağlı değil")}</Text> : null}
       </View>
       <View style={styles.skorKutu}>
         <Text style={styles.skorEtiket}>{_t("RAKİP")}</Text>
-        <Text style={[styles.skorTur, { color: COLORS.cta }]}>{rakipTur}</Text>
-        <Text style={styles.skorPuan}>{sayi(rakipPuan)} p</Text>
+        <Text style={[styles.skorTur, { color: COLORS.cta }]} numberOfLines={1} adjustsFontSizeToFit>{sayi(rakipPuan)}</Text>
+        <Text style={styles.skorPuan}>{_t("{0} tur", [rakipTur])}</Text>
       </View>
     </View>
   );
@@ -267,11 +265,11 @@ export default function OnlineWhoAmIScreen({ room, onExit }) {
               rakipVar={rakipVar}
               gonder={gonder}
               onExit={onExit}
-              skorSen={benimTur}
-              skorRakip={rakipTur}
-              skorEtiketi={_t("tur")}
-              kazanan={benimTur > rakipTur ? "sen" : benimTur < rakipTur ? "rakip" : "berabere"}
-              ekSatir={<Text style={styles.bekleme}>{_t("Puan: sen")}{" "}{sayi(benimPuan)}{" "}{_t("· rakip")}{" "}{sayi(rakipPuan)}</Text>}
+              skorSen={benimPuan}
+              skorRakip={rakipPuan}
+              skorEtiketi={_t("puan")}
+              kazanan={macKazanani(durum) === benKimim ? "sen" : macKazanani(durum) === 0 ? "berabere" : "rakip"}
+              ekSatir={<Text style={styles.bekleme}>{_t("Alınan tur: sen {0} · rakip {1}", [benimTur, rakipTur])}</Text>}
             />
           ) : (
             <Text style={styles.bekleme}>{_t("Sıradaki futbolcu birazdan...")}</Text>
@@ -386,7 +384,7 @@ const styles = StyleSheet.create({
   ustSerit: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginBottom: SPACING.sm, paddingHorizontal: SPACING.lg },
   skorKutu: { flex: 1, alignItems: "center", backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: 6 },
   skorEtiket: { ...TYPE.caption, fontSize: 12, letterSpacing: 1, fontWeight: "900" },
-  skorTur: { fontSize: 26, fontWeight: "900" },
+  skorTur: { fontSize: 22, fontWeight: "900" },
   skorPuan: { ...TYPE.caption, fontSize: 12 },
   turKutu: { flex: 1.1, alignItems: "center" },
   turEtiket: { ...TYPE.h3, fontSize: 14 },

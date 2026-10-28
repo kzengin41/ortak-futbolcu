@@ -46,14 +46,14 @@ const MODES = [
     options: [
       { id: "cpu", rakip: "cpu", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüpte oynamış futbolcu") },
       { id: "countryTeamCpu", rakip: "cpu", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcu") },
-      { id: "draftCpu", rakip: "cpu", label: _t("Takımı sen seç"), alt: _t("Bir kulübü sen yazarsın, ikincisini CPU seçer") },
+      { id: "draftCpu", rakip: "cpu", label: _t("Takımı sen seç"), alt: _t("Sen bir takım seçersin, CPU da bir takım; 3-2-1'den sonra açılır, önce doğru yazan alır") },
       { id: "local", rakip: "yanimdaki", label: _t("Yanımdaki — 2 kişi"), kisaLabel: _t("2 kişi"), alt: _t("Ekran ikiye bölünür, ilk basan cevaplar") },
       { id: "sunucu", rakip: "yanimdaki", label: _t("Yanımdakiler — Sunucu modu"), kisaLabel: _t("Sunucu · 2–6 kişi"), alt: _t("Sen kulüpleri okursun, onlar bağırır") },
       // Paket 32 (Kerem: "online'da ülke-takım ve kendin takımı söyle modu yok?") —
       // online'da da üç tür; Kulüp × Ülke online yeni (screens/OnlineUlkeScreen.js).
       { id: "online", rakip: "online", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüp çıkar, ortak futbolcuyu ilk yazan alır"), sekme: true, params: { mod: "classic" } },
       { id: "online", rakip: "online", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcuyu ilk yazan alır"), sekme: true, params: { mod: "country" } },
-      { id: "online", rakip: "online", label: _t("Takımı sen seç"), alt: _t("Sırayla takım seçersiniz; seçtiğin takım rakibin sorusu olur"), sekme: true, params: { mod: "draft" } },
+      { id: "online", rakip: "online", label: _t("Takımı sen seç"), alt: _t("İkiniz de gizlice birer takım seçersiniz; 3-2-1'den sonra açılır, önce doğru yazan alır"), sekme: true, params: { mod: "draft" } },
     ],
   },
   {
@@ -99,7 +99,7 @@ const MODES = [
     options: [
       { id: "whoAmICpu", rakip: "tek", label: _t("Seri"), alt: _t("3 can, seviye seviye zorlaşır") },
       { id: "kadroAvi", rakip: "tek", label: _t("Kadro Avı"), alt: _t("Bir kadronun gizli oyuncusu — bulunca kadroya eklenir") },
-      { id: "online", rakip: "online", label: _t("Online"), alt: _t("Aynı masada düello: ilk bilen alır"), sekme: true, params: { mod: "whoami" } },
+      { id: "online", rakip: "online", label: _t("Online"), alt: _t("Aynı masada düello: 5 tur, toplam puan kazanır"), sekme: true, params: { mod: "whoami" } },
     ],
   },
   {

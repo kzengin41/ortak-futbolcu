@@ -25,8 +25,9 @@ import OnlineMacSonu from "../components/OnlineMacSonu";
 import RakipAyrildi from "../components/RakipAyrildi";
 import {
   baslangicDurumu, aksiyonuIsle, kurHarfHaritasi, ALFABE,
-  HEDEF_PUAN, TUR_ARASI_MS, HARF_GOSTERIM_MS,
+  HEDEF_PUAN, TUR_ARASI_MS, HARF_GOSTERIM_MS, YARIS_SURESI_MS,
 } from "../lib/onlineLetter";
+import TimerBar from "../components/TimerBar";
 
 // ============================================================================
 // ONLINE — İLK HARFTEN BUL (12 Eylül 2026'da yeniden yazıldı)
@@ -62,8 +63,11 @@ export default function OnlineLetterScreen({ room, onExit }) {
       .slice(0, 8000);
     return kurHarfHaritasi(veri);
   }, []);
-  const baglamRef = useRef({ harita });
-  useEffect(() => { baglamRef.current = { harita }; }, [harita]);
+  // Paket 42: cevap kontrolü TAM veri setinden (popüler 8.000'de olmayan doğru
+  // isim reddediliyordu). Popüler harita yalnız harf çiftinin uygunluğu için.
+  const tamHarita = useMemo(() => kurHarfHaritasi(PLAYERS), []);
+  const baglamRef = useRef({ harita, tamHarita });
+  useEffect(() => { baglamRef.current = { harita, tamHarita }; }, [harita, tamHarita]);
 
   const aksiyonIsle = useCallback(
     // 5 Ekim 2026 — rövanş iki taraftan tek dokunuş (lib/onlineRoom.js rovansli)
@@ -81,11 +85,8 @@ export default function OnlineLetterScreen({ room, onExit }) {
 
   const [girdi, setGirdi] = useState("");
   const [geriBildirim, setGeriBildirim] = useState(null);
-  const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
-  const oneriler = useMemo(
-    () => (girdi.trim().length < ONERI_ESIGI ? [] : suggestPlayers(suggestIndex, girdi)),
-    [suggestIndex, girdi]
-  );
+  // Paket 42: öneri (tahmin) şeridi yok — cevabı ele veriyordu.
+  const [simdi, setSimdi] = useState(Date.now());
 
   const faz = durum?.faz;
   // Paket 23 — dereceli maçta rakip düşerse geri sayım; dönmezse galibiyet.
@@ -107,6 +108,22 @@ export default function OnlineLetterScreen({ room, onExit }) {
     );
     return () => clearTimeout(t);
   }, [hostMuyum, faz, durum?.turNo, guncelle]);
+
+  // --- Yarış sayacı (her cihaz yarışın başladığı ana göre) + host süre ------
+  const yarisAnRef = useRef({ anahtar: null, t: 0 });
+  const yarisAnahtari = faz === "yaris" ? `${durum.turNo}` : null;
+  if (yarisAnahtari && yarisAnRef.current.anahtar !== yarisAnahtari) yarisAnRef.current = { anahtar: yarisAnahtari, t: Date.now() };
+  useEffect(() => {
+    if (faz !== "yaris") return;
+    const t = setInterval(() => setSimdi(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [faz]);
+  useEffect(() => {
+    if (!hostMuyum || faz !== "yaris") return;
+    const kalan = Math.max(0, (durum.cevapBitis || Date.now() + YARIS_SURESI_MS) - Date.now()) + 50;
+    const t = setTimeout(() => guncelle((d) => aksiyonuIsle(d, { tip: "sureDoldu" }, 1, baglamRef.current)), kalan);
+    return () => clearTimeout(t);
+  }, [hostMuyum, faz, durum?.turNo, durum?.cevapBitis, guncelle]);
 
   // --- Host: tur sonu -> sıradaki tur --------------------------------------
   useEffect(() => {
@@ -149,6 +166,10 @@ export default function OnlineLetterScreen({ room, onExit }) {
   useEffect(() => {
     const c = durum?.sonCevap;
     if (!c || c.dogru) return;
+    if (c.pes) {
+      if (c.kimden !== benKimim) setGeriBildirim({ correct: false, message: _t("Rakip bilemedim dedi — kalan süre senin") });
+      return;
+    }
     const benMi = c.kimden === benKimim;
     setGeriBildirim({
       correct: false,
@@ -167,9 +188,10 @@ export default function OnlineLetterScreen({ room, onExit }) {
     setGeriBildirim({ correct: false, message: _t("Bu harf ikilisi olmaz, başka bir harf seç") });
   }, [reddedildi, benSecenim]);
 
+  const pesEttim = !!durum?.pesler?.includes(benKimim);
   function cevapGonder(ad) {
     const temiz = String(ad ?? girdi).trim();
-    if (!temiz || faz !== "yaris") return;
+    if (!temiz || faz !== "yaris" || pesEttim) return;
     setGirdi("");
     gonder({ tip: "cevap", metin: temiz });
   }
@@ -286,15 +308,31 @@ export default function OnlineLetterScreen({ room, onExit }) {
 
           {faz === "harfler" && <Text style={styles.aciklama}>{_t("Hazır ol...")}</Text>}
           {faz === "yaris" && (
-            <Text style={styles.aciklama}>{_t("Adı")}{" "}{durum.harfP1}{_t(", soyadı")}{" "}{durum.harfP2}{" "}{_t("ile başlayan bir futbolcu (ya da tersi) — ilk yazan puanı alır")}</Text>
+            <>
+              <Text style={styles.aciklama}>{_t("Adı")}{" "}{durum.harfP1}{_t(", soyadı")}{" "}{durum.harfP2}{" "}{_t("ile başlayan bir futbolcu (ya da tersi) — ilk yazan puanı alır")}</Text>
+              {(() => {
+                const toplam = Math.round(YARIS_SURESI_MS / 1000);
+                const kalan = Math.max(0, toplam - Math.floor((simdi - yarisAnRef.current.t) / 1000));
+                return (
+                  <>
+                    <TimerBar current={kalan} total={toplam} />
+                    <Text style={[styles.aciklama, kalan <= 5 && { color: COLORS.danger }]}>{kalan}{" "}{_t("sn")}</Text>
+                  </>
+                );
+              })()}
+              {pesEttim ? <Text style={styles.aciklama}>{_t("Bu turdan çekildin — rakip deniyor")}</Text> : null}
+            </>
           )}
 
           {/* --- TUR / MAÇ SONU --- */}
           {(faz === "turSonu" || faz === "macSonu") && (
             <View style={styles.sonucKart}>
               <Text style={styles.sonucBaslik}>
-                {durum.turKazanani === benKimim ? _t("Puan senin!") : _t("Puan rakibin")}
+                {durum.turKazanani === benKimim ? _t("Puan senin!") : durum.turKazanani ? _t("Puan rakibin") : _t("Kimse bilemedi")}
               </Text>
+              {!durum.turKazanani ? (
+                <Text style={styles.aciklama}>{_t("Örnek cevaplar: {0}", [((baglamRef.current.harita.get([durum.harfP1, durum.harfP2].sort().join("-")) || []).slice(0, 3).map((p) => p.name).join(", ")) || "—"])}</Text>
+              ) : null}
               {durum.sonCevap?.ad ? (
                 <>
                   <View style={{ marginVertical: SPACING.md }}>
@@ -325,22 +363,8 @@ export default function OnlineLetterScreen({ room, onExit }) {
           )}
         </ScrollView>
 
-        {faz === "yaris" && (
+        {faz === "yaris" && !pesEttim && (
           <View style={styles.altAlan}>
-            {oneriler.length > 0 && (
-              <ScrollView
-                horizontal
-                keyboardShouldPersistTaps="handled"
-                showsHorizontalScrollIndicator={false}
-                style={styles.oneriSerit}
-              >
-                {oneriler.map((ad) => (
-                  <SoundPressable key={ad} style={styles.oneriCip} onPress={() => cevapGonder(ad)}>
-                    <Text style={styles.oneriCipText}>{ad}</Text>
-                  </SoundPressable>
-                ))}
-              </ScrollView>
-            )}
             <View style={styles.girdiSatir}>
               <TextInput
                 style={styles.girdi}
@@ -354,10 +378,13 @@ export default function OnlineLetterScreen({ room, onExit }) {
                 autoFocus
               />
               <MikrofonDugmesi onMetin={(m) => setGirdi(m)} onGonder={(m) => cevapGonder(m)} />
-              <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()}>
+              <SoundPressable style={styles.gonderBtn} onPress={() => cevapGonder()} accessibilityLabel={_t("Gönder")}>
                 <Ionicons name="send" size={18} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
+            <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })} accessibilityLabel={_t("Bilemedim, turdan çekil")}>
+              <Text style={styles.pasBtnText}>{_t("Bilemedim")}</Text>
+            </SoundPressable>
           </View>
         )}
 
@@ -382,6 +409,8 @@ export default function OnlineLetterScreen({ room, onExit }) {
 }
 
 const styles = StyleSheet.create({
+  pasBtn: { alignItems: "center", paddingVertical: SPACING.sm },
+  pasBtnText: { ...TYPE.caption, textDecorationLine: "underline" },
   kap: { flex: 1, padding: SPACING.lg, paddingTop: SPACING.xxl },
   merkez: { flex: 1, alignItems: "center", justifyContent: "center", padding: SPACING.xl },
 

@@ -117,7 +117,8 @@ export default function ModVarsayilanlariPaneli() {
 // Paket 24 — moda özel ek ayarın kayıtlı değeri (yoksa tablodaki varsayılan).
 function ekDegeri(settings, modId, ek) {
   const k = (settings && settings.modVarsayilanlari && settings.modVarsayilanlari[modId]) || {};
-  return k[ek.alan] !== undefined ? k[ek.alan] : ek.varsayilan;
+  const v = k[ek.alan] !== undefined ? k[ek.alan] : ek.varsayilan;
+  return ek.coz ? ek.coz(v) : v;   // Paket 42: eski kayıt biçimleri (ör. çalma true/false)
 }
 
 const styles = StyleSheet.create({

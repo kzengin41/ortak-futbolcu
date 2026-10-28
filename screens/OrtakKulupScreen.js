@@ -67,7 +67,7 @@ const TURLER = [
   { deger: "ulke", etiket: _t("Kulüp × Ülke"), ikon: "earth", not: _t(
     "Bir ülke ve bir kulüp çıkar; o ülkeden, o kulüpte oynamış bir futbolcu bul."
   ) },
-  { deger: "secim", etiket: _t("Takımı sen seç"), ikon: "hand-left", not: _t("Bir kulübü sen yazarsın, ikincisini rakibin seçer.") },
+  { deger: "secim", etiket: _t("Takımı sen seç"), ikon: "hand-left", not: _t("Sen bir takım seçersin, rakibin de bir takım seçer; 3-2-1'den sonra iki takım açılır, önce doğru yazan alır.") },
   { deger: "coktan", etiket: _t("Çoktan seçmeli"), ikon: "flash", not: _t("4 şıklı, süreye karşı seri cevaplama. Yazmak yok.") },
 ];
 const MOD_ID = { kulup: "cpu", ulke: "countryTeamCpu", secim: "draftCpu" };
@@ -505,10 +505,10 @@ export default function OrtakKulupScreen({
       {/* ---------------- Takımı sen seç ---------------- */}
       {(phase === "takimSec" || phase === "rakipSeciyor") && (
         <View style={styles.secimKutu}>
-          <Text style={styles.secimBaslik}>{phase === "rakipSeciyor" ? _t("{0} rakip kulübü seçiyor…", [kisaAd(karakter)]) : _t("Bir kulüp yaz")}</Text>
+          <Text style={styles.secimBaslik}>{phase === "rakipSeciyor" ? _t("{0} takımını seçti", [kisaAd(karakter)]) : _t("Takımını seç")}</Text>
           {phase === "takimSec" ? (
             <>
-              <Text style={styles.secimAlt}>{_t("İkinci kulübü")}{" "}{kisaAd(karakter)}{" "}{_t("seçecek. Zor bir kulüp onu da zorlar.")}</Text>
+              <Text style={styles.secimAlt}>{_t("Rakibin de aynı anda bir takım seçiyor. 3-2-1'den sonra iki takım açılır; ikisinde de oynamış futbolcuyu önce yazan alır.")}</Text>
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
@@ -544,6 +544,12 @@ export default function OrtakKulupScreen({
         <>
           {/* Paket 32 — eşleşme kartı: her yarı kendi kulübünün/ülkesinin renginde */}
           <EslesmeKarti sol={round.sol} sag={round.sag} />
+          {tur === "secim" ? (
+            <View style={styles.sahipSatir}>
+              <Text style={styles.sahipYazi}>{_t("senin seçimin")}</Text>
+              <Text style={styles.sahipYazi}>{_t("{0} seçimi", [kisaAd(karakter)])}</Text>
+            </View>
+          ) : null}
           <View style={styles.bilgiSatir}>
             <View style={styles.ortakCip}>
               <Ionicons name="people" size={14} color={COLORS.accent} />
@@ -693,6 +699,8 @@ export default function OrtakKulupScreen({
 }
 
 const styles = StyleSheet.create({
+  sahipSatir: { flexDirection: "row", justifyContent: "space-around", marginTop: 2, marginBottom: 4 },
+  sahipYazi: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, color: COLORS.textMuted },
   container: { flex: 1, backgroundColor: COLORS.bg, padding: 20 },
   ustSatir: { width: "100%", paddingTop: 6, marginBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   bildir: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: saydam(COLORS.text, 0.08), paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 },
