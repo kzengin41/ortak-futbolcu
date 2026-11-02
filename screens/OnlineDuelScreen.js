@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import GameBackground from "../components/GameBackground";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import TeamBadge from "../components/TeamBadge";
 import EslesmeKarti from "../components/EslesmeKarti";
 import TimerBar from "../components/TimerBar";
@@ -299,6 +301,7 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
   );
   const sonYayinRef = useRef(0);
   function yaziDegisti(metin) {
+    yazmaOldu();
     // Paket 42: iki taraf aynı anda yarıştığı için yazılan metin rakibe CANLI
     // gönderilmez (cevabı kopyalayabilirdi). Yalnız gönderilen yanlışlar görünür.
     setAnswerInput(metin);
@@ -462,7 +465,11 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
           {phase === "racing" && (
             <>
               <View style={{ marginTop: SPACING.lg }}>
-                <TimerBar current={roundTimeLeft} total={turSuresi} />
+                {/* Paket 43 — Bilemedim klavyeden uzakta, süre çubuğunun yanında. */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={{ flex: 1 }}><TimerBar current={roundTimeLeft} total={turSuresi} /></View>
+                  {!iAmLocked ? <BilemedimDugmesi onPress={handlePass} etiket={_t("Bilemedim, pas")} /> : null}
+                </View>
                 <Text style={[styles.sureYazi, roundTimeLeft <= 5 && { color: COLORS.danger }]}>{roundTimeLeft}{" "}{_t("sn")}</Text>
               </View>
               {iAmLocked ? (
@@ -521,9 +528,6 @@ export default function OnlineDuelScreen({ room, onExit, onRovansOda }) {
                     onYaz={(ad) => { const i = sesOnayIstegi; setSesOnayIstegi(null); i && i.yaz(ad); }}
                     onIptal={() => setSesOnayIstegi(null)}
                   />
-                  <SoundPressable onPress={handlePass} style={styles.pasBtn}>
-                    <Text style={styles.pasYazi}>{_t("Bilemedim, pas")}</Text>
-                  </SoundPressable>
                 </>
               )}
               {turTahminleri.length ? (

@@ -20,7 +20,7 @@ const soyad = (ad) => {
   return p.length > 1 ? p.slice(-1)[0] : ad;
 };
 
-export function OyuncuNoktasi({ o, acikMi, kirmizi, secili, boyut = 46, onPress }) {
+export function OyuncuNoktasi({ o, acikMi, kirmizi, secili, boyut = 46, onPress, kapaliEtiket, ipucuVar }) {
   const ic = acikMi && o.v ? (
     <PlayerPhoto name={o.a} size={boyut - 4} showProfileOnPress={false} />
   ) : acikMi ? (
@@ -35,8 +35,10 @@ export function OyuncuNoktasi({ o, acikMi, kirmizi, secili, boyut = 46, onPress 
         {ic}
       </View>
       <Text style={[s.ad, !acikMi && !kirmizi && s.adKapali, secili && s.adSecili]} numberOfLines={1}>
-        {acikMi || kirmizi ? soyad(o.a) : HAT_ETIKET[o.p] || o.p}
+        {acikMi || kirmizi ? soyad(o.a) : (kapaliEtiket && kapaliEtiket(o)) || HAT_ETIKET[o.p] || o.p}
       </Text>
+      {/* Paket 44: ipucu alınmış kapalı oyuncu — küçük ampul */}
+      {ipucuVar && !acikMi && !kirmizi ? <View style={s.ampul}><Ionicons name="bulb" size={10} color={COLORS.ctaDark} /></View> : null}
     </View>
   );
   if (!onPress) return govde;
@@ -48,7 +50,9 @@ export function OyuncuNoktasi({ o, acikMi, kirmizi, secili, boyut = 46, onPress 
 }
 
 // Paket 18: `secili(o)` — tahmin için seçilmiş (dokunulmuş) kapalı oyuncu vurgulanır.
-export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut = 46, secili }) {
+// Paket 44: `kapaliEtiket(o)` kapalı oyuncunun altındaki yazı (ipucuyla açılan harfler),
+// `ipucu(o)` ipucu alınmış mı (ampul).
+export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut = 46, secili, kapaliEtiket, ipucu }) {
   return (
     <View style={s.saha}>
       <View style={s.ortaCizgi} />
@@ -59,7 +63,7 @@ export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut =
         <View key={r} style={s.satir}>
           {satir.map((o) => {
             const b = bulundu(o);
-            return <OyuncuNoktasi key={o.i ?? o.a} o={o} acikMi={b} kirmizi={acik && !b} secili={!!(secili && secili(o))} boyut={boyut} onPress={onPress} />;
+            return <OyuncuNoktasi key={o.i ?? o.a} o={o} acikMi={b} kirmizi={acik && !b} secili={!!(secili && secili(o))} boyut={boyut} onPress={onPress} kapaliEtiket={kapaliEtiket} ipucuVar={!!(ipucu && ipucu(o))} />;
           })}
         </View>
       ))}
@@ -68,7 +72,7 @@ export default function Saha({ satirlar, bulundu, acik = false, onPress, boyut =
 }
 
 // Yedek kulübesi
-export function Kulube({ yedek, bulundu, acik = false, onPress, secili }) {
+export function Kulube({ yedek, bulundu, acik = false, onPress, secili, kapaliEtiket, ipucu }) {
   if (!yedek || !yedek.length) return null;
   return (
     <View style={s.kulube}>
@@ -79,7 +83,7 @@ export function Kulube({ yedek, bulundu, acik = false, onPress, secili }) {
       <View style={s.kulubeSatir}>
         {yedek.map((o, i) => {
           const b = bulundu(o);
-          return <OyuncuNoktasi key={o.a + i} o={o} acikMi={b} kirmizi={acik && !b} secili={!!(secili && secili(o))} boyut={38} onPress={onPress} />;
+          return <OyuncuNoktasi key={o.a + i} o={o} acikMi={b} kirmizi={acik && !b} secili={!!(secili && secili(o))} boyut={38} onPress={onPress} kapaliEtiket={kapaliEtiket} ipucuVar={!!(ipucu && ipucu(o))} />;
         })}
       </View>
     </View>
@@ -93,6 +97,7 @@ const s = StyleSheet.create({
   ceza: { position: "absolute", left: "25%", width: "50%", height: 34, borderWidth: 2, borderColor: CIZGI },
   satir: { flexDirection: "row", justifyContent: "space-evenly", alignItems: "flex-start" },
   nokta: { alignItems: "center", width: 64 },
+  ampul: { position: "absolute", top: -2, right: 6, width: 16, height: 16, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.cta },
   daire: { alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.35)", borderWidth: 2, borderColor: "rgba(255,255,255,0.6)", overflow: "hidden" },
   daireAcik: { backgroundColor: "#FFFFFF", borderColor: COLORS.accent },
   daireKirmizi: { backgroundColor: saydam(COLORS.danger, 0.85), borderColor: COLORS.danger },

@@ -16,6 +16,8 @@ import {
 } from "../lib/gunlukOyunlar";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { gunlukOyunBitti } from "../lib/gunlukKayit";
+import GunlukOdulKarti from "../components/GunlukOdulKarti";
+import { gunlukOran } from "../lib/gunlukOdul";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
@@ -215,6 +217,7 @@ export default function GunlukIzgaraScreen({ onExit, onExitSilent }) {
           <Text style={s.sonucUst}>{_t("BUGÜNKÜ SONUCUN")}</Text>
           <Text style={s.sonucSayi}>{dolu} <Text style={s.sonucBolu}>/ 9</Text></Text>
           <Text style={s.sonucAlt}>{_t("Nadirlik puanı")}{" "}{toplamNadirlik}{" "}{_t("· boş karelerdeki sayı o karenin kaç doğru cevabı olduğunu gösterir")}</Text>
+          <GunlukOdulKarti oyun="izgara" oran={gunlukOran("izgara", { dolu })} hazir={bitti} />
           <SoundPressable style={s.paylas} onPress={paylas}>
             <Ionicons name="share-social" size={18} color={COLORS.accentDark} />
             <Text style={s.paylasYazi}>{_t("PAYLAŞ")}</Text>

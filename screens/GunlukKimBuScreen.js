@@ -11,11 +11,13 @@ import { MasaKartlari, TahminTablosu, SimdiBilirsenAfis, AcilisAnimasyonu, sayi 
 import { prefetchPlayerPhoto } from "../components/PlayerPhoto";
 import { COLORS, SPACING, TYPE, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
-import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
+import { buildSuggestIndex, suggestPlayers, hizliEslesmeHazirla } from "../lib/gameEngine";
 import { carpan, turPuani, simdiBilirsen, acilabilirMi, ortakKartlariAc, ASGARI_PUAN } from "../lib/kimBuMasa";
 import { masaHazirla, karsilastirAd, gizliMi, oyuncuBul, oyuncuGetir } from "../lib/kimBuVeri";
 import { gununKimBu, gununRastgelesi, paylasimMetni, TAHMIN_HAKKI } from "../lib/gunlukKimBu";
 import { gunlukDurumOku, gunlukDurumYaz, gunlukOyunBitti } from "../lib/gunlukKayit";
+import GunlukOdulKarti from "../components/GunlukOdulKarti";
+import { gunlukOran } from "../lib/gunlukOdul";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
@@ -30,6 +32,9 @@ import { gorevOlayi } from "../lib/dailyGoals";
 const VURGU = MODE_COLORS.whoAmI;
 
 export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
+  // Paket 44: yanlış tahmindeki isim araması için hızlı indeksi ekran açılırken kur
+  // (ilk yanlış tahminde ~0,25 sn'lik kurulum gecikmesi olmasın).
+  useEffect(() => { const t = setTimeout(() => hizliEslesmeHazirla(PLAYERS), 700); return () => clearTimeout(t); }, []);
   const gun = useMemo(() => gununKimBu(), []);
   const oyuncu = gun ? oyuncuGetir(gun.ad) : null;
   const masa = useMemo(() => (oyuncu ? masaHazirla(oyuncu, gununRastgelesi(gun.tarih)) : null), [oyuncu]);
@@ -165,6 +170,7 @@ export default function GunlukKimBuScreen({ onExit, onExitSilent }) {
             baslik={dogru ? _t("BİLDİN! · {0} PUAN", [sayi(puan)]) : _t("BU SEFER OLMADI")}
             altSatir={dogru ? _t("{0}. tahminde", [tahminler.length + 1]) : _t("5 tahmin hakkı bitti")}
           />
+          <GunlukOdulKarti oyun="kimBu" oran={gunlukOran("kimBu", { dogru, tahmin: tahminler.length })} hazir={bitti} />
           <TahminTablosu tahminler={tahminler} />
           <SoundPressable style={s.anaDugme} onPress={paylas} accessibilityLabel={_t("Sonucu paylaş")}>
             <Ionicons name="share-social" size={20} color={COLORS.accentDark} />

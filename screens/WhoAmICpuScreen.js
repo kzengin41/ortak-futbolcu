@@ -7,7 +7,7 @@ import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, useKlavyeAcik } from "../components/Klavye";
 import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS, saydam, vurguZemini, renkKaristir } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
-import { suggestPlayers, buildSuggestIndex, findMatchedPlayer } from "../lib/gameEngine";
+import { suggestPlayers, buildSuggestIndex, findMatchedPlayer, hizliEslesmeHazirla } from "../lib/gameEngine";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { useVoiceInput } from "../lib/useVoiceInput";
 import VoiceConfirm from "../components/VoiceConfirm";
@@ -35,7 +35,7 @@ import {
 // Paket 13 — masa çizimi ve veri yardımcıları ortak dosyalara taşındı (Günlük
 // Kim Bu, Kadro Avı ve Online düello aynı masayı kullanıyor).
 import { MasaKartlari, TahminTablosu, SimdiBilirsenAfis, AcilisAnimasyonu, sayi } from "../components/KimBuMasa";
-import { masaHazirla, karsilastirAd, guvenilirFotoVar, taninirlik } from "../lib/kimBuVeri";
+import { masaHazirla, karsilastirAd, guvenilirFotoVar, taninirlik, profilliKimBuSec } from "../lib/kimBuVeri";
 import { OyunUstCubugu } from "../components/MacCercevesi";
 
 // ============================================================================
@@ -92,6 +92,9 @@ function havuzAraligi(seviye) {
 }
 
 export default function KimBuScreen({ onExit, onExitSilent }) {
+  // Paket 44: yanlış tahmindeki isim araması için hızlı indeksi ekran açılırken kur
+  // (ilk yanlış tahminde ~0,25 sn'lik kurulum gecikmesi olmasın).
+  useEffect(() => { const t = setTimeout(() => hizliEslesmeHazirla(PLAYERS), 700); return () => clearTimeout(t); }, []);
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
   const { settings, loaded: ayarlarYuklendi } = useAppSettings();
@@ -150,7 +153,9 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
   // sırada; Uğurcan ~200, Barış Alper ~150.)
   const sortedPlayers = useMemo(() => {
     const pr = eslesme.derlenmis;
-    const profilde = (p) => p.clubs.some((c) => pr.kulupCarpani(c) > 0);
+    // Paket 43: profilin dönem seçimi de uygulanır (Nostalji profilinde önce etkisizdi).
+    // oyuncuCarpani iki uygun kulüp istediği için kulüp listesi ikilenir (İlk Harf ile aynı yöntem).
+    const profilde = (p) => p.clubs.some((c) => pr.kulupCarpani(c) > 0) && pr.oyuncuCarpani({ ...p, clubs: [...p.clubs, ...p.clubs] }) > 0;
     const anahtar = new Map();
     const liste = PLAYERS.filter(
       (p) => p.clubs && p.clubs.length >= 2 && guvenilirFotoVar(p.name) && donemdeMi(p.name, donemler) && profilde(p)
@@ -161,14 +166,8 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
 
   const turBaslat = useCallback((seviye, kullanilan) => {
     const [minIdx, maxIdx] = havuzAraligi(seviye);
-    const enAz = Math.min(minIdx, Math.max(0, sortedPlayers.length - 1));
-    const enCok = Math.min(maxIdx, sortedPlayers.length - 1);
-    let secilen = null;
-    for (let i = 0; i < 100; i++) {
-      const p = sortedPlayers[Math.floor(Math.random() * (enCok - enAz + 1)) + enAz];
-      if (p && !kullanilan.has(p.name)) { secilen = p; break; }
-    }
-    if (!secilen) secilen = sortedPlayers.find((p) => !kullanilan.has(p.name)) || null;
+    // Paket 43: aralık aynı; aralığın içinden profil ağırlıklı seçim (lib/kimBuVeri.js).
+    const secilen = profilliKimBuSec(sortedPlayers, minIdx, maxIdx, kullanilan, eslesme.derlenmis);
     if (!secilen) { setPlayer(null); setPhase("playing"); return; }
     const yeniMasa = masaHazirla(secilen);
     prefetchPlayerPhoto(secilen.name);
@@ -183,7 +182,7 @@ export default function KimBuScreen({ onExit, onExitSilent }) {
     setUsedNames((u) => { const n = new Set(u); n.add(secilen.name); return n; });
     setKalanSure(soruSuresi);
     setPhase("playing");
-  }, [sortedPlayers, soruSuresi]);
+  }, [sortedPlayers, soruSuresi, eslesme.derlenmis]);
 
   function oyunuBaslat() {
     setLevel(baslangicSeviyesi);

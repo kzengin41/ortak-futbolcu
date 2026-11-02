@@ -102,7 +102,7 @@ export function TahminTablosu({ tahminler, baslik = _t("TAHMİNLERİN"), etiket 
     <>
       <View style={s.tabloBaslik}>
         <Text style={[s.tabloBaslikYazi, { flex: 1, textAlign: "left" }]}>{baslik}</Text>
-        {[_t("BAYRAK"), _t("MEVKİ"), _t("YAŞ"), _t("LİG"), _t("KULÜP")].map((b) => (
+        {[_t("ÜLKE"), _t("MEVKİ"), _t("YAŞ"), _t("LİG"), _t("KULÜP")].map((b) => (
           <Text key={b} style={[s.tabloBaslikYazi, s.hucreGenislik]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{b}</Text>
         ))}
       </View>

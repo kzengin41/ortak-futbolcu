@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import EslesmeKarti from "../components/EslesmeKarti";
@@ -258,6 +260,10 @@ export default function OnlineUlkeScreen({ room, onExit }) {
 
         {faz === "cevap" && !benBittim ? (
           <View style={styles.altAlan}>
+            {/* Paket 43 — Bilemedim cevap kutusunun ÜSTÜNDE (klavyeden uzak). */}
+            <View style={styles.bilemedimSatir}>
+              <BilemedimDugmesi onPress={() => gonder({ tip: "pes" })} />
+            </View>
             {oneriler.length > 0 && girdi.length > 1 ? (
               <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} style={styles.oneriSerit}>
                 {oneriler.map((ad) => (
@@ -273,7 +279,7 @@ export default function OnlineUlkeScreen({ room, onExit }) {
                 placeholder={_t("Futbolcu adı…")}
                 placeholderTextColor={COLORS.textFaint}
                 value={girdi}
-                onChangeText={setGirdi}
+                onChangeText={(m) => { yazmaOldu(); setGirdi(m); }}
                 onSubmitEditing={() => cevapGonder()}
                 returnKeyType="send"
                 autoCorrect={false}
@@ -283,9 +289,6 @@ export default function OnlineUlkeScreen({ room, onExit }) {
                 <Ionicons name="arrow-forward" size={20} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
-            <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })}>
-              <Text style={styles.pasBtnText}>{_t("Bilemedim")}</Text>
-            </SoundPressable>
           </View>
         ) : null}
 
@@ -327,6 +330,7 @@ const styles = StyleSheet.create({
   ornekBaslik: { ...TYPE.caption, fontSize: 11, letterSpacing: 1, marginTop: SPACING.md, textTransform: "uppercase" },
   ornekMetin: { ...TYPE.caption, textAlign: "center", marginTop: 2 },
 
+  bilemedimSatir: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
   altAlan: { paddingTop: SPACING.sm },
   oneriSerit: { marginBottom: SPACING.sm },
   oneriCip: {

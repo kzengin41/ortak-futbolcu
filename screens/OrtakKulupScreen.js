@@ -36,6 +36,8 @@ import EslesmeKarti from "../components/EslesmeKarti";
 import PlayerPhoto, { oncedenYukle } from "../components/PlayerPhoto";
 import EslesmeProfiliPenceresi from "../components/EslesmeProfiliPenceresi";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import TimerBar from "../components/TimerBar";
 import PoolEmpty from "../components/PoolEmpty";
 import MacSonuKarti from "../components/MacSonuKarti";
@@ -568,6 +570,8 @@ export default function OrtakKulupScreen({
           <View style={styles.sureSatir}>
             <View style={{ flex: 1 }}><TimerBar current={timeLeft} total={turSuresi} /></View>
             <Text style={[styles.sureYazi, timeLeft <= 5 && { color: COLORS.danger }]}>{timeLeft}{" "}{_t("sn")}</Text>
+            {/* Paket 43 — Bilemedim klavyeden uzakta, süre çubuğunun yanında. */}
+            {!p1Kilitli ? <BilemedimDugmesi onPress={oyuncuCekildi} /> : null}
           </View>
 
 
@@ -592,7 +596,7 @@ export default function OrtakKulupScreen({
                   spellCheck={false}
                   autoFocus
                   value={answerInput}
-                  onChangeText={(t) => { setAnswerInput(t); if (yanlisMesaj) setYanlisMesaj(null); }}
+                  onChangeText={(t) => { yazmaOldu(); setAnswerInput(t); if (yanlisMesaj) setYanlisMesaj(null); }}
                   onSubmitEditing={() => cevapGonder()}
                   placeholder={_t("Futbolcu adı…")}
                   placeholderTextColor={COLORS.textFaint}
@@ -638,9 +642,6 @@ export default function OrtakKulupScreen({
                 ))}
                 <Text style={styles.hakYazi}>{_t("yanlış hakkı")}</Text>
               </View>
-              <SoundPressable onPress={oyuncuCekildi} style={styles.pas}>
-                <Text style={styles.pasYazi}>{_t("Bilemedim")}</Text>
-              </SoundPressable>
             </View>
           ) : null}
         </View>

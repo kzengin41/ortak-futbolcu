@@ -8,6 +8,9 @@ import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import Saha, { Kulube } from "../components/Saha";
+import KadroIpucuPaneli from "../components/KadroIpucuPaneli";
+import GunlukOdulKarti from "../components/GunlukOdulKarti";
+import { gunlukOran } from "../lib/gunlukOdul";
 import { PLAYERS } from "../lib/players";
 import { findMatchedPlayer, suggestPlayers, buildSuggestIndex } from "../lib/gameEngine";
 import { gununKadrosu, sahaSatirlari, kadroPaylasim, sureYaz } from "../lib/kadrolar";
@@ -18,6 +21,7 @@ import { unlockPlayer } from "../lib/pokedex";
 import { recordRound } from "../lib/stats";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { flagForCountry } from "../lib/countryFlags";
+import { ipucuAc, harfAl, acikHarf, kisaMaske, ipucuSayisi, toplamIpucu } from "../lib/kadroIpucu";
 import { countryTr } from "../lib/countryNamesTr";
 import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
 
@@ -28,6 +32,11 @@ import { COLORS, MODE_COLORS, SPACING, RADIUS } from "../lib/theme";
 // mevkiler sahada; yazdığın isim kadrodaysa yerine oturur. Süre ileri sayar,
 // istediğin an "Pes et". Paylaşım: "#42 · 8/11 · 2:47" + saha düzeninde kareler.
 // Yanlış isim ceza değil, sadece sayılır. Bitirmek günlük seriyi sürdürür.
+//
+// Paket 44 (Kerem: "efsane maçların 11'leri yabancı ya … kadroda birine tıkla
+// ipucu al diye yönlendirelim") — kapalı bir oyuncuya dokununca ipucu paneli:
+// uyruk, maçtaki yaşı, boy, baş harfler ve sınırsız "Harf al". Ödül potu yok;
+// sonuçta ve paylaşımda kaç ipucu alındığı yazar (lib/kadroIpucu.js).
 // ============================================================================
 const VURGU = MODE_COLORS.teamTeam || MODE_COLORS.fiveClubs;
 
@@ -49,6 +58,8 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
   const [yuklendi, setYuklendi] = useState(false);
   const [girdi, setGirdi] = useState("");
   const [uyari, setUyari] = useState(null);
+  const [hedef, setHedef] = useState(null);        // ipucu için seçilen ilk11 indisi
+  const [ipuclari, setIpuclari] = useState({});    // { indis: { k: [...], h } }
   const gecenRef = useRef(0);
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();
@@ -61,6 +72,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
       if (d && d.id === kadro?.id) {
         setBulunan(d.bulunan || []);
         setYanlis(d.yanlis || 0);
+        setIpuclari(d.ipucu || {});
         setBitti(!!d.bitti);
         gecenRef.current = d.gecen || 0;
         setGecen(d.gecen || 0);
@@ -77,7 +89,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
   }, [yuklendi, bitti]);
 
   function kaydet(degis = {}) {
-    gunlukDurumYaz("kadro", { id: kadro.id, bulunan, yanlis, bitti, gecen: gecenRef.current, ...degis });
+    gunlukDurumYaz("kadro", { id: kadro.id, bulunan, yanlis, bitti, gecen: gecenRef.current, ipucu: ipuclari, ...degis });
   }
   // Çıkarken geçen süreyi kaydet
   const kaydetRef = useRef(kaydet);
@@ -104,6 +116,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
       const yeni = [...bulunan, m.i];
       setBulunan(yeni);
       setUyari(null);
+      if (hedef === m.i) setHedef(null);
       playCorrect();
       recordRound("gunlukKadro", true);
       if (o.v) unlockPlayer(o.a);
@@ -126,7 +139,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
   }
 
   async function paylas() {
-    try { await Share.share({ message: kadroPaylasim(kadro.no, kadro, bulunan, sureYaz(gecen)) }); } catch (e) {}
+    try { await Share.share({ message: kadroPaylasim(kadro.no, kadro, bulunan, sureYaz(gecen), toplamIpucu(ipuclari)) }); } catch (e) {}
   }
 
   if (!kadro) {
@@ -142,6 +155,19 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
   const hedefIndeks = Number(kadro.id.split("#")[1] || 0);
   const acikSet = new Set(bulunan);
   const bulundu = (o) => (o.i != null ? acikSet.has(o.i) : false);
+  const hedefO = hedef != null && !acikSet.has(hedef) ? { ...kadro.ilk11[hedef], i: hedef } : null;
+
+  function oyuncuyaDokun(o) {
+    if (bitti || o.i == null || acikSet.has(o.i)) return;
+    setHedef((h) => (h === o.i ? null : o.i));
+    setUyari(null);
+  }
+  function ipucuGuncelle(i, yeni) {
+    const tum = { ...ipuclari, [i]: yeni };
+    setIpuclari(tum);
+    kaydet({ ipucu: tum });
+  }
+  const ipucuToplam = toplamIpucu(ipuclari);
 
   return (
     <GameBackground style={s.kap} klavye="kaydir">
@@ -171,7 +197,31 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
         <Text style={s.durumAlt}>{yanlis}{" "}{_t("yanlış")}</Text>
       </View>
 
-      <Saha satirlar={satirlar} bulundu={bulundu} acik={bitti} />
+      <Saha
+        satirlar={satirlar}
+        bulundu={bulundu}
+        acik={bitti}
+        onPress={bitti ? undefined : oyuncuyaDokun}
+        secili={(o) => hedefO != null && o.i === hedefO.i}
+        kapaliEtiket={(o) => kisaMaske(o.a, acikHarf(o.a, ipuclari[o.i]))}
+        ipucu={(o) => ipucuSayisi(ipuclari[o.i]) > 0}
+      />
+
+      {!bitti && yuklendi && hedefO ? (
+        <KadroIpucuPaneli
+          o={hedefO}
+          mac={m}
+          durum={ipuclari[hedefO.i]}
+          onIpucu={(tur) => ipucuGuncelle(hedefO.i, ipucuAc(ipuclari[hedefO.i], tur))}
+          onHarf={() => ipucuGuncelle(hedefO.i, harfAl(hedefO.a, ipuclari[hedefO.i]))}
+          onKapat={() => setHedef(null)}
+        />
+      ) : !bitti && yuklendi ? (
+        <View style={s.ipucuDavet}>
+          <Ionicons name="bulb-outline" size={16} color={COLORS.cta} />
+          <Text style={s.ipucuDavetYazi}>{_t("Tanımadığın bir oyuncuya dokun, ipucu al: uyruk, yaş, baş harf, harf harf adı.")}</Text>
+        </View>
+      ) : null}
 
       {!bitti && yuklendi ? (
         <>
@@ -181,7 +231,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
               value={girdi}
               onChangeText={(t) => { setGirdi(t); setUyari(null); }}
               onSubmitEditing={() => gonder()}
-              placeholder={_t("İlk 11'den bir isim")}
+              placeholder={hedefO ? _t("#{0} kim?", [hedefO.n ?? "?"]) : _t("İlk 11'den bir isim")}
               placeholderTextColor={COLORS.textFaint}
               autoCorrect={false}
               autoCapitalize="words"
@@ -211,6 +261,8 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
         <View style={s.sonuc}>
           <Text style={s.sonucUst}>{_t("BUGÜNKÜ SONUCUN")}</Text>
           <Text style={s.sonucSayi}>{bulunan.length}<Text style={s.sonucBolu}> / 11 · {sureYaz(gecen)}</Text></Text>
+          {ipucuToplam > 0 ? <Text style={s.sonucIpucu}>{_t("💡 {0} ipucu", [ipucuToplam])}</Text> : null}
+          <GunlukOdulKarti oyun="kadro" oran={gunlukOran("kadro", { bulunan: bulunan.length, ipucu: ipucuToplam })} hazir={bitti} />
           <Kulube yedek={kadro.yedek} bulundu={() => true} />
           <SoundPressable style={s.paylas} onPress={paylas}>
             <Ionicons name="share-social" size={18} color={COLORS.accentDark} />
@@ -257,5 +309,8 @@ const s = StyleSheet.create({
   sonucBolu: { fontSize: 18, color: COLORS.textMuted },
   paylas: { flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", height: 52, borderRadius: 16, backgroundColor: COLORS.accent, marginTop: SPACING.lg },
   paylasYazi: { fontSize: 17, fontWeight: "900", letterSpacing: 1, color: COLORS.accentDark },
+  ipucuDavet: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, paddingHorizontal: 4 },
+  ipucuDavetYazi: { flex: 1, fontSize: 12, fontWeight: "700", color: COLORS.textMuted },
+  sonucIpucu: { fontSize: 14, fontWeight: "800", color: COLORS.cta, textAlign: "center", marginTop: 2 },
   yarin: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted, marginTop: 10, textAlign: "center" },
 });

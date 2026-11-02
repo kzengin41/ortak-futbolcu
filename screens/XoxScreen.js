@@ -15,6 +15,8 @@ import { karakterSec, tepki, kisaAd, bulunma } from "../lib/cpuKarakterleri";
 import { taninirlik } from "../lib/taninirlik";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import AnswerFeedback from "../components/AnswerFeedback";
@@ -629,6 +631,20 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                 )
                   : _t("{0} olası cevap", [seciliCevapSayisi])}
               </Text>
+              {/* Paket 43 — Bilemedim / Başka kare seç cevap kutusunun ÜSTÜNDE (klavyeden uzak). */}
+              <View style={styles.ustBtnSatir}>
+                {!secili.duello ? (
+                  <SoundPressable
+                    onPress={() => setDurum(aksiyonuIsle(durum, { tip: "secimiIptal" }, baglam) || durum)}
+                  >
+                    <Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text>
+                  </SoundPressable>
+                ) : <View />}
+                <BilemedimDugmesi
+                  onPress={() => setDurum(aksiyonuIsle(durum, { tip: "pas" }, baglam) || durum)}
+                  etiket={secili.duello ? _t("Bilemedim — kare rakipte kalsın") : _t("Bilemedim")}
+                />
+              </View>
 
               <View style={styles.girdiSatir}>
                 <TextInput
@@ -636,7 +652,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                   placeholder={inputMode === "voice" ? _t("Konuş ya da yaz...") : _t("Futbolcu adı yaz...")}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
-                  onChangeText={setGirdi}
+                  onChangeText={(m) => { yazmaOldu(); setGirdi(m); }}
                   onSubmitEditing={() => cevapGonder()}
                   returnKeyType="send"
                   autoCorrect={false}
@@ -686,20 +702,6 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
                 </ScrollView>
               )}
 
-              <View style={styles.altBtnSatir}>
-                {!secili.duello ? (
-                  <SoundPressable
-                    onPress={() => setDurum(aksiyonuIsle(durum, { tip: "secimiIptal" }, baglam) || durum)}
-                  >
-                    <Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text>
-                  </SoundPressable>
-                ) : <View />}
-                <SoundPressable
-                  onPress={() => setDurum(aksiyonuIsle(durum, { tip: "pas" }, baglam) || durum)}
-                >
-                  <Text style={styles.kucukLink}>{secili.duello ? _t("Bilemedim — kare rakipte kalsın") : _t("Bilemedim")}</Text>
-                </SoundPressable>
-              </View>
             </View>
           )}
 
@@ -1005,6 +1007,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent, borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, ...SHADOW.card,
   },
+  ustBtnSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACING.sm },
   altBtnSatir: { flexDirection: "row", justifyContent: "space-between", paddingTop: SPACING.sm },
   kucukLink: { ...TYPE.caption, textDecorationLine: "underline" },
   ipucu: { ...TYPE.caption, textAlign: "center", paddingBottom: SPACING.sm },

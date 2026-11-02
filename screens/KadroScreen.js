@@ -9,6 +9,8 @@ import BackButton from "../components/BackButton";
 import TeamBadge from "../components/TeamBadge";
 import PlayerMiniProfile from "../components/PlayerMiniProfile";
 import Saha, { Kulube } from "../components/Saha";
+import KadroIpucuPaneli from "../components/KadroIpucuPaneli";
+import { ipucuAc, harfAl, acikHarf, kisaMaske, ipucuSayisi } from "../lib/kadroIpucu";
 import { bulunanKumesi } from "../components/TakimlarListesi";
 import { PLAYERS } from "../lib/players";
 import { findMatchedPlayer, suggestPlayers, buildSuggestIndex } from "../lib/gameEngine";
@@ -34,6 +36,10 @@ import { COLORS, SPACING, RADIUS, MODE_COLORS } from "../lib/theme";
 // o oyuncu HEDEF olur (turuncu halka); kutuya yazılan/söylenen isim o formayla
 // karşılaştırılır. Hedef yokken eskisi gibi kadrodaki herhangi biri açılır.
 // Mikrofon: konuşurken yazı ekranın üstünde canlı görünür (lib/useVoiceInput.js).
+//
+// Paket 44 — seçilen kapalı oyuncu için ipucu paneli (uyruk, yaş, boy, baş
+// harfler, sınırsız "Harf al"; components/KadroIpucuPaneli.js). Bu ekranda
+// ipuçları oturumluk tutulur.
 // ============================================================================
 export default function KadroScreen({ route, navigation, id: idProp }) {
   const id = idProp || route?.params?.id;
@@ -43,6 +49,7 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
   const [uyari, setUyari] = useState(null);
   const [profil, setProfil] = useState(null);
   const [hedef, setHedef] = useState(null);     // tahmin için seçilen kapalı oyuncu
+  const [ipuclari, setIpuclari] = useState({});  // { ad: { k, h } } — Paket 44
   const [sesHata, setSesHata] = useState(null);
   const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceInput(() =>
     kadro ? [...kadro.ilk11, ...kadro.yedek].filter((o) => !bulunan.has(o.a)).map((o) => o.a) : []
@@ -157,8 +164,10 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
         </SoundPressable>
       ) : null}
 
-      <Saha satirlar={satirlar} bulundu={bulundu} onPress={oyuncuyaDokun} secili={(o) => !!hedef && o.a === hedef.a} />
-      <Kulube yedek={kadro.yedek} bulundu={bulundu} onPress={oyuncuyaDokun} secili={(o) => !!hedef && o.a === hedef.a} />
+      <Saha satirlar={satirlar} bulundu={bulundu} onPress={oyuncuyaDokun} secili={(o) => !!hedef && o.a === hedef.a}
+        kapaliEtiket={(o) => kisaMaske(o.a, acikHarf(o.a, ipuclari[o.a]))} ipucu={(o) => ipucuSayisi(ipuclari[o.a]) > 0} />
+      <Kulube yedek={kadro.yedek} bulundu={bulundu} onPress={oyuncuyaDokun} secili={(o) => !!hedef && o.a === hedef.a}
+        kapaliEtiket={(o) => kisaMaske(o.a, acikHarf(o.a, ipuclari[o.a]))} ipucu={(o) => ipucuSayisi(ipuclari[o.a]) > 0} />
       {kadro.tip === "sezon" ? (
         <Text style={s.not}>
           {kadro.sezon.kaynak === "diyagram"
@@ -172,16 +181,17 @@ export default function KadroScreen({ route, navigation, id: idProp }) {
       {!t.tamam ? (
         <>
           {hedef ? (
-            <View style={s.hedefSatir}>
-              <View style={s.hedefNo}><Text style={s.hedefNoYazi}>{hedef.n != null ? hedef.n : "?"}</Text></View>
-              <Text style={s.hedefYazi} numberOfLines={1}>{HAT_ETIKET[hedef.p] || hedef.p}{" "}{_t("— bu oyuncu kim?")}</Text>
-              <SoundPressable onPress={() => setHedef(null)} hitSlop={10} accessibilityLabel={_t("Seçimi kaldır")}>
-                <Ionicons name="close-circle" size={22} color={COLORS.textMuted} />
-              </SoundPressable>
-            </View>
+            <KadroIpucuPaneli
+              o={hedef}
+              mac={kadro.mac || (kadro.sezon ? { yil: parseInt(String(kadro.sezon.sezon), 10) || null } : null)}
+              durum={ipuclari[hedef.a]}
+              onIpucu={(tur) => setIpuclari((x) => ({ ...x, [hedef.a]: ipucuAc(x[hedef.a], tur) }))}
+              onHarf={() => setIpuclari((x) => ({ ...x, [hedef.a]: harfAl(hedef.a, x[hedef.a]) }))}
+              onKapat={() => setHedef(null)}
+            />
           ) : (
             <Text style={s.ipucu}>{_t(
-              "Bir forma numarasına dokun ve o oyuncuyu tahmin et — ya da kadrodan herhangi bir isim yaz."
+              "Bir forma numarasına dokun: o oyuncuyu tahmin et, istersen ipucu al (uyruk, yaş, harf). Ya da kadrodan herhangi bir isim yaz."
             )}</Text>
           )}
           <View style={s.girdiSatir}>

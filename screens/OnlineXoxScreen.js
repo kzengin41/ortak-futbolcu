@@ -6,6 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani, KlavyeScroll } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TimerBar from "../components/TimerBar";
@@ -336,13 +338,18 @@ export default function OnlineXoxScreen({ room, onExit }) {
                   [oyun.hucreSahipleri[`${secili.satir}-${secili.sutun}`]?.ad || ""]
                 ) : _t("{0} olası cevap", [seciliCevap])}
               </Text>
+              {/* Paket 43 — Bilemedim / Başka kare seç cevap kutusunun ÜSTÜNDE (klavyeden uzak). */}
+              <View style={styles.ustBtnSatir}>
+                {!secili.duello ? <SoundPressable onPress={() => hamle({ tip: "secimiIptal" })}><Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text></SoundPressable> : <View />}
+                <BilemedimDugmesi onPress={() => hamle({ tip: "pas" })} etiket={secili.duello ? _t("Bilemedim — kare rakipte kalsın") : _t("Bilemedim")} />
+              </View>
               <View style={styles.girdiSatir}>
                 <TextInput
                   style={styles.girdi}
                   placeholder={_t("Futbolcu adı yaz...")}
                   placeholderTextColor={COLORS.textFaint}
                   value={girdi}
-                  onChangeText={setGirdi}
+                  onChangeText={(m) => { yazmaOldu(); setGirdi(m); }}
                   onSubmitEditing={() => cevapGonder()}
                   returnKeyType="send"
                   autoCorrect={false}
@@ -363,10 +370,6 @@ export default function OnlineXoxScreen({ room, onExit }) {
                   ))}
                 </ScrollView>
               ) : null}
-              <View style={styles.altBtnSatir}>
-                {!secili.duello ? <SoundPressable onPress={() => hamle({ tip: "secimiIptal" })}><Text style={styles.kucukLink}>{_t("Başka kare seç")}</Text></SoundPressable> : <View />}
-                <SoundPressable onPress={() => hamle({ tip: "pas" })}><Text style={styles.kucukLink}>{secili.duello ? _t("Bilemedim — kare rakipte kalsın") : _t("Bilemedim")}</Text></SoundPressable>
-              </View>
             </View>
           ) : null}
 
@@ -510,6 +513,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill, paddingHorizontal: SPACING.md, paddingVertical: 6, marginRight: SPACING.sm,
   },
   oneriCipText: { ...TYPE.caption, color: COLORS.text, fontWeight: "700" },
+  ustBtnSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACING.sm },
   altBtnSatir: { flexDirection: "row", justifyContent: "space-between", paddingTop: SPACING.sm },
   kucukLink: { ...TYPE.caption, textDecorationLine: "underline" },
 

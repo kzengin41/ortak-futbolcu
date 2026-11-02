@@ -8,6 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import TeamBadge from "../components/TeamBadge";
@@ -364,6 +366,10 @@ export default function OnlineDraftScreen({ room, onExit }) {
         {/* Cevap girişi — yarışta, elenmediysem */}
         {faz === "yaris" && !elendim && (
           <View style={styles.altAlan}>
+            {/* Paket 43 — Bilemedim cevap kutusunun ÜSTÜNDE (klavyeden uzak). */}
+            <View style={styles.bilemedimSatir}>
+              <BilemedimDugmesi onPress={() => gonder({ tip: "pes" })} />
+            </View>
             {oyuncuOnerileri.length > 0 && (
               <ScrollView
                 horizontal
@@ -384,7 +390,7 @@ export default function OnlineDraftScreen({ room, onExit }) {
                 placeholder={_t("Futbolcu adı yaz...")}
                 placeholderTextColor={COLORS.textFaint}
                 value={cevapGirdi}
-                onChangeText={setCevapGirdi}
+                onChangeText={(m) => { yazmaOldu(); setCevapGirdi(m); }}
                 onSubmitEditing={() => cevapGonder()}
                 returnKeyType="send"
                 blurOnSubmit={false}
@@ -396,9 +402,6 @@ export default function OnlineDraftScreen({ room, onExit }) {
                 <Ionicons name="send" size={18} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
-            <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })}>
-              <Text style={styles.pasBtnText}>{_t("Bilemedim")}</Text>
-            </SoundPressable>
           </View>
         )}
 
@@ -471,6 +474,7 @@ const styles = StyleSheet.create({
   ornekMetin: { ...TYPE.caption, textAlign: "center", marginTop: 2 },
   macSonuText: { ...TYPE.h1, color: COLORS.cta, marginTop: SPACING.md, textAlign: "center" },
 
+  bilemedimSatir: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
   altAlan: { paddingTop: SPACING.sm },
   oneriSerit: { marginBottom: SPACING.sm },
   oneriCip: {

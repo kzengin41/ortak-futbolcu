@@ -12,6 +12,8 @@ import { PLAYERS } from "../lib/players";
 import { findMatchedPlayer, suggestPlayers, buildSuggestIndex } from "../lib/gameEngine";
 import { gununBesKulubu, besKulupPuani, besKulupPaylasim, gunlukDurumOku, gunlukDurumYaz, BES_KULUP_HAK } from "../lib/gunlukOyunlar";
 import { gunlukOyunBitti } from "../lib/gunlukKayit";
+import GunlukOdulKarti from "../components/GunlukOdulKarti";
+import { gunlukOran } from "../lib/gunlukOdul";
 import { gorevOlayi } from "../lib/dailyGoals";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { unlockPlayer } from "../lib/pokedex";
@@ -148,6 +150,7 @@ export default function GunlukBesKulupScreen({ onExit, onExitSilent }) {
         <View style={s.sonuc}>
           <Text style={s.sonucUst}>{_t("BUGÜNKÜ PUANIN")}</Text>
           <Text style={s.sonucSayi}>{toplam} <Text style={s.sonucBolu}>/ 15</Text></Text>
+          <GunlukOdulKarti oyun="5kulup" oran={gunlukOran("5kulup", { puan: toplam })} hazir={bitti} />
           <Text style={s.enIyiBaslik}>{_t("Bugünün en iyi cevapları")}</Text>
           {bulmaca.enIyiler.slice(0, 5).map((x) => (
             <Text key={x.player.name} style={s.enIyi}>{x.player.name}· {x.count}{" "}{_t("kulüp")}</Text>

@@ -13,7 +13,7 @@ import { COLORS, RADIUS, SPACING, TYPE, MODE_COLORS } from "../lib/theme";
 import { PLAYERS } from "../lib/players";
 import { PLAYER_LAST_ACTIVE_YEAR } from "../lib/playerYears";
 import { oyundaCikmasin } from "../lib/taninirlik";
-import { buildSuggestIndex, suggestPlayers } from "../lib/gameEngine";
+import { buildSuggestIndex, suggestPlayers, hizliEslesmeHazirla } from "../lib/gameEngine";
 import { ASGARI_PUAN } from "../lib/kimBuMasa";
 import { masaHazirla, karsilastirAd, gizliMi, oyuncuBul, taninmisHavuz } from "../lib/kimBuVeri";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
@@ -63,6 +63,9 @@ function yeniMasa(kullanilanlar, turNo = 1) {
 const BAGLAM = { yeniMasa, gizliMi, oyuncuBul, karsilastirAd };
 
 export default function OnlineWhoAmIScreen({ room, onExit }) {
+  // Paket 44: yanlış tahmindeki isim araması için hızlı indeksi ekran açılırken kur
+  // (ilk yanlış tahminde ~0,25 sn'lik kurulum gecikmesi olmasın).
+  useEffect(() => { const t = setTimeout(() => hizliEslesmeHazirla(PLAYERS), 700); return () => clearTimeout(t); }, []);
   const benKimim = room.playerNumber;
   const playCorrect = useCorrectSound();
   const playWrong = useWrongSound();

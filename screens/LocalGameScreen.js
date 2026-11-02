@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   buzzBtnAlt: { color: COLORS.textMuted, fontWeight: "700", fontSize: 12, marginTop: 4 },
   buzzBtnTextDisabled: { color: COLORS.textMuted },
   passBtn: { 
-    marginTop: 12, 
+    marginTop: 22, 
     paddingVertical: 14, 
     backgroundColor: COLORS.card, 
     borderColor: COLORS.cardBorder, 

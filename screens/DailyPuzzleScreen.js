@@ -22,6 +22,8 @@ import { recordRound } from "../lib/stats";
 import { addXP, XP_DOGRU_CEVAP } from "../lib/profile";
 import { gununBulmacasi, paylasimMetni, DENEME_HAKKI } from "../lib/dailyPuzzle";
 import { getBulmacaDurumu, tahminKaydet, cevabiKaydet } from "../lib/dailyPuzzleStore";
+import GunlukOdulKarti from "../components/GunlukOdulKarti";
+import { gunlukOran } from "../lib/gunlukOdul";
 
 // ============================================================================
 // GÜNÜN BULMACASI EKRANI — 12 Eylül 2026
@@ -235,6 +237,7 @@ export default function DailyPuzzleScreen({ onExit }) {
               </View>
               <Text style={styles.sonucAd}>{cevapAdi}</Text>
               <Text style={styles.sonucAlt}>{_t("Bu ikilide oynamış")}{" "}{bulmaca.toplamCevap}{" "}{_t("futbolcu var")}</Text>
+              <GunlukOdulKarti oyun="bulmaca" oran={gunlukOran("bulmaca", { bilindi: durum.bilindi, deneme: durum.denemeler.length })} hazir={durum.bitti} />
 
               <SoundPressable style={styles.anaBtn} onPress={paylas}>
                 <Ionicons name="share-social" size={16} color={COLORS.accentDark} />

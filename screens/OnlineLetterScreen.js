@@ -8,6 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import GameBackground from "../components/GameBackground";
 import { KlavyeAlani } from "../components/Klavye";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import MikrofonDugmesi from "../components/MikrofonDugmesi";
 import AnswerFeedback from "../components/AnswerFeedback";
 import PlayerPhoto from "../components/PlayerPhoto";
@@ -365,13 +367,17 @@ export default function OnlineLetterScreen({ room, onExit }) {
 
         {faz === "yaris" && !pesEttim && (
           <View style={styles.altAlan}>
+            {/* Paket 43 — Bilemedim cevap kutusunun ÜSTÜNDE (klavyeden uzak). */}
+            <View style={styles.bilemedimSatir}>
+              <BilemedimDugmesi onPress={() => gonder({ tip: "pes" })} />
+            </View>
             <View style={styles.girdiSatir}>
               <TextInput
                 style={styles.girdi}
                 placeholder={_t("Futbolcu adı yaz...")}
                 placeholderTextColor={COLORS.textFaint}
                 value={girdi}
-                onChangeText={setGirdi}
+                onChangeText={(m) => { yazmaOldu(); setGirdi(m); }}
                 onSubmitEditing={() => cevapGonder()}
                 returnKeyType="send"
                 autoCorrect={false}
@@ -382,9 +388,6 @@ export default function OnlineLetterScreen({ room, onExit }) {
                 <Ionicons name="send" size={18} color={COLORS.accentDark} />
               </SoundPressable>
             </View>
-            <SoundPressable style={styles.pasBtn} onPress={() => gonder({ tip: "pes" })} accessibilityLabel={_t("Bilemedim, turdan çekil")}>
-              <Text style={styles.pasBtnText}>{_t("Bilemedim")}</Text>
-            </SoundPressable>
           </View>
         )}
 
@@ -455,6 +458,7 @@ const styles = StyleSheet.create({
   sonucAd: { ...TYPE.h3, color: VURGU.main, textAlign: "center" },
   macSonuText: { ...TYPE.h1, color: COLORS.cta, marginTop: SPACING.md, textAlign: "center" },
 
+  bilemedimSatir: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
   altAlan: { paddingTop: SPACING.sm },
   oneriSerit: { marginBottom: SPACING.sm },
   oneriCip: {

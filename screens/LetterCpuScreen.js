@@ -20,6 +20,8 @@ import MacSonuKarti from "../components/MacSonuKarti";
 import { OyunUstCubugu, SkorSeridi, RakipTepkisi, rakipEtiketi } from "../components/MacCercevesi";
 import { karakterSec, tepki, kisaAd } from "../lib/cpuKarakterleri";
 import SoundPressable from "../components/SoundPressable";
+import BilemedimDugmesi from "../components/BilemedimDugmesi";
+import { yazmaOldu } from "../lib/yazmaKilidi";
 import BackButton from "../components/BackButton";
 import { calculatePlayerPopularity } from "../lib/clubWeights";
 import { addXP, XP_MAC_GALIBIYETI } from "../lib/profile";
@@ -823,6 +825,12 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
               açık kalıyor; eskiden 1,5 sn boyunca kapanıyor ama süre akıyordu. */}
           {phase === "racing" && (!feedback || feedback.type === "wrong") && (
             <View style={styles.inputArea}>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 }}>
+                <BilemedimDugmesi onPress={() => {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  awardPoint("cpu", _t("Pes ettin!"));
+                }} />
+              </View>
               <TextInput
                 autoCorrect={false}
                 autoCapitalize="words"
@@ -831,7 +839,7 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                 placeholder={_t("Örn: Abdülkerim Bardakcı")}
                 placeholderTextColor={COLORS.textMuted}
                 value={answerInput}
-                onChangeText={setAnswerInput}
+                onChangeText={(m) => { yazmaOldu(); setAnswerInput(m); }}
                 autoFocus
                 onSubmitEditing={checkUserGuess}
               />
@@ -844,15 +852,11 @@ export default function LetterCpuScreen({ onExit, onExitSilent, onModaGit }) {
                     ))}
                   </View>
                 )}
-                <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 12 }}>
-                  <Pressable style={[styles.primaryBtn, { flex: 1, marginRight: 8, paddingVertical: 12 }]} onPress={checkUserGuess}>
+                {/* Paket 43 — Gönder'in yanındaki kırmızı Bilemedim kalktı (hızlı
+                    yazarken çarpılıyordu); Bilemedim artık kutunun üstünde. */}
+                <View style={{ flexDirection: "row", marginTop: 12 }}>
+                  <Pressable style={[styles.primaryBtn, { flex: 1, paddingVertical: 12 }]} onPress={checkUserGuess}>
                     <Text style={[styles.primaryBtnText, { fontSize: 14 }]}>{_t("Gönder")}</Text>
-                  </Pressable>
-                  <Pressable style={[styles.primaryBtn, { flex: 1, marginLeft: 8, paddingVertical: 12, backgroundColor: COLORS.danger }]} onPress={() => {
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    awardPoint("cpu", _t("Pes ettin!"));
-                  }}>
-                    <Text style={[styles.primaryBtnText, { fontSize: 14, color: "#FFF" }]}>{_t("Bilemedim")}</Text>
                   </Pressable>
                 </View>
               

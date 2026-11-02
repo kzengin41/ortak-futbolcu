@@ -21,7 +21,7 @@
         "NSPhotoLibraryUsageDescription": "Profil fotoğrafı seçebilmen için galerine erişmemiz gerekiyor. Fotoğraf sadece senin profilinde kullanılır.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "7"
+      "buildNumber": "8"
     },
     "android": {
       "package": "com.kerem.ortakfutbolcu",
