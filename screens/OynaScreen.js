@@ -47,6 +47,8 @@ const MODES = [
       { id: "cpu", rakip: "cpu", label: _t("Kulüp × Kulüp"), alt: _t("İki kulüpte oynamış futbolcu") },
       { id: "countryTeamCpu", rakip: "cpu", label: _t("Kulüp × Ülke"), alt: _t("O ülkeden, o kulüpte oynamış futbolcu") },
       { id: "draftCpu", rakip: "cpu", label: _t("Takımı sen seç"), alt: _t("Sen bir takım seçersin, CPU da bir takım; 3-2-1'den sonra açılır, önce doğru yazan alır") },
+      // Paket 46 — tek başına: Hayatta Kal (3 can, sonsuz tur, meydan okuma kodu)
+      { id: "hayattaKal", rakip: "tek", label: _t("Hayatta Kal"), alt: _t("3 can, sonsuz tur — rekorunu kır, arkadaşına meydan oku") },
       { id: "local", rakip: "yanimdaki", label: _t("Yanımdaki — 2 kişi"), kisaLabel: _t("2 kişi"), alt: _t("Ekran ikiye bölünür, ilk basan cevaplar") },
       { id: "sunucu", rakip: "yanimdaki", label: _t("Yanımdakiler — Sunucu modu"), kisaLabel: _t("Sunucu · 2–6 kişi"), alt: _t("Sen kulüpleri okursun, onlar bağırır") },
       // Paket 32 (Kerem: "online'da ülke-takım ve kendin takımı söyle modu yok?") —
@@ -101,6 +103,19 @@ const MODES = [
       { id: "kadroAvi", rakip: "tek", label: _t("Kadro Avı"), alt: _t("Bir kadronun gizli oyuncusu — bulunca kadroya eklenir") },
       { id: "online", rakip: "online", label: _t("Online"), alt: _t("Aynı masada düello: 5 tur, toplam puan kazanır"), sekme: true, params: { mod: "whoami" } },
     ],
+  },
+  {
+    // Paket 46 (Kerem: "aşırı zevkli yapmak lazım" → "Rekabet: seri modu + meydan
+    // okuma") — tek kişilik sonsuz Ortak Kulüp, 3 can, rekor ve meydan okuma kodu.
+    key: "hayattaKal",
+    grup: "bilgi",
+    title: _t("Hayatta Kal"),
+    desc: _t("3 canla sonsuz Ortak Kulüp — rekorunu kır, arkadaşına meydan oku"),
+    kisa: _t("3 can, sonsuz tur — rekorunu kır"),
+    icon: "heart",
+    colorKey: "teamTeam",
+    id: "hayattaKal",
+    yeni: true,
   },
   {
     // 4 Ekim 2026 (.28709) — eski "Tek Telefon 2 Kişi" kartının yerine. 2 kişilik
@@ -181,7 +196,7 @@ const RAKIP_IKON = { cpu: "hardware-chip", yanimdaki: "people", online: "globe",
 // Sunucu modu Ortak Kulüp → "Yanımdakiler"de; Harf Zinciri İlk Harf'in içinde.
 // ============================================================================
 const VITRIN = MODES.find((m) => m.key === "teamTeam");
-const DIGERLERI = ["whoAmI", "fiveClubs", "xox", "letters"].map((k) => MODES.find((m) => m.key === k));
+const DIGERLERI = ["hayattaKal", "whoAmI", "fiveClubs", "xox", "letters"].map((k) => MODES.find((m) => m.key === k));
 
 // 3 Ekim 2026 — bu ekran artık ana sayfa DEĞİL, "Tüm Modlar" sayfası (yeni ana
 // sayfa: screens/AnaSayfaScreen.js). Seviye şeridi, "Hemen Oyna" kartı ve
@@ -257,7 +272,7 @@ export default function OynaScreen({ onSelect, onDailyPuzzle, onGunlukOyun, onSe
         <BolumBasligi>{_t("Modlar")}</BolumBasligi>
         <ModIzgarasi>
           {DIGERLERI.map((m) => (
-            <ModKaro key={m.key} ikon={m.ikon} icon={m.icon} baslik={m.title} alt={m.kisa || m.desc} gunun={m.key === gunun.modKey} onPress={() => handleCardPress(m)} />
+            <ModKaro key={m.key} ikon={m.ikon} icon={m.icon} baslik={m.title} alt={m.kisa || m.desc} gunun={m.key === gunun.modKey} rozet={m.yeni ? _t("YENİ") : undefined} onPress={() => handleCardPress(m)} />
           ))}
         </ModIzgarasi>
       </Animated.ScrollView>

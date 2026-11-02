@@ -1,10 +1,13 @@
 import { _t } from "../lib/dil";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import PlayerPhoto from "./PlayerPhoto";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "../lib/theme";
+import Konfeti from "./Konfeti";
+import { seriDogru, seriYanlis, seriSozu, SERI_BONUS_ESIK, SERI_BONUS_XP } from "../lib/seri";
+import { useSeriSound } from "../lib/useGameSounds";
 
 // 12 Eylül 2026 — UX DENETİMİ BULGUSU: dört ekran (WhoAmICpuScreen,
 // LetterCpuScreen, OnlineLetterScreen, CountryClubArcadeScreen) bu bileşeni
@@ -18,8 +21,29 @@ import { COLORS } from "../lib/theme";
 // `type === "correct"` kullanılıyor. `message` artık işaretin altında
 // gösteriliyor. Böylece dört çağrı yerini tek tek değiştirmeye gerek kalmadan
 // hepsi doğru çalışıyor, ileride yanlış prop geçilse de kırılmıyor.
-export default function AnswerFeedback({ correct, type, message, onDone, player }) {
+// Paket 46 — `seri`: bu geri bildirim KULLANICININ kendi cevabıysa true verilir;
+// doğruda üst üste sayacı artar (lib/seri.js), yanlışta sıfırlanır. Doğru cevapta
+// konfeti; seri 2+ ise "🔥 3 ÜST ÜSTE · SERİ!" rozeti, 3+ ise +10 XP ve seri sesi.
+export default function AnswerFeedback({ correct, type, message, onDone, player, seri }) {
   const dogru = correct !== undefined ? Boolean(correct) : type === "correct";
+  const [seriN] = useState(() => (seri ? (dogru ? seriDogru() : (seriYanlis(), 0)) : 0));
+  const soz = dogru ? seriSozu(seriN) : null;
+  const seriSesi = useSeriSound();
+  const seriOlcek = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!soz) return;
+    Animated.sequence([
+      Animated.delay(180),
+      Animated.spring(seriOlcek, { toValue: 1, friction: 4, tension: 160, useNativeDriver: true }),
+    ]).start();
+    if (seriN >= SERI_BONUS_ESIK) {
+      const t = setTimeout(() => seriSesi(), 160);
+      try { require("../lib/profile").addXP(SERI_BONUS_XP); } catch (e) {}
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const scale = useRef(new Animated.Value(0.3)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
@@ -61,14 +85,14 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
       sequence = [Animated.parallel([entranceAnim, shake]), Animated.delay(600)];
     } else {
       // If a player card is shown, give it more time so the user can enjoy it!
-      sequence = [entranceAnim, Animated.delay(player ? 1400 : 600)];
+      sequence = [entranceAnim, Animated.delay(player ? 1400 : soz ? 900 : 600)];
     }
 
     Animated.sequence([
       ...sequence,
       Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }),
     ]).start(() => bitir());
-    const toplamSure = (dogru && player ? 1400 : 600) + 250 + 400 + 500;
+    const toplamSure = (dogru && player ? 1400 : dogru && soz ? 900 : 600) + 250 + 400 + 500;
     const yedek = setTimeout(bitir, toplamSure);
     return () => {
       clearTimeout(yedek);
@@ -84,6 +108,7 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
   return (
     <View style={styles.overlay} pointerEvents="none">
       <Animated.View style={[styles.zemin, { opacity }]} />
+      {dogru && (seri || player) ? <Konfeti adet={seriN >= 5 ? 44 : seriN >= 3 ? 34 : 24} /> : null}
       <Animated.View style={[{ transform: [{ scale }, { translateX }], opacity }]}>
         {dogru && player ? (
           <LinearGradient colors={["#FFE000", "#FF8C00"]} style={styles.card}>
@@ -103,6 +128,12 @@ export default function AnswerFeedback({ correct, type, message, onDone, player 
             {message}
           </Text>
         ) : null}
+        {soz ? (
+          <Animated.View style={[styles.seri, soz.seviye >= 3 && styles.seriBuyuk, { transform: [{ scale: seriOlcek }] }]}>
+            <Text style={[styles.seriYazi, soz.seviye >= 3 && { fontSize: 22 }]}>{`🔥 ${seriN} `}{_t("ÜST ÜSTE")}{soz.seviye >= 2 ? ` · ${_t(soz.metin)}` : ""}</Text>
+            {seriN >= SERI_BONUS_ESIK ? <Text style={styles.seriXp}>{_t("+{0} XP seri bonusu", [SERI_BONUS_XP])}</Text> : null}
+          </Animated.View>
+        ) : null}
       </Animated.View>
     </View>
   );
@@ -116,6 +147,10 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   zemin: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
+  seri: { alignSelf: "center", marginTop: 14, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, backgroundColor: COLORS.cta, alignItems: "center" },
+  seriBuyuk: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: "#FF7A2F" },
+  seriYazi: { fontSize: 17, fontWeight: "900", color: COLORS.ctaDark, letterSpacing: 0.5 },
+  seriXp: { fontSize: 12, fontWeight: "800", color: COLORS.ctaDark, opacity: 0.8, marginTop: 2 },
   circle: { width: 140, height: 140, borderRadius: 70, alignItems: "center", justifyContent: "center", elevation: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.6, shadowRadius: 12 },
   mark: { fontSize: 76, fontWeight: "900" },
   mesaj: {

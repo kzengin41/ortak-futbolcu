@@ -1,6 +1,10 @@
 import { _t } from "../lib/dil";
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Share } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, Share, Animated } from "react-native";
+import * as Haptics from "expo-haptics";
+import Konfeti from "./Konfeti";
+import { seriSifirla } from "../lib/seri";
+import { useZaferSound } from "../lib/useGameSounds";
 import { Ionicons } from "@expo/vector-icons";
 import SoundPressable from "./SoundPressable";
 import { MacSonuOdulleri } from "./Rozetler";
@@ -19,11 +23,31 @@ import { gorevOlayi } from "../lib/dailyGoals";
 //   enIyi:  { ad, alt }  → "En nadir cevabın" kutusu (tanınırlığı en düşük doğru cevap)
 //   rakip:  { ad, avatar } (CPU karakteri, kısa ad) ya da { ad } (2. oyuncu)
 // ============================================================================
+// Puan 0'dan hedefe ~0,9 sn'de sayarak yükselir (sayı değilse olduğu gibi).
+function Sayac({ deger, style }) {
+  const sayi = Number(deger);
+  const [g, setG] = useState(Number.isFinite(sayi) ? 0 : deger);
+  useEffect(() => {
+    if (!Number.isFinite(sayi)) { setG(deger); return; }
+    const bas = Date.now(); let id;
+    const adim = () => {
+      const t = Math.min(1, (Date.now() - bas) / 900);
+      setG(Math.round(sayi * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) id = setTimeout(adim, 30);
+    };
+    adim();
+    return () => clearTimeout(id);
+  }, [deger]);
+  return <Text style={style}>{g}</Text>;
+}
+
 export default function MacSonuKarti({
   modAdi, modeId, skorSen, skorRakip, rakip, turlar = [], enIyi, kazanilanXp,
   onRovans, onMenu, ekSatir, solo, rovansEtiketi = _t("RÖVANŞ"), kazanan, kareSatir, skorEtiketi,
   // 5 Ekim 2026 — online maç sonu: rövanş beklerken düğme pasif; "Menüye dön" yerine "Lobiye dön".
   rovansPasif = false, menuEtiketi = _t("Menüye dön"),
+  // Paket 46 — mod kendi paylaşım metnini verebilir (Hayatta Kal: meydan okuma kodu).
+  paylasimMetni = null,
 }) {
   // kazanan: "sen" | "rakip" | "berabere" — skordan çıkmayan sonuçlar için (XOX: üçlü sıra).
   // kareSatir: kareleri satırlara böl (XOX tahtası 3×3).
@@ -43,6 +67,19 @@ export default function MacSonuKarti({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const berabere = kazanan ? kazanan === "berabere" : skorSen === skorRakip;
+  // Paket 46 — coşku: kazanınca (ya da yeni rekorda) konfeti yağmuru + zafer sesi +
+  // başlık "pop"; tek kişilik puan sayaçla yükselir. Maç bitince üst üste seri sıfırlanır.
+  const kutla = solo ? !!solo.yeniRekor : (kazandin && !berabere);
+  const zafer = useZaferSound();
+  const baslikOlcek = useRef(new Animated.Value(kutla ? 0.4 : 1)).current;
+  useEffect(() => {
+    seriSifirla();
+    if (!kutla) return;
+    zafer();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Animated.spring(baslikOlcek, { toValue: 1, friction: 3, tension: 120, useNativeDriver: true }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const baslik = solo ? (solo.baslik || (solo.yeniRekor ? _t("YENİ REKOR!") : _t("SÜRE DOLDU"))) : berabere ? _t("BERABERE") : kazandin ? _t("KAZANDIN!") : `${(rakip?.ad || _t("RAKİP")).toLocaleUpperCase("tr")} KAZANDI`;
   const kareDizi = turlar.map((t) => (t === "sen" ? "🟩" : t === "rakip" ? "🟥" : "⬜"));
   const kareler = kareSatir
@@ -50,6 +87,7 @@ export default function MacSonuKarti({
     : kareDizi.join("");
 
   async function paylas() {
+    if (paylasimMetni) { try { await Share.share({ message: paylasimMetni }); } catch (e) {} return; }
     const satirlar = solo ? [
       `⚽ 3-2-1: Bitir İşi — ${modAdi}`,
       _t("{0} puan{1}", [solo.puan, solo.yeniRekor ? _t(" — yeni rekorum!") : ""]),
@@ -81,12 +119,13 @@ export default function MacSonuKarti({
 
   return (
     <View style={s.kap}>
-      <Text style={[s.baslik, { color: solo ? (solo.yeniRekor ? COLORS.cta : COLORS.text) : berabere ? COLORS.text : kazandin ? COLORS.accent : COLORS.danger }]}>{baslik}</Text>
+      {kutla ? <Konfeti adet={60} kaynak="ust" sure={2600} /> : null}
+      <Animated.Text style={[s.baslik, { transform: [{ scale: baslikOlcek }] }, { color: solo ? (solo.yeniRekor ? COLORS.cta : COLORS.text) : berabere ? COLORS.text : kazandin ? COLORS.accent : COLORS.danger }]}>{baslik}</Animated.Text>
 
       {solo ? (
         <View style={s.soloKutu}>
-          <Text style={s.soloPuan}>{solo.puan}</Text>
-          <Text style={s.soloEtiket}>{_t("PUAN · rekor")}{" "}{Math.max(solo.rekor || 0, solo.puan)}</Text>
+          <Sayac deger={solo.puan} style={s.soloPuan} />
+          <Text style={s.soloEtiket}>{solo.etiket || _t("PUAN · rekor")}{" "}{Math.max(solo.rekor || 0, solo.puan)}</Text>
           {(solo.satirlar || []).map(([a, b]) => (
             <View key={a} style={s.soloSatir}>
               <Text style={s.soloSatirAd}>{a}</Text>

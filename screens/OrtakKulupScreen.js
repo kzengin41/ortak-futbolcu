@@ -23,7 +23,7 @@ import { OyunUstCubugu, SkorSeridi, RakipTepkisi, rakipEtiketi } from "../compon
 import { countryTr } from "../lib/countryNamesTr";
 import { flagForCountry } from "../lib/countryFlags";
 import { unlockPlayer } from "../lib/pokedex";
-import { recordRound } from "../lib/stats";
+import { recordRound, getStats } from "../lib/stats";
 import { useCorrectSound, useWrongSound } from "../lib/useGameSounds";
 import { useVoiceInput } from "../lib/useVoiceInput";
 import { addXP, XP_MAC_GALIBIYETI, XP_MAC_MAGLUBIYETI } from "../lib/profile";
@@ -120,7 +120,19 @@ export default function OrtakKulupScreen({
   const [showReport, setShowReport] = useState(false);
   const [xpVerildi, setXpVerildi] = useState(false);
 
-  const karakter = useMemo(() => karakterSec(difficulty), [difficulty]);
+  // Paket 46 — İLK MAÇ (ısınma): bu modda hiç tur oynamamış oyuncunun ilk maçı
+  // kolay çiftlerle (en fazla zorluk 2) ve en yavaş rakiple (zorluk 1) oynanır;
+  // ilk galibiyet neredeyse garanti, oyuncu oyunu sever.
+  const [ilkMac, setIlkMac] = useState(false);
+  useEffect(() => {
+    let iptal = false;
+    getStats().then((st) => { const m = st && st.modes && st.modes[MOD_ID[baslangicTuru] || "cpu"]; if (!iptal && (!m || (m.wins || 0) + (m.losses || 0) === 0)) setIlkMac(true); }).catch(() => {});
+    return () => { iptal = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const oyunZorlugu = ilkMac ? Math.min(2, difficulty) : difficulty;
+  const cpuZorlugu = ilkMac ? 1 : difficulty;
+  const karakter = useMemo(() => karakterSec(cpuZorlugu), [cpuZorlugu]);
   // Paket 31 — rakibin "düşünüyorum" sözü tur başına bir kez seçilir (her saniye değişmesin).
   const dusunceSozu = useMemo(() => tepki(karakter, "dusunuyor"), [karakter, round]);
   const modId = MOD_ID[tur] || "cpu";
@@ -164,12 +176,12 @@ export default function OrtakKulupScreen({
   const allowedClubs = eslesme.derlenmis.kapsam;
   const presetLabel = eslesme.derlenmis.etiket;
   const kulupHavuzu = useMemo(
-    () => (started && tur === "kulup" ? computeRoundPool(PLAYERS, eslesme.derlenmis, difficulty) : null),
-    [started, tur, eslesme.derlenmis, difficulty]
+    () => (started && tur === "kulup" ? computeRoundPool(PLAYERS, eslesme.derlenmis, oyunZorlugu) : null),
+    [started, tur, eslesme.derlenmis, oyunZorlugu]
   );
   const ulkeHavuzu = useMemo(
-    () => (started && tur === "ulke" ? computeCountryTeamPool(PLAYERS, eslesme.derlenmis, difficulty) : null),
-    [started, tur, eslesme.derlenmis, difficulty]
+    () => (started && tur === "ulke" ? computeCountryTeamPool(PLAYERS, eslesme.derlenmis, oyunZorlugu) : null),
+    [started, tur, eslesme.derlenmis, oyunZorlugu]
   );
   const suggestIndex = useMemo(() => buildSuggestIndex(PLAYERS), []);
   const suggestions = useMemo(() => suggestPlayers(suggestIndex, answerInput), [suggestIndex, answerInput]);
@@ -194,7 +206,7 @@ export default function OrtakKulupScreen({
     setShowResultPanel(true);
     setShowAnswers(false);
     setTimeLeft(turSuresi);
-    setCpuKalan(Math.round(dusunmeSuresi(difficulty) / 1000));
+    setCpuKalan(Math.round(dusunmeSuresi(cpuZorlugu) / 1000));
     setCpuSoz(tepki(karakter, "dusunuyor"));
   }
 
@@ -217,16 +229,16 @@ export default function OrtakKulupScreen({
       if (gecerli.length) r = { sol: { tip: "kulup", ad: ic[0] }, sag: { tip: "kulup", ad: ic[1] }, validAnswers: gecerli, key: [ic[0], ic[1]].sort().join("|") };
     }
     if (!r && tur === "kulup") {
-      const g = generateRound(kulupHavuzu, PLAYERS, kullanilan, allowedClubs, difficulty);
+      const g = generateRound(kulupHavuzu, PLAYERS, kullanilan, allowedClubs, oyunZorlugu);
       if (g) r = { sol: { tip: "kulup", ad: g.teamA }, sag: { tip: "kulup", ad: g.teamB }, validAnswers: g.validAnswers, key: g.key };
     }
     if (!r && tur === "ulke") {
-      const g = generateCountryTeamRound(ulkeHavuzu, PLAYERS, kullanilan, allowedClubs, difficulty);
+      const g = generateCountryTeamRound(ulkeHavuzu, PLAYERS, kullanilan, allowedClubs, oyunZorlugu);
       if (g) r = { sol: { tip: "ulke", ad: g.country }, sag: { tip: "kulup", ad: g.club }, validAnswers: g.validAnswers, key: g.key };
     }
     turaBasla(r);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tur, kulupHavuzu, ulkeHavuzu, usedPairs, allowedClubs, difficulty, karakter, turSuresi]);
+  }, [tur, kulupHavuzu, ulkeHavuzu, usedPairs, allowedClubs, oyunZorlugu, cpuZorlugu, karakter, turSuresi]);
 
   function turaBasla(r) {
     setRound(r);
@@ -279,8 +291,8 @@ export default function OrtakKulupScreen({
   // CPU bilemezse tur kimsesiz biter.
   function cpuHamlesi(sonHamle = false) {
     if (!round) return;
-    const bil = Math.random() < bilmeOlasiligi(difficulty);
-    const pick = bil ? cpuCevabiSec(round.validAnswers, difficulty) : null;
+    const bil = Math.random() < bilmeOlasiligi(cpuZorlugu);
+    const pick = bil ? cpuCevabiSec(round.validAnswers, cpuZorlugu) : null;
     if (pick) { turuBitir("cpu", pick); return; }
     setCpuKilitli(true);
     setCpuSoz(tepki(karakter, "yanlis"));
@@ -488,7 +500,7 @@ export default function OrtakKulupScreen({
         <CountdownOverlay onComplete={() => setPhase("racing")} countPlayers={[countPlayer3, countPlayer2, countPlayer1]} />
       )}
       {feedback && (
-        <AnswerFeedback correct={feedback === "correct"} player={winningPlayer} onDone={() => { setFeedback(null); setShowResultPanel(true); }} />
+        <AnswerFeedback seri correct={feedback === "correct"} player={winningPlayer} onDone={() => { setFeedback(null); setShowResultPanel(true); }} />
       )}
       {showReport && (
         <ReportModal visible={showReport} onClose={() => setShowReport(false)} playerContext={winningPlayer ? winningPlayer.name : turEtiketi(round)} />
@@ -498,7 +510,7 @@ export default function OrtakKulupScreen({
         <SkorSeridi
           sol={{ etiket: _t("SEN"), puan: scoreP1 }}
           sag={{ etiket: rakipEtiketi(karakter), puan: scoreCpu, karakter }}
-          orta={_t("{0}'te biter", [targetScore])}
+          orta={ilkMac ? _t("Isınma maçı · {0}'te biter", [targetScore]) : _t("{0}'te biter", [targetScore])}
         />
       )}
       {/* Paket 31 — rakibin tek satırlık tepkisi her modda skor şeridinin altında */}

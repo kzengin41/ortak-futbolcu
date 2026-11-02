@@ -265,6 +265,9 @@ const getXoxRoute = tekSefer(() => withExit(require("./screens/XoxScreen").defau
 const getGunluk5Route = tekSefer(() => withExit(require("./screens/GunlukBesKulupScreen").default, { confirm: false }));
 const getGunlukIzgaraRoute = tekSefer(() => withExit(require("./screens/GunlukIzgaraScreen").default, { confirm: false }));
 const getHarfZinciriRoute = tekSefer(() => withExit(require("./screens/HarfZinciriScreen").default, { aktif: "letterZincir" }));
+// Paket 46 — Hayatta Kal: tek kişilik sonsuz Ortak Kulüp (3 can) + meydan okuma kodu.
+// Kurallar giriş ekranında (rehber yok); arkadaş kodu route param `kod` ile de gelebilir.
+const getHayattaKalRoute = tekSefer(() => withExit(require("./screens/HayattaKalScreen").default, { aktif: "hayattaKal" }));
 // 4 Ekim 2026 (.28709) — Sunucu modu: 2–6 kişi, tek telefon, sunucu okur.
 // 4 Ekim 2026 (.29452/.29833) — Günün Kadrosu (günlük, ilerleme kaydedilir) ve
 // Ansiklopedi → Takımlar'dan açılan kadro sayfası.
@@ -540,6 +543,7 @@ function RootNavigator({ initialRouteName }) {
       <Stack.Screen name="gunluk5" getComponent={getGunluk5Route} />
       <Stack.Screen name="gunlukIzgara" getComponent={getGunlukIzgaraRoute} />
       <Stack.Screen name="letterZincir" getComponent={getHarfZinciriRoute} />
+      <Stack.Screen name="hayattaKal" getComponent={getHayattaKalRoute} />
       <Stack.Screen name="sunucu" getComponent={getSunucuRoute} />
       <Stack.Screen name="gunlukKadro" getComponent={getGunlukKadroRoute} />
       <Stack.Screen name="kadro" getComponent={getKadroRoute} />

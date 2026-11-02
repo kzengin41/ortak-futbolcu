@@ -14,6 +14,7 @@ import { getProfile, xpProgress } from "../lib/profile";
 import { getStreak, seriDurumu } from "../lib/streak";
 import { getStats, MODE_LABELS } from "../lib/stats";
 import { getUnlockedPlayers } from "../lib/pokedex";
+import { koleksiyonSayilari, NADIRLIKLER } from "../lib/nadirlik";
 import { tamamlananlar } from "../lib/kadroKoleksiyon";
 import { getCurrentUser } from "../lib/auth";
 import { pushFullProgressToCloud } from "../lib/cloudProfile";
@@ -135,6 +136,21 @@ export default function ProfilimScreen({ onSettings, onHelp, onAccount }) {
             <Text style={styles.koleksiyonYazi}>{_t("Ansiklopedi:")}{" "}{acilanlar.length}{" "}{_t("futbolcu")}</Text>
             <Text style={[styles.koleksiyonYazi, { marginLeft: "auto" }]}>🏅 {kadroSayi}{" "}{_t("kadro tamam")}</Text>
           </View>
+          {/* Paket 46 — nadirlik koleksiyonu (lib/nadirlik.js) */}
+          {acilanlar.length ? (() => {
+            const k = koleksiyonSayilari(acilanlar);
+            return (
+              <View style={styles.nadirlikSatir}>
+                {["efsane", "nadir"].map((id) => (
+                  <View key={id} style={[styles.nadirlikKutu, { borderColor: NADIRLIKLER[id].renk }]}>
+                    <Text style={[styles.nadirlikAd, { color: NADIRLIKLER[id].renk }]}>{NADIRLIKLER[id].ad}</Text>
+                    <Text style={styles.nadirlikSayi}>{k[id].acik}<Text style={styles.nadirlikToplam}>/{k[id].toplam}</Text></Text>
+                    <View style={styles.nadirlikCubuk}><View style={{ width: `${Math.min(100, (100 * k[id].acik) / Math.max(1, k[id].toplam))}%`, height: "100%", backgroundColor: NADIRLIKLER[id].renk, borderRadius: 2 }} /></View>
+                  </View>
+                ))}
+              </View>
+            );
+          })() : null}
         </View>
 
         </AcilirBolum>
@@ -248,6 +264,12 @@ const styles = StyleSheet.create({
   sonBes: { flexDirection: "row", justifyContent: "space-between", marginBottom: SPACING.md },
   sonBesKutu: { width: "19%", alignItems: "center", gap: 4 },
   sonBesAd: { ...TYPE.caption, fontSize: 11, fontWeight: "800", color: COLORS.text },
+  nadirlikSatir: { flexDirection: "row", gap: 8, marginTop: 4, marginBottom: 6 },
+  nadirlikKutu: { flex: 1, borderWidth: 1.5, borderRadius: RADIUS.md, padding: 8, gap: 3 },
+  nadirlikAd: { fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
+  nadirlikSayi: { fontSize: 18, fontWeight: "900", color: COLORS.text },
+  nadirlikToplam: { fontSize: 12, fontWeight: "700", color: COLORS.textMuted },
+  nadirlikCubuk: { height: 4, borderRadius: 2, backgroundColor: saydam(COLORS.text, 0.1), overflow: "hidden" },
   koleksiyonSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   koleksiyonYazi: { ...TYPE.caption, fontWeight: "800", color: COLORS.text },
 

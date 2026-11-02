@@ -752,6 +752,7 @@ export default function FiveClubsScreen({ onExit, onExitSilent, vsCpu = false })
       {feedback && (
         <AnswerFeedback
           correct={feedback.correct}
+          seri={feedback.correct ? true : undefined}
           player={feedback.player}
           onDone={() => setFeedback(null)}
         />

@@ -325,11 +325,12 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
       // iki oyuncu da bu telefondaki gerçek insanlar, ikisi de sayılır.
       if (!cpuHamlesi) unlockPlayer(h.ad);
       const onEk = h.calma ? (durum && durum.katlama ? (h.duello ? _t("GERİ ALDI! ") : _t("KAPTI! ")) : _t("ÇALDI! ")) : "";
-      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, message: onEk + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
+      setGeriBildirim({ anahtar: Date.now() + Math.random(), correct: true, seri: !cpuHamlesi, message: onEk + (cpuHamlesi ? `${kisaAd(karakter)}: ${h.ad}` : h.ad) });
     } else if (h.tip === "yanlis") {
       playWrong();
       setGeriBildirim({ anahtar: Date.now() + Math.random(),
         correct: false,
+        seri: !cpuHamlesi && !h.ayniIsim,
         message: h.ayniIsim
           ? (durum && durum.katlama ? _t("Bu karede o isim zaten söylendi") : _t("Çalmak için FARKLI bir futbolcu gerekir"))
           : cpuHamlesi ? _t("{0} bilemedi: {1}", [kisaAd(karakter), h.metin]) : _t("Bu futbolcu bu ikilide oynamadı"),
@@ -852,6 +853,7 @@ export default function XoxScreen({ onExit, onExitSilent, rakip }) {
             <AnswerFeedback
               key={geriBildirim.anahtar}
               correct={geriBildirim.correct}
+              seri={geriBildirim.seri || undefined}
               message={geriBildirim.message}
               onDone={() => setGeriBildirim(null)}
             />

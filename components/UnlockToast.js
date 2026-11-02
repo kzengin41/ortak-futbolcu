@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PlayerPhoto from "./PlayerPhoto";
+import { nadirlik } from "../lib/nadirlik";
 import { acilisDinle } from "../lib/unlockBus";
 import { COLORS, SPACING, RADIUS, TYPE, SHADOW } from "../lib/theme";
 
@@ -29,7 +30,8 @@ export default function UnlockToast() {
   const zamanlayici = useRef(null);
 
   // 4 Ekim 2026: kuyrukta { ad, seviye } — seviye atlandıysa şerit "SEVİYE N!" der.
-  useEffect(() => acilisDinle((ad, ek) => setKuyruk((k) => (k.some((x) => x.ad === ad) ? k : [...k, { ad, seviye: ek?.seviye || null }]))), []);
+  // Paket 46: ek.ozel = { ikon, baslik, metin } — futbolcusuz genel bildirim (zorluk değişti vb.).
+  useEffect(() => acilisDinle((ad, ek) => setKuyruk((k) => (k.some((x) => x.ad === ad) ? k : [...k, { ad, seviye: ek?.seviye || null, ozel: ek?.ozel || null }]))), []);
 
   // Kuyrukta bir şey varsa ve ekranda gösterilen yoksa sıradakini al.
   useEffect(() => {
@@ -69,14 +71,27 @@ export default function UnlockToast() {
       pointerEvents="none"
       style={[styles.serit, { transform: [{ translateY: kaydir }] }]}
     >
-      <PlayerPhoto name={aktif.ad} size={38} showProfileOnPress={false} />
+      {aktif.ozel ? (
+        <View style={styles.ozelIkon}><Ionicons name={aktif.ozel.ikon || "sparkles"} size={20} color={COLORS.ctaDark} /></View>
+      ) : <PlayerPhoto name={aktif.ad} size={38} showProfileOnPress={false} />}
+      {aktif.ozel ? (
+        <View style={{ flex: 1 }}>
+          <Text style={styles.baslik}>{aktif.ozel.baslik}</Text>
+          <Text style={styles.ad} numberOfLines={2}>{aktif.ozel.metin}</Text>
+        </View>
+      ) : (
       <View style={{ flex: 1 }}>
         <View style={styles.baslikSatiri}>
           <Ionicons name={aktif.seviye ? "trending-up" : "sparkles"} size={12} color={COLORS.cta} />
           <Text style={styles.baslik}>{aktif.seviye ? _t("SEVİYE {0}! · ANSİKLOPEDİYE EKLENDİ", [aktif.seviye]) : _t("ANSİKLOPEDİNE EKLENDİ")}</Text>
         </View>
-        <Text style={styles.ad} numberOfLines={1}>{aktif.ad}</Text>
+        <View style={styles.baslikSatiri}>
+          <Text style={[styles.ad, { flexShrink: 1 }]} numberOfLines={1}>{aktif.ad}</Text>
+          {/* Paket 46 — nadir / efsane kart rozeti (lib/nadirlik.js) */}
+          {(() => { const n = nadirlik(aktif.ad); return n.id !== "siradan" ? <View style={[styles.nadirlik, { backgroundColor: n.renk }]}><Text style={styles.nadirlikYazi}>{n.ad}</Text></View> : null; })()}
+        </View>
       </View>
+      )}
     </Animated.View>
   );
 }
@@ -100,6 +115,9 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   baslikSatiri: { flexDirection: "row", alignItems: "center", gap: 5 },
+  nadirlik: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999 },
+  nadirlikYazi: { fontSize: 9, fontWeight: "900", letterSpacing: 1, color: "#0B1A10" },
+  ozelIkon: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.cta },
   baslik: { color: COLORS.cta, fontSize: 12, fontWeight: "900", letterSpacing: 1 },
   ad: { ...TYPE.h3, fontSize: 15, marginTop: 1 },
 });
