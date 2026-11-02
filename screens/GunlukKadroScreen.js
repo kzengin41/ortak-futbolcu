@@ -190,6 +190,19 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
           </View>
           <Text style={s.hedef}>{_t("Bul:")}{" "}<Text style={{ color: COLORS.accent }}>{kadro.takimTip === "ulke" ? countryTr(kadro.takim) || kadro.takim : kadro.takim}</Text>{" "}{_t("ilk 11'i")}</Text>
         </View>
+      ) : kadro.tip === "sezon" ? (
+        // Paket 45: Günün Kadrosu artık sezon kadroları da veriyor (GS 2012–13 gibi).
+        <View style={s.macKart}>
+          <Text style={s.macTur}>{_t("SEZON KADROSU")}</Text>
+          <View style={[s.macSatir, { justifyContent: "center", gap: 12 }]}>
+            <TeamBadge name={kadro.takim} size={44} />
+            <View>
+              <Text style={[s.takimAd, { fontSize: 18, textAlign: "left" }]}>{kadro.takim}</Text>
+              <Text style={s.penalti}>{_t("{0} sezonu", [kadro.sezon.sezon])}</Text>
+            </View>
+          </View>
+          <Text style={s.hedef}>{_t("Bul:")}{" "}<Text style={{ color: COLORS.accent }}>{kadro.takim}</Text>{" "}{_t("ilk 11'i")}</Text>
+        </View>
       ) : null}
 
       <View style={s.durumSatir}>
@@ -210,7 +223,7 @@ export default function GunlukKadroScreen({ onExit, onExitSilent }) {
       {!bitti && yuklendi && hedefO ? (
         <KadroIpucuPaneli
           o={hedefO}
-          mac={m}
+          mac={m || (kadro.sezon ? { yil: parseInt(String(kadro.sezon.sezon), 10) || null } : null)}
           durum={ipuclari[hedefO.i]}
           onIpucu={(tur) => ipucuGuncelle(hedefO.i, ipucuAc(ipuclari[hedefO.i], tur))}
           onHarf={() => ipucuGuncelle(hedefO.i, harfAl(hedefO.a, ipuclari[hedefO.i]))}
